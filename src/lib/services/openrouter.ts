@@ -1,7 +1,7 @@
 import { aiExtractsService, settingsService } from '@/lib/db/sqliteServices';
 
 // OpenRouter configuration for Claude 4.0 Sonnet
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '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';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
 const CLAUDE_4_MODEL = 'anthropic/claude-4';
 
