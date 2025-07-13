@@ -1,0 +1,81 @@
+# Caddyfile for Noti Audio Transcription App
+# Provides HTTPS for mobile compatibility
+
+{
+    admin :2020
+}
+
+# Local development with self-signed certificate (non-privileged port)
+localhost:8443 {
+    tls internal
+
+    # Proxy to Next.js development server
+    reverse_proxy localhost:5173
+
+    # Enable CORS for API calls
+    header Access-Control-Allow-Origin *
+    header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization"
+
+    # Handle preflight requests
+    @options {
+        method OPTIONS
+    }
+    respond @options 200
+
+    # Enable compression
+    encode gzip zstd
+
+    # Security headers for mobile
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    header X-Content-Type-Options nosniff
+    header X-Frame-Options DENY
+    header X-XSS-Protection "1; mode=block"
+    header Permissions-Policy "microphone=(self)"
+
+    # Logging
+    log {
+        output file /home/philip/Documents/projects/noti/logs/caddy.log
+        level INFO
+    }
+}
+
+# HTTP redirect to HTTPS (non-privileged port)
+localhost:8080 {
+    redir https://localhost:8443{uri} permanent
+}
+
+# Network access (use your local IP)
+192.168.0.110:8443 {
+    tls internal
+
+    # Proxy to Next.js development server
+    reverse_proxy localhost:5173
+
+    # Same headers as above
+    header Access-Control-Allow-Origin *
+    header Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "Content-Type, Authorization"
+
+    @options {
+        method OPTIONS
+    }
+    respond @options 200
+
+    encode gzip zstd
+    
+    header Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    header X-Content-Type-Options nosniff
+    header X-Frame-Options DENY
+    header X-XSS-Protection "1; mode=block"
+    header Permissions-Policy "microphone=(self)"
+
+    log {
+        output file /home/philip/Documents/projects/noti/logs/caddy.log
+        level INFO
+    }
+}
+
+192.168.0.110:8080 {
+    redir https://192.168.0.110:8443{uri} permanent
+}
