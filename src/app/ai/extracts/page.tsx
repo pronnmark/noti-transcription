@@ -18,43 +18,81 @@ interface AudioFile {
   transcriptionStatus?: 'pending' | 'processing' | 'completed' | 'error';
   hasTranscript?: boolean;
   hasAiExtract?: boolean;
+  extractCount?: number;
   duration?: number;
   aiExtract?: string;
   aiExtractedAt?: string;
 }
 
+interface Extract {
+  id: string;
+  fileId: string;
+  filename?: string;
+  content: string;
+  model: string;
+  prompt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function AIExtractsPage() {
-  const [files, setFiles] = useState<AudioFile[]>([]);
+  const [extracts, setExtracts] = useState<Extract[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
+  const [deletingExtracts, setDeletingExtracts] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    loadFiles();
+    loadExtracts();
   }, []);
 
-  async function loadFiles() {
+  async function loadExtracts() {
     try {
-      const response = await fetch('/api/files');
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files.filter((f: AudioFile) => f.hasAiExtract));
+      // Load files first to get those with extracts
+      const filesResponse = await fetch('/api/files');
+      if (filesResponse.ok) {
+        const filesData = await filesResponse.json();
+        const filesWithExtracts = filesData.files.filter((f: AudioFile) => f.hasAiExtract);
+        
+        // Load extracts for each file
+        const allExtracts: Extract[] = [];
+        
+        for (const file of filesWithExtracts) {
+          try {
+            const extractResponse = await fetch(`/api/extract?fileId=${file.id}`);
+            if (extractResponse.ok) {
+              const extractData = await extractResponse.json();
+              // Add filename to each extract
+              const extractsWithFilename = extractData.extracts.map((extract: Extract) => ({
+                ...extract,
+                filename: file.originalName
+              }));
+              allExtracts.push(...extractsWithFilename);
+            }
+          } catch (error) {
+            console.error(`Failed to load extracts for file ${file.id}:`, error);
+          }
+        }
+        
+        // Sort by creation date (newest first)
+        allExtracts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+        
+        setExtracts(allExtracts);
       }
     } catch (error) {
-      console.error('Failed to load files:', error);
+      console.error('Failed to load extracts:', error);
     } finally {
       setIsLoading(false);
     }
   }
 
-  async function handleDeleteFile(fileId: string, fileName: string) {
-    if (!confirm(`Are you sure you want to delete "${fileName}"? This will permanently remove the audio file and all associated data.`)) {
+  async function handleDeleteExtract(extractId: string, filename: string) {
+    if (!confirm(`Are you sure you want to delete this extract for "${filename}"?`)) {
       return;
     }
 
-    setDeletingFiles(prev => new Set(prev).add(fileId));
+    setDeletingExtracts(prev => new Set(prev).add(extractId));
 
     try {
-      const response = await fetch(`/api/files/${fileId}`, {
+      const response = await fetch(`/api/extract/${extractId}`, {
         method: 'DELETE',
       });
 
@@ -62,15 +100,15 @@ export default function AIExtractsPage() {
         throw new Error('Delete failed');
       }
 
-      toast.success(`${fileName} deleted successfully`);
-      await loadFiles();
+      toast.success(`Extract deleted successfully`);
+      await loadExtracts();
     } catch (error) {
-      toast.error(`Failed to delete ${fileName}`);
+      toast.error(`Failed to delete extract`);
       console.error('Delete error:', error);
     } finally {
-      setDeletingFiles(prev => {
+      setDeletingExtracts(prev => {
         const newSet = new Set(prev);
-        newSet.delete(fileId);
+        newSet.delete(extractId);
         return newSet;
       });
     }
@@ -113,25 +151,25 @@ export default function AIExtractsPage() {
       <div className="flex-1 p-4 sm:p-6 overflow-hidden">
         <ScrollArea className="h-full">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {files.map((file) => (
-              <Card key={file.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+            {extracts.map((extract) => (
+              <Card key={extract.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{file.originalName}</CardTitle>
+                      <CardTitle className="text-lg truncate">{extract.filename || 'Unknown File'}</CardTitle>
                       <CardDescription>
                         <Sparkles className="h-3 w-3 inline mr-1" />
-                        AI Extract Available
+                        {extract.model}
                       </CardDescription>
                     </div>
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600 flex-shrink-0"
-                      onClick={() => handleDeleteFile(file.id, file.originalName)}
-                      disabled={deletingFiles.has(file.id)}
+                      onClick={() => handleDeleteExtract(extract.id, extract.filename || 'Unknown File')}
+                      disabled={deletingExtracts.has(extract.id)}
                     >
-                      {deletingFiles.has(file.id) ? (
+                      {deletingExtracts.has(extract.id) ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <Trash2 className="h-3 w-3" />
@@ -142,20 +180,21 @@ export default function AIExtractsPage() {
                 <CardContent className="space-y-3">
                   <div className="text-sm text-muted-foreground">
                     <div className="flex justify-between">
-                      <span>Extracted</span>
-                      <span>{formatDate(file.aiExtractedAt)}</span>
+                      <span>Created</span>
+                      <span>{formatDate(extract.createdAt)}</span>
                     </div>
                   </div>
-                  {file.aiExtract && (
-                    <div className="text-sm bg-muted/50 rounded-lg p-3 max-h-32 overflow-y-auto">
-                      <p className="line-clamp-4">{file.aiExtract}</p>
-                    </div>
-                  )}
+                  <div className="text-sm bg-muted/50 rounded-lg p-3 max-h-32 overflow-y-auto">
+                    <p className="line-clamp-4">{extract.content}</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
+                    <strong>Prompt:</strong> {extract.prompt}
+                  </div>
                   <div className="space-y-2">
                     <Button 
                       className="w-full" 
                       variant="default"
-                      onClick={() => window.location.href = `/extract/${file.id}`}
+                      onClick={() => window.location.href = `/extract/${extract.id}`}
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       View Full Extract
@@ -163,7 +202,7 @@ export default function AIExtractsPage() {
                     <Button 
                       className="w-full" 
                       variant="outline"
-                      onClick={() => window.location.href = `/transcript/${file.id}`}
+                      onClick={() => window.location.href = `/transcript/${extract.fileId}`}
                     >
                       <FileText className="h-4 w-4 mr-2" />
                       View Transcript
@@ -173,7 +212,7 @@ export default function AIExtractsPage() {
               </Card>
             ))}
           </div>
-          {files.length === 0 && (
+          {extracts.length === 0 && (
             <div className="text-center py-12">
               <Sparkles className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <p className="text-muted-foreground">No AI extracts yet</p>

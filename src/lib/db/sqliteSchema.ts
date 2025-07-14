@@ -27,7 +27,16 @@ export const systemSettings = sqliteTable('system_settings', {
   aiExtractEnabled: integer('ai_extract_enabled', { mode: 'boolean' }).default(false),
   aiExtractPrompt: text('ai_extract_prompt'),
   aiExtractOutputPath: text('ai_extract_output_path'),
-  aiExtractModel: text('ai_extract_model').default('anthropic/claude-4'),
+  aiExtractModel: text('ai_extract_model').default('anthropic/claude-sonnet-4'),
+  
+  // Notes extraction settings
+  notesPrompts: text('notes_prompts', { mode: 'json' }).$type<{
+    tasks?: string;
+    questions?: string;
+    decisions?: string;
+    followups?: string;
+    mentions?: string;
+  }>(),
 });
 
 // Audio files table

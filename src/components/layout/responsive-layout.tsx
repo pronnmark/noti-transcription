@@ -5,6 +5,7 @@ import { Sidebar } from './sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -12,21 +13,14 @@ interface ResponsiveLayoutProps {
 
 export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
+  // Auto-close sidebar when switching to desktop
   useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-      // Auto-close sidebar on mobile when window resizes
-      if (window.innerWidth >= 768) {
-        setSidebarOpen(false);
-      }
-    };
-
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
+    if (!isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [isMobile]);
 
   const closeSidebar = () => setSidebarOpen(false);
 
@@ -42,15 +36,28 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
       {/* Mobile Sidebar Overlay */}
       {isMobile && sidebarOpen && (
-        <div className="fixed inset-0 z-50 flex">
+        <div className="fixed inset-0 z-50 flex md:hidden">
           {/* Backdrop */}
           <div 
             className="fixed inset-0 bg-black/50" 
             onClick={closeSidebar}
+            aria-hidden="true"
           />
           
           {/* Sidebar */}
-          <div className="relative flex w-64 flex-col bg-card border-r">
+          <div className="relative flex w-64 flex-col bg-white border-r animate-slide-in-from-left shadow-xl">
+            {/* Close button */}
+            <div className="absolute right-2 top-2 z-10">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeSidebar}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+                <span className="sr-only">Close sidebar</span>
+              </Button>
+            </div>
             <Sidebar onNavigate={closeSidebar} />
           </div>
         </div>
@@ -60,12 +67,13 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-between p-4 border-b bg-card md:hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-white md:hidden">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(true)}
-              className="p-2"
+              className="h-9 w-9 p-0"
+              aria-label="Open sidebar"
             >
               <Menu className="h-5 w-5" />
             </Button>

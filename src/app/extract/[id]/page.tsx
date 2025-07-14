@@ -10,14 +10,22 @@ import Link from 'next/link';
 interface AudioFile {
   id: string;
   originalName: string;
-  aiExtract?: string;
-  aiExtractStatus?: string;
-  aiExtractedAt?: string;
+}
+
+interface Extract {
+  id: string;
+  fileId: string;
+  content: string;
+  model: string;
+  prompt: string;
+  createdAt: string;
+  status: string;
 }
 
 export default function ExtractPage() {
   const params = useParams();
   const [file, setFile] = useState<AudioFile | null>(null);
+  const [extract, setExtract] = useState<Extract | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,25 +40,23 @@ export default function ExtractPage() {
       setIsLoading(true);
       setError(null);
 
-      // Get file info
-      const fileResponse = await fetch(`/api/files/${params.id}`);
-      if (!fileResponse.ok) {
-        throw new Error('Failed to load file');
-      }
-      const fileData = await fileResponse.json();
-
-      // Get extract info
-      const extractResponse = await fetch(`/api/extract?fileId=${params.id}`);
+      // Get individual extract by ID
+      const extractResponse = await fetch(`/api/extract/${params.id}`);
       if (!extractResponse.ok) {
         throw new Error('Failed to load extract');
       }
       const extractData = await extractResponse.json();
+      setExtract(extractData);
 
+      // Get file info using fileId from extract
+      const fileResponse = await fetch(`/api/files/${extractData.fileId}`);
+      if (!fileResponse.ok) {
+        throw new Error('Failed to load file');
+      }
+      const fileData = await fileResponse.json();
       setFile({
-        ...fileData,
-        aiExtract: extractData.content,
-        aiExtractStatus: extractData.status,
-        aiExtractedAt: extractData.extractedAt
+        id: fileData.id,
+        originalName: fileData.originalFileName || fileData.originalName || 'Unknown File'
       });
 
     } catch (error) {
@@ -80,16 +86,16 @@ export default function ExtractPage() {
     );
   }
 
-  if (error || !file) {
+  if (error || !file || !extract) {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Error</h1>
           <p className="text-muted-foreground mb-4">{error || 'Extract not found'}</p>
-          <Link href="/">
+          <Link href="/ai/extracts">
             <Button variant="outline">
               <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
+              Back to Extracts
             </Button>
           </Link>
         </div>
@@ -101,10 +107,10 @@ export default function ExtractPage() {
     <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/">
+        <Link href="/ai/extracts">
           <Button variant="outline" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Back
+            Back to Extracts
           </Button>
         </Link>
         <div>
@@ -125,25 +131,17 @@ export default function ExtractPage() {
               AI-Generated Summary
             </CardTitle>
             <CardDescription>
-              {file.aiExtractStatus === 'completed' && file.aiExtractedAt && (
-                <>Generated on {formatDate(file.aiExtractedAt)}</>
-              )}
-              {file.aiExtractStatus === 'processing' && (
-                <>Currently processing...</>
-              )}
-              {file.aiExtractStatus === 'failed' && (
-                <>Extraction failed - please try again</>
-              )}
+              Generated on {formatDate(extract.createdAt)} using {extract.model}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {file.aiExtract ? (
+            {extract.status === 'completed' && extract.content ? (
               <div className="prose max-w-none">
                 <div className="whitespace-pre-wrap text-sm leading-relaxed">
-                  {file.aiExtract}
+                  {extract.content}
                 </div>
               </div>
-            ) : file.aiExtractStatus === 'processing' ? (
+            ) : extract.status === 'processing' ? (
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="h-6 w-6 animate-spin mr-2" />
                 <span>Processing AI extraction...</span>
@@ -151,9 +149,9 @@ export default function ExtractPage() {
             ) : (
               <div className="text-center py-8">
                 <p className="text-muted-foreground mb-4">
-                  No AI extract available for this file.
+                  Extract failed or has no content.
                 </p>
-                <Link href={`/transcript/${file.id}`}>
+                <Link href={`/transcript/${extract.fileId}`}>
                   <Button variant="outline">
                     View Transcript Instead
                   </Button>
@@ -163,9 +161,24 @@ export default function ExtractPage() {
           </CardContent>
         </Card>
 
+        {/* Prompt Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5" />
+              AI Prompt Used
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-sm bg-muted/50 rounded-lg p-3">
+              {extract.prompt}
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Actions */}
         <div className="flex gap-4">
-          <Link href={`/transcript/${file.id}`}>
+          <Link href={`/transcript/${extract.fileId}`}>
             <Button variant="outline">
               <FileText className="h-4 w-4 mr-2" />
               View Full Transcript
@@ -174,8 +187,8 @@ export default function ExtractPage() {
           <Button 
             variant="outline"
             onClick={() => {
-              if (file.aiExtract) {
-                navigator.clipboard.writeText(file.aiExtract);
+              if (extract.content) {
+                navigator.clipboard.writeText(extract.content);
                 // You could add a toast here
               }
             }}

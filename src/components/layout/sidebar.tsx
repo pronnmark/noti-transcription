@@ -79,11 +79,11 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
+    <div className="flex h-full w-64 flex-col border-r bg-white">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b">
-        <FileAudio className="h-8 w-8 text-primary mr-3" />
-        <span className="text-xl font-bold">Noti</span>
+      <div className="flex h-16 items-center px-6 border-b bg-gray-50">
+        <FileAudio className="h-8 w-8 text-blue-600 mr-3" />
+        <span className="text-xl font-bold text-gray-900">Noti</span>
       </div>
 
       {/* Navigation */}
@@ -101,8 +101,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                   className={cn(
                     'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                     hasActiveChild
-                      ? 'bg-accent text-accent-foreground'
-                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      ? 'bg-blue-50 text-blue-700'
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   )}
                 >
                   <item.icon className="h-5 w-5" />
@@ -126,8 +126,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                           className={cn(
                             'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                             childIsActive
-                              ? 'bg-primary text-primary-foreground'
-                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                              ? 'bg-blue-600 text-white'
+                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                           )}
                         >
                           <child.icon className="h-4 w-4" />
@@ -149,8 +149,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
               className={cn(
                 'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 itemIsActive
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
               )}
             >
               <item.icon className="h-5 w-5" />
@@ -161,7 +161,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       </nav>
 
       {/* Version */}
-      <div className="p-4 text-xs text-muted-foreground">
+      <div className="p-4 text-xs text-gray-500">
         Version 1.0.0
       </div>
     </div>

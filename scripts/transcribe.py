@@ -9,7 +9,7 @@ import torch
 import os
 from pyannote.audio import Pipeline
 
-def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="float32", enable_diarization=True, language=None):
+def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="float32", enable_diarization=True, language=None, num_speakers=None):
     """Transcribe audio file using WhisperX with optional speaker diarization"""
     
     # Load model
@@ -43,7 +43,12 @@ def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="
             ).to(torch.device(device))
             
             # Run diarization - pass the audio file path, not the loaded audio
-            diarize_segments = diarize_model(audio_file)
+            if num_speakers and num_speakers > 1:
+                print(f">>Using specified number of speakers: {num_speakers}")
+                diarize_segments = diarize_model(audio_file, num_speakers=num_speakers)
+            else:
+                print(">>Auto-detecting number of speakers...")
+                diarize_segments = diarize_model(audio_file)
             
             # Assign speakers to segments based on timestamps
             # Note: Using segment-level assignment for all cases due to compatibility issues
@@ -89,11 +94,26 @@ def main():
     parser.add_argument('--language', default=None, help='Language code (e.g., sv for Swedish, en for English)')
     parser.add_argument('--enable-diarization', action='store_true', default=True, help='Enable speaker diarization')
     parser.add_argument('--disable-diarization', action='store_true', help='Disable speaker diarization')
+    parser.add_argument('--num-speakers', type=int, default=None, help='Number of speakers (optional, auto-detect if not specified)')
     
     args = parser.parse_args()
     
+    # Debug environment variables
+    print(f"Environment check:")
+    print(f"  HUGGINGFACE_TOKEN: {'SET' if os.getenv('HUGGINGFACE_TOKEN') else 'NOT SET'}")
+    print(f"  LD_LIBRARY_PATH: {os.getenv('LD_LIBRARY_PATH', 'NOT SET')}")
+    print(f"  CUDA_VISIBLE_DEVICES: {os.getenv('CUDA_VISIBLE_DEVICES', 'NOT SET')}")
+    
     # Check if CUDA is available
     device = args.device
+    print(f"PyTorch version: {torch.__version__}")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"CUDA version: {torch.version.cuda}")
+        print(f"GPU count: {torch.cuda.device_count()}")
+        if torch.cuda.device_count() > 0:
+            print(f"GPU name: {torch.cuda.get_device_name(0)}")
+    
     if device == "cuda" and not torch.cuda.is_available():
         print("CUDA not available, falling back to CPU")
         device = "cpu"
@@ -109,7 +129,9 @@ def main():
         print(f"Model: {args.model_size}")
         print(f"Language: {args.language or 'auto-detect'}")
         print(f"Speaker diarization: {'enabled' if enable_diarization else 'disabled'}")
-        result = transcribe_audio(args.audio_file, args.model_size, device, compute_type, enable_diarization, args.language)
+        if args.num_speakers:
+            print(f"Number of speakers: {args.num_speakers}")
+        result = transcribe_audio(args.audio_file, args.model_size, device, compute_type, enable_diarization, args.language, args.num_speakers)
         
         # Save result
         with open(args.output_file, 'w') as f:

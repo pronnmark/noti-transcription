@@ -31,6 +31,13 @@ interface Settings {
     obsidianVaultPath: string;
     obsidianFolder: string;
   };
+  notes: {
+    tasksPrompt: string;
+    questionsPrompt: string;
+    decisionsPrompt: string;
+    followupsPrompt: string;
+    mentionsPrompt: string;
+  };
 }
 
 async function loadFileSettings(): Promise<Settings> {
@@ -50,19 +57,27 @@ async function loadFileSettings(): Promise<Settings> {
         computeType: 'float32',
         batchSize: 16,
         threads: 4,
+        speakerCount: undefined,
       },
       ai: {
         geminiApiKey: '',
         openaiApiKey: '',
         openrouterApiKey: '',
         aiExtractEnabled: false,
-        aiExtractModel: 'anthropic/claude-4',
+        aiExtractModel: 'anthropic/claude-sonnet-4',
         aiExtractPrompt: 'Summarize the key points from this transcript.',
       },
       storage: {
         obsidianEnabled: false,
         obsidianVaultPath: '',
         obsidianFolder: '',
+      },
+      notes: {
+        tasksPrompt: '',
+        questionsPrompt: '',
+        decisionsPrompt: '',
+        followupsPrompt: '',
+        mentionsPrompt: '',
       },
     };
   }
@@ -96,13 +111,20 @@ export async function GET(request: NextRequest) {
             openaiApiKey: dbSettings.openaiApiKey || '',
             openrouterApiKey: dbSettings.openrouterApiKey || '',
             aiExtractEnabled: dbSettings.aiExtractEnabled || false,
-            aiExtractModel: dbSettings.aiExtractModel || 'anthropic/claude-4',
+            aiExtractModel: dbSettings.aiExtractModel || 'anthropic/claude-sonnet-4',
             aiExtractPrompt: dbSettings.aiExtractPrompt || 'Summarize the key points from this transcript.',
           },
           storage: {
             obsidianEnabled: dbSettings.obsidianEnabled || false,
             obsidianVaultPath: dbSettings.obsidianVaultPath || '',
             obsidianFolder: dbSettings.obsidianFolder || '',
+          },
+          notes: {
+            tasksPrompt: dbSettings.notesPrompts?.tasks || '',
+            questionsPrompt: dbSettings.notesPrompts?.questions || '',
+            decisionsPrompt: dbSettings.notesPrompts?.decisions || '',
+            followupsPrompt: dbSettings.notesPrompts?.followups || '',
+            mentionsPrompt: dbSettings.notesPrompts?.mentions || '',
           },
         };
         return NextResponse.json(settings);
@@ -139,6 +161,13 @@ export async function POST(request: NextRequest) {
         obsidianEnabled: settings.storage.obsidianEnabled,
         obsidianVaultPath: settings.storage.obsidianVaultPath,
         obsidianFolder: settings.storage.obsidianFolder,
+        notesPrompts: {
+          tasks: settings.notes.tasksPrompt,
+          questions: settings.notes.questionsPrompt,
+          decisions: settings.notes.decisionsPrompt,
+          followups: settings.notes.followupsPrompt,
+          mentions: settings.notes.mentionsPrompt,
+        },
       });
     } catch (dbError) {
       console.log('Database not available, saving to file');

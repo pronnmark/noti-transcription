@@ -20,6 +20,7 @@ interface TranscriptionSettings {
   computeType: string;
   batchSize: number;
   threads: number;
+  speakerCount?: number;
 }
 
 interface AISettings {
@@ -35,6 +36,14 @@ interface StorageSettings {
   obsidianEnabled: boolean;
   obsidianVaultPath: string;
   obsidianFolder: string;
+}
+
+interface NotesSettings {
+  tasksPrompt: string;
+  questionsPrompt: string;
+  decisionsPrompt: string;
+  followupsPrompt: string;
+  mentionsPrompt: string;
 }
 
 const MODEL_SIZES = [
@@ -61,16 +70,6 @@ const LANGUAGES = [
   { value: 'zh', label: 'Chinese' },
 ];
 
-const AI_MODELS = [
-  { value: 'anthropic/claude-4', label: 'Claude 4.0 Sonnet (OpenRouter)', recommended: true },
-  { value: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (OpenRouter)' },
-  { value: 'anthropic/claude-3-haiku', label: 'Claude 3 Haiku (OpenRouter)' },
-  { value: 'openai/gpt-4o', label: 'GPT-4o (OpenRouter)' },
-  { value: 'google/gemini-pro-1.5', label: 'Gemini Pro 1.5 (OpenRouter)' },
-  { value: 'gemini-1.5-flash', label: 'Gemini 1.5 Flash (Direct)' },
-  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo (Direct)' },
-];
-
 export default function SettingsPage() {
   const [transcriptionSettings, setTranscriptionSettings] = useState<TranscriptionSettings>({
     modelSize: 'large-v3',
@@ -81,6 +80,7 @@ export default function SettingsPage() {
     computeType: 'float32',
     batchSize: 16,
     threads: 4,
+    speakerCount: undefined,
   });
 
   const [aiSettings, setAISettings] = useState<AISettings>({
@@ -88,7 +88,7 @@ export default function SettingsPage() {
     openaiApiKey: '',
     openrouterApiKey: '',
     aiExtractEnabled: false,
-    aiExtractModel: 'anthropic/claude-4',
+    aiExtractModel: 'anthropic/claude-sonnet-4',
     aiExtractPrompt: 'Summarize the key points from this transcript.',
   });
 
@@ -96,6 +96,14 @@ export default function SettingsPage() {
     obsidianEnabled: false,
     obsidianVaultPath: '',
     obsidianFolder: '',
+  });
+
+  const [notesSettings, setNotesSettings] = useState<NotesSettings>({
+    tasksPrompt: '',
+    questionsPrompt: '',
+    decisionsPrompt: '',
+    followupsPrompt: '',
+    mentionsPrompt: '',
   });
 
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({
@@ -126,6 +134,9 @@ export default function SettingsPage() {
         if (data.storage) {
           setStorageSettings(prev => ({ ...prev, ...data.storage }));
         }
+        if (data.notes) {
+          setNotesSettings(prev => ({ ...prev, ...data.notes }));
+        }
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -145,6 +156,7 @@ export default function SettingsPage() {
           transcription: transcriptionSettings,
           ai: aiSettings,
           storage: storageSettings,
+          notes: notesSettings,
         }),
       });
 
@@ -177,6 +189,7 @@ export default function SettingsPage() {
           <TabsList>
             <TabsTrigger value="transcription">Transcription</TabsTrigger>
             <TabsTrigger value="ai">AI Processing</TabsTrigger>
+            <TabsTrigger value="notes">Notes Extraction</TabsTrigger>
             <TabsTrigger value="storage">Storage</TabsTrigger>
           </TabsList>
 
@@ -288,6 +301,27 @@ export default function SettingsPage() {
                   />
                 </div>
 
+                {transcriptionSettings.enableSpeakerDiarization && (
+                  <div className="space-y-2">
+                    <Label htmlFor="speakerCount">Number of Speakers (optional)</Label>
+                    <Input
+                      id="speakerCount"
+                      type="number"
+                      min="2"
+                      max="20"
+                      value={transcriptionSettings.speakerCount || ''}
+                      onChange={(e) => setTranscriptionSettings(prev => ({ 
+                        ...prev, 
+                        speakerCount: e.target.value ? parseInt(e.target.value) : undefined 
+                      }))}
+                      placeholder="Auto-detect"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      Specify the exact number of speakers if known. Leave empty to auto-detect.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-2">
                   <Label htmlFor="huggingfaceToken">HuggingFace Token</Label>
                   <div className="flex gap-2">
@@ -336,22 +370,17 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="aiModel">AI Model</Label>
-                  <Select
+                  <Label htmlFor="aiModel">AI Model (OpenRouter)</Label>
+                  <Input
+                    id="aiModel"
+                    type="text"
                     value={aiSettings.aiExtractModel}
-                    onValueChange={(value) => setAISettings(prev => ({ ...prev, aiExtractModel: value }))}
-                  >
-                    <SelectTrigger id="aiModel">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AI_MODELS.map(model => (
-                        <SelectItem key={model.value} value={model.value}>
-                          {model.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(e) => setAISettings(prev => ({ ...prev, aiExtractModel: e.target.value }))}
+                    placeholder="e.g. anthropic/claude-sonnet-4"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Enter any valid OpenRouter model ID. Check OpenRouter docs for available models.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
@@ -479,6 +508,74 @@ export default function SettingsPage() {
                     </div>
                   </>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="notes" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Notes Extraction Prompts</CardTitle>
+                <CardDescription>
+                  Customize the AI prompts used to extract different types of notes from transcripts.
+                  Leave empty to use default prompts.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="tasksPrompt">Tasks Prompt</Label>
+                  <textarea
+                    id="tasksPrompt"
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
+                    value={notesSettings.tasksPrompt}
+                    onChange={(e) => setNotesSettings(prev => ({ ...prev, tasksPrompt: e.target.value }))}
+                    placeholder="Leave empty to use default prompt for extracting tasks and action items..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="questionsPrompt">Questions Prompt</Label>
+                  <textarea
+                    id="questionsPrompt"
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
+                    value={notesSettings.questionsPrompt}
+                    onChange={(e) => setNotesSettings(prev => ({ ...prev, questionsPrompt: e.target.value }))}
+                    placeholder="Leave empty to use default prompt for extracting unanswered questions..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="decisionsPrompt">Decisions Prompt</Label>
+                  <textarea
+                    id="decisionsPrompt"
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
+                    value={notesSettings.decisionsPrompt}
+                    onChange={(e) => setNotesSettings(prev => ({ ...prev, decisionsPrompt: e.target.value }))}
+                    placeholder="Leave empty to use default prompt for extracting decisions made..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="followupsPrompt">Follow-ups Prompt</Label>
+                  <textarea
+                    id="followupsPrompt"
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
+                    value={notesSettings.followupsPrompt}
+                    onChange={(e) => setNotesSettings(prev => ({ ...prev, followupsPrompt: e.target.value }))}
+                    placeholder="Leave empty to use default prompt for extracting follow-up items..."
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="mentionsPrompt">Mentions Prompt</Label>
+                  <textarea
+                    id="mentionsPrompt"
+                    className="w-full min-h-[100px] p-3 border rounded-md resize-vertical"
+                    value={notesSettings.mentionsPrompt}
+                    onChange={(e) => setNotesSettings(prev => ({ ...prev, mentionsPrompt: e.target.value }))}
+                    placeholder="Leave empty to use default prompt for extracting important mentions..."
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

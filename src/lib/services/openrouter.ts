@@ -1,9 +1,11 @@
 import { aiExtractsService, settingsService } from '@/lib/db/sqliteServices';
+import { promises as fs } from 'fs';
+import { join } from 'path';
 
-// OpenRouter configuration for Claude 4.0 Sonnet
+// OpenRouter configuration for Claude
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 const OPENROUTER_BASE_URL = 'https://openrouter.ai/api/v1';
-const CLAUDE_4_MODEL = 'anthropic/claude-4';
+const CLAUDE_4_MODEL = 'anthropic/claude-sonnet-4'; // Default model
 
 interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -43,8 +45,23 @@ export class OpenRouterService {
 
   private async getApiKey(): Promise<string> {
     try {
-      const settings = await settingsService.get();
-      const apiKey = settings?.openrouterApiKey || OPENROUTER_API_KEY;
+      // Try to read from file-based settings first
+      let apiKey: string | undefined;
+      
+      try {
+        const settingsPath = join(process.cwd(), 'data', 'settings', 'settings.json');
+        const settingsData = await fs.readFile(settingsPath, 'utf-8');
+        const fileSettings = JSON.parse(settingsData);
+        apiKey = fileSettings?.ai?.openrouterApiKey;
+      } catch (fileError) {
+        // File doesn't exist or invalid, try database
+        console.log('Could not read file settings, trying database...');
+        const settings = await settingsService.get();
+        apiKey = settings?.openrouterApiKey;
+      }
+      
+      // Fall back to environment variable
+      apiKey = apiKey || OPENROUTER_API_KEY;
       
       if (!apiKey) {
         throw new Error('OpenRouter API key is required. Please configure it in Settings.');
@@ -85,6 +102,8 @@ export class OpenRouterService {
       console.log(`🤖 Making OpenRouter request to ${model}...`);
       console.log(`Messages: ${messages.length}, Max tokens: ${maxTokens}`);
 
+      console.log(`🔑 Using API key: ${apiKey.substring(0, 10)}...${apiKey.substring(apiKey.length - 4)}`);
+      
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
@@ -98,7 +117,30 @@ export class OpenRouterService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`OpenRouter API error (${response.status}): ${errorText}`);
+        console.error(`OpenRouter API error response: ${errorText}`);
+        let errorMessage = `OpenRouter API error (${response.status}): ${errorText}`;
+        
+        // Parse common error patterns
+        try {
+          const errorJson = JSON.parse(errorText);
+          if (errorJson.error?.message) {
+            errorMessage = errorJson.error.message;
+            
+            // Add helpful context for specific errors
+            if (response.status === 403 && errorMessage.includes('Key limit exceeded')) {
+              errorMessage = '⚠️ OpenRouter API key limit exceeded!\n\n' +
+                '1. Get a new API key from: https://openrouter.ai/settings/keys\n' +
+                '2. Update it in Settings > API Keys > OpenRouter API Key\n\n' +
+                'Current key: ' + apiKey.substring(0, 15) + '...';
+            } else if (response.status === 401) {
+              errorMessage = '🔑 Invalid OpenRouter API key. Please check your key in Settings > API Keys.';
+            }
+          }
+        } catch {
+          // Keep original error text
+        }
+        
+        throw new Error(errorMessage);
       }
 
       const data: OpenRouterResponse = await response.json();
@@ -141,9 +183,20 @@ export class OpenRouterService {
       }
     ];
 
+    // Calculate appropriate max tokens based on transcript length
+    // Roughly 1 token per 4 characters, and we want output to be ~20-30% of input
+    const transcriptTokens = Math.ceil(transcript.length / 4);
+    const maxOutputTokens = Math.min(
+      Math.max(1000, Math.ceil(transcriptTokens * 0.25)), // 25% of input tokens
+      8000 // Cap at 8k tokens for very long transcripts
+    );
+    
+    console.log(`📊 Transcript analysis: ${transcript.length} chars ≈ ${transcriptTokens} tokens`);
+    console.log(`📊 Setting max output tokens to: ${maxOutputTokens}`);
+    
     return this.chat(messages, { 
       model,
-      maxTokens: 2000,
+      maxTokens: maxOutputTokens,
       temperature: 0.3  // Lower temperature for more consistent extraction
     });
   }
@@ -186,33 +239,56 @@ export async function createAIExtract(
   }
 }
 
-// Helper to get available models
+// Helper to get available models with context windows
 export function getAvailableModels() {
   return [
     {
-      id: 'anthropic/claude-4',
+      id: 'anthropic/claude-4.0-sonnet',
       name: 'Claude 4.0 Sonnet',
-      description: 'Most capable Claude model for complex analysis'
+      description: 'Best balance of capability and speed (200k context)',
+      contextWindow: 200000
     },
     {
-      id: 'anthropic/claude-3.5-sonnet',
-      name: 'Claude 3.5 Sonnet',
-      description: 'Fast and capable for most tasks'
+      id: 'anthropic/claude-3-opus',
+      name: 'Claude 3 Opus',
+      description: 'Most powerful for complex analysis (200k context)',
+      contextWindow: 200000
     },
     {
       id: 'anthropic/claude-3-haiku',
       name: 'Claude 3 Haiku',
-      description: 'Fastest and most economical'
+      description: 'Fast and economical (200k context)',
+      contextWindow: 200000
+    },
+    {
+      id: 'openai/gpt-4-turbo',
+      name: 'GPT-4 Turbo',
+      description: 'OpenAI\'s flagship model (128k context)',
+      contextWindow: 128000
     },
     {
       id: 'openai/gpt-4o',
       name: 'GPT-4o',
-      description: 'OpenAI\'s multimodal flagship model'
+      description: 'Multimodal GPT-4 (128k context)',
+      contextWindow: 128000
     },
     {
       id: 'google/gemini-pro-1.5',
-      name: 'Gemini Pro 1.5',
-      description: 'Google\'s advanced language model'
+      name: 'Gemini 1.5 Pro',
+      description: 'Google\'s model with huge context (2M tokens)',
+      contextWindow: 2000000
+    },
+    {
+      id: 'meta-llama/llama-3.1-70b-instruct',
+      name: 'Llama 3.1 70B',
+      description: 'Open source powerhouse (128k context)',
+      contextWindow: 128000
+    },
+    {
+      id: 'deepseek/deepseek-chat',
+      name: 'DeepSeek Chat',
+      description: 'Cost-effective for long documents (128k context)',
+      contextWindow: 128000
     }
   ];
 }

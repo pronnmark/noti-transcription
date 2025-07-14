@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { FileAudio, Loader2, FileText, Sparkles, ListTodo, Mic, Clock, Upload, TrendingUp, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { ClientOnly } from '@/components/client-only';
 
 interface AudioFile {
   id: string;
@@ -41,9 +42,9 @@ export default function HomePage() {
       if (response.ok) {
         const data = await response.json();
         setFiles(data.files);
-        // Get 5 most recent files
+        // Get 5 most recent files - sort by string comparison to avoid Date issues
         const sorted = [...data.files].sort((a, b) => 
-          new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+          b.updatedAt.localeCompare(a.updatedAt)
         );
         setRecentFiles(sorted.slice(0, 5));
       }
@@ -113,47 +114,47 @@ export default function HomePage() {
 
       {/* Content */}
       <div className="flex-1 p-4 sm:p-6 overflow-auto">
-        <div className="space-y-6">
+        <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <Button 
-              className="h-auto p-6 flex flex-col items-center gap-2"
+              className="h-auto p-4 sm:p-6 flex flex-col items-center gap-2"
               variant="outline"
               onClick={() => window.location.href = '/files'}
             >
-              <Upload className="h-8 w-8" />
-              <span className="text-lg font-medium">Upload Audio</span>
-              <span className="text-sm text-muted-foreground">Add new files</span>
+              <Upload className="h-6 sm:h-8 w-6 sm:w-8" />
+              <span className="text-base sm:text-lg font-medium">Upload</span>
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Add new files</span>
             </Button>
             
             <Button 
-              className="h-auto p-6 flex flex-col items-center gap-2"
+              className="h-auto p-4 sm:p-6 flex flex-col items-center gap-2"
               variant="outline"
               onClick={() => window.location.href = '/record'}
             >
-              <Mic className="h-8 w-8" />
-              <span className="text-lg font-medium">Record Audio</span>
-              <span className="text-sm text-muted-foreground">Start recording</span>
+              <Mic className="h-6 sm:h-8 w-6 sm:w-8" />
+              <span className="text-base sm:text-lg font-medium">Record</span>
+              <span className="text-xs sm:text-sm text-muted-foreground hidden sm:block">Start recording</span>
             </Button>
             
             <Button 
-              className="h-auto p-6 flex flex-col items-center gap-2"
+              className="h-auto p-4 sm:p-6 flex flex-col items-center gap-2"
               variant="outline"
               onClick={() => window.location.href = '/transcripts'}
             >
-              <FileText className="h-8 w-8" />
-              <span className="text-lg font-medium">View Transcripts</span>
-              <span className="text-sm text-muted-foreground">{transcribedFiles} available</span>
+              <FileText className="h-6 sm:h-8 w-6 sm:w-8" />
+              <span className="text-base sm:text-lg font-medium">Transcripts</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{transcribedFiles} available</span>
             </Button>
             
             <Button 
-              className="h-auto p-6 flex flex-col items-center gap-2"
+              className="h-auto p-4 sm:p-6 flex flex-col items-center gap-2"
               variant="outline"
               onClick={() => window.location.href = '/ai/notes'}
             >
-              <ListTodo className="h-8 w-8" />
-              <span className="text-lg font-medium">AI Notes</span>
-              <span className="text-sm text-muted-foreground">{totalNotes} extracted</span>
+              <ListTodo className="h-6 sm:h-8 w-6 sm:w-8" />
+              <span className="text-base sm:text-lg font-medium">AI Notes</span>
+              <span className="text-xs sm:text-sm text-muted-foreground">{totalNotes} notes</span>
             </Button>
           </div>
 
@@ -254,13 +255,15 @@ export default function HomePage() {
                         }
                       }}
                     >
-                      <div className="flex items-center gap-3">
-                        <FileAudio className="h-5 w-5 text-muted-foreground" />
-                        <div>
-                          <p className="font-medium truncate max-w-[300px]">{file.originalName}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {formatDate(file.updatedAt)} • {file.duration ? formatDuration(file.duration) : 'Processing...'}
-                          </p>
+                      <div className="flex items-center gap-3 min-w-0">
+                        <FileAudio className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{file.originalName}</p>
+                          <ClientOnly fallback={<p className="text-sm text-muted-foreground">Loading...</p>}>
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(file.updatedAt)} • {file.duration ? formatDuration(file.duration) : 'Processing...'}
+                            </p>
+                          </ClientOnly>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">

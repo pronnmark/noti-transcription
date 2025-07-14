@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { audioFilesService } from '@/lib/db/sqliteServices';
 import { fileService } from '@/lib/services/fileService';
 import { parseAudioFile } from '@/lib/db/sqliteServices';
+import { getExtractsForFile } from '@/lib/extractsDb';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
     }
     
     // Transform database records to match the frontend interface
-    const transformedFiles = files.map(file => {
+    const transformedFiles = await Promise.all(files.map(async file => {
       // Handle date conversion safely with proper validation
       let createdAt = new Date().toISOString();
       let updatedAt = new Date().toISOString();
@@ -58,8 +59,13 @@ export async function GET(request: NextRequest) {
       createdAt = safeISOString(file.uploadedAt);
       updatedAt = safeISOString(file.updatedAt);
       
+      // Count extracts from the new system
+      const fileId = file.id?.toString() || '0';
+      const extracts = await getExtractsForFile(fileId);
+      const extractCount = extracts.length;
+      
       return {
-        id: file.id?.toString() || '0',
+        id: fileId,
         filename: file.fileName || '',
         originalName: file.originalFileName || '',
         size: file.fileSize || 0,
@@ -68,10 +74,11 @@ export async function GET(request: NextRequest) {
         updatedAt,
         transcriptionStatus: file.transcriptionStatus,
         hasTranscript: file.transcriptionStatus === 'completed',
-        hasAiExtract: !!file.aiExtract,
+        hasAiExtract: extractCount > 0,
+        extractCount,
         duration: file.duration || undefined,
       };
-    });
+    }));
     
     return NextResponse.json({
       files: transformedFiles,

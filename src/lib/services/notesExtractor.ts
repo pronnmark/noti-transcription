@@ -1,16 +1,22 @@
 import { openRouterService } from './openrouter';
 import { notesService } from '@/lib/db/notesService';
-import { audioFilesService } from '@/lib/db/sqliteServices';
+import { audioFilesService, settingsService } from '@/lib/db/sqliteServices';
 import type { TranscriptSegment } from '@/lib/db/sqliteSchema';
 
-// Extraction prompts for different note types
-const EXTRACTION_PROMPTS = {
-  tasks: `Analyze this transcript and extract all tasks, action items, and commitments.
-          For each task found, provide:
-          - The exact task description
+// Default extraction prompts for different note types
+const DEFAULT_EXTRACTION_PROMPTS = {
+  tasks: `Analyze this transcript and extract all tasks, action items, and commitments mentioned.
+          Look for:
+          - Explicit tasks ("I need to...", "We should...", "Can you...")
+          - Implied actions from decisions
+          - Deadlines and time-sensitive items
+          - Work assignments and responsibilities
+          
+          For each task, provide:
+          - Clear, actionable description
           - Who is responsible (if mentioned)
           - Any deadline or timeline mentioned
-          - Priority level (high/medium/low based on context)
+          - Priority level based on urgency and importance
           
           Format your response as a JSON array of objects with these fields:
           [{
@@ -21,11 +27,16 @@ const EXTRACTION_PROMPTS = {
             "metadata": { "deadline": "Friday", "assigned_to": "John" }
           }]`,
   
-  questions: `Find all questions that were asked but NOT answered in this conversation.
+  questions: `Find all questions that were asked but NOT fully answered in this conversation.
+              Look for:
+              - Direct questions that received no response
+              - Questions that got partial or unclear answers
+              - Questions that were deferred or postponed
+              
               For each unanswered question, provide:
-              - The exact question
+              - The exact question as asked
               - Who asked it
-              - Why it seems unanswered
+              - Brief explanation of why it seems unanswered
               
               Format as JSON array:
               [{
@@ -36,6 +47,12 @@ const EXTRACTION_PROMPTS = {
               }]`,
   
   decisions: `Identify all key decisions made during this conversation.
+              Look for:
+              - Explicit decisions ("We've decided to...", "Let's go with...")
+              - Consensus agreements
+              - Choices between options
+              - Policy or process changes
+              
               For each decision, provide:
               - What was decided
               - Who made or confirmed the decision
@@ -50,10 +67,16 @@ const EXTRACTION_PROMPTS = {
               }]`,
   
   followups: `Extract all items that need follow-up or future discussion.
+              Look for:
+              - Items marked for "next time"
+              - Unresolved issues
+              - Information that needs to be gathered
+              - People who need to be contacted
+              
               Include:
               - What needs follow-up
               - Why it needs follow-up
-              - Suggested timeline
+              - Suggested timeline if mentioned
               
               Format as JSON array:
               [{
@@ -63,11 +86,12 @@ const EXTRACTION_PROMPTS = {
                 "metadata": { "reason": "insufficient data", "timeline": "next week" }
               }]`,
   
-  mentions: `Extract important mentions including:
-            - People's names and their roles
+  mentions: `Extract important mentions and references including:
+            - People's names and their roles/titles
             - Specific dates, deadlines, or time references
             - Project names, company names, or important references
-            - Key metrics or numbers
+            - Key metrics, numbers, or financial figures
+            - Tools, software, or technical references
             
             Format as JSON array:
             [{
@@ -77,6 +101,23 @@ const EXTRACTION_PROMPTS = {
               "metadata": { "type": "company", "relationship": "client" }
             }]`
 };
+
+// Function to get extraction prompts (either from settings or defaults)
+async function getExtractionPrompts() {
+  try {
+    const settings = await settingsService.get();
+    return {
+      tasks: settings?.notesPrompts?.tasks || DEFAULT_EXTRACTION_PROMPTS.tasks,
+      questions: settings?.notesPrompts?.questions || DEFAULT_EXTRACTION_PROMPTS.questions,
+      decisions: settings?.notesPrompts?.decisions || DEFAULT_EXTRACTION_PROMPTS.decisions,
+      followups: settings?.notesPrompts?.followups || DEFAULT_EXTRACTION_PROMPTS.followups,
+      mentions: settings?.notesPrompts?.mentions || DEFAULT_EXTRACTION_PROMPTS.mentions,
+    };
+  } catch (error) {
+    console.log('Could not load custom prompts, using defaults');
+    return DEFAULT_EXTRACTION_PROMPTS;
+  }
+}
 
 interface ExtractedNote {
   content: string;
@@ -109,20 +150,45 @@ export async function extractNotesFromTranscript(
 
     console.log(`Transcript length: ${transcriptText.length} characters`);
 
+    // Get model from settings
+    let model = 'anthropic/claude-sonnet-4';
+    try {
+      const settings = await settingsService.get();
+      if (settings?.ai?.aiExtractModel) {
+        model = settings.ai.aiExtractModel;
+      }
+    } catch (error) {
+      console.log('Could not load settings, using default model');
+    }
+    console.log(`Using model: ${model}`);
+
+    // Get extraction prompts (from settings or defaults)
+    const extractionPrompts = await getExtractionPrompts();
+    
     // Extract notes for each type
     const allNotes: any[] = [];
-    const noteTypes: Array<keyof typeof EXTRACTION_PROMPTS> = ['tasks', 'questions', 'decisions', 'followups', 'mentions'];
+    const noteTypes: Array<keyof typeof extractionPrompts> = ['tasks', 'questions', 'decisions', 'followups', 'mentions'];
+    
+    // Map plural form (used in prompts) to singular form (used in database)
+    const noteTypeMapping: Record<string, string> = {
+      'tasks': 'task',
+      'questions': 'question', 
+      'decisions': 'decision',
+      'followups': 'followup',
+      'mentions': 'mention'
+    };
     
     for (const noteType of noteTypes) {
       console.log(`Extracting ${noteType}...`);
       
       try {
-        const prompt = EXTRACTION_PROMPTS[noteType];
+        const prompt = extractionPrompts[noteType];
         const response = await openRouterService.chat([
           {
             role: 'system',
             content: `You are an AI assistant that extracts structured information from transcripts.
-                     Always respond with valid JSON arrays as specified.
+                     CRITICAL: Respond with ONLY a valid JSON array. Do NOT include any explanatory text, markdown formatting, or other content.
+                     Start your response with [ and end with ].
                      Be precise and include context.
                      Preserve the original language (Swedish/English) in your extractions.`
           },
@@ -131,7 +197,7 @@ export async function extractNotesFromTranscript(
             content: `${prompt}\n\nTranscript:\n${transcriptText}`
           }
         ], {
-          model: 'anthropic/claude-4',
+          model,
           maxTokens: 2000,
           temperature: 0.3
         });
@@ -139,8 +205,17 @@ export async function extractNotesFromTranscript(
         // Parse the JSON response
         let extractedNotes: ExtractedNote[] = [];
         try {
-          // Clean the response - sometimes the model adds markdown formatting
-          const cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          // Clean the response - sometimes the model adds markdown formatting and explanatory text
+          let cleanedResponse = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+          
+          // Find the JSON array - look for the first [ and last ]
+          const firstBracket = cleanedResponse.indexOf('[');
+          const lastBracket = cleanedResponse.lastIndexOf(']');
+          
+          if (firstBracket !== -1 && lastBracket !== -1 && firstBracket < lastBracket) {
+            cleanedResponse = cleanedResponse.substring(firstBracket, lastBracket + 1);
+          }
+          
           extractedNotes = JSON.parse(cleanedResponse);
         } catch (parseError) {
           console.error(`Failed to parse ${noteType} response:`, parseError);
@@ -166,7 +241,7 @@ export async function extractNotesFromTranscript(
 
           allNotes.push({
             fileId,
-            noteType,
+            noteType: noteTypeMapping[noteType], // Use singular form for database
             content: note.content,
             context: note.context,
             speaker: note.speaker,
