@@ -1,6 +1,8 @@
-@import 'tailwindcss';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-@layer theme {
+@layer base {
   :root {
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
@@ -10,18 +12,18 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 222.2 47.4% 11.2%;
     --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
+    --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
+    --muted: 210 40% 96%;
     --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
+    --accent: 210 40% 96%;
     --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
     --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
   }
 
   .dark {
@@ -47,65 +49,84 @@
   }
 }
 
-@layer utilities {
-  /* Custom color utilities for shadcn/ui */
-  @property --color-background { syntax: '<color>'; inherits: true; initial-value: hsl(var(--background)); }
-  @property --color-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--foreground)); }
-  @property --color-card { syntax: '<color>'; inherits: true; initial-value: hsl(var(--card)); }
-  @property --color-card-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--card-foreground)); }
-  @property --color-popover { syntax: '<color>'; inherits: true; initial-value: hsl(var(--popover)); }
-  @property --color-popover-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--popover-foreground)); }
-  @property --color-primary { syntax: '<color>'; inherits: true; initial-value: hsl(var(--primary)); }
-  @property --color-primary-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--primary-foreground)); }
-  @property --color-secondary { syntax: '<color>'; inherits: true; initial-value: hsl(var(--secondary)); }
-  @property --color-secondary-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--secondary-foreground)); }
-  @property --color-muted { syntax: '<color>'; inherits: true; initial-value: hsl(var(--muted)); }
-  @property --color-muted-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--muted-foreground)); }
-  @property --color-accent { syntax: '<color>'; inherits: true; initial-value: hsl(var(--accent)); }
-  @property --color-accent-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--accent-foreground)); }
-  @property --color-destructive { syntax: '<color>'; inherits: true; initial-value: hsl(var(--destructive)); }
-  @property --color-destructive-foreground { syntax: '<color>'; inherits: true; initial-value: hsl(var(--destructive-foreground)); }
-  @property --color-border { syntax: '<color>'; inherits: true; initial-value: hsl(var(--border)); }
-  @property --color-input { syntax: '<color>'; inherits: true; initial-value: hsl(var(--input)); }
-  @property --color-ring { syntax: '<color>'; inherits: true; initial-value: hsl(var(--ring)); }
-
-  /* Base styles */
+@layer base {
   * {
-    border-color: var(--color-border);
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  
+  /* PWA mobile optimizations */
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
   
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
   }
+  
+  /* iOS PWA status bar handling */
+  @supports (padding: max(0px)) {
+    body {
+      padding-top: env(safe-area-inset-top);
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+  }
+}
 
-  /* shadcn/ui color utilities */
-  .bg-background { background-color: var(--color-background); }
-  .bg-foreground { background-color: var(--color-foreground); }
-  .bg-card { background-color: var(--color-card); }
-  .bg-popover { background-color: var(--color-popover); }
-  .bg-primary { background-color: var(--color-primary); }
-  .bg-secondary { background-color: var(--color-secondary); }
-  .bg-muted { background-color: var(--color-muted); }
-  .bg-accent { background-color: var(--color-accent); }
-  .bg-destructive { background-color: var(--color-destructive); }
+@layer utilities {
+  /* Safe area padding for mobile devices */
+  .pb-safe { padding-bottom: env(safe-area-inset-bottom, 0.5rem); }
+  .pt-safe { padding-top: env(safe-area-inset-top, 0.5rem); }
+  .pl-safe { padding-left: env(safe-area-inset-left, 0.5rem); }
+  .pr-safe { padding-right: env(safe-area-inset-right, 0.5rem); }
   
-  .text-foreground { color: var(--color-foreground); }
-  .text-card-foreground { color: var(--color-card-foreground); }
-  .text-popover-foreground { color: var(--color-popover-foreground); }
-  .text-primary-foreground { color: var(--color-primary-foreground); }
-  .text-secondary-foreground { color: var(--color-secondary-foreground); }
-  .text-muted-foreground { color: var(--color-muted-foreground); }
-  .text-accent-foreground { color: var(--color-accent-foreground); }
-  .text-destructive-foreground { color: var(--color-destructive-foreground); }
+  /* Safe area inset utilities for iOS PWA */
+  .safe-area-inset-top { padding-top: env(safe-area-inset-top, 0); }
+  .safe-area-inset-bottom { padding-bottom: env(safe-area-inset-bottom, 0); }
+  .safe-area-inset-left { padding-left: env(safe-area-inset-left, 0); }
+  .safe-area-inset-right { padding-right: env(safe-area-inset-right, 0); }
   
-  .border-border { border-color: var(--color-border); }
-  .border-input { border-color: var(--color-input); }
+  /* Touch target optimization for iOS */
+  .touch-target-44 {
+    min-height: 44px;
+    min-width: 44px;
+  }
   
-  .ring-ring { --tw-ring-color: var(--color-ring); }
-
-  /* Radius utilities */
-  .rounded-lg { border-radius: var(--radius); }
-  .rounded-md { border-radius: calc(var(--radius) - 2px); }
-  .rounded-sm { border-radius: calc(var(--radius) - 4px); }
+  /* PWA-specific mobile optimizations */
+  .pwa-scrollable {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Animation utilities */
+  .animate-slide-in-from-left {
+    animation: slideInFromLeft 0.3s ease-out;
+  }
+  
+  @keyframes slideInFromLeft {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
+  }
+  
+  /* Mobile-specific improvements */
+  @media (max-width: 768px) {
+    .scrollable-content {
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Prevent zoom on input focus */
+    input[type="text"], input[type="email"], input[type="password"], textarea {
+      font-size: 16px;
+    }
+  }
 }

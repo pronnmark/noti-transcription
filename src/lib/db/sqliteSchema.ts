@@ -37,6 +37,19 @@ export const systemSettings = sqliteTable('system_settings', {
     followups?: string;
     mentions?: string;
   }>(),
+  
+  // Psychological evaluation settings
+  psychEvalEnabled: integer('psych_eval_enabled', { mode: 'boolean' }).default(false),
+  psychEvalAutoRun: integer('psych_eval_auto_run', { mode: 'boolean' }).default(false),
+  
+  // Auto-extraction settings
+  extractionAutoRun: text('extraction_auto_run', { mode: 'json' }).$type<{
+    tasks?: boolean;
+    psychology?: boolean;
+    decisions?: boolean;
+    questions?: boolean;
+    followups?: boolean;
+  }>(),
 });
 
 // Audio files table
@@ -46,11 +59,12 @@ export const audioFiles = sqliteTable('audio_files', {
   originalFileName: text('original_file_name').notNull(),
   originalFileType: text('original_file_type').notNull(),
   fileSize: integer('file_size').notNull(),
+  fileHash: text('file_hash').unique(), // SHA-256 hash for duplicate detection
   duration: integer('duration'),
   
   // Transcription
   transcript: text('transcript', { mode: 'json' }).$type<TranscriptSegment[]>(),
-  transcriptionStatus: text('transcription_status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending').notNull(),
+  transcriptionStatus: text('transcription_status', { enum: ['pending', 'processing', 'completed', 'failed', 'draft'] }).default('pending').notNull(),
   transcriptionProgress: integer('transcription_progress').default(0),
   language: text('language'),
   modelSize: text('model_size').default('large-v3'),
@@ -73,6 +87,14 @@ export const audioFiles = sqliteTable('audio_files', {
   notesExtractedAt: text('notes_extracted_at'),
   notesStatus: text('notes_status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending'),
   notesCount: text('notes_count', { mode: 'json' }), // { tasks: 0, questions: 0, decisions: 0, followups: 0, mentions: 0 }
+  
+  // New flexible system fields
+  summarizationStatus: text('summarization_status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending'),
+  summarizationContent: text('summarization_content'),
+  extractionTemplatesUsed: text('extraction_templates_used', { mode: 'json' }).$type<string[]>(),
+  dataPointTemplatesUsed: text('data_point_templates_used', { mode: 'json' }).$type<string[]>(),
+  extractionStatus: text('extraction_status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending'),
+  dataPointStatus: text('data_point_status', { enum: ['pending', 'processing', 'completed', 'failed'] }).default('pending'),
   
   // Metadata
   title: text('title'),
@@ -121,6 +143,10 @@ export const aiNotes = sqliteTable('ai_notes', {
   priority: text('priority', { enum: ['high', 'medium', 'low'] }).default('medium'),
   status: text('status', { enum: ['active', 'completed', 'archived'] }).default('active'),
   metadata: text('metadata', { mode: 'json' }), // Additional structured data
+  // New fields for enhanced task management
+  comments: text('comments'), // User comments/notes
+  completedAt: text('completed_at'), // When marked as completed
+  assignedTo: text('assigned_to'), // For future user management
   createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -139,6 +165,156 @@ export const aiExtracts = sqliteTable('ai_extracts', {
   createdAtIdx: index('created_at_idx').on(table.createdAt),
 }));
 
+// Psychological evaluations table
+export const psychologicalEvaluations = sqliteTable('psychological_evaluations', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  fileId: integer('file_id').notNull().references(() => audioFiles.id, { onDelete: 'cascade' }),
+  mood: text('mood', { mode: 'json' }).$type<{
+    happy?: number;
+    sad?: number;
+    anxious?: number;
+    stressed?: number;
+    calm?: number;
+    excited?: number;
+    frustrated?: number;
+    confident?: number;
+  }>(),
+  energy: integer('energy'), // 1-10 scale
+  stressLevel: integer('stress_level'), // 1-10 scale
+  confidence: integer('confidence'), // 1-10 scale
+  engagement: integer('engagement'), // 1-10 scale
+  emotionalState: text('emotional_state', { mode: 'json' }).$type<{
+    dominant_emotion?: string;
+    secondary_emotions?: string[];
+    emotional_stability?: number;
+    emotional_intensity?: number;
+  }>(),
+  speechPatterns: text('speech_patterns', { mode: 'json' }).$type<{
+    pace?: string; // slow, normal, fast
+    tone?: string; // positive, negative, neutral
+    hesitation_count?: number;
+    interruption_count?: number;
+    vocal_tension?: number;
+  }>(),
+  keyInsights: text('key_insights').notNull(),
+  timestampAnalysis: text('timestamp_analysis', { mode: 'json' }).$type<{
+    timestamp: number;
+    mood_score: number;
+    energy_level: number;
+    key_emotion: string;
+  }[]>(),
+  model: text('model').notNull().default('anthropic/claude-sonnet-4'),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  fileIdIdx: index('psych_file_id_idx').on(table.fileId),
+  createdAtIdx: index('psych_created_at_idx').on(table.createdAt),
+}));
+
+// Psychological metrics aggregated view
+export const psychologicalMetrics = sqliteTable('psychological_metrics', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  userId: text('user_id').default('default'), // For future multi-user support
+  date: text('date').notNull(), // YYYY-MM-DD format
+  averageMood: real('average_mood'), // Average mood score for the day
+  averageEnergy: real('average_energy'), // Average energy level
+  averageStress: real('average_stress'), // Average stress level
+  sessionCount: integer('session_count').default(0),
+  dominantEmotion: text('dominant_emotion'),
+  insights: text('insights'),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  userDateIdx: index('user_date_idx').on(table.userId, table.date),
+  dateIdx: index('metrics_date_idx').on(table.date),
+}));
+
+// New flexible system tables
+
+// Extraction Templates - Configurable extraction criteria
+export const extractionTemplates = sqliteTable('extraction_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  prompt: text('prompt').notNull(),
+  expectedOutputFormat: text('expected_output_format'), // JSON schema definition
+  defaultPriority: text('default_priority', { enum: ['high', 'medium', 'low'] }).default('medium'),
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  activeIdx: index('extraction_templates_active_idx').on(table.isActive),
+  defaultIdx: index('extraction_templates_default_idx').on(table.isDefault),
+}));
+
+// Data Point Templates - Configurable analysis metrics
+export const dataPointTemplates = sqliteTable('data_point_templates', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  description: text('description'),
+  analysisPrompt: text('analysis_prompt').notNull(),
+  outputSchema: text('output_schema'), // JSON schema for expected metrics
+  visualizationType: text('visualization_type').default('chart'), // chart, gauge, text, etc.
+  isActive: integer('is_active', { mode: 'boolean' }).default(true),
+  isDefault: integer('is_default', { mode: 'boolean' }).default(false),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  activeIdx: index('data_point_templates_active_idx').on(table.isActive),
+  defaultIdx: index('data_point_templates_default_idx').on(table.isDefault),
+}));
+
+// Flexible Extractions (renamed from ai_notes)
+export const extractions = sqliteTable('extractions', {
+  id: text('id').primaryKey(),
+  fileId: integer('file_id').notNull().references(() => audioFiles.id, { onDelete: 'cascade' }),
+  templateId: text('template_id').notNull().references(() => extractionTemplates.id, { onDelete: 'cascade' }),
+  content: text('content').notNull(),
+  context: text('context'),
+  speaker: text('speaker'),
+  timestamp: real('timestamp'),
+  priority: text('priority', { enum: ['high', 'medium', 'low'] }).default('medium'),
+  status: text('status', { enum: ['active', 'completed', 'archived'] }).default('active'),
+  metadata: text('metadata'), // JSON metadata based on template schema
+  comments: text('comments'),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  fileIdIdx: index('extractions_file_id_idx').on(table.fileId),
+  templateIdIdx: index('extractions_template_id_idx').on(table.templateId),
+  statusIdx: index('extractions_status_idx').on(table.status),
+}));
+
+// Flexible Data Points (renamed from psychological_evaluations)
+export const dataPoints = sqliteTable('data_points', {
+  id: text('id').primaryKey(),
+  fileId: integer('file_id').notNull().references(() => audioFiles.id, { onDelete: 'cascade' }),
+  templateId: text('template_id').notNull().references(() => dataPointTemplates.id, { onDelete: 'cascade' }),
+  analysisResults: text('analysis_results').notNull(), // JSON results based on template schema
+  model: text('model').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  fileIdIdx: index('data_points_file_id_idx').on(table.fileId),
+  templateIdIdx: index('data_points_template_id_idx').on(table.templateId),
+}));
+
+// Summarizations (renamed from ai_extracts)
+export const summarizations = sqliteTable('summarizations', {
+  id: text('id').primaryKey(),
+  fileId: integer('file_id').notNull().references(() => audioFiles.id, { onDelete: 'cascade' }),
+  templateId: text('template_id').references(() => summarizationTemplates.id, { onDelete: 'set null' }),
+  model: text('model').notNull(),
+  prompt: text('prompt').notNull(),
+  content: text('content').notNull(),
+  createdAt: text('created_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text('updated_at').notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  fileIdIdx: index('summarizations_file_id_idx').on(table.fileId),
+  templateIdIdx: index('summarizations_template_id_idx').on(table.templateId),
+}));
+
 // Relations
 export const audioFilesRelations = relations(audioFiles, ({ one, many }) => ({
   speakerLabels: one(speakerLabels, {
@@ -147,6 +323,11 @@ export const audioFilesRelations = relations(audioFiles, ({ one, many }) => ({
   }),
   aiExtracts: many(aiExtracts),
   aiNotes: many(aiNotes),
+  psychologicalEvaluations: many(psychologicalEvaluations),
+  // New flexible system relations
+  extractions: many(extractions),
+  dataPoints: many(dataPoints),
+  summarizations: many(summarizations),
 }));
 
 export const speakerLabelsRelations = relations(speakerLabels, ({ one }) => ({
@@ -174,6 +355,55 @@ export const aiNotesRelations = relations(aiNotes, ({ one }) => ({
   }),
 }));
 
+export const psychologicalEvaluationsRelations = relations(psychologicalEvaluations, ({ one }) => ({
+  audioFile: one(audioFiles, {
+    fields: [psychologicalEvaluations.fileId],
+    references: [audioFiles.id],
+  }),
+}));
+
+// New flexible system relations
+export const extractionTemplatesRelations = relations(extractionTemplates, ({ many }) => ({
+  extractions: many(extractions),
+}));
+
+export const dataPointTemplatesRelations = relations(dataPointTemplates, ({ many }) => ({
+  dataPoints: many(dataPoints),
+}));
+
+export const extractionsRelations = relations(extractions, ({ one }) => ({
+  audioFile: one(audioFiles, {
+    fields: [extractions.fileId],
+    references: [audioFiles.id],
+  }),
+  template: one(extractionTemplates, {
+    fields: [extractions.templateId],
+    references: [extractionTemplates.id],
+  }),
+}));
+
+export const dataPointsRelations = relations(dataPoints, ({ one }) => ({
+  audioFile: one(audioFiles, {
+    fields: [dataPoints.fileId],
+    references: [audioFiles.id],
+  }),
+  template: one(dataPointTemplates, {
+    fields: [dataPoints.templateId],
+    references: [dataPointTemplates.id],
+  }),
+}));
+
+export const summarizationsRelations = relations(summarizations, ({ one }) => ({
+  audioFile: one(audioFiles, {
+    fields: [summarizations.fileId],
+    references: [audioFiles.id],
+  }),
+  template: one(summarizationTemplates, {
+    fields: [summarizations.templateId],
+    references: [summarizationTemplates.id],
+  }),
+}));
+
 // Types
 export type TranscriptSegment = {
   start: number;
@@ -195,6 +425,28 @@ export type AIExtract = typeof aiExtracts.$inferSelect;
 export type NewAIExtract = typeof aiExtracts.$inferInsert;
 export type AINote = typeof aiNotes.$inferSelect;
 export type NewAINote = typeof aiNotes.$inferInsert;
+
+export type PsychologicalEvaluation = typeof psychologicalEvaluations.$inferSelect;
+export type NewPsychologicalEvaluation = typeof psychologicalEvaluations.$inferInsert;
+
+// New flexible system types
+export type ExtractionTemplate = typeof extractionTemplates.$inferSelect;
+export type NewExtractionTemplate = typeof extractionTemplates.$inferInsert;
+
+export type DataPointTemplate = typeof dataPointTemplates.$inferSelect;
+export type NewDataPointTemplate = typeof dataPointTemplates.$inferInsert;
+
+export type Extraction = typeof extractions.$inferSelect;
+export type NewExtraction = typeof extractions.$inferInsert;
+
+export type DataPoint = typeof dataPoints.$inferSelect;
+export type NewDataPoint = typeof dataPoints.$inferInsert;
+
+export type Summarization = typeof summarizations.$inferSelect;
+export type NewSummarization = typeof summarizations.$inferInsert;
+
+export type PsychologicalMetric = typeof psychologicalMetrics.$inferSelect;
+export type NewPsychologicalMetric = typeof psychologicalMetrics.$inferInsert;
 
 export type SystemSettings = typeof systemSettings.$inferSelect;
 export type NewSystemSettings = typeof systemSettings.$inferInsert;

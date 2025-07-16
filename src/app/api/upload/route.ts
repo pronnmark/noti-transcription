@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { audioFilesService } from '@/lib/db/sqliteServices';
 import { fileService } from '@/lib/services/fileService';
+import { HashService } from '@/lib/services/hashService';
 import { startTranscription } from '@/lib/transcription';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -23,6 +24,9 @@ export async function POST(request: NextRequest) {
     
     const formData = await request.formData();
     const file = formData.get('audio') as File;
+    const speakerCountParam = formData.get('speakerCount') as string;
+    const isDraftParam = formData.get('isDraft') as string;
+    const allowDuplicatesParam = formData.get('allowDuplicates') as string;
     
     if (!file) {
       return NextResponse.json(
@@ -31,7 +35,20 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // More flexible file type validation
+    // Parse speaker count, default to undefined if not provided or invalid
+    const speakerCount = speakerCountParam ? parseInt(speakerCountParam) : undefined;
+    if (speakerCount && (speakerCount < 1 || speakerCount > 10)) {
+      return NextResponse.json(
+        { error: 'Speaker count must be between 1 and 10' },
+        { status: 400 }
+      );
+    }
+    
+    // Check if this is a draft recording (no transcription needed)
+    const isDraft = isDraftParam === 'true';
+    const allowDuplicates = allowDuplicatesParam === 'true';
+    
+    // More flexible file type validation - handle codec parameters
     const validTypes = [
       'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/mp4', 
       'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/x-m4a',
@@ -42,7 +59,11 @@ export async function POST(request: NextRequest) {
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const validExtensions = ['mp3', 'wav', 'm4a', 'mp4', 'webm', 'ogg', 'flac', 'aac'];
     
-    const isValidType = validTypes.includes(file.type) || 
+    // Extract base MIME type without codec parameters (e.g., "audio/webm;codecs=opus" -> "audio/webm")
+    const baseMimeType = file.type.split(';')[0].trim();
+    
+    const isValidType = validTypes.includes(baseMimeType) || 
+                       validTypes.includes(file.type) ||
                        (file.type === 'application/octet-stream' && validExtensions.includes(fileExtension || ''));
     
     if (!isValidType) {
@@ -52,17 +73,70 @@ export async function POST(request: NextRequest) {
       );
     }
     
+    // Read file buffer first for hash generation
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    // Generate file hash for duplicate detection
+    const fileHash = HashService.generateHash(buffer);
+    
+    // Check for duplicates unless explicitly allowed
+    if (!allowDuplicates) {
+      const duplicateCheck = await audioFilesService.checkForDuplicates({
+        fileHash,
+        originalFileName: file.name,
+        fileSize: file.size
+      });
+      
+      if (duplicateCheck.isDuplicate) {
+        return NextResponse.json({
+          error: 'Duplicate file detected',
+          duplicateType: duplicateCheck.duplicateType,
+          message: duplicateCheck.message,
+          existingFile: {
+            id: duplicateCheck.existingFile?.id,
+            originalFileName: duplicateCheck.existingFile?.originalFileName,
+            uploadedAt: duplicateCheck.existingFile?.uploadedAt,
+            transcriptionStatus: duplicateCheck.existingFile?.transcriptionStatus,
+            duration: duplicateCheck.existingFile?.duration
+          }
+        }, { status: 409 }); // 409 Conflict for duplicates
+      }
+    }
+    
     // Create unique filename
     const fileName = `${uuidv4()}.${fileExtension || 'mp3'}`;
     
     // Ensure upload directory exists
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     await fs.mkdir(uploadDir, { recursive: true });
+    console.log('Upload directory:', uploadDir);
     
     // Save file to disk
     const filePath = join(uploadDir, fileName);
-    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    console.log('Uploading file:', {
+      fileName,
+      originalName: file.name,
+      type: file.type,
+      size: file.size,
+      bufferSize: buffer.length,
+      fileHash,
+      filePath
+    });
+    
     await fs.writeFile(filePath, buffer);
+    console.log('File saved successfully:', filePath);
+    
+    // Extract duration using ffprobe
+    let duration = 0;
+    try {
+      const { stdout } = await execAsync(`ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`);
+      duration = Math.round(parseFloat(stdout.trim()) || 0);
+      console.log('Extracted duration:', duration, 'seconds');
+    } catch (error) {
+      console.warn('Failed to extract duration:', error);
+      // Duration will remain 0 if extraction fails
+    }
     
     // Create database record or file record
     let audioFile;
@@ -75,7 +149,9 @@ export async function POST(request: NextRequest) {
         originalFileName: file.name,
         originalFileType: file.type || 'audio/mpeg',
         fileSize: file.size,
-        transcriptionStatus: 'pending',
+        fileHash,
+        transcriptionStatus: (isDraft ? 'draft' : 'pending') as any,
+        duration,
       });
     } catch (dbError) {
       console.log('Database not available, using file storage');
@@ -86,6 +162,7 @@ export async function POST(request: NextRequest) {
         originalFileName: file.name,
         originalFileType: file.type || 'audio/mpeg',
         fileSize: file.size,
+        duration,
       });
     }
     
@@ -105,22 +182,48 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Start transcription in background (don't await)
+    // Start transcription in background (don't await) - unless it's a draft
+    if (!isDraft) {
+      const fileId = useDatabase ? audioFile.id : audioFile.id?.toString() || fileName;
+      startTranscription(fileId as any, wavPath, speakerCount).catch(error => {
+        console.error('Background transcription error:', error);
+      });
+    }
+    
     const fileId = useDatabase ? audioFile.id : audioFile.id?.toString() || fileName;
-    startTranscription(fileId as any, wavPath).catch(error => {
-      console.error('Background transcription error:', error);
-    });
     
     return NextResponse.json({
       success: true,
       fileId: fileId,
-      message: 'File uploaded successfully, transcription started'
+      message: isDraft 
+        ? 'Draft recording saved successfully' 
+        : 'File uploaded successfully, transcription started',
+      isDraft
     });
   } catch (error) {
     console.error('Upload error:', error);
+    
+    // More specific error handling
+    let errorMessage = 'Upload failed';
+    let statusCode = 500;
+    
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        errorMessage = 'Directory creation failed';
+      } else if (error.message.includes('EACCES')) {
+        errorMessage = 'Permission denied - cannot write to upload directory';
+      } else if (error.message.includes('ENOSPC')) {
+        errorMessage = 'Insufficient disk space';
+      } else if (error.message.includes('EMFILE')) {
+        errorMessage = 'Too many open files';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return NextResponse.json(
-      { error: 'Upload failed', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+      { error: errorMessage, details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: statusCode }
     );
   }
 }

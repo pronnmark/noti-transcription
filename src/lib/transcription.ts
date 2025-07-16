@@ -3,6 +3,7 @@ import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { audioFilesService, settingsService } from './db/sqliteServices';
 import { fileService } from './services/fileService';
+import { autoExtractionService } from './services/autoExtractionService';
 import type { TranscriptSegment } from './db/sqliteSchema';
 
 // Transcription settings - matching SvelteKit version
@@ -143,12 +144,16 @@ async function tryTranscription(
 
 export async function startTranscription(
   fileId: number | string,
-  audioPath: string
+  audioPath: string,
+  speakerCount?: number
 ): Promise<void> {
   try {
     console.log(`🚀 Starting transcription for file ${fileId} with ${MODEL_SIZE} model...`);
     console.log(`Audio path: ${audioPath}`);
     console.log(`Speaker diarization: ${ENABLE_DIARIZATION ? 'enabled' : 'disabled'}`);
+    if (speakerCount) {
+      console.log(`Expected speakers: ${speakerCount}`);
+    }
     
     // Validate audio file exists
     try {
@@ -166,20 +171,6 @@ export async function startTranscription(
 
     const outputPath = join(process.cwd(), 'data', 'transcripts', `${fileId}.json`);
     console.log(`Output path: ${outputPath}`);
-
-    // Get settings for speaker count
-    let speakerCount: number | undefined;
-    try {
-      const settings = await settingsService.get();
-      if (settings?.transcription) {
-        speakerCount = (settings.transcription as any).speakerCount;
-        if (speakerCount) {
-          console.log(`Speaker count specified: ${speakerCount}`);
-        }
-      }
-    } catch (error) {
-      console.log('Could not load settings, using defaults');
-    }
 
     // Try GPU first, then fallback to CPU
     let success = false;
@@ -225,6 +216,39 @@ export async function startTranscription(
       }
       
       console.log(`✅ File ${fileId} transcription process completed successfully`);
+      
+      // Automatically run configured extractions (tasks, psychology, etc.)
+      if (typeof fileId === 'number') {
+        try {
+          console.log(`🤖 Starting automatic extractions for file ${fileId}...`);
+          const extractionResult = await autoExtractionService.runAutoExtractions(fileId, result.segments);
+          
+          if (extractionResult.success) {
+            console.log(`✅ Automatic extractions completed for file ${fileId}:`);
+            console.log(`- Successful: ${extractionResult.successfulExtractions}/${extractionResult.results.length}`);
+            console.log(`- Failed: ${extractionResult.failedExtractions}/${extractionResult.results.length}`);
+            console.log(`- Total time: ${extractionResult.totalExecutionTime}ms`);
+            
+            // Log details for each extraction
+            extractionResult.results.forEach(result => {
+              const status = result.success ? '✅' : '❌';
+              const count = result.count ? ` (${result.count} items)` : '';
+              const time = result.executionTime ? ` in ${result.executionTime}ms` : '';
+              console.log(`  ${status} ${result.type}${count}${time}`);
+              if (result.error) {
+                console.log(`    Error: ${result.error}`);
+              }
+            });
+          } else {
+            console.log(`⚠️ Automatic extractions completed with errors for file ${fileId}`);
+          }
+        } catch (error) {
+          console.error(`❌ Automatic extractions error for file ${fileId}:`, error);
+          // Don't fail the transcription if extractions fail
+        }
+      } else {
+        console.log(`⚠️ Skipping automatic extractions for file-based storage (fileId: ${fileId})`);
+      }
     } else {
       throw new Error('Transcription failed on both GPU and CPU');
     }

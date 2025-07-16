@@ -1,6 +1,6 @@
 import { db } from './sqlite';
 import { audioFiles, speakerLabels, aiExtracts, summarizationTemplates, systemSettings } from './sqliteSchema';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and } from 'drizzle-orm';
 import type { TranscriptSegment } from './sqliteSchema';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -11,6 +11,8 @@ export const audioFilesService = {
     originalFileName: string;
     originalFileType: string;
     fileSize: number;
+    fileHash?: string;
+    duration?: number;
     transcriptionStatus?: 'pending' | 'processing' | 'completed' | 'failed';
   }) {
     try {
@@ -19,6 +21,8 @@ export const audioFilesService = {
         originalFileName: data.originalFileName,
         originalFileType: data.originalFileType,
         fileSize: data.fileSize,
+        fileHash: data.fileHash,
+        duration: data.duration,
         transcriptionStatus: data.transcriptionStatus || 'pending',
       }).returning();
       return result[0];
@@ -102,6 +106,82 @@ export const audioFilesService = {
     } catch (error) {
       console.error('Error deleting audio file:', error);
       return false;
+    }
+  },
+
+  // Duplicate detection methods
+  async findByHash(fileHash: string) {
+    try {
+      const [file] = await db.select().from(audioFiles).where(eq(audioFiles.fileHash, fileHash)).limit(1);
+      return file || null;
+    } catch (error) {
+      console.error('Error finding audio file by hash:', error);
+      return null;
+    }
+  },
+
+  async findByFilenameAndSize(originalFileName: string, fileSize: number) {
+    try {
+      const [file] = await db.select()
+        .from(audioFiles)
+        .where(and(
+          eq(audioFiles.originalFileName, originalFileName),
+          eq(audioFiles.fileSize, fileSize)
+        ))
+        .limit(1);
+      return file || null;
+    } catch (error) {
+      console.error('Error finding audio file by filename and size:', error);
+      return null;
+    }
+  },
+
+  async checkForDuplicates(data: {
+    fileHash: string;
+    originalFileName: string;
+    fileSize: number;
+  }) {
+    try {
+      // Check for exact hash match (most accurate)
+      const hashDuplicate = await this.findByHash(data.fileHash);
+      if (hashDuplicate) {
+        return {
+          isDuplicate: true,
+          duplicateType: 'hash' as const,
+          existingFile: hashDuplicate,
+          message: 'An identical file (same content) already exists.'
+        };
+      }
+
+      // Check for filename + size match (likely duplicate)
+      const filenameSizeDuplicate = await this.findByFilenameAndSize(
+        data.originalFileName,
+        data.fileSize
+      );
+      if (filenameSizeDuplicate) {
+        return {
+          isDuplicate: true,
+          duplicateType: 'filename_size' as const,
+          existingFile: filenameSizeDuplicate,
+          message: 'A file with the same name and size already exists.'
+        };
+      }
+
+      return {
+        isDuplicate: false,
+        duplicateType: null,
+        existingFile: null,
+        message: 'No duplicates found.'
+      };
+    } catch (error) {
+      console.error('Error checking for duplicates:', error);
+      return {
+        isDuplicate: false,
+        duplicateType: null,
+        existingFile: null,
+        message: 'Error checking for duplicates.',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   },
 };

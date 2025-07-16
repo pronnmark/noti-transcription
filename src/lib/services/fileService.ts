@@ -79,6 +79,7 @@ export const fileService = {
     originalFileName: string;
     originalFileType: string;
     fileSize: number;
+    duration?: number;
   }): Promise<Partial<AudioFile>> {
     const metadata = await loadMetadata();
     const id = uuidv4();
@@ -98,6 +99,7 @@ export const fileService = {
       createdAt: now,
       updatedAt: now,
       transcriptionStatus: 'pending',
+      duration: data.duration,
     };
     
     metadata.files[id] = fileData;

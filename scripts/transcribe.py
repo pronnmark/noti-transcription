@@ -37,6 +37,11 @@ def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="
     if enable_diarization and os.getenv('HUGGINGFACE_TOKEN'):
         try:
             print(">>Performing speaker diarization...")
+            print(f">>Audio file: {audio_file}")
+            print(f">>File exists: {os.path.exists(audio_file)}")
+            if os.path.exists(audio_file):
+                print(f">>File size: {os.path.getsize(audio_file)} bytes")
+            
             diarize_model = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-3.1",
                 use_auth_token=os.getenv('HUGGINGFACE_TOKEN')
@@ -49,6 +54,17 @@ def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="
             else:
                 print(">>Auto-detecting number of speakers...")
                 diarize_segments = diarize_model(audio_file)
+                
+            # Debug: Show what speakers were detected
+            detected_speakers = set()
+            segment_count = 0
+            for turn, _, speaker in diarize_segments.itertracks(yield_label=True):
+                detected_speakers.add(speaker)
+                segment_count += 1
+                print(f">>Diarization segment: {turn.start:.2f}s - {turn.end:.2f}s -> {speaker}")
+                
+            print(f">>Detected {len(detected_speakers)} unique speakers: {sorted(detected_speakers)}")
+            print(f">>Total diarization segments: {segment_count}")
             
             # Assign speakers to segments based on timestamps
             # Note: Using segment-level assignment for all cases due to compatibility issues

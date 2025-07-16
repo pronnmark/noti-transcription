@@ -7,9 +7,13 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, FileAudio, Loader2, Plus, Clock, CheckCircle, XCircle, Sparkles, Trash2, Edit3, Check, X } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { Upload, FileAudio, Loader2, Plus, Clock, CheckCircle, XCircle, Sparkles, Trash2, Edit3, Check, X, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useMediaQuery } from '@/hooks/use-media-query';
 
 interface AudioFile {
   id: string;
@@ -31,12 +35,12 @@ interface AudioFile {
 export default function FilesPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDragging, setIsDragging] = useState(false);
   const [uploadingFiles, setUploadingFiles] = useState<Set<string>>(new Set());
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
   const [extractingFiles, setExtractingFiles] = useState<Set<string>>(new Set());
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
+  const [speakerCount, setSpeakerCount] = useState<number>(2);
   const [extractModalOpen, setExtractModalOpen] = useState(false);
   const [extractFileId, setExtractFileId] = useState<string | null>(null);
   const [extractFileName, setExtractFileName] = useState('');
@@ -50,12 +54,13 @@ export default function FilesPage() {
   }>>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     loadFiles();
     loadExtractTemplates();
-    // Poll for updates every 5 seconds
-    const interval = setInterval(loadFiles, 5000);
+    // Poll for updates every 30 seconds to reduce server load
+    const interval = setInterval(loadFiles, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -85,7 +90,7 @@ export default function FilesPage() {
     }
   }
 
-  async function handleFileUpload(file: File) {
+  async function handleFileUpload(file: File, allowDuplicates: boolean = false) {
     // Show immediate feedback
     toast.info(`Starting upload for ${file.name}...`);
     
@@ -94,12 +99,42 @@ export default function FilesPage() {
     
     const formData = new FormData();
     formData.append('audio', file);
+    formData.append('speakerCount', speakerCount.toString());
+    if (allowDuplicates) {
+      formData.append('allowDuplicates', 'true');
+    }
 
     try {
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
       });
+
+      if (response.status === 409) {
+        // Handle duplicate file
+        const duplicateData = await response.json();
+        const existingFile = duplicateData.existingFile;
+        
+        const duplicateMessage = duplicateData.duplicateType === 'hash' 
+          ? `This file already exists (uploaded ${new Date(existingFile.uploadedAt).toLocaleDateString()})`
+          : `A file with the same name and size already exists`;
+        
+        // Show duplicate confirmation
+        const shouldUpload = confirm(
+          `${duplicateMessage}\n\nExisting file: "${existingFile.originalFileName}"\n` +
+          `Status: ${existingFile.transcriptionStatus}\n` +
+          `Duration: ${existingFile.duration ? Math.round(existingFile.duration / 60) + 'm' : 'Unknown'}\n\n` +
+          `Do you want to upload anyway?`
+        );
+        
+        if (shouldUpload) {
+          // Retry upload with allowDuplicates = true
+          return handleFileUpload(file, true);
+        } else {
+          toast.info(`Upload cancelled - ${file.name} already exists`);
+          return;
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
@@ -121,28 +156,6 @@ export default function FilesPage() {
     }
   }
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(true);
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-  }
-
-  async function handleDrop(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const files = Array.from(e.dataTransfer.files).filter(file =>
-      file.type.startsWith('audio/')
-    );
-
-    for (const file of files) {
-      await handleFileUpload(file);
-    }
-  }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
@@ -400,191 +413,241 @@ export default function FilesPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="border-b p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Files</h1>
-        <p className="text-muted-foreground mt-1">Upload and manage your audio files</p>
-      </div>
+      {/* Header - Hidden on mobile as it's handled by responsive layout */}
+      {!isMobile && (
+        <div className="border-b p-4 sm:p-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Files</h1>
+          <p className="text-muted-foreground mt-1">Upload and manage your audio files</p>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 p-4 sm:p-6 overflow-hidden">
-        <div className="space-y-6">
-          {/* Upload Area */}
-          <Card
-            className={cn(
-              "border-2 border-dashed transition-colors",
-              isDragging && "border-primary bg-primary/5",
-              uploadingFiles.size > 0 && "border-primary bg-primary/5"
-            )}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-          >
-            <CardContent className="flex flex-col items-center justify-center py-8 sm:py-12">
-              {uploadingFiles.size > 0 ? (
-                <>
-                  <Loader2 className="h-8 w-8 sm:h-12 sm:w-12 text-primary mb-4 animate-spin" />
-                  <p className="text-base sm:text-lg font-medium mb-2 text-center">Uploading {uploadingFiles.size} file{uploadingFiles.size > 1 ? 's' : ''}...</p>
-                  <p className="text-sm text-muted-foreground text-center">Please wait while we process your audio</p>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 sm:h-12 sm:w-12 text-muted-foreground mb-4" />
-                  <p className="text-base sm:text-lg font-medium mb-2 text-center">Drop audio files here or click to upload</p>
-                  <p className="text-sm text-muted-foreground mb-4 text-center">Supports MP3, WAV, M4A, and more</p>
-                  <Button variant="outline" className="relative">
-                    <Plus className="mr-2 h-4 w-4" />
-                    Choose Files
-                    <input
-                      type="file"
-                      accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac,.wma,.amr"
-                      onChange={handleFileSelect}
-                      className="absolute inset-0 opacity-0 cursor-pointer"
-                      disabled={uploadingFiles.size > 0}
-                      multiple
-                    />
-                  </Button>
-                </>
-              )}
+        <div className="space-y-4 sm:space-y-6">
+          {/* Compact Upload Section */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Upload className="h-5 w-5" />
+                Upload Audio Files
+              </CardTitle>
+              <CardDescription>
+                Upload audio files for transcription. Supports MP3, WAV, M4A, and more.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="speakerCount" className="text-sm font-medium whitespace-nowrap">
+                    Expected speakers:
+                  </label>
+                  <Select value={speakerCount.toString()} onValueChange={(value) => setSpeakerCount(parseInt(value))}>
+                    <SelectTrigger className="w-20">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="6">6</SelectItem>
+                      <SelectItem value="7">7</SelectItem>
+                      <SelectItem value="8">8</SelectItem>
+                      <SelectItem value="9">9</SelectItem>
+                      <SelectItem value="10">10</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  className="relative"
+                  disabled={uploadingFiles.size > 0}
+                >
+                  {uploadingFiles.size > 0 ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading {uploadingFiles.size} file{uploadingFiles.size > 1 ? 's' : ''}...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Choose Files
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac,.wma,.amr"
+                    onChange={handleFileSelect}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                    disabled={uploadingFiles.size > 0}
+                    multiple
+                  />
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Files Grid */}
-          <ScrollArea className="h-[calc(100vh-320px)]">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {files.map((file) => (
-                <Card key={file.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between">
-                      <FileAudio className="h-8 w-8 text-primary" />
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(file.transcriptionStatus)}
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-blue-600"
-                          onClick={() => startEditing(file.id, file.originalName)}
-                          disabled={editingFile === file.id}
-                        >
-                          <Edit3 className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600"
-                          onClick={() => handleDeleteFile(file.id, file.originalName)}
-                          disabled={deletingFiles.has(file.id)}
-                        >
-                          {deletingFiles.has(file.id) ? (
-                            <Loader2 className="h-3 w-3 animate-spin" />
-                          ) : (
-                            <Trash2 className="h-3 w-3" />
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                    {editingFile === file.id ? (
-                      <div className="flex items-center gap-2 mt-2">
-                        <Input
-                          value={editingName}
-                          onChange={(e) => setEditingName(e.target.value)}
-                          className="text-sm"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              saveRename(file.id);
-                            } else if (e.key === 'Escape') {
-                              cancelEditing();
-                            }
-                          }}
-                          autoFocus
-                        />
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-green-600"
-                          onClick={() => saveRename(file.id)}
-                        >
-                          <Check className="h-3 w-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 w-6 p-0 text-red-600"
-                          onClick={cancelEditing}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <CardTitle className="text-sm font-medium truncate mt-2">
-                        {file.originalName}
-                      </CardTitle>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Size</span>
-                      <span>{formatFileSize(file.size)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Duration</span>
-                      <span>{formatDuration(file.duration)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Status</span>
-                      <span className="capitalize">{file.transcriptionStatus || 'pending'}</span>
-                    </div>
-                    {file.notesCount && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Notes</span>
-                        <span>{(() => {
-                          try {
-                            const counts = JSON.parse(file.notesCount);
-                            return Object.values(counts).reduce((a: number, b: any) => a + b, 0);
-                          } catch (e) {
-                            return 0;
-                          }
-                        })()}</span>
-                      </div>
-                    )}
-                    <div className="flex gap-2 mt-4">
-                      {file.transcriptionStatus === 'completed' && (
-                        <>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => window.location.href = `/transcript/${file.id}`}
-                          >
-                            View
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => openExtractModal(file.id, file.originalName)}
-                            disabled={extractingFiles.has(file.id)}
-                          >
-                            {extractingFiles.has(file.id) ? (
-                              <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                            ) : (
-                              <Sparkles className="h-3 w-3 mr-1" />
+          {/* Files Table - Compact view */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Audio Files</CardTitle>
+              <CardDescription>
+                Manage your uploaded audio files and their transcriptions
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {files.length === 0 ? (
+                <div className="text-center py-12">
+                  <FileAudio className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No files uploaded yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">Upload your first audio file to get started</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>File</TableHead>
+                      <TableHead>Size</TableHead>
+                      <TableHead>Duration</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {files.map((file) => (
+                      <TableRow key={file.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <FileAudio className="h-4 w-4 text-primary flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                              {editingFile === file.id ? (
+                                <div className="flex items-center gap-2">
+                                  <Input
+                                    value={editingName}
+                                    onChange={(e) => setEditingName(e.target.value)}
+                                    className="text-sm h-8"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        saveRename(file.id);
+                                      } else if (e.key === 'Escape') {
+                                        cancelEditing();
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0 text-green-600"
+                                    onClick={() => saveRename(file.id)}
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="h-8 w-8 p-0 text-red-600"
+                                    onClick={cancelEditing}
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div>
+                                  <p className="font-medium text-sm truncate">{file.originalName}</p>
+                                  {file.notesCount && (
+                                    <p className="text-xs text-muted-foreground">
+                                      {(() => {
+                                        try {
+                                          const counts = JSON.parse(file.notesCount);
+                                          const total = Object.values(counts).reduce((a: number, b: any) => a + b, 0);
+                                          return `${total} notes extracted`;
+                                        } catch (e) {
+                                          return '';
+                                        }
+                                      })()}
+                                    </p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{formatFileSize(file.size)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{formatDuration(file.duration)}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getStatusIcon(file.transcriptionStatus)}
+                            <Badge variant={file.transcriptionStatus === 'completed' ? 'default' : 'secondary'}>
+                              {file.transcriptionStatus || 'pending'}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {file.transcriptionStatus === 'completed' && (
+                              <>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => window.location.href = `/transcript/${file.id}`}
+                                >
+                                  View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openExtractModal(file.id, file.originalName)}
+                                  disabled={extractingFiles.has(file.id)}
+                                >
+                                  {extractingFiles.has(file.id) ? (
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                  ) : (
+                                    <Sparkles className="h-4 w-4" />
+                                  )}
+                                </Button>
+                              </>
                             )}
-                            Extract
-                          </Button>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {files.length === 0 && (
-              <div className="text-center py-12">
-                <p className="text-muted-foreground">No files uploaded yet</p>
-              </div>
-            )}
-          </ScrollArea>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => startEditing(file.id, file.originalName)}>
+                                  <Edit3 className="h-4 w-4 mr-2" />
+                                  Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteFile(file.id, file.originalName)}
+                                  disabled={deletingFiles.has(file.id)}
+                                  className="text-red-600"
+                                >
+                                  {deletingFiles.has(file.id) ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                  )}
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </div>
 

@@ -6,7 +6,46 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '100mb'
+    },
+    // Enable experimental features for better development stability
+    optimizePackageImports: ['@radix-ui/react-icons']
+  },
+  
+  // Webpack configuration for better chunk loading
+  webpack: (config, { dev, isServer }) => {
+    if (dev && !isServer) {
+      // Development-specific optimizations
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: {
+          ...config.optimization.splitChunks,
+          cacheGroups: {
+            ...config.optimization.splitChunks?.cacheGroups,
+            default: {
+              minChunks: 2,
+              priority: -20,
+              reuseExistingChunk: true
+            },
+            vendor: {
+              test: /[\/]node_modules[\/]/,
+              name: 'vendors',
+              priority: -10,
+              reuseExistingChunk: true
+            }
+          }
+        }
+      };
+      
+      // Add development middleware configuration
+      config.devServer = {
+        ...config.devServer,
+        hot: true,
+        liveReload: true,
+        watchFiles: ['src/**/*']
+      };
     }
+    
+    return config;
   },
   
   // Allow cross-origin requests from noti.se domain

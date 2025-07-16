@@ -3,9 +3,16 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mic, Square, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { ClientOnly } from '@/components/client-only';
+
+// Wake Lock API types (if not already defined)
+interface WakeLockSentinel {
+  release: () => void;
+}
 
 export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
@@ -16,10 +23,38 @@ export default function RecordPage() {
   const [recordingSupported, setRecordingSupported] = useState(true);
   const [deviceInfo, setDeviceInfo] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
+  const [speakerCount, setSpeakerCount] = useState<number>(2);
+  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
+  const [autoSaveCounter, setAutoSaveCounter] = useState(0);
 
   useEffect(() => {
     checkRecordingSupport();
+    detectMobile();
   }, []);
+
+  // Clean up wake lock on unmount
+  useEffect(() => {
+    return () => {
+      if (wakeLock) {
+        wakeLock.release();
+      }
+    };
+  }, [wakeLock]);
+
+  // Handle page visibility changes (mobile tab switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isRecording && isMobile) {
+        console.log('Page became hidden during recording');
+        toast.warning('Recording may be interrupted in background');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isRecording, isMobile]);
 
   // Timer effect for recording
   useEffect(() => {
@@ -31,6 +66,43 @@ export default function RecordPage() {
     }
     return () => clearInterval(interval);
   }, [isRecording, isPaused]);
+
+  // Auto-save effect - every 10 minutes (600 seconds)
+  useEffect(() => {
+    let autoSaveInterval: NodeJS.Timeout;
+    if (isRecording && !isPaused && mediaRecorder) {
+      autoSaveInterval = setInterval(() => {
+        performAutoSave();
+      }, 10 * 60 * 1000); // 10 minutes
+    }
+    return () => clearInterval(autoSaveInterval);
+  }, [isRecording, isPaused, mediaRecorder]);
+
+  function detectMobile() {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    setIsMobile(isMobileDevice);
+  }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator && isMobile) {
+        const wakeLockInstance = await (navigator as any).wakeLock.request('screen');
+        setWakeLock(wakeLockInstance);
+        console.log('Wake lock acquired');
+      }
+    } catch (error) {
+      console.log('Wake lock not supported or failed:', error);
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release();
+      setWakeLock(null);
+      console.log('Wake lock released');
+    }
+  }
 
   async function checkRecordingSupport() {
     try {
@@ -44,7 +116,7 @@ export default function RecordPage() {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(device => device.kind === 'audioinput');
       
-      const deviceDebug = `Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
+      const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
       setDeviceInfo(deviceDebug);
       console.log(deviceDebug);
       
@@ -54,14 +126,22 @@ export default function RecordPage() {
         return;
       }
       
-      // Test with minimal constraints first
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
+      // Test with mobile-optimized constraints
+      const mobileConstraints = {
+        audio: isMobile ? {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+          sampleRate: 16000, // Lower sample rate for mobile
+          channelCount: 1     // Mono for mobile
+        } : { 
           echoCancellation: false,
           noiseSuppression: false,
           autoGainControl: false
-        } 
-      });
+        }
+      };
+      
+      const stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
       
       // Clean up test stream
       stream.getTracks().forEach(track => track.stop());
@@ -89,54 +169,108 @@ export default function RecordPage() {
         return;
       }
 
-      // Try with optimal settings first, fallback to basic if needed
+      // Use mobile-optimized settings
       let stream;
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 44100
-          } 
-        });
+        if (isMobile) {
+          // Mobile-optimized constraints
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 16000,
+              channelCount: 1
+            }
+          });
+        } else {
+          // Desktop optimal settings
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              sampleRate: 44100
+            }
+          });
+        }
       } catch (error) {
-        console.log('Optimal settings failed, trying basic constraints:', error);
+        console.log('Optimized settings failed, trying basic constraints:', error);
         // Fallback to basic constraints
         stream = await navigator.mediaDevices.getUserMedia({ 
           audio: true 
         });
       }
 
-      // Use audio/webm for better mobile compatibility
-      const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-        ? 'audio/webm;codecs=opus' 
-        : MediaRecorder.isTypeSupported('audio/mp4')
-        ? 'audio/mp4'
-        : 'audio/webm';
+      // Choose best MIME type for mobile compatibility
+      let mimeType;
+      if (isMobile) {
+        // Mobile-optimized MIME types (iOS Safari prefers mp4)
+        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        } else {
+          mimeType = 'audio/wav';
+        }
+      } else {
+        // Desktop optimal MIME types
+        if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          mimeType = 'audio/webm;codecs=opus';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+          mimeType = 'audio/mp4';
+        } else {
+          mimeType = 'audio/webm';
+        }
+      }
 
       const recorder = new MediaRecorder(stream, {
         mimeType,
-        audioBitsPerSecond: 128000
+        audioBitsPerSecond: isMobile ? 64000 : 128000 // Lower bitrate for mobile
       });
+
+      // Request wake lock for mobile to prevent screen sleep
+      if (isMobile) {
+        await requestWakeLock();
+      }
 
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
           chunks.push(event.data);
+          console.log('Audio data chunk received:', event.data.size, 'bytes');
         }
       };
 
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
         
+        console.log('Recording stopped, chunks collected:', chunks.length);
+        console.log('Total chunks size:', chunks.reduce((total, chunk) => total + chunk.size, 0), 'bytes');
+        
         if (chunks.length > 0) {
           const audioBlob = new Blob(chunks, { type: mimeType });
+          console.log('Created audio blob:', audioBlob.size, 'bytes, type:', audioBlob.type);
           await uploadRecording(audioBlob);
+        } else {
+          console.error('No audio chunks collected');
+          toast.error('No audio data recorded. Please try again.');
         }
         
         setAudioChunks([]);
+      };
+
+      recorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        toast.error('Recording error occurred');
+        setIsRecording(false);
+        setIsPaused(false);
+        if (isMobile) {
+          releaseWakeLock();
+        }
       };
 
       setAudioChunks(chunks);
@@ -145,8 +279,14 @@ export default function RecordPage() {
       setIsPaused(false);
       setRecordingTime(0);
       
-      recorder.start(1000); // Collect data every second
-      toast.success('Recording started');
+      // Start recording with a small delay for mobile compatibility
+      setTimeout(() => {
+        if (recorder.state === 'inactive') {
+          recorder.start(1000); // Collect data every second
+          console.log('MediaRecorder started, MIME type:', mimeType);
+          toast.success('Recording started');
+        }
+      }, 100);
 
     } catch (error) {
       console.error('Error starting recording:', error);
@@ -154,18 +294,18 @@ export default function RecordPage() {
       let errorMessage = 'Failed to start recording. ';
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
-          errorMessage += 'No microphone found.';
+          errorMessage += isMobile ? 'No microphone found. Try using headphones with mic.' : 'No microphone found.';
         } else if (error.name === 'NotAllowedError') {
-          errorMessage += 'Microphone permission denied.';
+          errorMessage += isMobile ? 'Microphone permission denied. Check browser settings and try again.' : 'Microphone permission denied.';
         } else if (error.name === 'NotReadableError') {
-          errorMessage += 'Microphone is already in use.';
+          errorMessage += isMobile ? 'Microphone is already in use. Close other apps and try again.' : 'Microphone is already in use.';
         } else if (error.name === 'OverconstrainedError') {
-          errorMessage += 'Microphone constraints not supported.';
+          errorMessage += isMobile ? 'Microphone settings not supported. Try a different browser.' : 'Microphone constraints not supported.';
         } else {
-          errorMessage += 'Please check microphone permissions and device.';
+          errorMessage += isMobile ? 'Please check microphone permissions in browser settings.' : 'Please check microphone permissions and device.';
         }
       } else {
-        errorMessage += 'Please check microphone permissions and device.';
+        errorMessage += isMobile ? 'Please check microphone permissions in browser settings.' : 'Please check microphone permissions and device.';
       }
       
       toast.error(errorMessage);
@@ -190,22 +330,132 @@ export default function RecordPage() {
 
   function stopRecording() {
     if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+      console.log('Stopping recording, current state:', mediaRecorder.state);
+      
+      // Request final data before stopping
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.requestData();
+      }
+      
       mediaRecorder.stop();
       setIsRecording(false);
       setIsPaused(false);
       setRecordingTime(0);
+      
+      // Reset auto-save state
+      setLastAutoSave(null);
+      setAutoSaveCounter(0);
+      
+      // Release wake lock when recording stops
+      if (isMobile) {
+        releaseWakeLock();
+      }
+      
       toast.success('Recording stopped');
     }
   }
 
-  async function uploadRecording(audioBlob: Blob) {
+  async function performAutoSave() {
+    if (!mediaRecorder || !audioChunks.length) return;
+    
+    try {
+      console.log('Performing auto-save...');
+      
+      // Request current data from MediaRecorder
+      mediaRecorder.requestData();
+      
+      // Wait a bit for the data to be available
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      if (audioChunks.length > 0) {
+        // Create blob from current chunks
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
+        
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const autoSaveCount = autoSaveCounter + 1;
+        
+        // Choose appropriate file extension
+        let extension = '.webm';
+        if (mimeType.includes('mp4')) {
+          extension = '.mp4';
+        } else if (mimeType.includes('wav')) {
+          extension = '.wav';
+        }
+        
+        const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
+        
+        const formData = new FormData();
+        formData.append('audio', autoSaveBlob, filename);
+        formData.append('speakerCount', speakerCount.toString());
+        formData.append('isDraft', 'true'); // Mark as draft to skip transcription
+        
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (response.ok) {
+          setLastAutoSave(new Date());
+          setAutoSaveCounter(autoSaveCount);
+          toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
+            duration: 2000,
+          });
+          console.log('Auto-save successful:', filename);
+        } else {
+          console.error('Auto-save failed:', response.status);
+          toast.error('Auto-save failed', { duration: 2000 });
+        }
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      toast.error('Auto-save failed', { duration: 2000 });
+    }
+  }
+
+  async function uploadRecording(audioBlob: Blob, isDraft: boolean = false) {
     setIsUploading(true);
     try {
+      console.log('Starting upload:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        lastModified: new Date().toISOString(),
+        isDraft
+      });
+
+      // Check if blob is empty
+      if (audioBlob.size === 0) {
+        throw new Error('Recording is empty - no audio data captured');
+      }
+
+      // Check if blob is too small (less than 1KB might indicate an issue)
+      if (audioBlob.size < 1024) {
+        console.warn('Warning: Recording is very small:', audioBlob.size, 'bytes');
+      }
+
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const filename = `recording-${timestamp}.webm`;
+      
+      // Choose appropriate file extension based on MIME type
+      let extension = '.webm';
+      if (audioBlob.type.includes('mp4')) {
+        extension = '.mp4';
+      } else if (audioBlob.type.includes('wav')) {
+        extension = '.wav';
+      } else if (audioBlob.type.includes('webm')) {
+        extension = '.webm';
+      }
+      
+      const filename = isDraft 
+        ? `recording-draft-${timestamp}${extension}`
+        : `recording-${timestamp}${extension}`;
+      console.log('Upload filename:', filename);
       
       const formData = new FormData();
       formData.append('audio', audioBlob, filename);
+      formData.append('speakerCount', speakerCount.toString());
+      if (isDraft) {
+        formData.append('isDraft', 'true');
+      }
 
       const response = await fetch('/api/upload', {
         method: 'POST',
@@ -213,18 +463,22 @@ export default function RecordPage() {
       });
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+        throw new Error(`Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
       }
 
       const result = await response.json();
-      toast.success('Recording uploaded successfully!');
+      toast.success(isDraft ? 'Draft recording saved!' : 'Recording uploaded successfully!');
       
-      // Redirect to files page to see the uploaded recording
-      setTimeout(() => {
-        window.location.href = '/files';
-      }, 1500);
+      // Only redirect for final recordings, not drafts
+      if (!isDraft) {
+        setTimeout(() => {
+          window.location.href = '/files';
+        }, 1500);
+      }
     } catch (error) {
-      toast.error('Failed to upload recording');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      toast.error(`Failed to upload recording: ${errorMessage}`);
       console.error('Upload error:', error);
     } finally {
       setIsUploading(false);
@@ -264,6 +518,32 @@ export default function RecordPage() {
             <CardContent className="space-y-6">
               {recordingSupported ? (
                 <>
+                  {/* Speaker Count Selection */}
+                  {!isRecording && (
+                    <div className="flex items-center justify-center gap-2 mb-4">
+                      <label htmlFor="speakerCount" className="text-sm font-medium">
+                        Expected speakers:
+                      </label>
+                      <Select value={speakerCount.toString()} onValueChange={(value) => setSpeakerCount(parseInt(value))}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">1</SelectItem>
+                          <SelectItem value="2">2</SelectItem>
+                          <SelectItem value="3">3</SelectItem>
+                          <SelectItem value="4">4</SelectItem>
+                          <SelectItem value="5">5</SelectItem>
+                          <SelectItem value="6">6</SelectItem>
+                          <SelectItem value="7">7</SelectItem>
+                          <SelectItem value="8">8</SelectItem>
+                          <SelectItem value="9">9</SelectItem>
+                          <SelectItem value="10">10</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
                   {/* Recording Status */}
                   <div className="text-center">
                     <div className="text-4xl sm:text-6xl font-mono font-bold mb-2">
@@ -276,9 +556,38 @@ export default function RecordPage() {
                           isPaused ? "bg-yellow-500" : "bg-red-500 animate-pulse"
                         )} />
                         {isPaused ? "Paused" : "Recording"}
+                        {isMobile && wakeLock && (
+                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                            🔒 Screen locked
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {isRecording && (
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Expecting {speakerCount} speaker{speakerCount > 1 ? 's' : ''}
+                        {lastAutoSave && (
+                          <ClientOnly>
+                            <div className="text-xs text-green-600 mt-1">
+                              ✓ Auto-saved: {lastAutoSave.toLocaleTimeString()}
+                            </div>
+                          </ClientOnly>
+                        )}
                       </div>
                     )}
                   </div>
+
+                  {/* Mobile warning */}
+                  {isMobile && isRecording && (
+                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
+                      <div className="text-sm text-amber-700 font-medium">
+                        📱 Keep this tab active during recording
+                      </div>
+                      <div className="text-xs text-amber-600 mt-1">
+                        Background recording may be interrupted on mobile devices
+                      </div>
+                    </div>
+                  )}
 
                   {/* Recording Controls */}
                   <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
@@ -344,8 +653,16 @@ export default function RecordPage() {
                       <li>• Use HTTPS for best compatibility (especially iOS)</li>
                       <li>• Keep the browser tab active during recording</li>
                       <li>• Recording automatically uploads when stopped</li>
+                      <li>• Auto-saves every 10 minutes to prevent data loss</li>
                       <li>• Supports: iPhone Safari, Chrome, Firefox, Edge</li>
                       <li>• For best quality, record in a quiet environment</li>
+                      {isMobile && (
+                        <>
+                          <li>• 📱 Mobile optimized: Lower bitrate for faster upload</li>
+                          <li>• 🔒 Screen will stay awake during recording</li>
+                          <li>• 🎤 Use device orientation for best microphone position</li>
+                        </>
+                      )}
                     </ul>
                     {deviceInfo && (
                       <div className="mt-3 pt-3 border-t border-muted-foreground/20">

@@ -106,6 +106,100 @@ export const notesService = {
     }
   },
 
+  async toggleStatus(id: string, status: 'active' | 'completed' | 'archived'): Promise<boolean> {
+    try {
+      const updateData: any = { 
+        status,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Set completedAt timestamp when marking as completed
+      if (status === 'completed') {
+        updateData.completedAt = new Date().toISOString();
+      } else if (status === 'active') {
+        updateData.completedAt = null;
+      }
+
+      const result = await db.update(aiNotes)
+        .set(updateData)
+        .where(eq(aiNotes.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error toggling note status:', error);
+      return false;
+    }
+  },
+
+  async addComment(id: string, comment: string): Promise<boolean> {
+    try {
+      const result = await db.update(aiNotes)
+        .set({ 
+          comments: comment,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(aiNotes.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      return false;
+    }
+  },
+
+  async updateComment(id: string, comment: string): Promise<boolean> {
+    try {
+      const result = await db.update(aiNotes)
+        .set({ 
+          comments: comment,
+          updatedAt: new Date().toISOString()
+        })
+        .where(eq(aiNotes.id, id));
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating comment:', error);
+      return false;
+    }
+  },
+
+  async getStats(fileId: number): Promise<any> {
+    try {
+      const notes = await this.findByFileId(fileId);
+      
+      const stats = {
+        total: notes.length,
+        byType: {
+          task: notes.filter(n => n.noteType === 'task').length,
+          question: notes.filter(n => n.noteType === 'question').length,
+          decision: notes.filter(n => n.noteType === 'decision').length,
+          followup: notes.filter(n => n.noteType === 'followup').length,
+          mention: notes.filter(n => n.noteType === 'mention').length,
+        },
+        byStatus: {
+          active: notes.filter(n => n.status === 'active').length,
+          completed: notes.filter(n => n.status === 'completed').length,
+          archived: notes.filter(n => n.status === 'archived').length,
+        },
+        completion: {
+          tasks: {
+            total: notes.filter(n => n.noteType === 'task').length,
+            completed: notes.filter(n => n.noteType === 'task' && n.status === 'completed').length,
+          },
+          questions: {
+            total: notes.filter(n => n.noteType === 'question').length,
+            completed: notes.filter(n => n.noteType === 'question' && n.status === 'completed').length,
+          }
+        }
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('Error getting stats:', error);
+      return null;
+    }
+  },
+
   async delete(id: string): Promise<boolean> {
     try {
       await db.delete(aiNotes).where(eq(aiNotes.id, id));
@@ -169,6 +263,98 @@ export const notesService = {
         .where(eq(audioFiles.id, fileId));
       
       return { success: false, count: 0 };
+    }
+  },
+
+  // Global task management methods
+  async getAllTasks(): Promise<AINote[]> {
+    try {
+      return await db.select()
+        .from(aiNotes)
+        .where(eq(aiNotes.noteType, 'task'))
+        .orderBy(desc(aiNotes.createdAt));
+    } catch (error) {
+      console.error('Error getting all tasks:', error);
+      return [];
+    }
+  },
+
+  async getTasksByStatus(status: 'active' | 'completed' | 'archived'): Promise<AINote[]> {
+    try {
+      return await db.select()
+        .from(aiNotes)
+        .where(and(
+          eq(aiNotes.noteType, 'task'),
+          eq(aiNotes.status, status)
+        ))
+        .orderBy(desc(aiNotes.createdAt));
+    } catch (error) {
+      console.error('Error getting tasks by status:', error);
+      return [];
+    }
+  },
+
+  async getTasksWithFileInfo(): Promise<(AINote & { fileName?: string | null })[]> {
+    try {
+      const tasks = await db.select({
+        id: aiNotes.id,
+        fileId: aiNotes.fileId,
+        noteType: aiNotes.noteType,
+        content: aiNotes.content,
+        context: aiNotes.context,
+        speaker: aiNotes.speaker,
+        timestamp: aiNotes.timestamp,
+        priority: aiNotes.priority,
+        status: aiNotes.status,
+        metadata: aiNotes.metadata,
+        comments: aiNotes.comments,
+        completedAt: aiNotes.completedAt,
+        assignedTo: aiNotes.assignedTo,
+        createdAt: aiNotes.createdAt,
+        updatedAt: aiNotes.updatedAt,
+        fileName: audioFiles.originalFileName,
+      })
+        .from(aiNotes)
+        .leftJoin(audioFiles, eq(aiNotes.fileId, audioFiles.id))
+        .where(eq(aiNotes.noteType, 'task'))
+        .orderBy(desc(aiNotes.createdAt));
+
+      return tasks;
+    } catch (error) {
+      console.error('Error getting tasks with file info:', error);
+      return [];
+    }
+  },
+
+  async getGlobalStats(): Promise<any> {
+    try {
+      const allNotes = await db.select().from(aiNotes);
+      
+      const stats = {
+        total: allNotes.length,
+        byType: {
+          task: allNotes.filter(n => n.noteType === 'task').length,
+          question: allNotes.filter(n => n.noteType === 'question').length,
+          decision: allNotes.filter(n => n.noteType === 'decision').length,
+          followup: allNotes.filter(n => n.noteType === 'followup').length,
+          mention: allNotes.filter(n => n.noteType === 'mention').length,
+        },
+        byStatus: {
+          active: allNotes.filter(n => n.status === 'active').length,
+          completed: allNotes.filter(n => n.status === 'completed').length,
+          archived: allNotes.filter(n => n.status === 'archived').length,
+        },
+        tasks: {
+          total: allNotes.filter(n => n.noteType === 'task').length,
+          active: allNotes.filter(n => n.noteType === 'task' && n.status === 'active').length,
+          completed: allNotes.filter(n => n.noteType === 'task' && n.status === 'completed').length,
+        }
+      };
+
+      return stats;
+    } catch (error) {
+      console.error('Error getting global stats:', error);
+      return null;
     }
   }
 };

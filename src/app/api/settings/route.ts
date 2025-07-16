@@ -57,7 +57,6 @@ async function loadFileSettings(): Promise<Settings> {
         computeType: 'float32',
         batchSize: 16,
         threads: 4,
-        speakerCount: undefined,
       },
       ai: {
         geminiApiKey: '',

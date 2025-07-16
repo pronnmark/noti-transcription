@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { Sidebar } from './sidebar';
+import { BottomNav } from './bottom-nav';
 import { Button } from '@/components/ui/button';
-import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { usePathname } from 'next/navigation';
+import { ClientOnly } from '@/components/client-only';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -13,6 +15,39 @@ interface ResponsiveLayoutProps {
 
 export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const pathname = usePathname();
+  
+  const closeSidebar = () => setSidebarOpen(false);
+  
+  return (
+    <ClientOnly fallback={<div className="flex h-full bg-background">{children}</div>}>
+      <ResponsiveLayoutInner 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen}
+        pathname={pathname}
+        closeSidebar={closeSidebar}
+      >
+        {children}
+      </ResponsiveLayoutInner>
+    </ClientOnly>
+  );
+}
+
+interface ResponsiveLayoutInnerProps {
+  children: React.ReactNode;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  pathname: string;
+  closeSidebar: () => void;
+}
+
+function ResponsiveLayoutInner({ 
+  children, 
+  sidebarOpen, 
+  setSidebarOpen, 
+  pathname,
+  closeSidebar 
+}: ResponsiveLayoutInnerProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
 
   // Auto-close sidebar when switching to desktop
@@ -20,9 +55,42 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
     if (!isMobile) {
       setSidebarOpen(false);
     }
-  }, [isMobile]);
+  }, [isMobile, setSidebarOpen]);
 
-  const closeSidebar = () => setSidebarOpen(false);
+  // Get page title based on current path
+  const getPageTitle = () => {
+    switch (pathname) {
+      case '/':
+        return 'Dashboard';
+      case '/files':
+        return 'Files';
+      case '/record':
+        return 'Record';
+      case '/transcripts':
+        return 'Transcripts';
+      case '/ai/summarization':
+        return 'Summarization';
+      case '/ai/extractions':
+        return 'Extractions';
+      case '/ai/data-points':
+        return 'Data Points';
+      // Keep old routes for backward compatibility
+      case '/ai/extracts':
+        return 'AI Extracts';
+      case '/ai/notes':
+        return 'AI Notes';
+      case '/ai/tasks':
+        return 'AI Tasks';
+      case '/analytics':
+        return 'Analytics';
+      case '/docs':
+        return 'Documentation';
+      case '/settings':
+        return 'Settings';
+      default:
+        return 'Noti';
+    }
+  };
 
   return (
     <div className="flex h-full">
@@ -54,7 +122,7 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
                 onClick={closeSidebar}
                 className="h-8 w-8 p-0"
               >
-                <X className="h-4 w-4" />
+                ✕
                 <span className="sr-only">Close sidebar</span>
               </Button>
             </div>
@@ -67,26 +135,64 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-between p-4 border-b bg-white md:hidden">
+          <div className="flex items-center justify-between p-4 border-b bg-background md:hidden safe-area-inset-top">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setSidebarOpen(true)}
-              className="h-9 w-9 p-0"
+              className="h-9 w-9 p-0 touch-target-44"
               aria-label="Open sidebar"
             >
-              <Menu className="h-5 w-5" />
+              ☰
             </Button>
-            <h1 className="text-lg font-semibold">Noti</h1>
-            <div className="w-9" /> {/* Spacer for centering */}
+            <h1 className="text-lg font-semibold text-foreground truncate max-w-[200px]">{getPageTitle()}</h1>
+            <div className="flex items-center gap-2">
+              {/* Quick actions based on current page */}
+              {pathname === '/files' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = '/record'}
+                  className="h-9 px-2 text-sm touch-target-44"
+                >
+                  Record
+                </Button>
+              )}
+              {pathname === '/transcripts' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = '/files'}
+                  className="h-9 px-2 text-sm touch-target-44"
+                >
+                  Upload
+                </Button>
+              )}
+              {pathname === '/' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.href = '/files'}
+                  className="h-9 px-2 text-sm touch-target-44"
+                >
+                  Upload
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
         {/* Page Content */}
-        <main className="flex-1 overflow-hidden">
+        <main className={cn(
+          "flex-1 overflow-hidden",
+          isMobile && "pb-16 safe-area-inset-bottom" // Add bottom padding for mobile navigation
+        )}>
           {children}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && <BottomNav />}
     </div>
   );
 }

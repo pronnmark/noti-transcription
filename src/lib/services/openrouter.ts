@@ -57,7 +57,7 @@ export class OpenRouterService {
         // File doesn't exist or invalid, try database
         console.log('Could not read file settings, trying database...');
         const settings = await settingsService.get();
-        apiKey = settings?.openrouterApiKey;
+        apiKey = settings?.openrouterApiKey || undefined;
       }
       
       // Fall back to environment variable
@@ -158,6 +158,33 @@ export class OpenRouterService {
       console.error('OpenRouter API error:', error);
       throw error;
     }
+  }
+
+  async generateText(prompt: string, options: {
+    model?: string;
+    maxTokens?: number;
+    temperature?: number;
+    systemPrompt?: string;
+  } = {}): Promise<string> {
+    const {
+      model = CLAUDE_4_MODEL,
+      maxTokens = 4000,
+      temperature = 0.7,
+      systemPrompt = 'You are a helpful AI assistant.'
+    } = options;
+
+    const messages: OpenRouterMessage[] = [
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      {
+        role: 'user',
+        content: prompt
+      }
+    ];
+
+    return this.chat(messages, { model, maxTokens, temperature });
   }
 
   async extractFromTranscript(

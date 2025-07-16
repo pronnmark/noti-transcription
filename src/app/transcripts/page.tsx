@@ -4,8 +4,14 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { FileText, Loader2, Sparkles, Trash2, ListTodo } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
+import { FileText, Loader2, Sparkles, Trash2, ListTodo, MoreHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
+import { ClientOnly } from '@/components/client-only';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { cn } from '@/lib/utils';
 
 interface AudioFile {
   id: string;
@@ -29,11 +35,12 @@ export default function TranscriptsPage() {
   const [deletingFiles, setDeletingFiles] = useState<Set<string>>(new Set());
   const [extractingFiles, setExtractingFiles] = useState<Set<string>>(new Set());
   const [extractingNotes, setExtractingNotes] = useState<Set<string>>(new Set());
+  const isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     loadFiles();
-    // Poll for updates every 5 seconds
-    const interval = setInterval(loadFiles, 5000);
+    // Poll for updates every 30 seconds to reduce server load  
+    const interval = setInterval(loadFiles, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -173,120 +180,147 @@ export default function TranscriptsPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="border-b p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Transcripts</h1>
-        <p className="text-muted-foreground mt-1">View and manage your completed transcriptions</p>
-      </div>
+      {/* Header - Hidden on mobile as it's handled by responsive layout */}
+      {!isMobile && (
+        <div className="border-b p-4 sm:p-6">
+          <h1 className="text-2xl sm:text-3xl font-bold">Transcripts</h1>
+          <p className="text-muted-foreground mt-1">View and manage your completed transcriptions</p>
+        </div>
+      )}
 
       {/* Content */}
       <div className="flex-1 p-4 sm:p-6 overflow-hidden">
-        <ScrollArea className="h-full">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {files.map((file) => (
-              <Card key={file.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg truncate">{file.originalName}</CardTitle>
-                      <CardDescription>
-                        Transcribed • {formatDuration(file.duration)}
-                      </CardDescription>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-6 w-6 p-0 text-muted-foreground hover:text-red-600 flex-shrink-0"
-                      onClick={() => handleDeleteFile(file.id, file.originalName)}
-                      disabled={deletingFiles.has(file.id)}
-                    >
-                      {deletingFiles.has(file.id) ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3 w-3" />
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="text-sm text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>Created</span>
-                      <span>{formatDate(file.updatedAt)}</span>
-                    </div>
-                    {file.notesCount && (
-                      <div className="flex justify-between mt-1">
-                        <span>Notes</span>
-                        <span>{(() => {
-                          try {
-                            const counts = JSON.parse(file.notesCount);
-                            return Object.values(counts).reduce((a: number, b: any) => a + b, 0);
-                          } catch (e) {
-                            return 0;
-                          }
-                        })()}</span>
-                      </div>
-                    )}
-                    {file.hasAiExtract && (
-                      <div className="flex justify-between mt-1">
-                        <span>AI Extract</span>
-                        <span className="text-green-600">Available</span>
-                      </div>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Button 
-                      className="w-full" 
-                      variant="outline"
-                      onClick={() => window.location.href = `/transcript/${file.id}`}
-                    >
-                      <FileText className="h-4 w-4 mr-2" />
-                      View Transcript
-                    </Button>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExtractAI(file.id, file.originalName)}
-                        disabled={extractingFiles.has(file.id) || file.hasAiExtract}
-                      >
-                        {extractingFiles.has(file.id) ? (
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        ) : (
-                          <Sparkles className="h-3 w-3 mr-1" />
-                        )}
-                        {file.hasAiExtract ? 'Extracted' : 'Extract'}
-                      </Button>
-                      <Button 
-                        className="w-full" 
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleExtractNotes(file.id, file.originalName)}
-                        disabled={extractingNotes.has(file.id)}
-                      >
-                        {extractingNotes.has(file.id) ? (
-                          <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                        ) : (
-                          <ListTodo className="h-3 w-3 mr-1" />
-                        )}
-                        Notes
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          {files.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No transcripts available yet</p>
-              <p className="text-sm text-muted-foreground mt-2">
-                Upload audio files and wait for transcription to complete
-              </p>
-            </div>
-          )}
-        </ScrollArea>
+        <Card>
+          <CardHeader>
+            <CardTitle>Transcripts</CardTitle>
+            <CardDescription>
+              View and manage your completed transcriptions
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {files.length === 0 ? (
+              <div className="text-center py-12">
+                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">No transcripts available yet</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Upload audio files and wait for transcription to complete
+                </p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>File</TableHead>
+                    <TableHead>Duration</TableHead>
+                    <TableHead>Created</TableHead>
+                    <TableHead>Features</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {files.map((file) => (
+                    <TableRow key={file.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <FileText className="h-4 w-4 text-primary flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-sm truncate">{file.originalName}</p>
+                            <p className="text-xs text-muted-foreground">Transcribed</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">{formatDuration(file.duration)}</span>
+                      </TableCell>
+                      <TableCell>
+                        <ClientOnly fallback={<span>Loading...</span>}>
+                          <span className="text-sm">{formatDate(file.updatedAt)}</span>
+                        </ClientOnly>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {file.hasAiExtract && (
+                            <Badge variant="default" className="text-xs">
+                              AI Extract
+                            </Badge>
+                          )}
+                          {file.notesCount && (
+                            <Badge variant="secondary" className="text-xs">
+                              {(() => {
+                                try {
+                                  const counts = JSON.parse(file.notesCount);
+                                  const total = Object.values(counts).reduce((a: number, b: any) => a + b, 0);
+                                  return `${total} notes`;
+                                } catch (e) {
+                                  return '0 notes';
+                                }
+                              })()}
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => window.location.href = `/transcript/${file.id}`}
+                          >
+                            <FileText className="h-4 w-4 mr-2" />
+                            View
+                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem 
+                                onClick={() => handleExtractAI(file.id, file.originalName)}
+                                disabled={extractingFiles.has(file.id) || file.hasAiExtract}
+                              >
+                                {extractingFiles.has(file.id) ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Sparkles className="h-4 w-4 mr-2" />
+                                )}
+                                {file.hasAiExtract ? 'AI Extracted' : 'Extract AI'}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleExtractNotes(file.id, file.originalName)}
+                                disabled={extractingNotes.has(file.id)}
+                              >
+                                {extractingNotes.has(file.id) ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <ListTodo className="h-4 w-4 mr-2" />
+                                )}
+                                Extract Notes
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteFile(file.id, file.originalName)}
+                                disabled={deletingFiles.has(file.id)}
+                                className="text-red-600"
+                              >
+                                {deletingFiles.has(file.id) ? (
+                                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                )}
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

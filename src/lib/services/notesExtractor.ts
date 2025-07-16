@@ -5,101 +5,117 @@ import type { TranscriptSegment } from '@/lib/db/sqliteSchema';
 
 // Default extraction prompts for different note types
 const DEFAULT_EXTRACTION_PROMPTS = {
-  tasks: `Analyze this transcript and extract all tasks, action items, and commitments mentioned.
-          Look for:
-          - Explicit tasks ("I need to...", "We should...", "Can you...")
-          - Implied actions from decisions
-          - Deadlines and time-sensitive items
-          - Work assignments and responsibilities
+  tasks: `Extract ONLY concrete, actionable tasks and commitments from this transcript.
           
-          For each task, provide:
-          - Clear, actionable description
-          - Who is responsible (if mentioned)
-          - Any deadline or timeline mentioned
-          - Priority level based on urgency and importance
+          STRICT CRITERIA - Only include if it meets ALL of these:
+          - Specific action to be taken by someone
+          - Clear responsibility (who will do it)
+          - Not vague statements or general discussion
+          - Represents actual work or commitment
+          
+          INCLUDE examples:
+          - "I'll send the report by Friday"
+          - "We need to call the client tomorrow"
+          - "Can you schedule the meeting?"
+          - "I'll follow up with the team"
+          
+          EXCLUDE examples:
+          - General opinions or thoughts
+          - Questions without commitment
+          - Casual mentions without action
+          - Vague "we should" without specific assignment
           
           Format your response as a JSON array of objects with these fields:
           [{
-            "content": "Complete the proposal document",
+            "content": "Send the quarterly report to the client",
             "speaker": "John",
-            "context": "The surrounding conversation text",
+            "context": "Brief surrounding conversation",
             "priority": "high",
             "metadata": { "deadline": "Friday", "assigned_to": "John" }
           }]`,
   
-  questions: `Find all questions that were asked but NOT fully answered in this conversation.
-              Look for:
-              - Direct questions that received no response
-              - Questions that got partial or unclear answers
-              - Questions that were deferred or postponed
+  questions: `Extract ONLY genuine unanswered questions that require follow-up.
               
-              For each unanswered question, provide:
-              - The exact question as asked
-              - Who asked it
-              - Brief explanation of why it seems unanswered
+              STRICT CRITERIA - Only include if it meets ALL of these:
+              - Direct question with clear intent
+              - No complete answer was provided
+              - Important enough to need follow-up
+              - Not rhetorical or casual questions
+              
+              INCLUDE examples:
+              - "What's the budget for this project?" (no answer given)
+              - "When is the deadline?" (answered vaguely or deferred)
+              - "Who will handle the client meeting?" (no clear assignment)
+              
+              EXCLUDE examples:
+              - Rhetorical questions ("How about that?")
+              - Questions that were answered clearly
+              - Casual conversational questions
+              - Questions answered later in the conversation
               
               Format as JSON array:
               [{
                 "content": "What's the budget for Q2?",
                 "speaker": "Sarah",
-                "context": "Context around the question",
+                "context": "Brief context where question was asked",
                 "metadata": { "topic": "budget", "urgency": "medium" }
               }]`,
   
-  decisions: `Identify all key decisions made during this conversation.
-              Look for:
-              - Explicit decisions ("We've decided to...", "Let's go with...")
-              - Consensus agreements
-              - Choices between options
-              - Policy or process changes
+  decisions: `Extract ONLY concrete decisions that were actually made and agreed upon.
               
-              For each decision, provide:
-              - What was decided
-              - Who made or confirmed the decision
-              - Any conditions or dependencies
+              STRICT CRITERIA - Only include if it meets ALL of these:
+              - Clear decision or choice was made
+              - Specific outcome or direction chosen
+              - Not just suggestions or considerations
+              - Represents actual agreement or commitment
+              
+              INCLUDE examples:
+              - "We've decided to go with vendor A"
+              - "Let's proceed with the new pricing model"
+              - "We agreed to postpone the launch until next month"
+              - "The team will use the new process starting Monday"
+              
+              EXCLUDE examples:
+              - Suggestions or ideas ("Maybe we should...")
+              - Considerations ("We could look into...")
+              - Discussions without clear resolution
+              - Tentative statements without commitment
               
               Format as JSON array:
               [{
-                "content": "We will proceed with Option B",
+                "content": "We will proceed with Option B for the new product launch",
                 "speaker": "Manager",
-                "context": "After discussing pros and cons...",
+                "context": "After discussing pros and cons of both options",
                 "metadata": { "impact": "high", "effective_date": "immediately" }
               }]`,
   
-  followups: `Extract all items that need follow-up or future discussion.
-              Look for:
-              - Items marked for "next time"
-              - Unresolved issues
-              - Information that needs to be gathered
-              - People who need to be contacted
+  followups: `Extract ONLY items that explicitly need future action or discussion.
               
-              Include:
-              - What needs follow-up
-              - Why it needs follow-up
-              - Suggested timeline if mentioned
+              STRICT CRITERIA - Only include if it meets ALL of these:
+              - Specific item requiring future attention
+              - Clear indication it needs follow-up
+              - Not just general discussion topics
+              - Represents actual work or communication needed
+              
+              INCLUDE examples:
+              - "Let's revisit this in next week's meeting"
+              - "I need to get back to you on that"
+              - "We should follow up with the client after the presentation"
+              - "This needs more research before we decide"
+              
+              EXCLUDE examples:
+              - General topics mentioned in passing
+              - Completed items
+              - Vague suggestions without clear need
+              - Items that were already resolved
               
               Format as JSON array:
               [{
-                "content": "Review competitor analysis",
+                "content": "Review competitor analysis before final decision",
                 "speaker": "Team",
-                "context": "We need more data before deciding",
+                "context": "We need more data before deciding on pricing",
                 "metadata": { "reason": "insufficient data", "timeline": "next week" }
-              }]`,
-  
-  mentions: `Extract important mentions and references including:
-            - People's names and their roles/titles
-            - Specific dates, deadlines, or time references
-            - Project names, company names, or important references
-            - Key metrics, numbers, or financial figures
-            - Tools, software, or technical references
-            
-            Format as JSON array:
-            [{
-              "content": "Client: Acme Corp",
-              "speaker": "Sales",
-              "context": "Our biggest client Acme Corp...",
-              "metadata": { "type": "company", "relationship": "client" }
-            }]`
+              }]`
 };
 
 // Function to get extraction prompts (either from settings or defaults)
@@ -111,7 +127,6 @@ async function getExtractionPrompts() {
       questions: settings?.notesPrompts?.questions || DEFAULT_EXTRACTION_PROMPTS.questions,
       decisions: settings?.notesPrompts?.decisions || DEFAULT_EXTRACTION_PROMPTS.decisions,
       followups: settings?.notesPrompts?.followups || DEFAULT_EXTRACTION_PROMPTS.followups,
-      mentions: settings?.notesPrompts?.mentions || DEFAULT_EXTRACTION_PROMPTS.mentions,
     };
   } catch (error) {
     console.log('Could not load custom prompts, using defaults');
@@ -130,7 +145,10 @@ interface ExtractedNote {
 export async function extractNotesFromTranscript(
   fileId: number,
   transcript: TranscriptSegment[]
-): Promise<{ success: boolean; notesCount: number; error?: string }> {
+): Promise<{ success: boolean; notesCount: number; error?: string; debugInfo?: any }> {
+  // Initialize debug info outside try block so it's available in catch
+  let debugInfo: any = {};
+  
   try {
     console.log(`🤖 Starting notes extraction for file ${fileId}...`);
     
@@ -154,8 +172,8 @@ export async function extractNotesFromTranscript(
     let model = 'anthropic/claude-sonnet-4';
     try {
       const settings = await settingsService.get();
-      if (settings?.ai?.aiExtractModel) {
-        model = settings.ai.aiExtractModel;
+      if (settings?.aiExtractModel) {
+        model = settings.aiExtractModel;
       }
     } catch (error) {
       console.log('Could not load settings, using default model');
@@ -167,15 +185,14 @@ export async function extractNotesFromTranscript(
     
     // Extract notes for each type
     const allNotes: any[] = [];
-    const noteTypes: Array<keyof typeof extractionPrompts> = ['tasks', 'questions', 'decisions', 'followups', 'mentions'];
+    const noteTypes: Array<keyof typeof extractionPrompts> = ['tasks', 'questions', 'decisions', 'followups'];
     
     // Map plural form (used in prompts) to singular form (used in database)
     const noteTypeMapping: Record<string, string> = {
       'tasks': 'task',
       'questions': 'question', 
       'decisions': 'decision',
-      'followups': 'followup',
-      'mentions': 'mention'
+      'followups': 'followup'
     };
     
     for (const noteType of noteTypes) {
@@ -187,21 +204,41 @@ export async function extractNotesFromTranscript(
           {
             role: 'system',
             content: `You are an AI assistant that extracts structured information from transcripts.
-                     CRITICAL: Respond with ONLY a valid JSON array. Do NOT include any explanatory text, markdown formatting, or other content.
-                     Start your response with [ and end with ].
-                     Be precise and include context.
-                     Preserve the original language (Swedish/English) in your extractions.`
+                     CRITICAL RESPONSE FORMAT:
+                     - Respond with ONLY a valid JSON array
+                     - Do NOT include any explanatory text, markdown formatting, or other content
+                     - Start your response with [ and end with ]
+                     - Each object in the array must be valid JSON
+                     - Be precise and include context
+                     - Preserve the original language (Swedish/English) in your extractions
+                     - If no items are found, return an empty array: []`
           },
           {
             role: 'user',
-            content: `${prompt}\n\nTranscript:\n${transcriptText}`
+            content: `${prompt}
+            
+IMPORTANT: Your response must be valid JSON format. Return only a JSON array of objects, nothing else.
+
+Transcript:
+${transcriptText}`
           }
         ], {
           model,
           maxTokens: 2000,
-          temperature: 0.3
+          temperature: 0.1  // Lower temperature for more consistent JSON output
         });
 
+        // Store raw response for debugging
+        console.log(`Raw ${noteType} response:`, response);
+        
+        // Initialize debug info for this note type
+        debugInfo[noteType] = {
+          rawResponse: response,
+          cleanedResponse: '',
+          parseError: null,
+          extractedCount: 0
+        };
+        
         // Parse the JSON response
         let extractedNotes: ExtractedNote[] = [];
         try {
@@ -216,10 +253,16 @@ export async function extractNotesFromTranscript(
             cleanedResponse = cleanedResponse.substring(firstBracket, lastBracket + 1);
           }
           
+          console.log(`Cleaned ${noteType} response:`, cleanedResponse);
+          debugInfo[noteType].cleanedResponse = cleanedResponse;
+          
           extractedNotes = JSON.parse(cleanedResponse);
+          debugInfo[noteType].extractedCount = extractedNotes.length;
         } catch (parseError) {
           console.error(`Failed to parse ${noteType} response:`, parseError);
+          debugInfo[noteType].parseError = parseError instanceof Error ? parseError.message : String(parseError);
           console.log('Raw response:', response);
+          console.log('Cleaned response:', debugInfo[noteType].cleanedResponse);
           continue;
         }
 
@@ -274,7 +317,8 @@ export async function extractNotesFromTranscript(
 
     return {
       success: true,
-      notesCount: allNotes.length
+      notesCount: allNotes.length,
+      debugInfo
     };
 
   } catch (error) {
@@ -289,7 +333,8 @@ export async function extractNotesFromTranscript(
     return {
       success: false,
       notesCount: 0,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : 'Unknown error',
+      debugInfo: debugInfo || {}
     };
   }
 }

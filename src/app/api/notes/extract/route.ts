@@ -48,14 +48,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: true,
         notesCount: result.notesCount,
-        message: `Successfully extracted ${result.notesCount} notes`
+        message: `Successfully extracted ${result.notesCount} notes`,
+        debugInfo: result.debugInfo
       });
     } else {
       console.error('❌ Notes extraction failed:', result.error);
       return NextResponse.json(
         {
           success: false,
-          error: result.error || 'Notes extraction failed'
+          error: result.error || 'Notes extraction failed',
+          debugInfo: result.debugInfo
         },
         { status: 500 }
       );

@@ -3,50 +3,49 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Mic, Settings, FileAudio, Files, FileText, Sparkles, ListTodo, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
 const navigation = [
   {
     name: 'Dashboard',
     href: '/',
-    icon: Home,
   },
   {
     name: 'Files',
     href: '/files',
-    icon: Files,
   },
   {
     name: 'Record',
     href: '/record',
-    icon: Mic,
   },
   {
     name: 'Transcripts',
     href: '/transcripts',
-    icon: FileText,
   },
   {
     name: 'AI Tools',
-    icon: Sparkles,
     children: [
       {
-        name: 'Extracts',
-        href: '/ai/extracts',
-        icon: Sparkles,
+        name: 'Summarization',
+        href: '/ai/summarization',
       },
       {
-        name: 'Notes',
-        href: '/ai/notes',
-        icon: ListTodo,
+        name: 'Extractions',
+        href: '/ai/extractions',
+      },
+      {
+        name: 'Data Points',
+        href: '/ai/data-points',
       },
     ],
   },
   {
+    name: 'Documentation',
+    href: '/docs',
+  },
+  {
     name: 'Settings',
     href: '/settings',
-    icon: Settings,
   },
 ];
 
@@ -79,11 +78,10 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-white">
+    <div className="flex h-full w-64 flex-col border-r bg-card">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b bg-gray-50">
-        <FileAudio className="h-8 w-8 text-blue-600 mr-3" />
-        <span className="text-xl font-bold text-gray-900">Noti</span>
+      <div className="flex h-16 items-center px-6 border-b bg-muted/30">
+        <span className="text-xl font-bold text-foreground">Noti</span>
       </div>
 
       {/* Navigation */}
@@ -99,20 +97,19 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                 <button
                   onClick={() => toggleExpanded(item.name)}
                   className={cn(
-                    'flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                    'flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                     hasActiveChild
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
-                  {item.name}
-                  <ChevronDown 
-                    className={cn(
-                      "ml-auto h-4 w-4 transition-transform",
-                      isExpanded ? "rotate-180" : ""
-                    )}
-                  />
+                  <span>{item.name}</span>
+                  <span className={cn(
+                    "text-xs transition-transform",
+                    isExpanded ? "rotate-180" : ""
+                  )}>
+                    ▼
+                  </span>
                 </button>
                 {isExpanded && (
                   <div className="ml-4 mt-1 space-y-1">
@@ -124,13 +121,12 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                           href={child.href}
                           onClick={onNavigate}
                           className={cn(
-                            'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                            'block rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                             childIsActive
-                              ? 'bg-blue-600 text-white'
-                              : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                              ? 'bg-primary text-primary-foreground'
+                              : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                           )}
                         >
-                          <child.icon className="h-4 w-4" />
                           {child.name}
                         </Link>
                       );
@@ -147,22 +143,38 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                'block rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 itemIsActive
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
-              <item.icon className="h-5 w-5" />
               {item.name}
             </Link>
           );
         })}
       </nav>
 
-      {/* Version */}
-      <div className="p-4 text-xs text-gray-500">
-        Version 1.0.0
+      {/* Logout & Version */}
+      <div className="border-t p-4 space-y-3">
+        <button
+          onClick={async () => {
+            try {
+              const response = await fetch('/api/auth/logout', { method: 'POST' });
+              if (response.ok) {
+                window.location.href = '/login';
+              }
+            } catch (error) {
+              console.error('Logout failed:', error);
+            }
+          }}
+          className="w-full rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
+        >
+          Logout
+        </button>
+        <div className="text-xs text-muted-foreground text-center">
+          Version 1.0.0
+        </div>
       </div>
     </div>
   );
