@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { audioFilesService, parseAudioFile } from '@/lib/db/sqliteServices';
-import { getAudioFile, deleteAudioFile, updateAudioFile } from '@/lib/fileDb';
 import { promises as fs } from 'fs';
 import { join } from 'path';
+import { getDb } from '../../../../lib/database/client';
+import { audioFiles } from '../../../../lib/database/schema/audio';
+import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
+import { aiExtracts } from '../../../../lib/database/schema/extractions';
+import { eq, sql } from 'drizzle-orm';
 
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 
@@ -12,34 +15,45 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const db = getDb();
     
-    // Try to get file from database
-    const numericId = parseInt(id);
-    if (!isNaN(numericId)) {
-      const file = await audioFilesService.findById(numericId);
-      if (file) {
-        const parsedFile = parseAudioFile(file);
-        return NextResponse.json({
-          id: parsedFile.id.toString(),
-          originalFileName: parsedFile.originalFileName,
-          fileName: parsedFile.fileName,
-          duration: parsedFile.duration,
-          uploadedAt: parsedFile.uploadedAt instanceof Date && !isNaN(parsedFile.uploadedAt.getTime()) 
-            ? parsedFile.uploadedAt.toISOString() 
-            : new Date().toISOString(),
-          transcribedAt: parsedFile.transcribedAt instanceof Date && !isNaN(parsedFile.transcribedAt.getTime())
-            ? parsedFile.transcribedAt.toISOString() 
-            : null,
-          language: parsedFile.language || 'sv',
-          modelSize: parsedFile.modelSize || 'large-v3',
-        });
-      }
+    // Query file with transcription status
+    const fileQuery = await db
+      .select({
+        id: audioFiles.id,
+        filename: audioFiles.fileName,
+        originalName: audioFiles.originalFileName,
+        size: audioFiles.fileSize,
+        mimeType: audioFiles.originalFileType,
+        createdAt: audioFiles.uploadedAt,
+        updatedAt: audioFiles.updatedAt,
+        duration: audioFiles.duration,
+        transcriptionStatus: sql<string>`COALESCE(${transcriptionJobs.status}, 'pending')`,
+      })
+      .from(audioFiles)
+      .leftJoin(transcriptionJobs, eq(audioFiles.id, transcriptionJobs.fileId))
+      .where(eq(audioFiles.id, parseInt(id)))
+      .limit(1);
+    
+    if (fileQuery.length === 0) {
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
     }
+
+    const file = fileQuery[0];
+    return NextResponse.json({
+      id: file.id,
+      originalFileName: file.originalName,
+      fileName: file.filename,
+      duration: file.duration || 0,
+      uploadedAt: file.createdAt,
+      transcribedAt: null,
+      language: 'sv',
+      modelSize: 'large-v3',
+    });
     
-    return NextResponse.json(
-      { error: 'File not found' },
-      { status: 404 }
-    );
   } catch (error) {
     console.error('Get file error:', error);
     return NextResponse.json(
@@ -65,38 +79,21 @@ export async function PATCH(
       );
     }
 
-    // First try file-based approach (UUID format)
-    const fileBasedFile = await getAudioFile(id);
-    if (fileBasedFile) {
-      await updateAudioFile(id, { originalName });
-      return NextResponse.json({
-        success: true,
-        message: 'File renamed successfully'
-      });
-    }
+    const db = getDb();
     
-    // Then try SQLite approach (numeric ID)
-    const numericId = parseInt(id);
-    if (!isNaN(numericId)) {
-      const file = await audioFilesService.findById(numericId);
-      if (!file) {
-        return NextResponse.json(
-          { error: 'File not found' },
-          { status: 404 }
-        );
-      }
+    // Update the file name in database
+    const updateResult = await db
+      .update(audioFiles)
+      .set({
+        originalFileName: originalName,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(audioFiles.id, parseInt(id)));
 
-      await audioFilesService.update(numericId, { originalFileName: originalName });
-      return NextResponse.json({
-        success: true,
-        message: 'File renamed successfully'
-      });
-    }
-    
-    return NextResponse.json(
-      { error: 'File not found' },
-      { status: 404 }
-    );
+    return NextResponse.json({
+      success: true,
+      message: 'File renamed successfully'
+    });
     
   } catch (error) {
     console.error('Rename file error:', error);
@@ -113,78 +110,69 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
+    const db = getDb();
     
-    // First try file-based approach (UUID format)
-    const fileBasedFile = await getAudioFile(id);
-    if (fileBasedFile) {
-      await deleteAudioFile(id);
-      return NextResponse.json({
-        success: true,
-        message: 'File and transcript deleted successfully'
-      });
+    // Get file info first
+    const fileQuery = await db
+      .select({
+        id: audioFiles.id,
+        filename: audioFiles.fileName,
+      })
+      .from(audioFiles)
+      .where(eq(audioFiles.id, parseInt(id)))
+      .limit(1);
+    
+    if (fileQuery.length === 0) {
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
     }
-    
-    // Then try SQLite approach (numeric ID)
-    const numericId = parseInt(id);
-    if (!isNaN(numericId)) {
-      // Get file info before deleting
-      const file = await audioFilesService.findById(numericId);
-      if (!file) {
-        return NextResponse.json(
-          { error: 'File not found' },
-          { status: 404 }
-        );
-      }
 
-      // Delete physical files
-      const audioFilesDir = join(DATA_DIR, 'audio_files');
-      const transcriptsDir = join(DATA_DIR, 'transcripts');
-      
-      try {
-        // Delete audio file (try both original and converted formats)
-        if (file.fileName) {
-          const audioPath = join(audioFilesDir, file.fileName);
-          await fs.unlink(audioPath).catch(() => {}); // Ignore if file doesn't exist
-          
-          // Also try to delete the original uploaded file (might be different format)
-          const baseName = file.fileName.split('.')[0];
-          const extensions = ['.m4a', '.mp3', '.wav', '.flac', '.ogg'];
-          
-          for (const ext of extensions) {
-            const altPath = join(audioFilesDir, baseName + ext);
-            await fs.unlink(altPath).catch(() => {}); // Ignore if file doesn't exist
-          }
+    const file = fileQuery[0];
+
+    // Delete physical files
+    const audioFilesDir = join(DATA_DIR, 'audio_files');
+    const transcriptsDir = join(DATA_DIR, 'transcripts');
+    
+    try {
+      // Delete audio file (try both original and converted formats)
+      if (file.filename) {
+        const audioPath = join(audioFilesDir, file.filename);
+        await fs.unlink(audioPath).catch(() => {}); // Ignore if file doesn't exist
+        
+        // Also try to delete the original uploaded file (might be different format)
+        const baseName = file.filename.split('.')[0];
+        const extensions = ['.m4a', '.mp3', '.wav', '.flac', '.ogg', '.webm', '.mp4'];
+        
+        for (const ext of extensions) {
+          const altPath = join(audioFilesDir, baseName + ext);
+          await fs.unlink(altPath).catch(() => {}); // Ignore if file doesn't exist
         }
-        
-        // Delete transcript file
-        const transcriptPath = join(transcriptsDir, `${numericId}.json`);
-        await fs.unlink(transcriptPath).catch(() => {}); // Ignore if file doesn't exist
-        
-      } catch (fileError) {
-        console.error('Error deleting physical files:', fileError);
-        // Continue with database deletion even if file deletion fails
       }
-
-      // Delete from database
-      const deleted = await audioFilesService.delete(numericId);
       
-      if (!deleted) {
-        return NextResponse.json(
-          { error: 'Failed to delete file from database' },
-          { status: 500 }
-        );
-      }
-
-      return NextResponse.json({
-        success: true,
-        message: 'File and transcript deleted successfully'
-      });
+      // Delete transcript file
+      const transcriptPath = join(transcriptsDir, `${id}.json`);
+      await fs.unlink(transcriptPath).catch(() => {}); // Ignore if file doesn't exist
+      
+      // Delete transcript metadata file
+      const metadataPath = join(transcriptsDir, `${id}_metadata.json`);
+      await fs.unlink(metadataPath).catch(() => {}); // Ignore if file doesn't exist
+      
+    } catch (fileError) {
+      console.error('Error deleting physical files:', fileError);
+      // Continue with database deletion even if file deletion fails
     }
-    
-    return NextResponse.json(
-      { error: 'File not found' },
-      { status: 404 }
-    );
+
+    // Delete from database (order matters due to foreign key constraints)
+    await db.delete(aiExtracts).where(eq(aiExtracts.fileId, parseInt(id)));
+    await db.delete(transcriptionJobs).where(eq(transcriptionJobs.fileId, parseInt(id)));
+    await db.delete(audioFiles).where(eq(audioFiles.id, parseInt(id)));
+
+    return NextResponse.json({
+      success: true,
+      message: 'File and transcript deleted successfully'
+    });
     
   } catch (error) {
     console.error('Delete file error:', error);
