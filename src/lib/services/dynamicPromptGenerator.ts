@@ -89,17 +89,24 @@ export class DynamicPromptGenerator {
       extractionDescriptions.push(`  - **${definition.name}**: ${definition.description}`);
     }
     
-    // Build the complete system prompt
-    const systemPrompt = `You are analyzing a transcript and must return a structured JSON response with the following sections:
+    // Build the complete system prompt based on whether we need JSON (for extractions) or can use Markdown
+    const hasExtractions = extractionDefinitions.length > 0;
+    
+    let systemPrompt: string;
+    
+    if (hasExtractions) {
+      // Use JSON format when extractions are needed
+      systemPrompt = `You are analyzing a transcript and must return a structured JSON response with the following sections:
 
 ## SUMMARIZATION:
 ${summarizationPrompt}
 
 ## EXTRACTIONS:
-${extractionDefinitions.length > 0 ? 
-  `Extract the following information from the transcript:\n${extractionDescriptions.join('\n')}\n\nInstructions:\n${extractionInstructions.join('\n')}` : 
-  'No extractions requested.'
-}
+Extract the following information from the transcript:
+${extractionDescriptions.join('\n')}
+
+Instructions:
+${extractionInstructions.join('\n')}
 
 ## RESPONSE FORMAT:
 Return ONLY a valid JSON object with this structure:
@@ -115,15 +122,17 @@ CRITICAL FORMATTING REQUIREMENTS:
 - End your response directly with the closing brace }
 - All fields are required, use empty arrays/objects if no data found
 - Be accurate and specific in your extractions
-- Use the exact JSON structure specified above
+- Use the exact JSON structure specified above`;
+    } else {
+      // Use natural Markdown format when only summarization is needed
+      systemPrompt = `You are analyzing a transcript and must provide a comprehensive analysis following the template instructions.
 
-EXAMPLE OF CORRECT FORMAT:
-{"summarization": "Example summary text", "field": []}
+## INSTRUCTIONS:
+${summarizationPrompt}
 
-EXAMPLE OF INCORRECT FORMAT (DO NOT USE):
-CODE_BLOCK_START_json
-{"summarization": "Example summary text", "field": []}
-CODE_BLOCK_END`;
+## OUTPUT FORMAT:
+Follow the template instructions exactly as specified. Use the natural format requested in the template (Markdown, structured text, etc.). Provide a thorough, detailed analysis that covers all aspects requested in the template.`;
+    }
 
     return {
       systemPrompt,
@@ -260,50 +269,61 @@ CODE_BLOCK_END`;
     error?: string;
   }> {
     try {
-      // Parse JSON response - with smart extraction and graceful fallback
+      // Determine if we expect JSON (extractions) or Markdown (summarization only)
+      const hasExtractions = Object.keys(extractionMap).length > 0;
       let parsedResponse;
-      try {
-        // First, try direct JSON parsing
-        parsedResponse = JSON.parse(aiResponse);
-        console.log('✅ Direct JSON parsing successful');
-      } catch (jsonError) {
-        console.warn('🔍 Direct JSON parsing failed, attempting smart extraction:', {
-          error: String(jsonError),
-          responseLength: aiResponse.length,
-          responseStart: aiResponse.substring(0, 100),
-        });
+      
+      if (hasExtractions) {
+        // Parse JSON response for extractions - with smart extraction and graceful fallback
+        try {
+          // First, try direct JSON parsing
+          parsedResponse = JSON.parse(aiResponse);
+          console.log('✅ Direct JSON parsing successful');
+        } catch (jsonError) {
+          console.warn('🔍 Direct JSON parsing failed, attempting smart extraction:', {
+            error: String(jsonError),
+            responseLength: aiResponse.length,
+            responseStart: aiResponse.substring(0, 100),
+          });
 
-        // Try smart JSON extraction from markdown-wrapped responses
-        const extractedJson = this.extractJsonFromResponse(aiResponse);
-        if (extractedJson) {
-          try {
-            parsedResponse = JSON.parse(extractedJson);
-            console.log('✅ Successfully extracted and parsed JSON from markdown-wrapped response');
-          } catch (extractError) {
-            console.error('❌ Failed to parse extracted JSON:', {
-              error: String(extractError),
-              extractedLength: extractedJson.length,
-              extractedPreview: extractedJson.substring(0, 100),
+          // Try smart JSON extraction from markdown-wrapped responses
+          const extractedJson = this.extractJsonFromResponse(aiResponse);
+          if (extractedJson) {
+            try {
+              parsedResponse = JSON.parse(extractedJson);
+              console.log('✅ Successfully extracted and parsed JSON from markdown-wrapped response');
+            } catch (extractError) {
+              console.error('❌ Failed to parse extracted JSON:', {
+                error: String(extractError),
+                extractedLength: extractedJson.length,
+                extractedPreview: extractedJson.substring(0, 100),
+              });
+              parsedResponse = null;
+            }
+          } else {
+            console.error('❌ No JSON found in AI response:', {
+              originalError: String(jsonError),
+              responseLength: aiResponse.length,
+              responsePreview: aiResponse.substring(0, 200),
             });
             parsedResponse = null;
           }
-        } else {
-          console.error('❌ No JSON found in AI response:', {
-            originalError: String(jsonError),
-            responseLength: aiResponse.length,
-            responsePreview: aiResponse.substring(0, 200),
-          });
-          parsedResponse = null;
-        }
 
-        // If all parsing attempts failed, create fallback response
-        if (!parsedResponse) {
-          console.warn('⚠️ Creating fallback response due to complete JSON parsing failure');
-          parsedResponse = {
-            summarization: aiResponse.length > 0 ? this.extractTextualSummary(aiResponse) : 'Unable to generate summary due to processing error.',
-            ...Object.fromEntries(Object.keys(extractionMap).map(key => [key, []]))
-          };
+          // If all parsing attempts failed, create fallback response
+          if (!parsedResponse) {
+            console.warn('⚠️ Creating fallback response due to complete JSON parsing failure');
+            parsedResponse = {
+              summarization: aiResponse.length > 0 ? this.extractTextualSummary(aiResponse) : 'Unable to generate summary due to processing error.',
+              ...Object.fromEntries(Object.keys(extractionMap).map(key => [key, []]))
+            };
+          }
         }
+      } else {
+        // Handle Markdown response for summarization-only requests
+        console.log('📝 Processing Markdown response for summarization-only request');
+        parsedResponse = {
+          summarization: aiResponse.trim() || 'No content received from AI.'
+        };
       }
       
       // Store summarization with fallback
