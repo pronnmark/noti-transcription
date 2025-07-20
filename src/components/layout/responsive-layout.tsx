@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { usePathname } from 'next/navigation';
 import { ClientOnly } from '@/components/client-only';
+import { Settings } from 'lucide-react';
+import TemplateManagementModal from '@/components/TemplateManagementModal';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -15,6 +17,7 @@ interface ResponsiveLayoutProps {
 
 export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const pathname = usePathname();
   
   const closeSidebar = () => setSidebarOpen(false);
@@ -26,6 +29,8 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
         setSidebarOpen={setSidebarOpen}
         pathname={pathname}
         closeSidebar={closeSidebar}
+        isTemplateModalOpen={isTemplateModalOpen}
+        setIsTemplateModalOpen={setIsTemplateModalOpen}
       >
         {children}
       </ResponsiveLayoutInner>
@@ -39,6 +44,8 @@ interface ResponsiveLayoutInnerProps {
   setSidebarOpen: (open: boolean) => void;
   pathname: string;
   closeSidebar: () => void;
+  isTemplateModalOpen: boolean;
+  setIsTemplateModalOpen: (open: boolean) => void;
 }
 
 function ResponsiveLayoutInner({ 
@@ -46,7 +53,9 @@ function ResponsiveLayoutInner({
   sidebarOpen, 
   setSidebarOpen, 
   pathname,
-  closeSidebar 
+  closeSidebar,
+  isTemplateModalOpen,
+  setIsTemplateModalOpen
 }: ResponsiveLayoutInnerProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
 
@@ -61,13 +70,11 @@ function ResponsiveLayoutInner({
   const getPageTitle = () => {
     switch (pathname) {
       case '/':
-        return 'Dashboard';
+        return 'Files';
       case '/files':
         return 'Files';
       case '/record':
         return 'Record';
-      case '/transcripts':
-        return 'Transcripts';
       case '/ai/summarization':
         return 'Summarization';
       case '/ai/extractions':
@@ -88,6 +95,9 @@ function ResponsiveLayoutInner({
       case '/settings':
         return 'Settings';
       default:
+        if (pathname.startsWith('/transcript/')) {
+          return 'Transcript';
+        }
         return 'Noti';
     }
   };
@@ -135,7 +145,7 @@ function ResponsiveLayoutInner({
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile Header */}
         {isMobile && (
-          <div className="flex items-center justify-between p-4 border-b bg-background md:hidden safe-area-inset-top">
+          <div className="flex items-center justify-between px-4 py-3 border-b bg-background md:hidden safe-area-inset-top touch-manipulation">
             <Button
               variant="ghost"
               size="sm"
@@ -145,7 +155,7 @@ function ResponsiveLayoutInner({
             >
               ☰
             </Button>
-            <h1 className="text-lg font-semibold text-foreground truncate max-w-[200px]">{getPageTitle()}</h1>
+            <h1 className="ios-title3 text-foreground truncate max-w-[200px]">{getPageTitle()}</h1>
             <div className="flex items-center gap-2">
               {/* Quick actions based on current page */}
               {pathname === '/files' && (
@@ -158,24 +168,25 @@ function ResponsiveLayoutInner({
                   Record
                 </Button>
               )}
-              {pathname === '/transcripts' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.location.href = '/files'}
-                  className="h-9 px-2 text-sm touch-target-44"
-                >
-                  Upload
-                </Button>
-              )}
               {pathname === '/' && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => window.location.href = '/files'}
+                  onClick={() => window.location.href = '/record'}
                   className="h-9 px-2 text-sm touch-target-44"
                 >
-                  Upload
+                  Record
+                </Button>
+              )}
+              {pathname === '/ai/summarization' && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsTemplateModalOpen(true)}
+                  className="h-9 px-3 text-sm touch-target-44 flex items-center gap-2 font-medium touch-manipulation"
+                >
+                  <Settings className="w-3.5 h-3.5" />
+                  Templates
                 </Button>
               )}
             </div>
@@ -193,6 +204,16 @@ function ResponsiveLayoutInner({
 
       {/* Mobile Bottom Navigation */}
       {isMobile && <BottomNav />}
+
+      {/* Template Management Modal */}
+      <TemplateManagementModal
+        isOpen={isTemplateModalOpen}
+        onOpenChange={setIsTemplateModalOpen}
+        onTemplatesUpdated={() => {
+          // Trigger a page refresh to reload templates
+          window.location.reload();
+        }}
+      />
     </div>
   );
 }

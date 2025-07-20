@@ -1,6 +1,7 @@
-import { openRouterService } from './openrouter';
-import { db, eq, and } from '@/lib/db/sqlite';
-import * as schema from '@/lib/db/sqliteSchema';
+import '../logging/init'; // Ensure logger is initialized
+import { customAIService } from './customAI';
+import { db, eq, and } from "@/lib/db"
+import * as schema from "@/lib/db"
 
 export interface TranscriptSegment {
   start: number;
@@ -49,7 +50,6 @@ export interface SummarizationResult {
  * configurable AI analysis of transcripts.
  */
 export class AdaptiveAIService {
-  private defaultModel = 'anthropic/claude-sonnet-4';
   private defaultTemperature = 0.3;
   private defaultMaxTokens = 4000;
 
@@ -67,12 +67,23 @@ export class AdaptiveAIService {
   ): Promise<SummarizationResult> {
     const { templateId, customPrompt, model = this.defaultModel } = options;
 
-    // Get template if provided
+    // Get template if provided - using correct summarizationPrompts table
     let template = null;
+    let validatedTemplateId = null;
     if (templateId) {
-      template = await db.query.summarizationTemplates?.findFirst({
-        where: (templates, { eq }) => eq(templates.id, templateId),
+      template = await db.query.summarizationPrompts?.findFirst({
+        where: (prompts: any, { eq, and }: any) => and(
+          eq(prompts.id, templateId),
+          eq(prompts.isActive, true)
+        ),
       });
+      
+      if (!template) {
+        console.warn(`⚠️ Invalid template ID provided: ${templateId}. Falling back to default summarization.`);
+        validatedTemplateId = null; // Use null instead of invalid ID
+      } else {
+        validatedTemplateId = templateId;
+      }
     }
 
     // Format transcript text
@@ -97,30 +108,25 @@ export class AdaptiveAIService {
     const finalPrompt = prompt.replace('{transcript}', transcriptText);
 
     // Generate summary using AI
-    const summary = await openRouterService.generateText(finalPrompt, {
-      model,
+    const summary = await customAIService.generateText(finalPrompt, {
+      model: options?.model,
       temperature: this.defaultTemperature,
       maxTokens: this.calculateMaxTokens(transcriptText),
       systemPrompt: 'You are an AI assistant specialized in creating clear, structured summaries of audio transcripts. Focus on accuracy and relevance.'
     });
 
-    // Store in database
-    const summarizationId = `sum_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    await db.insert(schema.summarizations).values({
-      id: summarizationId,
+    // Store in database using validated template ID
+    const [summarization] = await db.insert(schema.summarizations).values({
       fileId: fileId,
-      templateId: templateId || null,
+      templateId: validatedTemplateId,
       model: model,
       prompt: finalPrompt,
       content: summary,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    }).returning();
 
     return {
-      id: summarizationId,
-      templateId,
+      id: summarization.id,
+      templateId: validatedTemplateId,
       content: summary,
       model,
       prompt: finalPrompt
@@ -140,7 +146,7 @@ export class AdaptiveAIService {
 
     // Get templates
     const templates = await db.query.extractionTemplates?.findMany({
-      where: (templates, { inArray }) => inArray(templates.id, templateIds),
+      where: (templates: any, { inArray }: any) => inArray(templates.id, templateIds),
     }) || [];
 
     if (templates.length === 0) {
@@ -159,8 +165,8 @@ export class AdaptiveAIService {
         const finalPrompt = template.prompt.replace('{transcript}', transcriptText);
 
         // Generate extraction using AI
-        const extractionContent = await openRouterService.generateText(finalPrompt, {
-          model,
+        const extractionContent = await customAIService.generateText(finalPrompt, {
+          model: options?.model,
           temperature,
           maxTokens: this.calculateMaxTokens(transcriptText, 0.3),
           systemPrompt: `You are an AI assistant specialized in extracting specific information from transcripts. Follow the provided instructions exactly and return results in the requested format.`
@@ -171,10 +177,7 @@ export class AdaptiveAIService {
 
         // Store each extracted item in the database
         for (const item of parsedResults) {
-          const extractionId = `ext_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          
-          await db.insert(schema.extractions).values({
-            id: extractionId,
+          const [extraction] = await db.insert(schema.extractions).values({
             fileId: fileId,
             templateId: template.id,
             content: item.content,
@@ -185,12 +188,10 @@ export class AdaptiveAIService {
             status: 'active',
             metadata: JSON.stringify(item.metadata || {}),
             comments: null,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          });
+          }).returning();
 
           results.push({
-            id: extractionId,
+            id: extraction.id,
             templateId: template.id,
             content: item.content,
             context: item.context,
@@ -226,7 +227,7 @@ export class AdaptiveAIService {
 
     // Get templates
     const templates = await db.query.dataPointTemplates?.findMany({
-      where: (templates, { inArray }) => inArray(templates.id, templateIds),
+      where: (templates: any, { inArray }: any) => inArray(templates.id, templateIds),
     }) || [];
 
     if (templates.length === 0) {
@@ -245,8 +246,8 @@ export class AdaptiveAIService {
         const finalPrompt = template.analysisPrompt.replace('{transcript}', transcriptText);
 
         // Generate analysis using AI
-        const analysisContent = await openRouterService.generateText(finalPrompt, {
-          model,
+        const analysisContent = await customAIService.generateText(finalPrompt, {
+          model: options?.model,
           temperature,
           maxTokens: this.calculateMaxTokens(transcriptText, 0.2),
           systemPrompt: `You are an AI assistant specialized in analyzing transcripts and generating structured data points. Follow the provided schema exactly and return valid JSON.`
@@ -256,20 +257,15 @@ export class AdaptiveAIService {
         const analysisResults = this.parseDataPointResults(analysisContent, template);
 
         // Store in database
-        const dataPointId = `dp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
-        await db.insert(schema.dataPoints).values({
-          id: dataPointId,
+        const [dataPoint] = await db.insert(schema.dataPoints).values({
           fileId: fileId,
           templateId: template.id,
           analysisResults: JSON.stringify(analysisResults),
           model: model,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        });
+        }).returning();
 
         results.push({
-          id: dataPointId,
+          id: dataPoint.id,
           templateId: template.id,
           analysisResults,
           model
@@ -301,11 +297,11 @@ export class AdaptiveAIService {
   }> {
     // Get default templates
     const defaultExtractionTemplates = await db.query.extractionTemplates?.findMany({
-      where: (templates, { eq }) => eq(templates.isDefault, true),
+      where: (templates: any, { eq }: any) => eq(templates.isDefault, true),
     }) || [];
 
     const defaultDataPointTemplates = await db.query.dataPointTemplates?.findMany({
-      where: (templates, { eq }) => eq(templates.isDefault, true),
+      where: (templates: any, { eq }: any) => eq(templates.isDefault, true),
     }) || [];
 
     const results = {
@@ -422,5 +418,20 @@ export class AdaptiveAIService {
   }
 }
 
-// Export singleton instance
-export const adaptiveAIService = new AdaptiveAIService();
+// Lazy-loaded singleton instance
+let _adaptiveAIService: AdaptiveAIService | null = null;
+
+export function getAdaptiveAIService(): AdaptiveAIService {
+  if (!_adaptiveAIService) {
+    _adaptiveAIService = new AdaptiveAIService();
+  }
+  return _adaptiveAIService;
+}
+
+// Export getter proxy for backward compatibility
+export const adaptiveAIService = new Proxy({} as AdaptiveAIService, {
+  get(target, prop, receiver) {
+    const service = getAdaptiveAIService();
+    return Reflect.get(service, prop, receiver);
+  }
+});
