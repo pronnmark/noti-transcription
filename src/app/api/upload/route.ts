@@ -87,6 +87,56 @@ export async function POST(request: NextRequest) {
       console.log(`User specified ${speakerCount} speakers for diarization`);
     }
 
+    // Extract location data (optional)
+    let locationData: {
+      latitude?: number;
+      longitude?: number;
+      accuracy?: number;
+      timestamp?: number;
+      provider?: string;
+    } = {};
+    
+    const latitudeField = formData.get('latitude');
+    const longitudeField = formData.get('longitude');
+    const accuracyField = formData.get('locationAccuracy');
+    const timestampField = formData.get('locationTimestamp');
+    const providerField = formData.get('locationProvider');
+
+    if (latitudeField && longitudeField) {
+      const latitude = parseFloat(latitudeField.toString());
+      const longitude = parseFloat(longitudeField.toString());
+      
+      // Basic validation for geographic coordinates
+      if (isNaN(latitude) || isNaN(longitude) || 
+          latitude < -90 || latitude > 90 || 
+          longitude < -180 || longitude > 180) {
+        console.warn('Invalid location coordinates provided:', { latitude, longitude });
+      } else {
+        locationData.latitude = latitude;
+        locationData.longitude = longitude;
+        
+        if (accuracyField) {
+          const accuracy = parseInt(accuracyField.toString());
+          if (!isNaN(accuracy) && accuracy > 0) {
+            locationData.accuracy = accuracy;
+          }
+        }
+        
+        if (timestampField) {
+          const timestamp = parseInt(timestampField.toString());
+          if (!isNaN(timestamp) && timestamp > 0) {
+            locationData.timestamp = timestamp;
+          }
+        }
+        
+        if (providerField && ['gps', 'network', 'passive'].includes(providerField.toString())) {
+          locationData.provider = providerField.toString();
+        }
+        
+        console.log('📍 Location data received:', locationData);
+      }
+    }
+
     // Create upload directory
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     await fs.mkdir(uploadDir, { recursive: true });
@@ -120,6 +170,12 @@ export async function POST(request: NextRequest) {
       fileHash: null,
       duration: duration,
       recordedAt: recordedAt,
+      // Include location data if available
+      latitude: locationData.latitude || null,
+      longitude: locationData.longitude || null,
+      locationAccuracy: locationData.accuracy || null,
+      locationTimestamp: locationData.timestamp ? new Date(locationData.timestamp) : null,
+      locationProvider: locationData.provider || null,
     }).returning();
 
     // Create transcription job
@@ -151,6 +207,8 @@ export async function POST(request: NextRequest) {
       transcriptionStatus: 'pending',
       speakerCount: speakerCount || null,
       speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
+      locationCaptured: !!(locationData.latitude && locationData.longitude),
+      locationProvider: locationData.provider || null,
     });
 
   } catch (error: any) {

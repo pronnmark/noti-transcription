@@ -8,6 +8,7 @@ import { Mic, Square, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
+import { locationService, type LocationData } from '@/lib/services/locationService';
 
 // Wake Lock API types (if not already defined)
 interface WakeLockSentinel {
@@ -29,6 +30,11 @@ export default function RecordPage() {
   const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
   const [autoSaveCounter, setAutoSaveCounter] = useState(0);
 
+  // Location tracking state
+  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  const [locationError, setLocationError] = useState<string | null>(null);
+  const [isLocationTracking, setIsLocationTracking] = useState(false);
+
   useEffect(() => {
     checkRecordingSupport();
     detectMobile();
@@ -40,8 +46,12 @@ export default function RecordPage() {
       if (wakeLock) {
         wakeLock.release();
       }
+      // Clean up location tracking on unmount
+      if (isLocationTracking) {
+        locationService.stopTracking();
+      }
     };
-  }, [wakeLock]);
+  }, [wakeLock, isLocationTracking]);
 
   // Handle page visibility changes (mobile tab switching)
   useEffect(() => {
@@ -101,6 +111,52 @@ export default function RecordPage() {
       wakeLock.release();
       setWakeLock(null);
       console.log('Wake lock released');
+    }
+  }
+
+  async function startLocationTracking() {
+    if (!locationService.isSupported()) {
+      console.log('Geolocation not supported - recording will continue without location data');
+      return;
+    }
+
+    try {
+      console.log('🗺️ Starting location tracking for recording session...');
+      
+      await locationService.startTracking(
+        (location: LocationData) => {
+          setLocationData(location);
+          setLocationError(null);
+          console.log('📍 Location updated during recording:', location);
+        },
+        (error: string) => {
+          setLocationError(error);
+          console.warn('⚠️ Location error during recording:', error);
+          // Don't show toast - recording should continue without location
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000,
+          updateInterval: 30000, // Update every 30 seconds during recording
+        },
+      );
+
+      setIsLocationTracking(true);
+      console.log('✅ Location tracking active');
+      
+    } catch (error) {
+      console.warn('⚠️ Failed to start location tracking:', error);
+      setLocationError(error instanceof Error ? error.message : 'Location tracking failed');
+      // Recording continues without location
+    }
+  }
+
+  function stopLocationTracking() {
+    if (isLocationTracking) {
+      locationService.stopTracking();
+      setIsLocationTracking(false);
+      console.log('🛑 Location tracking stopped');
     }
   }
 
@@ -236,6 +292,9 @@ export default function RecordPage() {
         await requestWakeLock();
       }
 
+      // Start location tracking (non-blocking - recording continues regardless)
+      await startLocationTracking();
+
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = (event) => {
@@ -268,6 +327,7 @@ export default function RecordPage() {
         toast.error('Recording error occurred');
         setIsRecording(false);
         setIsPaused(false);
+        stopLocationTracking();
         if (isMobile) {
           releaseWakeLock();
         }
@@ -346,7 +406,8 @@ export default function RecordPage() {
       setLastAutoSave(null);
       setAutoSaveCounter(0);
 
-      // Release wake lock when recording stops
+      // Stop location tracking and release wake lock when recording stops
+      stopLocationTracking();
       if (isMobile) {
         releaseWakeLock();
       }
@@ -389,6 +450,15 @@ export default function RecordPage() {
         formData.append('audio', autoSaveBlob, filename);
         formData.append('speakerCount', speakerCount.toString());
         formData.append('isDraft', 'true'); // Mark as draft to skip transcription
+
+        // Include location data if available
+        if (locationData) {
+          formData.append('latitude', locationData.latitude.toString());
+          formData.append('longitude', locationData.longitude.toString());
+          formData.append('locationAccuracy', locationData.accuracy.toString());
+          formData.append('locationTimestamp', locationData.timestamp.toString());
+          formData.append('locationProvider', locationData.provider);
+        }
 
         const response = await fetch('/api/upload', {
           method: 'POST',
@@ -455,6 +525,18 @@ export default function RecordPage() {
       formData.append('speakerCount', speakerCount.toString());
       if (isDraft) {
         formData.append('isDraft', 'true');
+      }
+
+      // Include location data if available
+      if (locationData) {
+        formData.append('latitude', locationData.latitude.toString());
+        formData.append('longitude', locationData.longitude.toString());
+        formData.append('locationAccuracy', locationData.accuracy.toString());
+        formData.append('locationTimestamp', locationData.timestamp.toString());
+        formData.append('locationProvider', locationData.provider);
+        console.log('📍 Including location data in upload:', locationData);
+      } else {
+        console.log('📍 No location data available for upload');
       }
 
       const response = await fetch('/api/upload', {

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core';
 import { sql } from 'drizzle-orm';
 
 // Transcript segment type definition
@@ -22,6 +22,13 @@ export const audioFiles = sqliteTable('audio_files', {
   // Basic metadata
   title: text('title'),
   peaks: text('peaks', { mode: 'json' }).$type<number[]>(),
+
+  // Location metadata (captured during recording)
+  latitude: real('latitude'),
+  longitude: real('longitude'),
+  locationAccuracy: integer('location_accuracy'), // accuracy in meters
+  locationTimestamp: integer('location_timestamp', { mode: 'timestamp' }), // when location was captured
+  locationProvider: text('location_provider'), // 'gps' | 'network' | 'passive'
 
   // Timestamps
   uploadedAt: integer('uploaded_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
