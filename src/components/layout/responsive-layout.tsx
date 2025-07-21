@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Sidebar } from './sidebar';
 import { BottomNav } from './bottom-nav';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import { ClientOnly } from '@/components/client-only';
 import { Settings } from 'lucide-react';
 import TemplateManagementModal from '@/components/TemplateManagementModal';
+import { getSessionToken } from '@/lib/auth-client';
 
 interface ResponsiveLayoutProps {
   children: React.ReactNode;
@@ -46,6 +47,35 @@ function ResponsiveLayoutInner({
   setIsTemplateModalOpen
 }: ResponsiveLayoutInnerProps) {
   const isMobile = useMediaQuery('(max-width: 767px)');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Check authentication status
+    const checkAuth = () => {
+      const sessionToken = getSessionToken();
+      setIsAuthenticated(!!sessionToken);
+    };
+    
+    // Initial check
+    checkAuth();
+    
+    // Listen for storage changes (when user logs in/out)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'noti-session') {
+        checkAuth();
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    
+    // Also check periodically in case localStorage changes within same tab
+    const interval = setInterval(checkAuth, 1000);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Get page title based on current path
   const getPageTitle = () => {
@@ -85,21 +115,26 @@ function ResponsiveLayoutInner({
     }
   };
 
+  // Don't render navigation elements for login page or when not authenticated
+  const showNavigation = isAuthenticated && pathname !== '/';
+
   return (
     <div className="flex h-full">
-      {/* Desktop Sidebar */}
-      <div className={cn(
-        "hidden md:flex md:flex-shrink-0",
-        "transition-all duration-300"
-      )}>
-        <Sidebar />
-      </div>
+      {/* Desktop Sidebar - only show when authenticated and not on login page */}
+      {showNavigation && (
+        <div className={cn(
+          "hidden md:flex md:flex-shrink-0",
+          "transition-all duration-300"
+        )}>
+          <Sidebar />
+        </div>
+      )}
 
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Mobile Header */}
-        {isMobile && (
+        {/* Mobile Header - only show when authenticated and not on login page */}
+        {isMobile && showNavigation && (
           <div className="flex items-center justify-center buzz-header-mobile border-b bg-background md:hidden safe-area-inset-top touch-manipulation">
             <h1 className="text-xl font-medium text-foreground truncate max-w-[280px]">{getPageTitle()}</h1>
             <div className="absolute right-4 flex items-center gap-2">
@@ -122,14 +157,14 @@ function ResponsiveLayoutInner({
         {/* Page Content */}
         <main className={cn(
           "flex-1 overflow-hidden",
-          isMobile && "pb-16 safe-area-inset-bottom" // Add bottom padding for mobile navigation
+          isMobile && showNavigation && "pb-16 safe-area-inset-bottom" // Add bottom padding for mobile navigation
         )}>
           {children}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation */}
-      {isMobile && <BottomNav />}
+      {/* Mobile Bottom Navigation - only show when authenticated and not on login page */}
+      {isMobile && showNavigation && <BottomNav />}
 
       {/* Template Management Modal */}
       <TemplateManagementModal

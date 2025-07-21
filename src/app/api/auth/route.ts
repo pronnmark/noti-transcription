@@ -5,7 +5,7 @@ export async function POST(request: NextRequest) {
     const { password } = await request.json();
 
     // Get password from environment variable
-    const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'noti2024';
+    const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'ddash';
 
     if (password === AUTH_PASSWORD) {
       // Generate a simple session token
