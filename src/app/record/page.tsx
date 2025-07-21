@@ -8,7 +8,8 @@ import { Mic, Square, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
-import { locationService, type LocationData } from '@/lib/services/locationService';
+import { locationService } from '@/lib/services/locationService';
+import type { LocationData } from '@/lib/services/locationService';
 
 // Wake Lock API types (if not already defined)
 interface WakeLockSentinel {
