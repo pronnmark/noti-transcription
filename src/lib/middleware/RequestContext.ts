@@ -63,11 +63,11 @@ export class RequestContextBuilder {
 
   private extractQuery(url: URL): Record<string, string> {
     const query: Record<string, string> = {};
-    
+
     for (const [key, value] of Array.from(url.searchParams.entries())) {
       query[key] = value;
     }
-    
+
     return query;
   }
 
@@ -82,7 +82,7 @@ export class RequestContextBuilder {
 
     for (const [key, value] of Array.from(request.headers.entries())) {
       const lowerKey = key.toLowerCase();
-      
+
       if (this.config.logging?.logHeaders !== false) {
         // Sanitize sensitive headers
         if (sensitiveHeaders.includes(lowerKey)) {
@@ -98,7 +98,7 @@ export class RequestContextBuilder {
 
   private extractUserId(request: NextRequest, headers: Record<string, string>): string | undefined {
     // Try to extract user ID from various sources
-    
+
     // From Authorization header (JWT)
     const authHeader = headers['authorization'];
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -172,7 +172,7 @@ export class RequestContextBuilder {
     try {
       if (contentType.includes('application/json')) {
         const text = await request.text();
-        
+
         if (text.length > maxBodySize) {
           return { _truncated: true, _size: text.length };
         }
@@ -184,11 +184,11 @@ export class RequestContextBuilder {
       if (contentType.includes('application/x-www-form-urlencoded')) {
         const formData = await request.formData();
         const body: Record<string, any> = {};
-        
+
         for (const [key, value] of Array.from(formData.entries())) {
           body[key] = value;
         }
-        
+
         return this.sanitizeBody(body);
       }
 
@@ -269,13 +269,13 @@ export class RequestContextBuilder {
 
   private parseCookies(cookieHeader: string): Record<string, string> {
     const cookies: Record<string, string> = {};
-    
+
     if (!cookieHeader) {
       return cookies;
     }
 
     const pairs = cookieHeader.split(';');
-    
+
     for (const pair of pairs) {
       const [key, value] = pair.trim().split('=');
       if (key && value) {
@@ -290,7 +290,7 @@ export class RequestContextBuilder {
     // Basic IP validation (IPv4 and IPv6)
     const ipv4Regex = /^(\d{1,3}\.){3}\d{1,3}$/;
     const ipv6Regex = /^([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/;
-    
+
     return ipv4Regex.test(ip) || ipv6Regex.test(ip);
   }
 }

@@ -3,10 +3,10 @@ import { createFormatter } from './formatters';
 
 export class ConsoleTransport implements LogTransport {
   public readonly name = 'console';
-  
+
   constructor(
     public readonly level: LogLevel = LogLevel.INFO,
-    private formatter: LogFormatter = createFormatter('console')
+    private formatter: LogFormatter = createFormatter('console'),
   ) {}
 
   async write(entry: LogEntry): Promise<void> {
@@ -15,7 +15,7 @@ export class ConsoleTransport implements LogTransport {
     }
 
     const formatted = this.formatter.format(entry);
-    
+
     // Use appropriate console method based on log level
     switch (entry.level) {
       case LogLevel.TRACE:
@@ -53,7 +53,7 @@ export class FileTransport implements LogTransport {
       maxFiles?: number;
       flushInterval?: number;
       autoFlush?: boolean;
-    } = {}
+    } = {},
   ) {
     this.options = {
       maxSize: 10 * 1024 * 1024, // 10MB
@@ -91,7 +91,7 @@ export class FileTransport implements LogTransport {
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       // Ensure directory exists
       const dir = path.dirname(this.filePath);
       await fs.mkdir(dir, { recursive: true });
@@ -102,7 +102,7 @@ export class FileTransport implements LogTransport {
       // Write queued entries
       const content = this.writeQueue.join('');
       await fs.appendFile(this.filePath, content);
-      
+
       this.writeQueue = [];
     } catch (error) {
       console.error('Failed to write to log file:', error);
@@ -122,9 +122,9 @@ export class FileTransport implements LogTransport {
     try {
       const fs = await import('fs/promises');
       const path = await import('path');
-      
+
       const stats = await fs.stat(this.filePath).catch(() => null);
-      
+
       if (!stats || stats.size < (this.options.maxSize || 0)) {
         return;
       }
@@ -132,7 +132,7 @@ export class FileTransport implements LogTransport {
       // Rotate files
       const ext = path.extname(this.filePath);
       const base = this.filePath.slice(0, -ext.length);
-      
+
       // Remove oldest file if we have too many
       const oldestFile = `${base}.${this.options.maxFiles}${ext}`;
       await fs.unlink(oldestFile).catch(() => {});
@@ -141,7 +141,7 @@ export class FileTransport implements LogTransport {
       for (let i = (this.options.maxFiles || 1) - 1; i > 0; i--) {
         const oldFile = i === 1 ? this.filePath : `${base}.${i}${ext}`;
         const newFile = `${base}.${i + 1}${ext}`;
-        
+
         await fs.rename(oldFile, newFile).catch(() => {});
       }
 
@@ -182,7 +182,7 @@ export class HttpTransport implements LogTransport {
       flushInterval?: number;
       timeout?: number;
       headers?: Record<string, string>;
-    } = {}
+    } = {},
   ) {
     this.options = {
       batchSize: 10,
@@ -281,7 +281,7 @@ export class MemoryTransport implements LogTransport {
 
   constructor(
     public readonly level: LogLevel,
-    private maxEntries: number = 1000
+    private maxEntries: number = 1000,
   ) {}
 
   async write(entry: LogEntry): Promise<void> {
@@ -318,9 +318,9 @@ export class MemoryTransport implements LogTransport {
     byLevel: Record<string, number>;
     oldest?: Date;
     newest?: Date;
-  } {
+    } {
     const byLevel: Record<string, number> = {};
-    
+
     for (const log of this.logs) {
       const levelName = LogLevel[log.level].toLowerCase();
       byLevel[levelName] = (byLevel[levelName] || 0) + 1;
@@ -339,7 +339,7 @@ export class MemoryTransport implements LogTransport {
 export function createTransport(
   type: 'console' | 'file' | 'http' | 'memory',
   level: LogLevel,
-  options?: any
+  options?: any,
 ): LogTransport {
   switch (type) {
     case 'console':

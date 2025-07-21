@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq } from "@/lib/db"
+import { db, eq } from '@/lib/db';
 import { dynamicPromptGenerator } from '@/lib/services/dynamicPromptGenerator';
 import { customAIService } from '@/lib/services/customAI';
 import { requireAuth } from '@/lib/auth';
-import * as schema from "@/lib/db"
+import * as schema from '@/lib/db';
 import { createId } from '@paralleldrive/cuid2';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
     const body = await request.json();
-    
-    const { 
+
+    const {
       summarizationPromptId,
       extractionDefinitionIds = [],
-      customSummarizationPrompt
+      customSummarizationPrompt,
     } = body;
 
     // Validate summarization template ID exists in database before processing
@@ -27,15 +27,15 @@ export async function POST(
       const validTemplate = await db.query.summarizationPrompts.findFirst({
         where: (prompts: any, { eq, and }: any) => and(
           eq(prompts.id, summarizationPromptId),
-          eq(prompts.isActive, true)
+          eq(prompts.isActive, true),
         ),
       });
-      
+
       if (!validTemplate) {
         console.error(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Invalid summarization template ID provided',
-          invalidTemplateId: summarizationPromptId
+          invalidTemplateId: summarizationPromptId,
         }, { status: 400 });
       }
     }
@@ -69,7 +69,7 @@ export async function POST(
     // Update file timestamp
     await db.update(schema.audioFiles)
       .set({
-        updatedAt: new Date()
+        updatedAt: new Date(),
       })
       .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -92,7 +92,7 @@ export async function POST(
 
       // Format transcript for AI
       const transcriptText = formatTranscriptForAI(transcriptionJob.transcript);
-      
+
       // Create AI processing session record
       await db.insert(schema.aiProcessingSessions).values({
         id: sessionId,
@@ -104,7 +104,7 @@ export async function POST(
         status: 'processing',
         model: configuredModel,
       });
-      
+
       // Call AI with dynamic prompt and structured JSON output
       const aiResponse = await customAIService.generateText(
         `Please analyze this transcript:\n\n${transcriptText}`,
@@ -114,7 +114,7 @@ export async function POST(
           temperature: 0.2,
           systemPrompt,
           jsonSchema: expectedJsonSchema,
-        }
+        },
       );
 
       console.log(`🤖 AI response received (${aiResponse.length} chars)`);
@@ -137,7 +137,7 @@ export async function POST(
         extractionMap,
         sessionId,
         configuredModel,
-        summarizationPromptId
+        summarizationPromptId,
       );
 
       if (!success) {
@@ -147,7 +147,7 @@ export async function POST(
       // Update file timestamp
       await db.update(schema.audioFiles)
         .set({
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -164,7 +164,7 @@ export async function POST(
 
     } catch (aiError) {
       console.error('Dynamic AI processing error:', aiError);
-      
+
       // Create graceful fallback with empty results
       try {
         const fallbackResponse = await dynamicPromptGenerator.parseAndStoreResults(
@@ -173,9 +173,9 @@ export async function POST(
           extractionMap,
           sessionId,
           configuredModel,
-          summarizationPromptId
+          summarizationPromptId,
         );
-        
+
         // Update session with partial success
         await db.update(schema.aiProcessingSessions)
           .set({
@@ -186,7 +186,7 @@ export async function POST(
             aiResponse: 'Fallback response due to AI processing failure',
           })
           .where(eq(schema.aiProcessingSessions.id, sessionId));
-        
+
         // Update file timestamp
         await db.update(schema.audioFiles)
           .set({
@@ -194,7 +194,7 @@ export async function POST(
           })
           .where(eq(schema.audioFiles.id, fileIdInt));
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           success: true,
           sessionId,
           extractionResults: fallbackResponse.extractionResults.length,
@@ -202,10 +202,10 @@ export async function POST(
           fileId: fileIdInt,
           warning: 'AI processing failed, fallback response created with empty arrays/objects',
         });
-        
+
       } catch (fallbackError) {
         console.error('Fallback processing also failed:', fallbackError);
-        
+
         // Update session with error
         await db.update(schema.aiProcessingSessions)
           .set({
@@ -215,7 +215,7 @@ export async function POST(
             completedAt: new Date(),
           })
           .where(eq(schema.aiProcessingSessions.id, sessionId));
-        
+
         // Update file timestamp
         await db.update(schema.audioFiles)
           .set({
@@ -223,7 +223,7 @@ export async function POST(
           })
           .where(eq(schema.audioFiles.id, fileIdInt));
 
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Failed to process with AI and fallback failed',
           details: String(aiError),
           sessionId,
@@ -261,7 +261,7 @@ function formatTranscriptForAI(transcript: string | any[]): string {
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     const isAuthenticated = await requireAuth(request);

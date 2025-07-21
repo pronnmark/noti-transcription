@@ -29,7 +29,7 @@ export function TranscriptLink({ fileId, timestamp, speaker, className }: Transc
         variant="ghost"
         size="sm"
         onClick={handleClick}
-        className={cn("text-muted-foreground hover:text-foreground", className)}
+        className={cn('text-muted-foreground hover:text-foreground', className)}
       >
         <Play className="h-3 w-3 mr-1" />
         View transcript
@@ -38,7 +38,7 @@ export function TranscriptLink({ fileId, timestamp, speaker, className }: Transc
   }
 
   return (
-    <div className={cn("flex items-center gap-2 text-sm text-muted-foreground", className)}>
+    <div className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}>
       <Clock className="h-3 w-3" />
       <Button
         variant="ghost"

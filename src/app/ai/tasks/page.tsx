@@ -101,21 +101,21 @@ export default function GlobalTasksPage() {
       });
 
       if (!response.ok) throw new Error('Failed to update task status');
-      
+
       // Update local state
       setTasks(prev => prev.map(task =>
-        task.id === taskId 
-          ? { 
-              ...task, 
-              status: completed ? 'completed' : 'active',
-              completedAt: completed ? new Date().toISOString() : undefined
-            } 
-          : task
+        task.id === taskId
+          ? {
+            ...task,
+            status: completed ? 'completed' : 'active',
+            completedAt: completed ? new Date().toISOString() : undefined,
+          }
+          : task,
       ));
-      
+
       // Reload stats
       loadStats();
-      
+
       toast.success(completed ? 'Task completed' : 'Task reopened');
     } catch (error) {
       toast.error('Failed to update task status');
@@ -134,12 +134,12 @@ export default function GlobalTasksPage() {
       });
 
       if (!response.ok) throw new Error('Failed to update comment');
-      
+
       // Update local state
       setTasks(prev => prev.map(task =>
-        task.id === taskId ? { ...task, comments: comment } : task
+        task.id === taskId ? { ...task, comments: comment } : task,
       ));
-      
+
       toast.success('Comment updated');
     } catch (error) {
       toast.error('Failed to update comment');
@@ -154,7 +154,7 @@ export default function GlobalTasksPage() {
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -262,7 +262,7 @@ export default function GlobalTasksPage() {
                   <TabsTrigger value="completed">Completed ({tasks.filter(t => t.status === 'completed').length})</TabsTrigger>
                   <TabsTrigger value="archived">Archived ({tasks.filter(t => t.status === 'archived').length})</TabsTrigger>
                 </TabsList>
-                
+
                 <TabsContent value={activeTab} className="space-y-4 mt-4">
                   {filteredTasks.length === 0 ? (
                     <div className="text-center py-12">
@@ -291,7 +291,7 @@ export default function GlobalTasksPage() {
                                     {task.speaker}
                                   </Badge>
                                 )}
-                                <Badge 
+                                <Badge
                                   variant={task.priority === 'high' ? 'destructive' : task.priority === 'medium' ? 'default' : 'secondary'}
                                   className="text-xs"
                                 >

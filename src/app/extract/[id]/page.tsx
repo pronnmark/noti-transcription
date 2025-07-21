@@ -56,7 +56,7 @@ export default function ExtractPage() {
       const fileData = await fileResponse.json();
       setFile({
         id: fileData.id,
-        originalName: fileData.originalFileName || fileData.originalName || 'Unknown File'
+        originalName: fileData.originalFileName || fileData.originalName || 'Unknown File',
       });
 
     } catch (error) {
@@ -184,7 +184,7 @@ export default function ExtractPage() {
               View Full Transcript
             </Button>
           </Link>
-          <Button 
+          <Button
             variant="outline"
             onClick={() => {
               if (extract.content) {

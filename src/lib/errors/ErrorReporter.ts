@@ -31,7 +31,7 @@ export abstract class ErrorReporter {
 
   constructor(config: ErrorReporterConfig) {
     this.config = config;
-    
+
     if (config.flushInterval && config.flushInterval > 0) {
       this.startFlushTimer();
     }
@@ -48,10 +48,10 @@ export abstract class ErrorReporter {
     }
 
     const report = this.createReport(error);
-    
+
     if (this.config.batchSize && this.config.batchSize > 1) {
       this.errorQueue.push(report);
-      
+
       if (this.errorQueue.length >= this.config.batchSize) {
         await this.flush();
       }
@@ -83,7 +83,7 @@ export abstract class ErrorReporter {
     if (this.flushTimer) {
       clearInterval(this.flushTimer);
     }
-    
+
     // Flush remaining errors
     this.flush().catch(console.error);
   }
@@ -240,7 +240,7 @@ export class FileErrorReporter extends ErrorReporter {
   protected async sendReport(report: ErrorReport): Promise<void> {
     const fs = await import('fs/promises');
     const logEntry = JSON.stringify(this.formatReport(report)) + '\n';
-    
+
     try {
       await fs.appendFile(this.logFile, logEntry);
     } catch (error) {
@@ -250,10 +250,10 @@ export class FileErrorReporter extends ErrorReporter {
 
   protected async sendBatch(reports: ErrorReport[]): Promise<void> {
     const fs = await import('fs/promises');
-    const logEntries = reports.map(report => 
-      JSON.stringify(this.formatReport(report))
+    const logEntries = reports.map(report =>
+      JSON.stringify(this.formatReport(report)),
     ).join('\n') + '\n';
-    
+
     try {
       await fs.appendFile(this.logFile, logEntries);
     } catch (error) {

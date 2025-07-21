@@ -29,7 +29,7 @@ import {
   asc,
   count,
   sql,
-  inArray
+  inArray,
 } from './database';
 
 // Export the database connection
@@ -50,7 +50,7 @@ export {
   summarizationPrompts,
   extractionDefinitions,
   extractionResults,
-  aiProcessingSessions
+  aiProcessingSessions,
 };
 
 // Export query operators
@@ -91,7 +91,7 @@ export const settingsService = {
       // Drop existing table if it has wrong schema, then recreate
       await db.run(`DROP TABLE IF EXISTS system_settings`);
       console.log('Dropped existing system_settings table');
-      
+
       // Create table with exact schema matching Drizzle expectations
       await db.run(`CREATE TABLE system_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,7 +128,7 @@ export const settingsService = {
     try {
       // Ensure table exists first
       await this.ensureTableExists();
-      
+
       // Check if settings exist
       const existing = await this.get();
 
@@ -158,7 +158,7 @@ export const settingsService = {
       console.error('Failed to create settings:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Psychology service (simplified for backward compatibility)
@@ -194,7 +194,7 @@ export const psychologyService = {
       console.error('Failed to update psychology profile:', error);
       throw error;
     }
-  }
+  },
 };
 
 // Data points service (simplified for backward compatibility)
@@ -235,7 +235,7 @@ export const dataPointsService = {
       console.error('Failed to find data points by template:', error);
       return [];
     }
-  }
+  },
 };
 
 // Notes service (simplified for backward compatibility)
@@ -318,7 +318,7 @@ export const notesService = {
       await db.update(extractions)
         .set({
           comments: newComments,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(extractions.id, id));
 
@@ -343,7 +343,7 @@ export const notesService = {
       await db.update(extractions)
         .set({
           comments: comment,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(extractions.id, id));
 
@@ -368,7 +368,7 @@ export const notesService = {
       await db.update(extractions)
         .set({
           status: status as 'active' | 'completed' | 'archived',
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(extractions.id, id));
 
@@ -442,9 +442,9 @@ export const notesService = {
         fileName: audioFiles.fileName,
         originalFileName: audioFiles.originalFileName,
       })
-      .from(extractions)
-      .innerJoin(audioFiles, eq(extractions.fileId, audioFiles.id))
-      .orderBy(desc(extractions.updatedAt));
+        .from(extractions)
+        .innerJoin(audioFiles, eq(extractions.fileId, audioFiles.id))
+        .orderBy(desc(extractions.updatedAt));
 
       return tasks;
     } catch (error) {
@@ -518,7 +518,7 @@ export const notesService = {
         completionRate: 0,
       };
     }
-  }
+  },
 };
 
 // Helper function for parsing audio files (placeholder)
@@ -542,7 +542,7 @@ export const schema = {
   summarizationPrompts,
   extractionDefinitions,
   extractionResults,
-  aiProcessingSessions
+  aiProcessingSessions,
 };
 
 // Export types for backward compatibility
@@ -557,5 +557,5 @@ export type {
   NewSummarization,
   TranscriptionJob,
   NewTranscriptionJob,
-  TranscriptSegment
+  TranscriptSegment,
 } from './database';

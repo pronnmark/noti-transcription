@@ -31,8 +31,8 @@ export class AIProviderFactory {
         type: 'custom',
         name: 'Custom AI Endpoint',
         description: 'Configurable AI endpoint supporting OpenAI-compatible APIs',
-        models: ['gpt-3.5-turbo', 'gpt-4', 'claude-3-sonnet', 'llama-3.1-70b']
-      }
+        models: ['gpt-3.5-turbo', 'gpt-4', 'claude-3-sonnet', 'llama-3.1-70b'],
+      },
     ];
   }
 }

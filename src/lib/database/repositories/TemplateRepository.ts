@@ -1,11 +1,11 @@
 import { BaseRepository } from './BaseRepository';
-import { 
-  extractionTemplates, 
-  ExtractionTemplate, 
+import {
+  extractionTemplates,
+  ExtractionTemplate,
   NewExtractionTemplate,
   summarizationTemplates,
   SummarizationTemplate,
-  NewSummarizationTemplate
+  NewSummarizationTemplate,
 } from '../schema';
 import { getDb } from '../client';
 import { eq, desc } from 'drizzle-orm';
@@ -65,9 +65,9 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
       // Then set this one as default
       const [result] = await db
         .update(this.table)
-        .set({ 
+        .set({
           isDefault: true,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(this.table.id, id))
         .returning();
@@ -92,9 +92,9 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
 
       const [result] = await db
         .update(this.table)
-        .set({ 
+        .set({
           isActive: !current.isActive,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(this.table.id, id))
         .returning();

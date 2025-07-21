@@ -13,7 +13,7 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Check auth
@@ -31,7 +31,7 @@ export async function POST(
     // Get file from database
     const db = getDb();
     const [file] = await db.select().from(audioFiles).where(eq(audioFiles.id, fileId)).limit(1);
-    
+
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -43,9 +43,9 @@ export async function POST(
       .limit(1);
 
     if (existingJobs.length > 0) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Transcription already exists',
-        job: existingJobs[0]
+        job: existingJobs[0],
       });
     }
 
@@ -56,7 +56,7 @@ export async function POST(
       modelSize: 'base',
       diarization: true,
       progress: 0,
-      startedAt: new Date()
+      startedAt: new Date(),
     }).returning();
 
     // Start transcription in background (fire and forget)
@@ -67,20 +67,20 @@ export async function POST(
     return NextResponse.json({
       success: true,
       message: 'Transcription started',
-      jobId: job.id
+      jobId: job.id,
     });
 
   } catch (error: any) {
     console.error('Transcribe error:', error);
     return NextResponse.json({
-      error: error.message || 'Transcription failed'
+      error: error.message || 'Transcription failed',
     }, { status: 500 });
   }
 }
 
 async function transcribeInBackground(file: any, jobId: number) {
   const db = getDb();
-  
+
   try {
     // Update job status
     await db.update(transcriptionJobs)
@@ -89,7 +89,7 @@ async function transcribeInBackground(file: any, jobId: number) {
 
     // Path to audio file
     const audioPath = join(process.cwd(), 'data', 'audio_files', file.file_name);
-    
+
     // Check if file exists
     await fs.access(audioPath);
 
@@ -108,10 +108,10 @@ async function transcribeInBackground(file: any, jobId: number) {
     // Run Whisper transcription using Python script
     const pythonScript = join(process.cwd(), 'scripts', 'transcribe.py');
     console.log('Running transcription...');
-    
+
     const { stdout, stderr } = await execAsync(
       `python3 "${pythonScript}" "${wavPath}" --model base --language en`,
-      { maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
+      { maxBuffer: 10 * 1024 * 1024 }, // 10MB buffer
     );
 
     if (stderr) {
@@ -129,11 +129,11 @@ async function transcribeInBackground(file: any, jobId: number) {
 
     // Update job with results
     await db.update(transcriptionJobs)
-      .set({ 
+      .set({
         status: 'completed',
         progress: 100,
         transcript: transcript.segments || [{ text: transcript.text || stdout.trim(), start: 0, end: 0 }],
-        completedAt: new Date()
+        completedAt: new Date(),
       })
       .where(eq(transcriptionJobs.id, jobId));
 
@@ -146,13 +146,13 @@ async function transcribeInBackground(file: any, jobId: number) {
 
   } catch (error) {
     console.error('Transcription error:', error);
-    
+
     // Update job status to failed
     await db.update(transcriptionJobs)
-      .set({ 
+      .set({
         status: 'failed',
         lastError: error instanceof Error ? error.message : 'Unknown error',
-        completedAt: new Date()
+        completedAt: new Date(),
       })
       .where(eq(transcriptionJobs.id, jobId));
   }

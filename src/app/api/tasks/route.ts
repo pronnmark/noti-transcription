@@ -36,27 +36,27 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url);
     const status = url.searchParams.get('status');
     const withFileInfo = url.searchParams.get('withFileInfo') === 'true';
-    
+
     let tasks = loadTasks();
-    
+
     // Filter by status if specified
     if (status) {
       tasks = tasks.filter(task => task.status === status);
     }
-    
+
     // Note: withFileInfo would require joining with file data
     // For now, return tasks as-is (file info can be added later if needed)
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       tasks,
-      count: tasks.length 
+      count: tasks.length,
     });
   } catch (error) {
     console.error('Error fetching tasks:', error);
     return NextResponse.json(
       { error: 'Failed to fetch tasks' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

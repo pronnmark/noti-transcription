@@ -12,12 +12,12 @@ export class ServiceRegistry implements IServiceRegistry {
 
     this.services.set(name, service);
     this.initializationOrder.push(name);
-    
+
     this.emit({
       type: 'initialized',
       service: name,
       timestamp: new Date(),
-      data: { registered: true }
+      data: { registered: true },
     });
 
     console.log(`📋 Service registered: ${name}`);
@@ -55,7 +55,7 @@ export class ServiceRegistry implements IServiceRegistry {
       type: 'destroyed',
       service: name,
       timestamp: new Date(),
-      data: { unregistered: true }
+      data: { unregistered: true },
     });
 
     console.log(`🗑️ Service unregistered: ${name}`);
@@ -67,7 +67,7 @@ export class ServiceRegistry implements IServiceRegistry {
 
   async initializeAll(): Promise<void> {
     console.log('🚀 Initializing all services...');
-    
+
     const errors: Array<{ service: string; error: any }> = [];
 
     for (const serviceName of this.initializationOrder) {
@@ -83,12 +83,12 @@ export class ServiceRegistry implements IServiceRegistry {
       } catch (error) {
         console.error(`❌ Failed to initialize service '${serviceName}':`, error);
         errors.push({ service: serviceName, error });
-        
+
         this.emit({
           type: 'error',
           service: serviceName,
           timestamp: new Date(),
-          data: { error, phase: 'initialization' }
+          data: { error, phase: 'initialization' },
         });
       }
     }
@@ -103,9 +103,9 @@ export class ServiceRegistry implements IServiceRegistry {
 
   async destroyAll(): Promise<void> {
     console.log('🛑 Destroying all services...');
-    
+
     const errors: Array<{ service: string; error: any }> = [];
-    
+
     // Destroy in reverse order
     const destroyOrder = [...this.initializationOrder].reverse();
 
@@ -122,12 +122,12 @@ export class ServiceRegistry implements IServiceRegistry {
       } catch (error) {
         console.error(`❌ Failed to destroy service '${serviceName}':`, error);
         errors.push({ service: serviceName, error });
-        
+
         this.emit({
           type: 'error',
           service: serviceName,
           timestamp: new Date(),
-          data: { error, phase: 'destruction' }
+          data: { error, phase: 'destruction' },
         });
       }
     }
@@ -173,7 +173,7 @@ export class ServiceRegistry implements IServiceRegistry {
   // Utility methods
   getServiceStatus(): Record<string, any> {
     const status: Record<string, any> = {};
-    
+
     for (const [name, service] of Array.from(this.services.entries())) {
       status[name] = {
         name: service.name,
@@ -181,7 +181,7 @@ export class ServiceRegistry implements IServiceRegistry {
         destroyed: (service as any).destroyed || false,
       };
     }
-    
+
     return status;
   }
 
@@ -197,7 +197,7 @@ export class ServiceRegistry implements IServiceRegistry {
 
     visited.add(serviceName);
     const dependencies: IService[] = [];
-    
+
     // This is a simplified version - in a real implementation,
     // you'd analyze service dependencies and resolve them in order
     const service = this.services.get(serviceName);
@@ -212,7 +212,7 @@ export class ServiceRegistry implements IServiceRegistry {
   // Health check for all services
   async healthCheck(): Promise<Record<string, boolean>> {
     const health: Record<string, boolean> = {};
-    
+
     for (const [name, service] of Array.from(this.services.entries())) {
       try {
         // Check if service has a health check method
@@ -227,7 +227,7 @@ export class ServiceRegistry implements IServiceRegistry {
         health[name] = false;
       }
     }
-    
+
     return health;
   }
 }

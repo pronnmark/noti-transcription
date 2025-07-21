@@ -41,7 +41,7 @@ export default function AIProcessingPanel({
   fileName,
   hasTranscript,
   currentStatuses,
-  onProcessingComplete
+  onProcessingComplete,
 }: AIProcessingPanelProps) {
   const [models, setModels] = useState<AIModel[]>([]);
   const [extractionTemplates, setExtractionTemplates] = useState<Template[]>([]);
@@ -76,7 +76,7 @@ export default function AIProcessingPanel({
       // Set default selections
       const defaultExtractions = extractionData.templates?.filter((t: Template) => t.isDefault).map((t: Template) => t.id) || [];
       const defaultDataPoints = dataPointData.templates?.filter((t: Template) => t.isDefault).map((t: Template) => t.id) || [];
-      
+
       setSelectedExtractionTemplates(defaultExtractions);
       setSelectedDataPointTemplates(defaultDataPoints);
     } catch (error) {
@@ -97,15 +97,15 @@ export default function AIProcessingPanel({
       const payload: any = {
         processType: type,
         model: selectedModel,
-        temperature: 0.3
+        temperature: 0.3,
       };
 
       if (type === 'extractions' || type === 'all') {
         payload.templateIds = selectedExtractionTemplates;
       }
       if (type === 'datapoints' || type === 'all') {
-        payload.templateIds = type === 'all' ? 
-          [...selectedExtractionTemplates, ...selectedDataPointTemplates] : 
+        payload.templateIds = type === 'all' ?
+          [...selectedExtractionTemplates, ...selectedDataPointTemplates] :
           selectedDataPointTemplates;
       }
 

@@ -12,13 +12,13 @@ export async function GET(request: NextRequest) {
     // Get all labels across all files
     const labelRecords = await db
       .select({
-        labels: fileLabels.labels
+        labels: fileLabels.labels,
       })
       .from(fileLabels);
 
     // Flatten all labels and count frequency
     const labelCounts: Record<string, number> = {};
-    
+
     labelRecords.forEach(record => {
       if (Array.isArray(record.labels)) {
         record.labels.forEach(label => {
@@ -33,14 +33,14 @@ export async function GET(request: NextRequest) {
     // Convert to array and filter by query if provided
     let allLabels = Object.entries(labelCounts).map(([label, count]) => ({
       label: label.charAt(0).toUpperCase() + label.slice(1), // Capitalize first letter
-      count
+      count,
     }));
 
     // Filter by query if provided
     if (query) {
       const queryLower = query.toLowerCase();
-      allLabels = allLabels.filter(item => 
-        item.label.toLowerCase().includes(queryLower)
+      allLabels = allLabels.filter(item =>
+        item.label.toLowerCase().includes(queryLower),
       );
     }
 
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       labels: allLabels,
       total: Object.keys(labelCounts).length,
-      success: true
+      success: true,
     });
   } catch (error) {
     console.error('Error fetching labels:', error);

@@ -193,7 +193,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
 
   const getExampleSchema = (outputType: string, category: string) => {
     if (category === 'extraction') {
-      return outputType === 'array' ? 
+      return outputType === 'array' ?
         `{"type": "array", "items": {"type": "object", "properties": {"content": {"type": "string"}, "priority": {"type": "string"}}, "required": ["content"]}}` :
         `{"type": "object", "properties": {"content": {"type": "string"}, "metadata": {"type": "object"}}, "required": ["content"]}`;
     } else {
@@ -227,10 +227,10 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                     id="name"
                     value={formData.name}
                     onChange={(e) => {
-                      setFormData(prev => ({ 
-                        ...prev, 
+                      setFormData(prev => ({
+                        ...prev,
                         name: e.target.value,
-                        jsonKey: generateJsonKey(e.target.value)
+                        jsonKey: generateJsonKey(e.target.value),
                       }));
                     }}
                     placeholder="Tasks, Ideas, Questions, etc."
@@ -240,10 +240,10 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   <Label htmlFor="category">Category</Label>
                   <Select
                     value={formData.category}
-                    onValueChange={(value) => setFormData(prev => ({ 
-                      ...prev, 
+                    onValueChange={(value) => setFormData(prev => ({
+                      ...prev,
                       category: value as 'extraction' | 'datapoint',
-                      jsonSchema: getExampleSchema(formData.outputType, value)
+                      jsonSchema: getExampleSchema(formData.outputType, value),
                     }))}
                   >
                     <SelectTrigger>
@@ -256,7 +256,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   </Select>
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="description">Description</Label>
                 <Input
@@ -266,7 +266,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   placeholder="Brief description of what this extracts"
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="jsonKey">JSON Key</Label>
@@ -281,10 +281,10 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   <Label htmlFor="outputType">Output Type</Label>
                   <Select
                     value={formData.outputType}
-                    onValueChange={(value) => setFormData(prev => ({ 
-                      ...prev, 
+                    onValueChange={(value) => setFormData(prev => ({
+                      ...prev,
                       outputType: value as 'array' | 'object' | 'value',
-                      jsonSchema: getExampleSchema(value, formData.category)
+                      jsonSchema: getExampleSchema(value, formData.category),
                     }))}
                   >
                     <SelectTrigger>
@@ -298,7 +298,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   </Select>
                 </div>
               </div>
-              
+
               <div>
                 <Label htmlFor="jsonSchema">JSON Schema</Label>
                 <Textarea
@@ -309,7 +309,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   className="min-h-[100px]"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="aiInstructions">AI Instructions</Label>
                 <Textarea
@@ -320,7 +320,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                   className="min-h-[100px]"
                 />
               </div>
-              
+
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
                   Cancel
@@ -455,7 +455,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                 </Select>
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="edit-description">Description</Label>
               <Input
@@ -465,7 +465,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                 placeholder="Brief description of what this extracts"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="edit-jsonKey">JSON Key</Label>
@@ -493,7 +493,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                 </Select>
               </div>
             </div>
-            
+
             <div>
               <Label htmlFor="edit-jsonSchema">JSON Schema</Label>
               <Textarea
@@ -504,7 +504,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                 className="min-h-[100px]"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="edit-aiInstructions">AI Instructions</Label>
               <Textarea
@@ -515,7 +515,7 @@ export default function ExtractionDefinitionManager({ className }: ExtractionDef
                 className="min-h-[100px]"
               />
             </div>
-            
+
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => setIsEditOpen(false)}>
                 Cancel

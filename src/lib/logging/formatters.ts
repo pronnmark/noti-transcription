@@ -1,11 +1,11 @@
-import { 
-  LogEntry, 
-  LogFormatter, 
-  LogLevel, 
-  LOG_COLORS, 
-  LOG_ICONS, 
-  RESET_COLOR, 
-  formatLogLevel 
+import {
+  LogEntry,
+  LogFormatter,
+  LogLevel,
+  LOG_COLORS,
+  LOG_ICONS,
+  RESET_COLOR,
+  formatLogLevel,
 } from './types';
 
 export class JsonFormatter implements LogFormatter {
@@ -13,7 +13,7 @@ export class JsonFormatter implements LogFormatter {
     private options: {
       pretty?: boolean;
       includeStackTrace?: boolean;
-    } = {}
+    } = {},
   ) {}
 
   format(entry: LogEntry): string {
@@ -40,10 +40,10 @@ export class JsonFormatter implements LogFormatter {
 
     // Remove undefined values
     const cleanObject = Object.fromEntries(
-      Object.entries(logObject).filter(([_, value]) => value !== undefined)
+      Object.entries(logObject).filter(([_, value]) => value !== undefined),
     );
 
-    return this.options.pretty 
+    return this.options.pretty
       ? JSON.stringify(cleanObject, null, 2)
       : JSON.stringify(cleanObject);
   }
@@ -57,7 +57,7 @@ export class ConsoleFormatter implements LogFormatter {
       timestamp?: boolean;
       includeContext?: boolean;
       includeStackTrace?: boolean;
-    } = {}
+    } = {},
   ) {
     this.options = {
       colors: true,
@@ -125,7 +125,7 @@ export class ConsoleFormatter implements LogFormatter {
     // Error
     if (entry.error) {
       result += `\n  Error: ${entry.error.name}: ${entry.error.message}`;
-      
+
       if (this.options.includeStackTrace && entry.error.stack) {
         result += `\n  Stack: ${entry.error.stack}`;
       }
@@ -141,7 +141,7 @@ export class SimpleFormatter implements LogFormatter {
     const level = formatLogLevel(entry.level).toUpperCase();
     const service = entry.service ? `[${entry.service}]` : '';
     const requestId = entry.requestId ? `[${entry.requestId.substring(0, 8)}]` : '';
-    
+
     return `${timestamp} ${level} ${service}${requestId} ${entry.message}`;
   }
 }
@@ -152,33 +152,33 @@ export class DevFormatter implements LogFormatter {
     const level = formatLogLevel(entry.level).toUpperCase();
     const icon = LOG_ICONS[entry.level];
     const color = LOG_COLORS[entry.level];
-    
+
     let result = `${color}${icon} ${time} [${level}]${RESET_COLOR}`;
-    
+
     if (entry.service) {
       result += ` ${entry.service}`;
       if (entry.operation) {
         result += `.${entry.operation}`;
       }
     }
-    
+
     result += ` ${entry.message}`;
-    
+
     if (entry.duration !== undefined) {
       result += ` ${color}(${entry.duration}ms)${RESET_COLOR}`;
     }
-    
+
     if (entry.context && Object.keys(entry.context).length > 0) {
       const contextStr = Object.entries(entry.context)
         .map(([key, value]) => `${key}=${JSON.stringify(value)}`)
         .join(' ');
       result += ` ${contextStr}`;
     }
-    
+
     if (entry.error) {
       result += `\n  ${LOG_COLORS[LogLevel.ERROR]}Error: ${entry.error.message}${RESET_COLOR}`;
     }
-    
+
     return result;
   }
 }
@@ -189,7 +189,7 @@ export class StructuredFormatter implements LogFormatter {
       separator?: string;
       keyValueSeparator?: string;
       includeEmpty?: boolean;
-    } = {}
+    } = {},
   ) {
     this.options = {
       separator: ' ',
@@ -201,46 +201,46 @@ export class StructuredFormatter implements LogFormatter {
 
   format(entry: LogEntry): string {
     const fields: string[] = [];
-    
+
     // Core fields
     fields.push(`timestamp${this.options.keyValueSeparator}${entry.timestamp.toISOString()}`);
     fields.push(`level${this.options.keyValueSeparator}${formatLogLevel(entry.level)}`);
     fields.push(`message${this.options.keyValueSeparator}"${entry.message}"`);
-    
+
     // Optional fields
     if (entry.service || this.options.includeEmpty) {
       fields.push(`service${this.options.keyValueSeparator}${entry.service || 'null'}`);
     }
-    
+
     if (entry.operation || this.options.includeEmpty) {
       fields.push(`operation${this.options.keyValueSeparator}${entry.operation || 'null'}`);
     }
-    
+
     if (entry.requestId || this.options.includeEmpty) {
       fields.push(`requestId${this.options.keyValueSeparator}${entry.requestId || 'null'}`);
     }
-    
+
     if (entry.userId || this.options.includeEmpty) {
       fields.push(`userId${this.options.keyValueSeparator}${entry.userId || 'null'}`);
     }
-    
+
     if (entry.duration !== undefined || this.options.includeEmpty) {
       fields.push(`duration${this.options.keyValueSeparator}${entry.duration ?? 'null'}`);
     }
-    
+
     // Context fields
     if (entry.context) {
       for (const [key, value] of Object.entries(entry.context)) {
         fields.push(`${key}${this.options.keyValueSeparator}${JSON.stringify(value)}`);
       }
     }
-    
+
     // Error fields
     if (entry.error) {
       fields.push(`error.name${this.options.keyValueSeparator}${entry.error.name}`);
       fields.push(`error.message${this.options.keyValueSeparator}"${entry.error.message}"`);
     }
-    
+
     return fields.join(this.options.separator);
   }
 }
@@ -248,7 +248,7 @@ export class StructuredFormatter implements LogFormatter {
 // Factory function to create formatters
 export function createFormatter(
   type: 'json' | 'console' | 'simple' | 'dev' | 'structured',
-  options?: any
+  options?: any,
 ): LogFormatter {
   switch (type) {
     case 'json':

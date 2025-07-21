@@ -48,7 +48,7 @@ export interface TemplateSelectorProps {
 const API_ENDPOINTS = {
   summarization: '/api/summarization-prompts',
   extraction: '/api/extract/templates',
-  'data-points': '/api/data-points/templates'
+  'data-points': '/api/data-points/templates',
 };
 
 export function TemplateSelector({
@@ -63,7 +63,7 @@ export function TemplateSelector({
   placeholder = 'Select template...',
   size = 'md',
   disabled = false,
-  className = ''
+  className = '',
 }: TemplateSelectorProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,17 +77,17 @@ export function TemplateSelector({
   const loadTemplates = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const endpoint = API_ENDPOINTS[templateType];
       const response = await fetch(endpoint);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to load templates: ${response.statusText}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Handle different response formats
       let templateList: Template[] = [];
       if (templateType === 'summarization') {
@@ -95,7 +95,7 @@ export function TemplateSelector({
       } else {
         templateList = Array.isArray(data) ? data : data.templates || [];
       }
-      
+
       // Ensure templates have required fields
       const formattedTemplates = templateList.map((template: any) => ({
         id: template.id,
@@ -105,9 +105,9 @@ export function TemplateSelector({
         isDefault: template.isDefault || template.is_default || false,
         isActive: template.isActive || template.is_active !== false, // Default to true if not specified
         createdAt: template.createdAt || template.created_at,
-        updatedAt: template.updatedAt || template.updated_at
+        updatedAt: template.updatedAt || template.updated_at,
       }));
-      
+
       setTemplates(formattedTemplates);
     } catch (err) {
       console.error('Error loading templates:', err);
@@ -123,21 +123,21 @@ export function TemplateSelector({
       onTemplateSelect(null);
       return;
     }
-    
+
     const template = templates.find(t => t.id === templateId);
     onTemplateSelect(template || null);
   };
 
   const handleMultipleSelection = (templateId: string, checked: boolean) => {
     if (!onMultipleSelect) return;
-    
+
     let newSelectedIds: string[];
     if (checked) {
       newSelectedIds = [...selectedTemplateIds, templateId];
     } else {
       newSelectedIds = selectedTemplateIds.filter(id => id !== templateId);
     }
-    
+
     const selectedTemplates = templates.filter(t => newSelectedIds.includes(t.id));
     onMultipleSelect(selectedTemplates);
   };
@@ -162,7 +162,7 @@ export function TemplateSelector({
   const sizeClasses = {
     sm: 'h-8 text-xs',
     md: 'h-10 text-sm',
-    lg: 'h-12 text-base'
+    lg: 'h-12 text-base',
   };
 
   if (loading) {
@@ -178,9 +178,9 @@ export function TemplateSelector({
     return (
       <div className={`text-sm text-red-600 ${className}`}>
         Error: {error}
-        <Button 
-          variant="ghost" 
-          size="sm" 
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={loadTemplates}
           className="ml-2 h-6 px-2"
         >
@@ -257,7 +257,7 @@ export function TemplateSelector({
           </SelectContent>
         </Select>
       )}
-      
+
       {showManagement && onManagementClick && (
         <Button
           variant="outline"

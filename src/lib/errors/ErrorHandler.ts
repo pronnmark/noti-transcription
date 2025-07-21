@@ -47,7 +47,7 @@ export class ErrorHandler {
   // Handle error and return formatted response
   async handleError(error: unknown, requestId?: string): Promise<ErrorResponse> {
     const appError = this.normalizeError(error, requestId);
-    
+
     // Log error if enabled
     if (this.options.logErrors) {
       this.logError(appError);
@@ -90,7 +90,7 @@ export class ErrorHandler {
       return AppError.internal(
         error.message || 'An unexpected error occurred',
         error,
-        { requestId }
+        { requestId },
       );
     }
 

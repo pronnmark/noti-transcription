@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, Settings, Plus, FileText, Filter } from 'lucide-react';
+import { Loader2, Settings, FileText, Filter } from 'lucide-react';
 import TemplateManager from '@/components/templates/TemplateManager';
 
 interface ExtractionTemplate {
@@ -30,7 +30,7 @@ interface Extraction {
   timestamp: number;
   priority: 'high' | 'medium' | 'low';
   status: 'active' | 'completed' | 'archived';
-  metadata: any;
+  metadata: Record<string, unknown>;
   created_at: string;
 }
 
@@ -49,7 +49,7 @@ export default function ExtractionsPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('all');
-  const [selectedFile, setSelectedFile] = useState<number | null>(null);
+  const [_selectedFile, _setSelectedFile] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
 
@@ -70,7 +70,7 @@ export default function ExtractionsPage() {
       const extractionsData = await extractionsResponse.json();
       setExtractions(extractionsData.extractions || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Error already shown via toast
     } finally {
       setLoading(false);
     }
@@ -128,10 +128,10 @@ export default function ExtractionsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          templateIds: templateIds
+          templateIds: templateIds,
         }),
       });
-      
+
       if (response.ok) {
         // Refresh data
         const extractionsResponse = await fetch('/api/extractions');
@@ -139,7 +139,7 @@ export default function ExtractionsPage() {
         setExtractions(extractionsData.extractions || []);
       }
     } catch (error) {
-      console.error('Error running extraction:', error);
+      toast.error('Failed to run extraction');
     } finally {
       setIsProcessing(false);
     }
@@ -172,16 +172,16 @@ export default function ExtractionsPage() {
               <DialogHeader>
                 <DialogTitle>Extraction Template Management</DialogTitle>
               </DialogHeader>
-              <TemplateManager 
-                type="extraction" 
+              <TemplateManager
+                type="extraction"
                 templates={templates.map(template => ({
                   ...template,
                   isActive: template.is_active,
                   isDefault: template.is_default,
                   createdAt: template.created_at,
                   updatedAt: template.updated_at,
-                  expectedOutputFormat: template.expected_output_format
-                }))} 
+                  expectedOutputFormat: template.expected_output_format,
+                }))}
                 onTemplateChange={loadData}
               />
             </DialogContent>
@@ -200,7 +200,7 @@ export default function ExtractionsPage() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <Filter className="w-4 h-4 text-gray-500" />
-              <select 
+              <select
                 className="border rounded px-3 py-1 text-sm"
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -220,22 +220,22 @@ export default function ExtractionsPage() {
 
           <div className="grid gap-4">
             {filteredExtractions.map((extraction) => (
-              <Card key={extraction.id} className="hover:shadow-md transition-shadow">
+              <Card key={extraction.id} className="standard-card standard-card-hover">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <Badge variant="outline">
                         {getTemplateName(extraction.template_id)}
                       </Badge>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={getPriorityColor(extraction.priority)}
                       >
                         {extraction.priority}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Badge 
+                      <Badge
                         variant="outline"
                         className={getStatusColor(extraction.status)}
                       >
@@ -267,7 +267,7 @@ export default function ExtractionsPage() {
           </div>
 
           {filteredExtractions.length === 0 && (
-            <Card className="text-center py-12">
+            <Card className="standard-card text-center py-12">
               <CardContent>
                 <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">No extractions found</h3>
@@ -285,20 +285,20 @@ export default function ExtractionsPage() {
         <TabsContent value="files" className="space-y-4">
           <div className="grid gap-4">
             {files.map((file) => (
-              <Card key={file.id} className="hover:shadow-md transition-shadow">
+              <Card key={file.id} className="standard-card standard-card-hover">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <CardTitle className="text-lg">{file.originalFileName}</CardTitle>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={getStatusColor(file.extractionStatus)}
                       >
                         {file.extractionStatus}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button 
+                      <Button
                         onClick={() => handleRunExtraction(file.id, defaultTemplates.map(t => t.id))}
                         disabled={isProcessing}
                         size="sm"
@@ -333,7 +333,7 @@ export default function ExtractionsPage() {
         <TabsContent value="templates" className="space-y-4">
           <div className="grid gap-4">
             {templates.map((template) => (
-              <Card key={template.id} className="hover:shadow-md transition-shadow">
+              <Card key={template.id} className="standard-card standard-card-hover">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">

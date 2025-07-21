@@ -33,17 +33,17 @@ interface NewTemplate {
   prompt: string;
 }
 
-export default function TemplateManagementModal({ 
-  isOpen, 
-  onOpenChange, 
-  onTemplatesUpdated 
+export default function TemplateManagementModal({
+  isOpen,
+  onOpenChange,
+  onTemplatesUpdated,
 }: TemplateManagementModalProps) {
   const [activeTab, setActiveTab] = useState('list');
   const [editingTemplate, setEditingTemplate] = useState<SummarizationTemplate | null>(null);
   const [newTemplate, setNewTemplate] = useState<NewTemplate>({
     name: '',
     description: '',
-    prompt: ''
+    prompt: '',
   });
   const [isLoading, setIsLoading] = useState(false);
   const [templates, setTemplates] = useState<SummarizationTemplate[]>([]);
@@ -317,7 +317,7 @@ export default function TemplateManagementModal({
                           onClick={() => handleDeleteTemplate(template.id)}
                           disabled={isLoading || template.isDefault}
                           className="text-red-600 hover:text-red-700"
-                          title={template.isDefault ? "Cannot delete default template" : "Delete template"}
+                          title={template.isDefault ? 'Cannot delete default template' : 'Delete template'}
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -332,7 +332,7 @@ export default function TemplateManagementModal({
           {/* Create New Template */}
           <TabsContent value="create" className="space-y-4">
             <h3 className="text-lg font-medium">Create New Template</h3>
-            
+
             <div className="space-y-4">
               <div>
                 <Label htmlFor="new-name">Template Name *</Label>
@@ -372,7 +372,7 @@ export default function TemplateManagementModal({
               </div>
 
               <div className="flex items-center space-x-2 pt-4">
-                <Button 
+                <Button
                   onClick={handleCreateTemplate}
                   disabled={isLoading || !newTemplate.name.trim() || !newTemplate.prompt.trim()}
                 >
@@ -383,7 +383,7 @@ export default function TemplateManagementModal({
                   )}
                   Create Template
                 </Button>
-                <Button 
+                <Button
                   variant="outline"
                   onClick={() => setActiveTab('list')}
                   disabled={isLoading}
@@ -400,7 +400,7 @@ export default function TemplateManagementModal({
             {editingTemplate && (
               <>
                 <h3 className="text-lg font-medium">Edit Template</h3>
-                
+
                 <div className="space-y-4">
                   <div>
                     <Label htmlFor="edit-name">Template Name *</Label>
@@ -437,7 +437,7 @@ export default function TemplateManagementModal({
                   </div>
 
                   <div className="flex items-center space-x-2 pt-4">
-                    <Button 
+                    <Button
                       onClick={handleUpdateTemplate}
                       disabled={isLoading || !editingTemplate.name.trim() || !editingTemplate.prompt.trim()}
                     >
@@ -448,7 +448,7 @@ export default function TemplateManagementModal({
                       )}
                       Save Changes
                     </Button>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => {
                         setEditingTemplate(null);

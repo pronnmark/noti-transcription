@@ -1,11 +1,11 @@
-import { 
-  ILogger, 
-  LogLevel, 
-  LogEntry, 
-  LogContext, 
-  LoggerConfig, 
+import {
+  ILogger,
+  LogLevel,
+  LogEntry,
+  LogContext,
+  LoggerConfig,
   LogTransport,
-  shouldLog 
+  shouldLog,
 } from './types';
 
 export class Logger implements ILogger {
@@ -130,7 +130,7 @@ export class Logger implements ILogger {
   // Remove transport at runtime
   removeTransport(name: string): void {
     this.config.transports = this.config.transports.filter(
-      transport => transport.name !== name
+      transport => transport.name !== name,
     );
   }
 
@@ -231,7 +231,7 @@ export class RequestLogger {
   logRequest(
     method: string,
     url: string,
-    context?: LogContext
+    context?: LogContext,
   ): { requestId: string; startTime: number } {
     const requestId = this.generateRequestId();
     const startTime = Date.now();
@@ -253,7 +253,7 @@ export class RequestLogger {
     statusCode: number,
     requestId: string,
     startTime: number,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const duration = Date.now() - startTime;
 
@@ -274,7 +274,7 @@ export class RequestLogger {
     error: Error,
     requestId: string,
     startTime: number,
-    context?: LogContext
+    context?: LogContext,
   ): void {
     const duration = Date.now() - startTime;
 

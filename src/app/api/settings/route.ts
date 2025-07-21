@@ -9,7 +9,7 @@ const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
 // Helper functions
 async function loadSettings(): Promise<Settings> {
   const defaults = getDefaultSettings();
-  
+
   // Load AI settings from database with environment variable fallback
   try {
     const dbSettings = await settingsService.get();
@@ -21,7 +21,6 @@ async function loadSettings(): Promise<Settings> {
       defaults.ai.openaiApiKey = dbSettings.openaiApiKey || '';
       defaults.ai.aiExtractEnabled = dbSettings.aiExtractEnabled || false;
       defaults.ai.aiExtractModel = dbSettings.aiExtractModel || '';
-      defaults.ai.aiExtractPrompt = dbSettings.aiExtractPrompt || 'Summarize the key points from this transcript.';
     }
   } catch (error) {
     console.error('Error loading AI settings from database:', error);
@@ -31,23 +30,23 @@ async function loadSettings(): Promise<Settings> {
     defaults.ai.customAiModel = process.env.CUSTOM_AI_MODEL || '';
     defaults.ai.customAiProvider = process.env.CUSTOM_AI_PROVIDER || 'custom';
   }
-  
+
   // Load other settings from JSON file
   if (existsSync(SETTINGS_FILE)) {
     try {
       const data = readFileSync(SETTINGS_FILE, 'utf-8');
       const fileSettings = JSON.parse(data);
-      
+
       // Merge file settings, but keep AI settings from database
       return {
         ...fileSettings,
-        ai: defaults.ai // AI settings come from database
+        ai: defaults.ai, // AI settings come from database
       };
     } catch (error) {
       console.error('Error loading file settings:', error);
     }
   }
-  
+
   return defaults;
 }
 
@@ -63,10 +62,9 @@ async function saveSettings(settings: Settings): Promise<void> {
       openaiApiKey: settings.ai.openaiApiKey,
       aiExtractEnabled: settings.ai.aiExtractEnabled,
       aiExtractModel: settings.ai.aiExtractModel,
-      aiExtractPrompt: settings.ai.aiExtractPrompt,
     };
     console.log('AI settings data to save:', JSON.stringify(aiSettingsData, null, 2));
-    
+
     await settingsService.update(aiSettingsData);
     console.log('Successfully saved AI settings to database');
   } catch (error) {
@@ -74,7 +72,7 @@ async function saveSettings(settings: Settings): Promise<void> {
     console.error('Error details:', error instanceof Error ? error.message : String(error));
     throw error;
   }
-  
+
   // Save other settings to JSON file (for backward compatibility)
   console.log('Saving other settings to JSON file...');
   try {
@@ -84,7 +82,7 @@ async function saveSettings(settings: Settings): Promise<void> {
       notes: settings.notes,
       // Don't save AI settings to file anymore
     };
-    
+
     writeFileSync(SETTINGS_FILE, JSON.stringify(fileSettings, null, 2));
     console.log('Successfully saved other settings to JSON file');
   } catch (error) {
@@ -112,7 +110,6 @@ interface Settings {
     openaiApiKey: string;
     aiExtractEnabled: boolean;
     aiExtractModel: string;
-    aiExtractPrompt: string;
   };
   storage: {
     obsidianEnabled: boolean;
@@ -148,7 +145,6 @@ function getDefaultSettings(): Settings {
       openaiApiKey: '',
       aiExtractEnabled: false,
       aiExtractModel: '',
-      aiExtractPrompt: 'Summarize the key points from this transcript.',
     },
     storage: {
       obsidianEnabled: false,
@@ -173,7 +169,7 @@ export async function GET(request: NextRequest) {
     console.error('Error loading settings:', error);
     return NextResponse.json(
       { error: 'Failed to load settings' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -197,11 +193,11 @@ export async function POST(request: NextRequest) {
     console.error('Error details:', error instanceof Error ? error.message : String(error));
     console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to save settings',
-        details: error instanceof Error ? error.message : String(error)
+        details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

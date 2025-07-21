@@ -64,7 +64,7 @@ export class MigrationRunner {
         version: entry.tag,
         name: entry.tag,
         timestamp: entry.when,
-        applied: true // If it's in the journal, it's been applied
+        applied: true, // If it's in the journal, it's been applied
       })) || [];
 
     } catch (error) {

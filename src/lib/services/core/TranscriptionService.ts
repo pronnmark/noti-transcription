@@ -2,10 +2,10 @@ import { BaseService, ValidationRules } from './BaseService';
 import { RepositoryFactory } from '../../database/repositories';
 import type { TranscriptionRepository } from '../../database/repositories/TranscriptRepository';
 import type { ITranscriptionService } from './interfaces';
-import type { 
-  TranscriptionJob, 
-  NewTranscriptionJob, 
-  TranscriptSegment 
+import type {
+  TranscriptionJob,
+  NewTranscriptionJob,
+  TranscriptSegment,
 } from '../../database/schema';
 
 export class TranscriptionService extends BaseService implements ITranscriptionService {
@@ -29,7 +29,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(data, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       // Set default values
@@ -55,7 +55,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id')
+        ValidationRules.isPositive('id'),
       ]);
 
       return await this.transcriptionRepository.findById(id);
@@ -67,7 +67,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       return await this.transcriptionRepository.findByFileId(fileId);
@@ -80,7 +80,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       return await this.transcriptionRepository.findLatestByFileId(fileId);
@@ -92,7 +92,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       return await this.transcriptionRepository.findLatestByFileId(fileId);
@@ -104,7 +104,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       // Check if job exists and is in pending state
@@ -128,13 +128,13 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       this.validateInput(progress, [
         ValidationRules.required('progress'),
         ValidationRules.isNumber('progress'),
-        ValidationRules.custom('progress', (val) => val >= 0 && val <= 100, 'must be between 0 and 100')
+        ValidationRules.custom('progress', (val) => val >= 0 && val <= 100, 'must be between 0 and 100'),
       ]);
 
       const updatedJob = await this.transcriptionRepository.updateProgress(jobId, progress);
@@ -148,12 +148,12 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       this.validateInput(transcript, [
         ValidationRules.required('transcript'),
-        ValidationRules.isArray('transcript')
+        ValidationRules.isArray('transcript'),
       ]);
 
       // Validate transcript segments
@@ -164,7 +164,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
           ValidationRules.required('text'),
           ValidationRules.isNumber('start'),
           ValidationRules.isNumber('end'),
-          ValidationRules.isString('text')
+          ValidationRules.isString('text'),
         ]);
 
         if (segment.start >= segment.end) {
@@ -183,13 +183,13 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       this.validateInput(error, [
         ValidationRules.required('error'),
         ValidationRules.isString('error'),
-        ValidationRules.minLength('error', 1)
+        ValidationRules.minLength('error', 1),
       ]);
 
       const failedJob = await this.transcriptionRepository.updateStatus(jobId, 'failed', error);
@@ -203,7 +203,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(status, [
         ValidationRules.required('status'),
         ValidationRules.isString('status'),
-        ValidationRules.oneOf('status', ['pending', 'processing', 'completed', 'failed', 'draft'])
+        ValidationRules.oneOf('status', ['pending', 'processing', 'completed', 'failed', 'draft']),
       ]);
 
       return await this.transcriptionRepository.findByStatus(status);
@@ -228,7 +228,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       const job = await this.transcriptionRepository.findById(jobId);
@@ -251,7 +251,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       this.validateInput(jobId, [
         ValidationRules.required('jobId'),
         ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId')
+        ValidationRules.isPositive('jobId'),
       ]);
 
       const job = await this.transcriptionRepository.findById(jobId);

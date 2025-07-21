@@ -1,11 +1,11 @@
 import '../logging/init';
-import { aiExtractsService, settingsService } from "@/lib/db";
+import { aiExtractsService, settingsService } from '@/lib/db';
 import { AIProvider } from './ai/AIProvider';
 import type {
   AIGenerationOptions,
   AIModelInfo,
   AIProviderConfig,
-  ServiceConfig
+  ServiceConfig,
 } from './core/interfaces';
 
 interface OpenAIMessage {
@@ -42,7 +42,7 @@ interface OpenAIResponse {
 export class CustomAIService extends AIProvider {
   constructor(config: AIProviderConfig = {}) {
     super('CustomAIService', {
-      ...config
+      ...config,
     });
   }
 
@@ -58,7 +58,7 @@ export class CustomAIService extends AIProvider {
     try {
       // Load settings first to populate apiKey, baseUrl, etc.
       const settings = await this.getCustomSettings();
-      
+
       // Now call parent initialization which will have access to this.apiKey
       await super.onInitialize();
     } catch (error) {
@@ -72,19 +72,19 @@ export class CustomAIService extends AIProvider {
       const validatedOptions = this.validateGenerationOptions(options);
 
       const messages: OpenAIMessage[] = [];
-      
+
       // Add system message if provided
       if (validatedOptions.systemPrompt) {
         messages.push({
           role: 'system',
-          content: validatedOptions.systemPrompt
+          content: validatedOptions.systemPrompt,
         });
       }
 
       // Add user message
       messages.push({
         role: 'user',
-        content: prompt
+        content: prompt,
       });
 
       return await this.chat(messages, {
@@ -158,34 +158,34 @@ export class CustomAIService extends AIProvider {
   private validateModelForProvider(model: string, settings: any): string {
     // Check if this is DDwrappy based on base URL
     const isDDwrappy = this.isDDwrappy(settings);
-    
+
     if (isDDwrappy) {
       // DDwrappy expects specific Claude model names without provider prefix
       const ddwrappyModels = [
         'claude-sonnet-4-20250514',
-        'claude-opus-4-20250514', 
+        'claude-opus-4-20250514',
         'claude-3-7-sonnet-20250219',
         'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022'
+        'claude-3-5-haiku-20241022',
       ];
-      
+
       // Remove anthropic/ prefix if present
       let cleanModel = model.replace(/^anthropic\//, '');
-      
+
       // Map common model names to DDwrappy equivalents
       if (cleanModel === 'claude-sonnet-4') {
         cleanModel = 'claude-sonnet-4-20250514';
       }
-      
+
       // Validate against known DDwrappy models
       if (!ddwrappyModels.includes(cleanModel)) {
         this._logger.warn(`Model ${model} not supported by DDwrappy, using default: ${settings.model}`);
         return settings.model;
       }
-      
+
       return cleanModel;
     }
-    
+
     return model;
   }
 
@@ -222,12 +222,12 @@ export class CustomAIService extends AIProvider {
         this.apiKey = envApiKey;
         this.baseUrl = envBaseUrl;
         this.defaultModel = envModel;
-        
+
         return {
           apiKey: envApiKey,
           baseUrl: envBaseUrl,
           model: envModel,
-          provider: envProvider || 'custom'
+          provider: envProvider || 'custom',
         };
       }
 
@@ -237,7 +237,7 @@ export class CustomAIService extends AIProvider {
           apiKey: this.apiKey,
           baseUrl: this.baseUrl,
           model: this.defaultModel,
-          provider: 'custom'
+          provider: 'custom',
         };
       }
 
@@ -255,12 +255,12 @@ export class CustomAIService extends AIProvider {
           this.apiKey = dbApiKey;
           this.baseUrl = dbBaseUrl;
           this.defaultModel = dbModel;
-          
+
           return {
             apiKey: dbApiKey,
             baseUrl: dbBaseUrl,
             model: dbModel,
-            provider: dbProvider || 'custom'
+            provider: dbProvider || 'custom',
           };
         }
       } catch (dbError) {
@@ -284,34 +284,34 @@ export class CustomAIService extends AIProvider {
   } = {}): Promise<string> {
     return this.executeWithErrorHandling('chat', async () => {
       const settings = await this.getCustomSettings();
-      
+
       const {
         model = settings.model,
         maxTokens = this.config.maxTokens || 4000,
         temperature = this.config.temperature || 0.7,
         topP = 0.9,
-        jsonMode = false
+        jsonMode = false,
       } = options;
 
       // Validate model for DDwrappy compatibility
       const validatedModel = this.validateModelForProvider(model, settings);
-      
+
       const request: OpenAIRequest = {
         model: validatedModel,
         messages,
         temperature,
         max_tokens: maxTokens,
-        top_p: topP
+        top_p: topP,
       };
 
       // Add JSON mode if requested - with DDwrappy compatibility
       if (jsonMode) {
         if (this.isDDwrappy(settings)) {
           // DDwrappy-specific JSON mode configuration
-          request.response_format = { 
+          request.response_format = {
             type: 'json_object',
             // Potential DDwrappy-specific options (if supported)
-            ...(settings.strictJson && { strict: true })
+            ...(settings.strictJson && { strict: true }),
           };
         } else {
           request.response_format = { type: 'json_object' };
@@ -323,28 +323,28 @@ export class CustomAIService extends AIProvider {
         maxTokens,
         temperature,
         hasJsonMode: jsonMode,
-        baseUrl: settings.baseUrl
+        baseUrl: settings.baseUrl,
       });
 
       const url = `${settings.baseUrl}/chat/completions`;
-      
+
       // Prepare headers with DDwrappy-specific optimizations
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${settings.apiKey}`,
       };
-      
+
       // Add DDwrappy-specific headers if applicable
       if (this.isDDwrappy(settings) && jsonMode) {
         // Potential DDwrappy-specific headers for JSON formatting
         headers['X-Response-Format'] = 'json';
         headers['X-Claude-Allowed-Tools'] = ''; // Disable tools to encourage pure JSON
       }
-      
+
       const response = await this.makeRequest(url, {
         method: 'POST',
         headers,
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       const data: OpenAIResponse = await response.json();
@@ -370,7 +370,7 @@ export class CustomAIService extends AIProvider {
 
       this._logger.debug('Custom AI request completed successfully', {
         responseLength: responseText.length,
-        finishReason: choice.finish_reason
+        finishReason: choice.finish_reason,
       });
 
       return responseText;
@@ -381,7 +381,7 @@ export class CustomAIService extends AIProvider {
   async extractFromTranscript(
     transcript: string,
     prompt: string = 'Summarize the key points from this transcript.',
-    model?: string
+    model?: string,
   ): Promise<string> {
     return this.executeWithErrorHandling('extractFromTranscript', async () => {
       if (!transcript || transcript.trim().length === 0) {
@@ -399,20 +399,20 @@ Focus on accuracy and relevance.`;
       const transcriptTokens = this.estimateTokens(transcript);
       const maxTokens = Math.min(
         Math.max(1000, Math.ceil(transcriptTokens * 0.25)), // 25% of input tokens
-        this.config.maxTokens || 4000
+        this.config.maxTokens || 4000,
       );
 
       this._logger.info('Processing transcript', {
         transcriptLength: transcript.length,
         estimatedTokens: transcriptTokens,
-        maxOutputTokens: maxTokens
+        maxOutputTokens: maxTokens,
       });
 
       return await this.generateText(fullPrompt, {
         model: model || this.config.model,
         maxTokens,
         temperature: 0.3, // Lower temperature for more consistent extraction
-        systemPrompt
+        systemPrompt,
       });
     });
   }
@@ -445,7 +445,7 @@ export async function getCustomAIService(): Promise<CustomAIService> {
   if (!_initializationPromise) {
     _initializationPromise = initializeCustomAIService();
   }
-  
+
   await _initializationPromise;
   return _customAIService!;
 }
@@ -453,16 +453,16 @@ export async function getCustomAIService(): Promise<CustomAIService> {
 async function initializeCustomAIService(): Promise<void> {
   try {
     console.log('🚀 Initializing CustomAI service...');
-    
+
     // Create service with proper configuration
     _customAIService = new CustomAIService({
       temperature: 0.7,
       maxTokens: 4000,
     });
-    
+
     // Initialize the service
     await _customAIService.initialize();
-    
+
     console.log('✅ CustomAI service initialized successfully');
   } catch (error) {
     console.error('❌ Failed to initialize CustomAI service:', error);
@@ -489,7 +489,7 @@ export const customAIService = new Proxy({} as CustomAIService, {
       const service = await getCustomAIService();
       return Reflect.get(service, prop, receiver);
     };
-  }
+  },
 });
 
 // Legacy AI Extraction function for backward compatibility
@@ -498,13 +498,13 @@ export async function createAIExtract(
   transcript: string,
   prompt?: string,
   model?: string,
-  templateId?: string
+  templateId?: string,
 ): Promise<string> {
   try {
     const extractedContent = await customAIService.extractFromTranscript(
       transcript,
       prompt,
-      model
+      model,
     );
 
     // Save to database
@@ -514,8 +514,8 @@ export async function createAIExtract(
       content: extractedContent,
       metadata: JSON.stringify({
         model: model || 'custom-model',
-        prompt: prompt || 'Summarize the key points from this transcript.'
-      })
+        prompt: prompt || 'Summarize the key points from this transcript.',
+      }),
     });
 
     return extractedContent;

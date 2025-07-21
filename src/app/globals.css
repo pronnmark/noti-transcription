@@ -256,6 +256,42 @@
   .buzz-section-gap { gap: 2rem; } /* 32px between major sections */
   .buzz-element-gap { gap: 1rem; } /* 16px between related elements */
   
+  /* Mobile-safe bottom positioning for fixed elements */
+  .mobile-bottom-safe {
+    bottom: 5rem; /* 80px - clears 64px nav + 16px spacing */
+  }
+  
+  @media (min-width: 768px) {
+    .mobile-bottom-safe {
+      bottom: 1.5rem; /* 24px on desktop where there's no bottom nav */
+    }
+  }
+  
+  /* Standardized component styles */
+  .standard-card {
+    @apply bg-white rounded-xl shadow-sm border border-gray-200 transition-all duration-200;
+  }
+  
+  .standard-card-hover {
+    @apply hover:shadow-md hover:border-gray-300;
+  }
+  
+  .standard-page-bg {
+    @apply bg-gray-50 min-h-screen;
+  }
+  
+  .standard-section-bg {
+    @apply bg-white border-b border-gray-200;
+  }
+  
+  .standard-modal {
+    @apply bg-white rounded-xl shadow-lg border border-gray-200;
+  }
+  
+  .standard-input {
+    @apply bg-gray-50 border-gray-200 rounded-lg;
+  }
+  
   /* Animation utilities */
   .animate-slide-in-from-left {
     animation: slideInFromLeft 0.3s ease-out;

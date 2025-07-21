@@ -8,7 +8,7 @@ export { ExtractionRepository } from './ExtractionRepository';
 export { SummarizationRepository } from './SummarizationRepository';
 export {
   ExtractionTemplateRepository,
-  SummarizationTemplateRepository
+  SummarizationTemplateRepository,
 } from './TemplateRepository';
 
 // Import types for the factory

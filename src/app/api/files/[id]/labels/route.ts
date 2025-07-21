@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -24,7 +24,7 @@ export async function GET(
     return NextResponse.json({
       fileId,
       labels,
-      success: true
+      success: true,
     });
   } catch (error) {
     console.error('Error fetching file labels:', error);
@@ -34,7 +34,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;
@@ -57,7 +57,7 @@ export async function PUT(
     const cleanLabels = [...new Set(
       labels
         .map(label => label.trim())
-        .filter(label => label.length > 0 && label.length <= 50)
+        .filter(label => label.length > 0 && label.length <= 50),
     )];
 
     // Check if labels record exists
@@ -73,7 +73,7 @@ export async function PUT(
         .update(fileLabels)
         .set({
           labels: cleanLabels,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(fileLabels.fileId, fileId));
     } else {
@@ -82,14 +82,14 @@ export async function PUT(
         fileId,
         labels: cleanLabels,
         createdAt: new Date(),
-        updatedAt: new Date()
+        updatedAt: new Date(),
       });
     }
 
     return NextResponse.json({
       fileId,
       labels: cleanLabels,
-      success: true
+      success: true,
     });
   } catch (error) {
     console.error('Error updating file labels:', error);

@@ -2,15 +2,15 @@ import { relations } from 'drizzle-orm';
 import { audioFiles, speakerLabels, fileLabels } from './audio';
 import { transcriptionJobs } from './transcripts';
 import { summarizationTemplates, extractionTemplates, aiExtracts } from './extractions';
-import { 
-  dataPointTemplates, 
-  extractions, 
-  dataPoints, 
+import {
+  dataPointTemplates,
+  extractions,
+  dataPoints,
   summarizations,
   summarizationPrompts,
   extractionDefinitions,
   extractionResults,
-  aiProcessingSessions
+  aiProcessingSessions,
 } from './system';
 import { psychologicalEvaluations } from './psychology';
 

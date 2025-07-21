@@ -70,4 +70,4 @@ export const psychologicalMetrics = sqliteTable('psychological_metrics', {
 export type PsychologicalEvaluation = typeof psychologicalEvaluations.$inferSelect;
 export type NewPsychologicalEvaluation = typeof psychologicalEvaluations.$inferInsert;
 export type PsychologicalMetric = typeof psychologicalMetrics.$inferSelect;
-export type NewPsychologicalMetric = typeof psychologicalMetrics.$inferInsert; 
+export type NewPsychologicalMetric = typeof psychologicalMetrics.$inferInsert;

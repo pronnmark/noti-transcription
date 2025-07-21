@@ -33,7 +33,7 @@ export class AudioService extends BaseService implements IAudioService {
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id')
+        ValidationRules.isPositive('id'),
       ]);
 
       return await this.audioRepository.findById(id);
@@ -47,7 +47,7 @@ export class AudioService extends BaseService implements IAudioService {
         ValidationRules.required('originalFileName'),
         ValidationRules.required('originalFileType'),
         ValidationRules.required('fileSize'),
-        ValidationRules.isPositive('fileSize')
+        ValidationRules.isPositive('fileSize'),
       ]);
 
       const newFile = await this.audioRepository.create(data);
@@ -61,7 +61,7 @@ export class AudioService extends BaseService implements IAudioService {
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id')
+        ValidationRules.isPositive('id'),
       ]);
 
       const updatedFile = await this.audioRepository.update(id, data);
@@ -75,7 +75,7 @@ export class AudioService extends BaseService implements IAudioService {
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id')
+        ValidationRules.isPositive('id'),
       ]);
 
       const deleted = await this.audioRepository.delete(id);
@@ -106,7 +106,7 @@ export class AudioService extends BaseService implements IAudioService {
         ValidationRules.isString('fileHash'),
         ValidationRules.isString('originalFileName'),
         ValidationRules.isNumber('fileSize'),
-        ValidationRules.isPositive('fileSize')
+        ValidationRules.isPositive('fileSize'),
       ]);
 
       const existingFile = await this.audioRepository.findByHash(data.fileHash);
@@ -146,7 +146,7 @@ export class AudioService extends BaseService implements IAudioService {
       this.validateInput(hash, [
         ValidationRules.required('hash'),
         ValidationRules.isString('hash'),
-        ValidationRules.minLength('hash', 1)
+        ValidationRules.minLength('hash', 1),
       ]);
 
       return await this.audioRepository.findByHash(hash);
@@ -158,7 +158,7 @@ export class AudioService extends BaseService implements IAudioService {
       this.validateInput(fileName, [
         ValidationRules.required('fileName'),
         ValidationRules.isString('fileName'),
-        ValidationRules.minLength('fileName', 1)
+        ValidationRules.minLength('fileName', 1),
       ]);
 
       return await this.audioRepository.findByFileName(fileName);
@@ -169,7 +169,7 @@ export class AudioService extends BaseService implements IAudioService {
     return this.executeWithErrorHandling('findRecent', async () => {
       this.validateInput(limit, [
         ValidationRules.isNumber('limit'),
-        ValidationRules.isPositive('limit')
+        ValidationRules.isPositive('limit'),
       ]);
 
       return await this.audioRepository.findRecent(limit);
@@ -239,7 +239,7 @@ export class AudioService extends BaseService implements IAudioService {
             extractCount,
             duration: file.duration ?? undefined, // Convert null to undefined
           };
-        })
+        }),
       );
 
       this._logger.info(`Retrieved ${transformedFiles.length} files with details`);

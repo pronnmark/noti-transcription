@@ -258,7 +258,7 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
           <span className="text-sm">{error}</span>
         </div>
       )}
-      
+
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name">Template Name</Label>
@@ -287,12 +287,12 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
         <Textarea
           id={type === 'extraction' ? 'prompt' : 'analysisPrompt'}
           value={type === 'extraction' ? formData.prompt : formData.analysisPrompt}
-          onChange={(e) => setFormData({ 
-            ...formData, 
-            [type === 'extraction' ? 'prompt' : 'analysisPrompt']: e.target.value 
+          onChange={(e) => setFormData({
+            ...formData,
+            [type === 'extraction' ? 'prompt' : 'analysisPrompt']: e.target.value,
           })}
-          placeholder={type === 'extraction' 
-            ? 'Enter the prompt for extracting information...' 
+          placeholder={type === 'extraction'
+            ? 'Enter the prompt for extracting information...'
             : 'Enter the prompt for analyzing data...'
           }
           rows={6}

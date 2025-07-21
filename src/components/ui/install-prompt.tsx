@@ -47,7 +47,7 @@ export function InstallPrompt() {
     }
 
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches || 
+    if (window.matchMedia('(display-mode: standalone)').matches ||
         (window.navigator as any).standalone === true) {
       setIsInstalled(true);
     }
@@ -84,7 +84,7 @@ export function InstallPrompt() {
   };
 
   // Don't show if already installed or dismissed in this session
-  if (isInstalled || 
+  if (isInstalled ||
       (typeof window !== 'undefined' && sessionStorage.getItem('install-prompt-dismissed') === 'true') ||
       !showPrompt) {
     return null;
@@ -99,8 +99,8 @@ export function InstallPrompt() {
           instructions: [
             'Tap the Share button in Safari',
             'Scroll down and tap "Add to Home Screen"',
-            'Confirm by tapping "Add"'
-          ]
+            'Confirm by tapping "Add"',
+          ],
         };
       case 'android':
         return {
@@ -109,8 +109,8 @@ export function InstallPrompt() {
           instructions: [
             'Tap "Install" below or',
             'Tap the menu (⋮) in Chrome',
-            'Select "Add to Home screen"'
-          ]
+            'Select "Add to Home screen"',
+          ],
         };
       default:
         return {
@@ -119,8 +119,8 @@ export function InstallPrompt() {
           instructions: [
             'Click "Install" below or',
             'Look for the install icon in your address bar',
-            'Install for quick access from your desktop'
-          ]
+            'Install for quick access from your desktop',
+          ],
         };
     }
   };
@@ -128,7 +128,7 @@ export function InstallPrompt() {
   const { icon, title, instructions } = getInstallInstructions();
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">
+    <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">
       <UnibodyCard className="border border-primary/20 shadow-lg">
         <div className="flex items-start justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -173,7 +173,7 @@ export function InstallPrompt() {
               onClick={handleDismiss}
               variant="outline"
               size="sm"
-              className={cn("", deferredPrompt && platform !== 'ios' ? "" : "flex-1")}
+              className={cn('', deferredPrompt && platform !== 'ios' ? '' : 'flex-1')}
             >
               Maybe Later
             </Button>
@@ -192,7 +192,7 @@ export function usePWAInstall() {
   useEffect(() => {
     // Check if already installed
     const checkInstalled = () => {
-      return window.matchMedia('(display-mode: standalone)').matches || 
+      return window.matchMedia('(display-mode: standalone)').matches ||
              (window.navigator as any).standalone === true;
     };
 

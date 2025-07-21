@@ -11,9 +11,9 @@ describe('AudioRepository', () => {
       runMigrations: true,
       validateSchema: false,
       createBackup: false,
-      force: true
+      force: true,
     });
-    
+
     repository = new AudioRepository();
   });
 

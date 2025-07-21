@@ -19,7 +19,7 @@ export class DatabaseError extends AppError {
     message: string,
     code: ErrorCode = ErrorCode.DATABASE_ERROR,
     cause?: Error,
-    context: Partial<DatabaseErrorContext> = {}
+    context: Partial<DatabaseErrorContext> = {},
   ) {
     super(
       message,
@@ -28,7 +28,7 @@ export class DatabaseError extends AppError {
       ErrorSeverity.HIGH,
       true,
       context,
-      cause
+      cause,
     );
 
     this.table = context.table;
@@ -41,7 +41,7 @@ export class DatabaseError extends AppError {
       `Database connection error: ${message}`,
       ErrorCode.DATABASE_CONNECTION_ERROR,
       cause,
-      { operation: 'connect' }
+      { operation: 'connect' },
     );
   }
 
@@ -50,19 +50,19 @@ export class DatabaseError extends AppError {
       `Transaction error: ${message}`,
       ErrorCode.TRANSACTION_ERROR,
       cause,
-      { operation: 'transaction', ...context }
+      { operation: 'transaction', ...context },
     );
   }
 
   static constraint(
-    constraintName: string, 
-    table?: string, 
-    column?: string, 
+    constraintName: string,
+    table?: string,
+    column?: string,
     value?: any,
-    cause?: Error
+    cause?: Error,
   ): DatabaseError {
     const message = `Constraint violation: ${constraintName}${table ? ` on table '${table}'` : ''}${column ? ` column '${column}'` : ''}`;
-    
+
     return new DatabaseError(
       message,
       ErrorCode.CONSTRAINT_VIOLATION,
@@ -72,16 +72,16 @@ export class DatabaseError extends AppError {
         table,
         constraint: constraintName,
         column,
-        value
-      }
+        value,
+      },
     );
   }
 
   static notFound(table: string, id?: string | number, cause?: Error): DatabaseError {
-    const message = id 
+    const message = id
       ? `Record not found in table '${table}' with id '${id}'`
       : `No records found in table '${table}'`;
-    
+
     return new DatabaseError(
       message,
       ErrorCode.NOT_FOUND,
@@ -89,16 +89,16 @@ export class DatabaseError extends AppError {
       {
         operation: 'select',
         table,
-        value: id
-      }
+        value: id,
+      },
     );
   }
 
   static duplicate(table: string, column?: string, value?: any, cause?: Error): DatabaseError {
-    const message = column 
+    const message = column
       ? `Duplicate entry for '${column}' in table '${table}'`
       : `Duplicate entry in table '${table}'`;
-    
+
     return new DatabaseError(
       message,
       ErrorCode.ALREADY_EXISTS,
@@ -107,8 +107,8 @@ export class DatabaseError extends AppError {
         operation: 'insert',
         table,
         column,
-        value
-      }
+        value,
+      },
     );
   }
 
@@ -120,8 +120,8 @@ export class DatabaseError extends AppError {
       {
         operation: 'query',
         query,
-        parameters
-      }
+        parameters,
+      },
     );
   }
 
@@ -132,8 +132,8 @@ export class DatabaseError extends AppError {
       cause,
       {
         operation,
-        table
-      }
+        table,
+      },
     );
   }
 
@@ -144,8 +144,8 @@ export class DatabaseError extends AppError {
       cause,
       {
         operation: 'migration',
-        value: version
-      }
+        value: version,
+      },
     );
   }
 
@@ -156,8 +156,8 @@ export class DatabaseError extends AppError {
       cause,
       {
         operation: 'schema',
-        table
-      }
+        table,
+      },
     );
   }
 
@@ -166,9 +166,9 @@ export class DatabaseError extends AppError {
     const retryableCodes = [
       ErrorCode.DATABASE_CONNECTION_ERROR,
       ErrorCode.TIMEOUT_ERROR,
-      ErrorCode.TRANSACTION_ERROR
+      ErrorCode.TRANSACTION_ERROR,
     ];
-    
+
     return retryableCodes.includes(this.code);
   }
 
@@ -177,25 +177,25 @@ export class DatabaseError extends AppError {
     switch (this.code) {
       case ErrorCode.DATABASE_CONNECTION_ERROR:
         return 'Unable to connect to the database. Please try again later.';
-      
+
       case ErrorCode.CONSTRAINT_VIOLATION:
         if (this.metadata.context?.constraint?.includes('unique')) {
           return 'This record already exists. Please use different values.';
         }
         return 'The data violates database constraints. Please check your input.';
-      
+
       case ErrorCode.NOT_FOUND:
         return 'The requested record was not found.';
-      
+
       case ErrorCode.ALREADY_EXISTS:
         return 'A record with this information already exists.';
-      
+
       case ErrorCode.TIMEOUT_ERROR:
         return 'The database operation took too long. Please try again.';
-      
+
       case ErrorCode.TRANSACTION_ERROR:
         return 'The operation could not be completed. Please try again.';
-      
+
       default:
         return 'A database error occurred. Please try again later.';
     }

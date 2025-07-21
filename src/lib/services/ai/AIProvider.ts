@@ -4,7 +4,7 @@ import type {
   IAIProvider,
   AIGenerationOptions,
   AIModelInfo,
-  AIProviderConfig
+  AIProviderConfig,
 } from '../core/interfaces';
 
 export abstract class AIProvider extends ConfigurableService implements IAIProvider {
@@ -32,10 +32,10 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     this.apiKey = config.apiKey;
     this.baseUrl = config.baseUrl;
     this.defaultModel = config.model;
-    
+
     if (config.timeout) this.timeout = config.timeout;
     if (config.retries) this.retries = config.retries;
-    
+
     this.updateConfig(config);
   }
 
@@ -107,16 +107,16 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
 
   protected async executeWithRetry<T>(
     operation: () => Promise<T>,
-    maxRetries: number = this.retries
+    maxRetries: number = this.retries,
   ): Promise<T> {
     let lastError: any;
-    
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error;
-        
+
         if (attempt === maxRetries) {
           break;
         }
@@ -128,9 +128,9 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
 
         const delay = this.calculateRetryDelay(attempt);
         this._logger.warn(`Attempt ${attempt} failed, retrying in ${delay}ms`, {
-          error: error instanceof Error ? error.message : String(error)
+          error: error instanceof Error ? error.message : String(error),
         });
-        
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -144,15 +144,15 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
       return true;
     }
-    
+
     if (error.status >= 500 && error.status < 600) {
       return true;
     }
-    
+
     if (error.status === 429) { // Rate limit
       return true;
     }
-    
+
     return false;
   }
 
@@ -160,17 +160,17 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     // Exponential backoff with jitter
     const baseDelay = 1000; // 1 second
     const maxDelay = 30000; // 30 seconds
-    
+
     const delay = Math.min(baseDelay * Math.pow(2, attempt - 1), maxDelay);
     const jitter = Math.random() * 0.1 * delay; // 10% jitter
-    
+
     return Math.floor(delay + jitter);
   }
 
   protected async makeRequest(
     url: string,
     options: RequestInit,
-    timeout: number = this.timeout
+    timeout: number = this.timeout,
   ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -198,7 +198,7 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      
+
       // Try parsing the entire response as JSON
       return JSON.parse(text);
     } catch (error) {

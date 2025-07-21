@@ -164,7 +164,7 @@ export class ApplicationBootstrap {
   private setupGracefulShutdown(): void {
     const shutdownHandler = async (signal: string) => {
       console.log(`\n🛑 Received ${signal}, starting graceful shutdown...`);
-      
+
       try {
         await this.shutdown();
         process.exit(0);
@@ -182,21 +182,21 @@ export class ApplicationBootstrap {
     // Handle uncaught exceptions
     process.on('uncaughtException', async (error) => {
       console.error('💥 Uncaught exception:', error);
-      
+
       try {
         await errorHandler.handleError(error);
         await this.shutdown();
       } catch (shutdownError) {
         console.error('❌ Failed to handle uncaught exception:', shutdownError);
       }
-      
+
       process.exit(1);
     });
 
     // Handle unhandled promise rejections
     process.on('unhandledRejection', async (reason, promise) => {
       console.error('💥 Unhandled promise rejection:', reason);
-      
+
       try {
         const error = reason instanceof Error ? reason : new Error(String(reason));
         await errorHandler.handleError(error);
@@ -204,7 +204,7 @@ export class ApplicationBootstrap {
       } catch (shutdownError) {
         console.error('❌ Failed to handle unhandled rejection:', shutdownError);
       }
-      
+
       process.exit(1);
     });
 
@@ -252,7 +252,7 @@ export class ApplicationBootstrap {
     timestamp: string;
   }> {
     const serviceStatus = await serviceLifecycleManager.getDetailedStatus();
-    
+
     const result = {
       healthy: serviceStatus.services.healthy,
       services: serviceStatus.services,

@@ -8,16 +8,16 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
     const db = getDb();
-    
+
     // Get file
     const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
-    
+
     if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -34,7 +34,7 @@ export async function GET(
         templateId: summarizations.templateId,
         templateName: summarizationPrompts.name,
         templateDescription: summarizationPrompts.description,
-        templateIsDefault: summarizationPrompts.isDefault
+        templateIsDefault: summarizationPrompts.isDefault,
       })
       .from(summarizations)
       .leftJoin(summarizationPrompts, eq(summarizations.templateId, summarizationPrompts.id))
@@ -53,8 +53,8 @@ export async function GET(
         id: summary.templateId,
         name: summary.templateName,
         description: summary.templateDescription,
-        isDefault: summary.templateIsDefault
-      } : null
+        isDefault: summary.templateIsDefault,
+      } : null,
     }));
 
     return NextResponse.json({
@@ -74,7 +74,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     const { fileId } = await params;
@@ -85,7 +85,7 @@ export async function POST(
 
     // Get file
     const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
-    
+
     if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
@@ -109,7 +109,7 @@ export async function POST(
         .from(summarizationPrompts)
         .where(eq(summarizationPrompts.id, templateId))
         .limit(1);
-      
+
       if (templates.length) {
         template = templates[0];
       }
@@ -138,32 +138,32 @@ export async function POST(
       } else {
         transcriptData = transcription[0].transcript;
       }
-      
+
       const transcriptText = Array.isArray(transcriptData)
         ? transcriptData.map((segment: any) =>
-            `${segment.speaker || 'Speaker'}: ${segment.text}`
-          ).join('\n')
+          `${segment.speaker || 'Speaker'}: ${segment.text}`,
+        ).join('\n')
         : String(transcriptData);
 
       // Try to use AI service for real summarization
       let summary: string;
-      let model: string;
-      
+      let model: string = 'unconfigured'; // Default value to prevent NOT NULL constraint error
+
       try {
         const { customAIService } = await import('@/lib/services/customAI');
-        
+
         // Generate real AI summary
         summary = await customAIService.extractFromTranscript(
           transcriptText,
-          prompt
+          prompt,
         );
-        
+
         const modelInfo = customAIService.getModelInfo();
-        model = modelInfo.name;
-        
+        model = modelInfo.name || 'unknown-model';
+
       } catch (aiError) {
         console.error('AI summarization failed:', aiError);
-        
+
         // Fallback to informative message when AI is not configured
         summary = `Summary of ${file[0].originalFileName}:\n\n` +
           `AI summarization is not available. Error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}\n\n` +
@@ -172,7 +172,13 @@ export async function POST(
           `2. Configure custom AI endpoint in Settings\n\n` +
           `Transcript length: ${transcriptText.length} characters\n` +
           `Number of segments: ${Array.isArray(transcriptData) ? transcriptData.length : 1}`;
-        
+
+        // Ensure model is set to fallback value
+        model = 'unconfigured';
+      }
+
+      // Additional safety check to ensure model is never null/undefined
+      if (!model || model.trim() === '') {
         model = 'unconfigured';
       }
 
@@ -190,14 +196,14 @@ export async function POST(
       return NextResponse.json({
         success: true,
         summary: summary,
-        status: 'completed'
+        status: 'completed',
       });
 
     } catch (aiError) {
       console.error('Summarization error:', aiError);
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Failed to generate summary',
-        details: String(aiError)
+        details: String(aiError),
       }, { status: 500 });
     }
 

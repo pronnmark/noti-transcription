@@ -26,5 +26,5 @@ export {
   initializeServicesOnce,
   areServicesInitialized,
   reinitializeServices,
-  shutdownServices
+  shutdownServices,
 } from './init';

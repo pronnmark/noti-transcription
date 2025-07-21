@@ -25,7 +25,7 @@ export interface SimpleUploadResult {
 export class SimpleFileUploadService extends BaseService {
   private readonly UPLOAD_DIR = join(process.cwd(), 'data', 'audio_files');
   private readonly MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
-  
+
   constructor() {
     super('SimpleFileUploadService');
   }
@@ -48,7 +48,7 @@ export class SimpleFileUploadService extends BaseService {
   /**
    * Main upload method - simplified and explicit
    */
-  async uploadFile(file: File, options: { 
+  async uploadFile(file: File, options: {
     isDraft?: boolean;
     speakerCount?: number;
     allowDuplicates?: boolean;
@@ -59,7 +59,7 @@ export class SimpleFileUploadService extends BaseService {
       fileType: file.type,
       isDraft: options.isDraft,
       speakerCount: options.speakerCount,
-      allowDuplicates: options.allowDuplicates
+      allowDuplicates: options.allowDuplicates,
     });
 
     try {
@@ -85,7 +85,7 @@ export class SimpleFileUploadService extends BaseService {
         originalFileType: file.type || 'audio/mpeg',
         fileSize: file.size,
         fileHash,
-        duration: duration || 0
+        duration: duration || 0,
       });
 
       // Step 7: Start transcription if not draft (optional)
@@ -98,18 +98,18 @@ export class SimpleFileUploadService extends BaseService {
       this._logger.info('File uploaded successfully', {
         fileId: audioFile.id,
         fileName,
-        duration
+        duration,
       });
 
       return {
         fileId: audioFile.id,
         fileName,
-        message: options.isDraft 
-          ? 'Draft saved successfully' 
+        message: options.isDraft
+          ? 'Draft saved successfully'
           : 'File uploaded successfully',
         duration,
         isDraft: !!options.isDraft,
-        transcriptionStarted: !options.isDraft
+        transcriptionStarted: !options.isDraft,
       };
 
     } catch (error) {
@@ -137,7 +137,7 @@ export class SimpleFileUploadService extends BaseService {
     // Basic mime type check
     const validTypes = ['audio/', 'video/'];
     const hasValidType = validTypes.some(type => file.type?.startsWith(type));
-    
+
     if (file.type && !hasValidType) {
       this._logger.warn('Unusual file type', { type: file.type });
     }
@@ -151,18 +151,18 @@ export class SimpleFileUploadService extends BaseService {
       if (typeof file.arrayBuffer === 'function') {
         return Buffer.from(await file.arrayBuffer());
       }
-      
+
       // Fallback for different File implementations
       if (typeof file.stream === 'function') {
         const chunks: Uint8Array[] = [];
         const reader = file.stream().getReader();
-        
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           chunks.push(value);
         }
-        
+
         return Buffer.concat(chunks);
       }
 
@@ -205,7 +205,7 @@ export class SimpleFileUploadService extends BaseService {
       const command = `ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "${filePath}"`;
       const { stdout } = await execAsync(command);
       const duration = parseFloat(stdout.trim());
-      
+
       if (!isNaN(duration)) {
         this._logger.debug('Duration extracted', { duration });
         return Math.round(duration);
@@ -213,7 +213,7 @@ export class SimpleFileUploadService extends BaseService {
     } catch (error) {
       this._logger.warn('Could not extract duration', error);
     }
-    
+
     return null;
   }
 
@@ -223,23 +223,23 @@ export class SimpleFileUploadService extends BaseService {
   private async createAudioRecord(data: any): Promise<any> {
     try {
       this._logger.debug('Creating database record directly...');
-      
+
       // Import database and schema directly to avoid service dependencies
       const { getDb } = await import('../../database/client');
       const { audioFiles } = await import('../../database/schema/audio');
-      
+
       const db = getDb();
       this._logger.debug('Got database instance');
-      
+
       const [result] = await db.insert(audioFiles).values(data).returning();
-      
+
       this._logger.debug('Database record created:', { id: result.id });
       return result;
     } catch (error) {
       this._logger.error('Failed to create database record', {
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
-        data
+        data,
       });
       throw createError.internal('Failed to save file information to database: ' + (error instanceof Error ? error.message : String(error)));
     }
@@ -253,12 +253,12 @@ export class SimpleFileUploadService extends BaseService {
       // For now, just log that transcription would start
       // In production, this would create a job in a queue
       this._logger.info('Transcription would start for file', { fileId, filePath });
-      
+
       // Optional: Create a transcription record directly in the database
       // const { getDb } = await import('../../database/client');
       // const { transcripts } = await import('../../database/schema/transcripts');
       // await db.insert(transcripts).values({ fileId, status: 'pending' });
-      
+
     } catch (error) {
       this._logger.error('Failed to start transcription', error);
       // Don't throw - this is optional

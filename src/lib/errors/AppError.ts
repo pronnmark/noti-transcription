@@ -3,51 +3,51 @@ export enum ErrorCode {
   UNKNOWN_ERROR = 'UNKNOWN_ERROR',
   INTERNAL_SERVER_ERROR = 'INTERNAL_SERVER_ERROR',
   SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE',
-  
+
   // Validation errors
   VALIDATION_ERROR = 'VALIDATION_ERROR',
   INVALID_INPUT = 'INVALID_INPUT',
   MISSING_REQUIRED_FIELD = 'MISSING_REQUIRED_FIELD',
   INVALID_FORMAT = 'INVALID_FORMAT',
-  
+
   // Authentication/Authorization errors
   UNAUTHORIZED = 'UNAUTHORIZED',
   FORBIDDEN = 'FORBIDDEN',
   INVALID_CREDENTIALS = 'INVALID_CREDENTIALS',
   TOKEN_EXPIRED = 'TOKEN_EXPIRED',
-  
+
   // Resource errors
   NOT_FOUND = 'NOT_FOUND',
   ALREADY_EXISTS = 'ALREADY_EXISTS',
   CONFLICT = 'CONFLICT',
   RESOURCE_LOCKED = 'RESOURCE_LOCKED',
-  
+
   // Database errors
   DATABASE_ERROR = 'DATABASE_ERROR',
   DATABASE_CONNECTION_ERROR = 'DATABASE_CONNECTION_ERROR',
   TRANSACTION_ERROR = 'TRANSACTION_ERROR',
   CONSTRAINT_VIOLATION = 'CONSTRAINT_VIOLATION',
-  
+
   // File/Storage errors
   FILE_NOT_FOUND = 'FILE_NOT_FOUND',
   FILE_TOO_LARGE = 'FILE_TOO_LARGE',
   INVALID_FILE_TYPE = 'INVALID_FILE_TYPE',
   STORAGE_ERROR = 'STORAGE_ERROR',
   UPLOAD_ERROR = 'UPLOAD_ERROR',
-  
+
   // AI/Processing errors
   AI_SERVICE_ERROR = 'AI_SERVICE_ERROR',
   AI_QUOTA_EXCEEDED = 'AI_QUOTA_EXCEEDED',
   AI_INVALID_RESPONSE = 'AI_INVALID_RESPONSE',
   TRANSCRIPTION_ERROR = 'TRANSCRIPTION_ERROR',
   EXTRACTION_ERROR = 'EXTRACTION_ERROR',
-  
+
   // Network/External errors
   NETWORK_ERROR = 'NETWORK_ERROR',
   TIMEOUT_ERROR = 'TIMEOUT_ERROR',
   RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
   EXTERNAL_SERVICE_ERROR = 'EXTERNAL_SERVICE_ERROR',
-  
+
   // Configuration errors
   CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
   MISSING_CONFIGURATION = 'MISSING_CONFIGURATION',
@@ -96,17 +96,17 @@ export class AppError extends Error {
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     isOperational: boolean = true,
     metadata: Partial<ErrorMetadata> = {},
-    cause?: Error
+    cause?: Error,
   ) {
     super(message);
-    
+
     this.name = this.constructor.name;
     this.code = code;
     this.severity = severity;
     this.statusCode = statusCode;
     this.isOperational = isOperational;
     this.cause = cause;
-    
+
     this.metadata = {
       timestamp: new Date(),
       stackTrace: this.stack,
@@ -148,7 +148,7 @@ export class AppError extends Error {
       400,
       ErrorSeverity.LOW,
       true,
-      { context }
+      { context },
     );
   }
 
@@ -160,7 +160,7 @@ export class AppError extends Error {
       404,
       ErrorSeverity.LOW,
       true,
-      { context: { resource, id } }
+      { context: { resource, id } },
     );
   }
 
@@ -170,7 +170,7 @@ export class AppError extends Error {
       ErrorCode.UNAUTHORIZED,
       401,
       ErrorSeverity.MEDIUM,
-      true
+      true,
     );
   }
 
@@ -180,7 +180,7 @@ export class AppError extends Error {
       ErrorCode.FORBIDDEN,
       403,
       ErrorSeverity.MEDIUM,
-      true
+      true,
     );
   }
 
@@ -191,7 +191,7 @@ export class AppError extends Error {
       409,
       ErrorSeverity.LOW,
       true,
-      { context }
+      { context },
     );
   }
 
@@ -203,7 +203,7 @@ export class AppError extends Error {
       ErrorSeverity.HIGH,
       false,
       { context },
-      cause
+      cause,
     );
   }
 
@@ -215,7 +215,7 @@ export class AppError extends Error {
       ErrorSeverity.HIGH,
       true,
       { context },
-      cause
+      cause,
     );
   }
 
@@ -227,7 +227,7 @@ export class AppError extends Error {
       ErrorSeverity.MEDIUM,
       true,
       { context },
-      cause
+      cause,
     );
   }
 
@@ -238,7 +238,7 @@ export class AppError extends Error {
       408,
       ErrorSeverity.MEDIUM,
       true,
-      { context }
+      { context },
     );
   }
 
@@ -248,7 +248,7 @@ export class AppError extends Error {
       ErrorCode.RATE_LIMIT_EXCEEDED,
       429,
       ErrorSeverity.LOW,
-      true
+      true,
     );
   }
 
@@ -259,7 +259,7 @@ export class AppError extends Error {
       500,
       ErrorSeverity.HIGH,
       false,
-      { context }
+      { context },
     );
   }
 }

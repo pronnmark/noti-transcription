@@ -1,5 +1,5 @@
-import { db } from "@/lib/db"
-import * as schema from "@/lib/database/schema"
+import { db } from '@/lib/db';
+import * as schema from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
 
 export interface DynamicPromptConfig {
@@ -21,18 +21,18 @@ export interface GeneratedPrompt {
 
 /**
  * Dynamic Prompt Generator - Creates AI prompts based on active extraction definitions
- * 
+ *
  * This service generates system prompts that instruct the AI to return structured JSON
  * responses based on user-defined extraction criteria and summarization styles.
  */
 export class DynamicPromptGenerator {
-  
+
   /**
    * Generate a complete system prompt based on configuration
    */
   async generatePrompt(config: DynamicPromptConfig): Promise<GeneratedPrompt> {
     const { summarizationPromptId, extractionDefinitionIds, useCustomSummarizationPrompt } = config;
-    
+
     // Get summarization prompt
     let summarizationPrompt = '';
     if (useCustomSummarizationPrompt) {
@@ -49,12 +49,12 @@ export class DynamicPromptGenerator {
       });
       summarizationPrompt = defaultPrompt?.prompt || 'Provide a comprehensive summary of the transcript.';
     }
-    
+
     // Get extraction definitions
     const extractionDefinitions = await db.query.extractionDefinitions.findMany({
       where: (definitions, { inArray }) => inArray(definitions.id, extractionDefinitionIds),
     });
-    
+
     // Build extraction map for result processing
     const extractionMap: Record<string, any> = {};
     const jsonSchema: any = {
@@ -62,16 +62,16 @@ export class DynamicPromptGenerator {
       properties: {
         summarization: {
           type: 'string',
-          description: 'The summarization of the transcript'
-        }
+          description: 'The summarization of the transcript',
+        },
       },
-      required: ['summarization']
+      required: ['summarization'],
     };
-    
+
     // Build extraction instructions and schema
     const extractionInstructions: string[] = [];
     const extractionDescriptions: string[] = [];
-    
+
     for (const definition of extractionDefinitions) {
       extractionMap[definition.jsonKey] = {
         id: definition.id,
@@ -79,21 +79,21 @@ export class DynamicPromptGenerator {
         outputType: definition.outputType,
         category: definition.category,
       };
-      
+
       // Add to JSON schema
       jsonSchema.properties[definition.jsonKey] = JSON.parse(definition.jsonSchema as string);
       jsonSchema.required.push(definition.jsonKey);
-      
+
       // Add to instructions
       extractionInstructions.push(`- ${definition.jsonKey}: ${definition.aiInstructions}`);
       extractionDescriptions.push(`  - **${definition.name}**: ${definition.description}`);
     }
-    
+
     // Build the complete system prompt based on whether we need JSON (for extractions) or can use Markdown
     const hasExtractions = extractionDefinitions.length > 0;
-    
+
     let systemPrompt: string;
-    
+
     if (hasExtractions) {
       // Use JSON format when extractions are needed
       systemPrompt = `You are analyzing a transcript and must return a structured JSON response with the following sections:
@@ -137,10 +137,10 @@ Follow the template instructions exactly as specified. Use the natural format re
     return {
       systemPrompt,
       expectedJsonSchema: jsonSchema,
-      extractionMap
+      extractionMap,
     };
   }
-  
+
   /**
    * Generate example JSON for a schema
    */
@@ -173,14 +173,14 @@ Follow the template instructions exactly as specified. Use the natural format re
       if (match) {
         // Extract the content between code block markers
         let extracted = match[0];
-        
+
         // Remove the markdown markers
         extracted = extracted.replace(/```json\s*\n?/g, '');
         extracted = extracted.replace(/```\s*\n?/g, '');
         extracted = extracted.replace(/\n?\s*```$/g, '');
         extracted = extracted.replace(/^`|`$/g, '');
         extracted = extracted.trim();
-        
+
         // Validate that it looks like JSON (starts with { or [)
         if (extracted.startsWith('{') || extracted.startsWith('[')) {
           console.log('🔍 Extracted JSON from markdown:', extracted.substring(0, 100) + '...');
@@ -205,7 +205,7 @@ Follow the template instructions exactly as specified. Use the natural format re
    */
   private extractTextualSummary(response: string): string {
     // Try to extract meaningful content even if JSON parsing failed
-    
+
     // Look for content that might be a summary
     const summaryPatterns = [
       // Look for "summarization": "content" pattern
@@ -232,7 +232,7 @@ Follow the template instructions exactly as specified. Use the natural format re
 
     return cleaned.length > 500 ? cleaned.substring(0, 497) + '...' : cleaned;
   }
-  
+
   /**
    * Get active extraction definitions for UI display
    */
@@ -242,7 +242,7 @@ Follow the template instructions exactly as specified. Use the natural format re
       orderBy: (definitions, { asc }) => [asc(definitions.sortOrder), asc(definitions.name)],
     });
   }
-  
+
   /**
    * Get active summarization prompts for UI display
    */
@@ -252,7 +252,7 @@ Follow the template instructions exactly as specified. Use the natural format re
       orderBy: (prompts, { desc, asc }) => [desc(prompts.isDefault), asc(prompts.name)],
     });
   }
-  
+
   /**
    * Parse AI response and store results in database
    */
@@ -262,7 +262,7 @@ Follow the template instructions exactly as specified. Use the natural format re
     extractionMap: Record<string, any>,
     sessionId: string,
     model: string = 'claude-sonnet-4-20250514',
-    templateId?: string | null
+    templateId?: string | null,
   ): Promise<{
     success: boolean;
     extractionResults: schema.ExtractionResult[];
@@ -272,7 +272,7 @@ Follow the template instructions exactly as specified. Use the natural format re
       // Determine if we expect JSON (extractions) or Markdown (summarization only)
       const hasExtractions = Object.keys(extractionMap).length > 0;
       let parsedResponse;
-      
+
       if (hasExtractions) {
         // Parse JSON response for extractions - with smart extraction and graceful fallback
         try {
@@ -314,7 +314,7 @@ Follow the template instructions exactly as specified. Use the natural format re
             console.warn('⚠️ Creating fallback response due to complete JSON parsing failure');
             parsedResponse = {
               summarization: aiResponse.length > 0 ? this.extractTextualSummary(aiResponse) : 'Unable to generate summary due to processing error.',
-              ...Object.fromEntries(Object.keys(extractionMap).map(key => [key, []]))
+              ...Object.fromEntries(Object.keys(extractionMap).map(key => [key, []])),
             };
           }
         }
@@ -322,10 +322,10 @@ Follow the template instructions exactly as specified. Use the natural format re
         // Handle Markdown response for summarization-only requests
         console.log('📝 Processing Markdown response for summarization-only request');
         parsedResponse = {
-          summarization: aiResponse.trim() || 'No content received from AI.'
+          summarization: aiResponse.trim() || 'No content received from AI.',
         };
       }
-      
+
       // Store summarization with fallback
       const summaryContent = parsedResponse.summarization || 'Summary not available due to processing error.';
       await db.insert(schema.summarizations).values({
@@ -335,19 +335,19 @@ Follow the template instructions exactly as specified. Use the natural format re
         prompt: 'Dynamic extraction and summarization prompt',
         content: summaryContent,
       });
-      
+
       // Store extraction results - with graceful handling of empty data
       const extractionResults: schema.ExtractionResult[] = [];
-      
+
       for (const [jsonKey, extractionInfo] of Object.entries(extractionMap)) {
         let extractionData = parsedResponse[jsonKey];
-        
+
         // Provide default empty values if extraction data is missing
         if (!extractionData) {
-          extractionData = extractionInfo.outputType === 'array' ? [] : 
-                          extractionInfo.outputType === 'object' ? {} : null;
+          extractionData = extractionInfo.outputType === 'array' ? [] :
+            extractionInfo.outputType === 'object' ? {} : null;
         }
-        
+
         // Only store if we have some data (including empty arrays/objects)
         if (extractionData !== null) {
           const result = {
@@ -358,19 +358,19 @@ Follow the template instructions exactly as specified. Use the natural format re
             schemaVersion: '1.0',
             model,
           };
-          
+
           // Insert into database
           await db.insert(schema.extractionResults).values(result);
-          
+
           extractionResults.push(result as schema.ExtractionResult);
         }
       }
-      
+
       return {
         success: true,
         extractionResults,
       };
-      
+
     } catch (error) {
       // Enhanced error logging with detailed context
       console.error('🚨 Critical error in parseAndStoreResults:', {
@@ -381,7 +381,7 @@ Follow the template instructions exactly as specified. Use the natural format re
         responseLength: aiResponse?.length || 0,
         responsePreview: aiResponse?.substring(0, 200) || 'No response',
         extractionMapKeys: Object.keys(extractionMap),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
 
       return {
@@ -391,7 +391,7 @@ Follow the template instructions exactly as specified. Use the natural format re
       };
     }
   }
-  
+
   /**
    * Get extraction results for a file
    */
@@ -405,15 +405,15 @@ Follow the template instructions exactly as specified. Use the natural format re
       },
       orderBy: (results, { asc }) => [asc(results.createdAt)],
     });
-    
+
     const groupedResults: { [extractionType: string]: any[] } = {};
-    
+
     for (const result of results) {
       const extractionType = result.extractionType;
       if (!groupedResults[extractionType]) {
         groupedResults[extractionType] = [];
       }
-      
+
       try {
         const parsedContent = JSON.parse(result.content as string);
         if (Array.isArray(parsedContent)) {
@@ -425,10 +425,10 @@ Follow the template instructions exactly as specified. Use the natural format re
         console.error(`Error parsing extraction result for ${extractionType}:`, error);
       }
     }
-    
+
     return groupedResults;
   }
-  
+
   /**
    * Create a new extraction definition
    */
@@ -452,18 +452,18 @@ Follow the template instructions exactly as specified. Use the natural format re
       isActive: true,
       sortOrder: 0,
     };
-    
+
     await db.insert(schema.extractionDefinitions).values(newDefinition);
-    
+
     return newDefinition as schema.ExtractionDefinition;
   }
-  
+
   /**
    * Update an existing extraction definition
    */
   async updateExtractionDefinition(
     id: string,
-    updates: Partial<schema.ExtractionDefinition>
+    updates: Partial<schema.ExtractionDefinition>,
   ): Promise<void> {
     await db.update(schema.extractionDefinitions)
       .set({
@@ -472,7 +472,7 @@ Follow the template instructions exactly as specified. Use the natural format re
       })
       .where(eq(schema.extractionDefinitions.id, id));
   }
-  
+
   /**
    * Delete an extraction definition
    */

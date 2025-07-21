@@ -1,12 +1,12 @@
 import { Logger, PerformanceLogger, RequestLogger } from './Logger';
 import { createTransport } from './transports';
 import { createFormatter } from './formatters';
-import { 
-  ILogger, 
-  LogLevel, 
-  LoggerConfig, 
-  LogTransport, 
-  parseLogLevel 
+import {
+  ILogger,
+  LogLevel,
+  LoggerConfig,
+  LogTransport,
+  parseLogLevel,
 } from './types';
 
 export interface LoggerFactoryConfig {
@@ -49,7 +49,7 @@ export class LoggerFactory {
 
   getLogger(name?: string): ILogger {
     const loggerName = name || 'default';
-    
+
     if (!this.loggers.has(loggerName)) {
       const logger = this.createLogger(loggerName);
       this.loggers.set(loggerName, logger);
@@ -75,7 +75,7 @@ export class LoggerFactory {
 
   private createLogger(name: string): ILogger {
     const transports = this.createTransports();
-    
+
     const config: LoggerConfig = {
       level: parseLogLevel(this.config.level),
       service: name === 'default' ? this.config.service : name,
@@ -88,7 +88,7 @@ export class LoggerFactory {
 
   private createTransports(): LogTransport[] {
     return this.config.transports.map(transportConfig => {
-      const level = transportConfig.level 
+      const level = transportConfig.level
         ? parseLogLevel(transportConfig.level)
         : parseLogLevel(this.config.level);
 
@@ -99,7 +99,7 @@ export class LoggerFactory {
   // Update configuration at runtime
   updateConfig(config: Partial<LoggerFactoryConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Clear existing loggers to force recreation with new config
     this.loggers.clear();
   }
@@ -111,16 +111,16 @@ export class LoggerFactory {
 
   // Flush all loggers
   async flushAll(): Promise<void> {
-    const flushPromises = Array.from(this.loggers.values()).map(logger => 
-      logger.flush()
+    const flushPromises = Array.from(this.loggers.values()).map(logger =>
+      logger.flush(),
     );
     await Promise.allSettled(flushPromises);
   }
 
   // Close all loggers
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.loggers.values()).map(logger => 
-      logger.close()
+    const closePromises = Array.from(this.loggers.values()).map(logger =>
+      logger.close(),
     );
     await Promise.allSettled(closePromises);
     this.loggers.clear();
@@ -235,21 +235,21 @@ export function setGlobalLogger(logger: ILogger): void {
 
 // Convenience logging functions
 export const log = {
-  trace: (message: string, context?: Record<string, any>) => 
+  trace: (message: string, context?: Record<string, any>) =>
     getGlobalLogger().trace(message, context),
-  
-  debug: (message: string, context?: Record<string, any>) => 
+
+  debug: (message: string, context?: Record<string, any>) =>
     getGlobalLogger().debug(message, context),
-  
-  info: (message: string, context?: Record<string, any>) => 
+
+  info: (message: string, context?: Record<string, any>) =>
     getGlobalLogger().info(message, context),
-  
-  warn: (message: string, context?: Record<string, any>) => 
+
+  warn: (message: string, context?: Record<string, any>) =>
     getGlobalLogger().warn(message, context),
-  
-  error: (message: string, error?: Error, context?: Record<string, any>) => 
+
+  error: (message: string, error?: Error, context?: Record<string, any>) =>
     getGlobalLogger().error(message, error, context),
-  
-  fatal: (message: string, error?: Error, context?: Record<string, any>) => 
+
+  fatal: (message: string, error?: Error, context?: Record<string, any>) =>
     getGlobalLogger().fatal(message, error, context),
 };

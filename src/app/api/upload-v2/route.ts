@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateSession } from '../../../lib/auth';
 import '../../../lib/logging/init'; // Initialize logger
@@ -7,26 +7,26 @@ import { SimpleFileUploadService } from '../../../lib/services/core/SimpleFileUp
 // Direct upload using SimpleFileUploadService
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Check authentication
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     const isValid = await validateSession(token);
-    
+
     if (!isValid) {
-      return NextResponse.json({ 
-        error: 'Authentication required' 
+      return NextResponse.json({
+        error: 'Authentication required',
       }, { status: 401 });
     }
 
     // Parse form data
     const formData = await request.formData();
     const file = formData.get('audio') as File;
-    
+
     if (!file) {
-      return NextResponse.json({ 
-        error: 'No file provided' 
+      return NextResponse.json({
+        error: 'No file provided',
       }, { status: 400 });
     }
 
@@ -34,17 +34,17 @@ export async function POST(request: NextRequest) {
     const speakerCountParam = formData.get('speakerCount') as string;
     const allowDuplicatesParam = formData.get('allowDuplicates') as string;
     const isDraftParam = formData.get('isDraft') as string;
-    
+
     const options = {
       speakerCount: speakerCountParam ? parseInt(speakerCountParam) : 2,
       allowDuplicates: allowDuplicatesParam === 'true',
-      isDraft: isDraftParam === 'true'
+      isDraft: isDraftParam === 'true',
     };
 
     console.log('Upload v2 request:', {
       fileName: file.name,
       fileSize: file.size,
-      options
+      options,
     });
 
     // Create and initialize service
@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
       const result = await uploadService.uploadFile(file, options);
 
       const executionTime = Date.now() - startTime;
-      
+
       return NextResponse.json({
         success: true,
         file: {
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
           transcriptionStatus: result.transcriptionStarted ? 'processing' : 'pending',
           message: result.message,
           isDraft: result.isDraft,
-          duration: result.duration
+          duration: result.duration,
         },
-        executionTime
+        executionTime,
       });
 
     } finally {
@@ -76,13 +76,13 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Upload v2 error:', error);
-    
+
     return NextResponse.json({
       success: false,
       error: {
         message: error instanceof Error ? error.message : 'Upload failed',
-        details: error instanceof Error ? error.stack : undefined
-      }
+        details: error instanceof Error ? error.stack : undefined,
+      },
     }, { status: 500 });
   }
 }

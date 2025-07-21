@@ -23,13 +23,13 @@ export class ServiceLifecycleManager extends BaseService {
   protected async onInitialize(): Promise<void> {
     // Set up process event handlers
     this.setupProcessHandlers();
-    
+
     // Start health check monitoring
     this.startHealthCheckMonitoring();
-    
+
     // Listen to service events
     this.setupServiceEventHandlers();
-    
+
     this._logger.info('Service lifecycle manager initialized');
   }
 
@@ -42,16 +42,16 @@ export class ServiceLifecycleManager extends BaseService {
   private setupProcessHandlers(): void {
     // Graceful shutdown on SIGTERM
     process.on('SIGTERM', this.handleShutdown.bind(this));
-    
+
     // Graceful shutdown on SIGINT (Ctrl+C)
     process.on('SIGINT', this.handleShutdown.bind(this));
-    
+
     // Handle uncaught exceptions
     process.on('uncaughtException', this.handleUncaughtException.bind(this));
-    
+
     // Handle unhandled promise rejections
     process.on('unhandledRejection', this.handleUnhandledRejection.bind(this));
-    
+
     this._logger.info('Process event handlers set up');
   }
 
@@ -68,7 +68,7 @@ export class ServiceLifecycleManager extends BaseService {
         type: 'error',
         timestamp: new Date(),
         data: event,
-        error: event.data?.error
+        error: event.data?.error,
       });
     });
   }
@@ -76,17 +76,17 @@ export class ServiceLifecycleManager extends BaseService {
   private startHealthCheckMonitoring(): void {
     const config = serviceConfigManager.getConfiguration();
     const interval = config.system.healthCheckInterval;
-    
+
     this.healthCheckInterval = setInterval(async () => {
       try {
         const health = await serviceContainer.healthCheck();
-        
+
         this.emit({
           type: 'health-check',
           timestamp: new Date(),
-          data: health
+          data: health,
         });
-        
+
         if (!health.healthy) {
           this._logger.warn('Health check failed', health.errors);
         }
@@ -96,11 +96,11 @@ export class ServiceLifecycleManager extends BaseService {
         this.emit({
           type: 'error',
           timestamp: new Date(),
-          error: error as Error
+          error: error as Error,
         });
       }
     }, interval);
-    
+
     this._logger.info(`Health check monitoring started (interval: ${interval}ms)`);
   }
 
@@ -124,16 +124,16 @@ export class ServiceLifecycleManager extends BaseService {
     this.emit({
       type: 'shutdown',
       timestamp: new Date(),
-      data: { signal }
+      data: { signal },
     });
 
     try {
       // Stop health monitoring first
       this.stopHealthCheckMonitoring();
-      
+
       // Destroy all services
       await serviceContainer.destroy();
-      
+
       this._logger.info('Graceful shutdown completed');
       process.exit(0);
     } catch (error) {
@@ -145,12 +145,12 @@ export class ServiceLifecycleManager extends BaseService {
 
   private handleUncaughtException(error: Error): void {
     this._logger.error('Uncaught exception', error);
-    
+
     this.emit({
       type: 'error',
       timestamp: new Date(),
       error,
-      data: { type: 'uncaughtException' }
+      data: { type: 'uncaughtException' },
     });
 
     // Attempt graceful shutdown
@@ -161,42 +161,42 @@ export class ServiceLifecycleManager extends BaseService {
     this._logger.error('Unhandled promise rejection',
       reason instanceof Error ? reason : new Error(String(reason)),
       { promise: String(promise) });
-    
+
     this.emit({
       type: 'error',
       timestamp: new Date(),
       error: reason instanceof Error ? reason : new Error(String(reason)),
-      data: { type: 'unhandledRejection' }
+      data: { type: 'unhandledRejection' },
     });
   }
 
   async startup(): Promise<void> {
     this._logger.info('Starting application services...');
-    
+
     this.emit({
       type: 'startup',
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     try {
       // Initialize configuration manager first
       await serviceConfigManager.initialize();
-      
+
       // Validate configuration
       const validation = serviceConfigManager.validateConfiguration();
       if (!validation.valid) {
         throw new Error(`Configuration validation failed: ${validation.errors.join(', ')}`);
       }
-      
+
       // Initialize service container
       await serviceContainer.initialize();
-      
+
       // Run initial health check
       const health = await serviceContainer.healthCheck();
       if (!health.healthy) {
         this._logger.warn('Some services are unhealthy after startup', health.errors);
       }
-      
+
       this._logger.info('Application startup completed successfully');
     } catch (error) {
       this._logger.error('Application startup failed',
@@ -204,7 +204,7 @@ export class ServiceLifecycleManager extends BaseService {
       this.emit({
         type: 'error',
         timestamp: new Date(),
-        error: error as Error
+        error: error as Error,
       });
       throw error;
     }
@@ -216,22 +216,22 @@ export class ServiceLifecycleManager extends BaseService {
 
   async restart(): Promise<void> {
     this._logger.info('Restarting application services...');
-    
+
     this.emit({
       type: 'restart',
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     try {
       // Shutdown services
       await serviceContainer.destroy();
-      
+
       // Wait a moment
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Restart services
       await this.startup();
-      
+
       this._logger.info('Application restart completed successfully');
     } catch (error) {
       this._logger.error('Application restart failed',
@@ -278,7 +278,7 @@ export class ServiceLifecycleManager extends BaseService {
     healthCheckActive: boolean;
     uptime: number;
     lastHealthCheck?: Date;
-  } {
+    } {
     return {
       isShuttingDown: this.isShuttingDown,
       healthCheckActive: !!this.healthCheckInterval,
@@ -297,12 +297,12 @@ export class ServiceLifecycleManager extends BaseService {
       lifecycle: this.getStatus(),
       services: await serviceContainer.healthCheck(),
       configuration: serviceConfigManager.validateConfiguration(),
-      metrics: serviceContainer.getMetrics()
+      metrics: serviceContainer.getMetrics(),
     };
   }
 }
 
-// Lazy-loaded singleton instance  
+// Lazy-loaded singleton instance
 let _serviceLifecycleManager: ServiceLifecycleManager | null = null;
 
 export function getServiceLifecycleManager(): ServiceLifecycleManager {
@@ -317,7 +317,7 @@ export const serviceLifecycleManager = new Proxy({} as ServiceLifecycleManager, 
   get(target, prop, receiver) {
     const manager = getServiceLifecycleManager();
     return Reflect.get(manager, prop, receiver);
-  }
+  },
 });
 
 // Convenience functions

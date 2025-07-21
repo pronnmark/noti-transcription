@@ -1,7 +1,7 @@
 import '../logging/init'; // Ensure logger is initialized
 import { customAIService } from './customAI';
-import { db, eq, and } from "@/lib/db"
-import * as schema from "@/lib/db"
+import { db, eq, and } from '@/lib/db';
+import * as schema from '@/lib/db';
 
 export interface TranscriptSegment {
   start: number;
@@ -45,7 +45,7 @@ export interface SummarizationResult {
 
 /**
  * Adaptive AI Service - Core engine for flexible AI processing
- * 
+ *
  * This service adapts to user-defined templates and prompts to provide
  * configurable AI analysis of transcripts.
  */
@@ -63,7 +63,7 @@ export class AdaptiveAIService {
       templateId?: string;
       customPrompt?: string;
       model?: string;
-    } = {}
+    } = {},
   ): Promise<SummarizationResult> {
     const { templateId, customPrompt, model = this.defaultModel } = options;
 
@@ -74,10 +74,10 @@ export class AdaptiveAIService {
       template = await db.query.summarizationPrompts?.findFirst({
         where: (prompts: any, { eq, and }: any) => and(
           eq(prompts.id, templateId),
-          eq(prompts.isActive, true)
+          eq(prompts.isActive, true),
         ),
       });
-      
+
       if (!template) {
         console.warn(`⚠️ Invalid template ID provided: ${templateId}. Falling back to default summarization.`);
         validatedTemplateId = null; // Use null instead of invalid ID
@@ -112,7 +112,7 @@ export class AdaptiveAIService {
       model: options?.model,
       temperature: this.defaultTemperature,
       maxTokens: this.calculateMaxTokens(transcriptText),
-      systemPrompt: 'You are an AI assistant specialized in creating clear, structured summaries of audio transcripts. Focus on accuracy and relevance.'
+      systemPrompt: 'You are an AI assistant specialized in creating clear, structured summaries of audio transcripts. Focus on accuracy and relevance.',
     });
 
     // Store in database using validated template ID
@@ -129,7 +129,7 @@ export class AdaptiveAIService {
       templateId: validatedTemplateId,
       content: summary,
       model,
-      prompt: finalPrompt
+      prompt: finalPrompt,
     };
   }
 
@@ -140,7 +140,7 @@ export class AdaptiveAIService {
     fileId: number,
     transcript: string | TranscriptSegment[],
     templateIds: string[],
-    options: ProcessingOptions = {}
+    options: ProcessingOptions = {},
   ): Promise<ExtractionResult[]> {
     const { model = this.defaultModel, temperature = this.defaultTemperature } = options;
 
@@ -169,7 +169,7 @@ export class AdaptiveAIService {
           model: options?.model,
           temperature,
           maxTokens: this.calculateMaxTokens(transcriptText, 0.3),
-          systemPrompt: `You are an AI assistant specialized in extracting specific information from transcripts. Follow the provided instructions exactly and return results in the requested format.`
+          systemPrompt: `You are an AI assistant specialized in extracting specific information from transcripts. Follow the provided instructions exactly and return results in the requested format.`,
         });
 
         // Parse the extraction results
@@ -198,7 +198,7 @@ export class AdaptiveAIService {
             speaker: item.speaker,
             timestamp: item.timestamp,
             priority: item.priority || 'medium',
-            metadata: item.metadata
+            metadata: item.metadata,
           });
         }
 
@@ -221,7 +221,7 @@ export class AdaptiveAIService {
     fileId: number,
     transcript: string | TranscriptSegment[],
     templateIds: string[],
-    options: ProcessingOptions = {}
+    options: ProcessingOptions = {},
   ): Promise<DataPointResult[]> {
     const { model = this.defaultModel, temperature = 0.1 } = options; // Lower temperature for consistent analysis
 
@@ -250,7 +250,7 @@ export class AdaptiveAIService {
           model: options?.model,
           temperature,
           maxTokens: this.calculateMaxTokens(transcriptText, 0.2),
-          systemPrompt: `You are an AI assistant specialized in analyzing transcripts and generating structured data points. Follow the provided schema exactly and return valid JSON.`
+          systemPrompt: `You are an AI assistant specialized in analyzing transcripts and generating structured data points. Follow the provided schema exactly and return valid JSON.`,
         });
 
         // Parse and validate the analysis results
@@ -268,7 +268,7 @@ export class AdaptiveAIService {
           id: dataPoint.id,
           templateId: template.id,
           analysisResults,
-          model
+          model,
         });
 
         console.log(`✅ Generated data points using template: ${template.name}`);
@@ -289,7 +289,7 @@ export class AdaptiveAIService {
   async processFileWithDefaults(
     fileId: number,
     transcript: string | TranscriptSegment[],
-    options: ProcessingOptions = {}
+    options: ProcessingOptions = {},
   ): Promise<{
     summarization?: SummarizationResult;
     extractions: ExtractionResult[];
@@ -321,10 +321,10 @@ export class AdaptiveAIService {
     if (defaultExtractionTemplates.length > 0) {
       try {
         results.extractions = await this.processExtractions(
-          fileId, 
-          transcript, 
+          fileId,
+          transcript,
           defaultExtractionTemplates.map(t => t.id),
-          options
+          options,
         );
       } catch (error) {
         console.error('Error processing default extractions:', error);
@@ -335,10 +335,10 @@ export class AdaptiveAIService {
     if (defaultDataPointTemplates.length > 0) {
       try {
         results.dataPoints = await this.processDataPoints(
-          fileId, 
-          transcript, 
+          fileId,
+          transcript,
           defaultDataPointTemplates.map(t => t.id),
-          options
+          options,
         );
       } catch (error) {
         console.error('Error processing default data points:', error);
@@ -370,7 +370,7 @@ export class AdaptiveAIService {
     const transcriptTokens = Math.ceil(transcript.length / 4);
     return Math.min(
       Math.max(500, Math.ceil(transcriptTokens * outputRatio)),
-      8000
+      8000,
     );
   }
 
@@ -388,7 +388,7 @@ export class AdaptiveAIService {
       return lines.map(line => ({
         content: line.trim(),
         priority: 'medium' as const,
-        metadata: { template: template.name }
+        metadata: { template: template.name },
       }));
     }
   }
@@ -403,7 +403,7 @@ export class AdaptiveAIService {
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-      
+
       // Try parsing the entire content as JSON
       return JSON.parse(content);
     } catch (error) {
@@ -412,7 +412,7 @@ export class AdaptiveAIService {
       return {
         error: 'Failed to parse analysis results',
         rawContent: content,
-        template: template.name
+        template: template.name,
       };
     }
   }
@@ -433,5 +433,5 @@ export const adaptiveAIService = new Proxy({} as AdaptiveAIService, {
   get(target, prop, receiver) {
     const service = getAdaptiveAIService();
     return Reflect.get(service, prop, receiver);
-  }
+  },
 });

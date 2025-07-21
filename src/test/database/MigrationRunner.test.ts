@@ -13,7 +13,7 @@ describe('MigrationRunner', () => {
   beforeEach(() => {
     // Set test database path
     process.env.DATABASE_PATH = testDbPath;
-    
+
     migrationRunner = new MigrationRunner();
     databaseInitializer = new DatabaseInitializer();
 
@@ -30,7 +30,7 @@ describe('MigrationRunner', () => {
     } catch (error) {
       // Ignore errors when closing database
     }
-    
+
     if (existsSync(testDbPath)) {
       unlinkSync(testDbPath);
     }
@@ -62,7 +62,7 @@ describe('MigrationRunner', () => {
     it('should return migration info after running migrations', async () => {
       await migrationRunner.runMigrations();
       const info = await migrationRunner.getMigrationInfo();
-      
+
       // Should have at least one migration
       expect(info.length).toBeGreaterThanOrEqual(0);
     });
@@ -112,7 +112,7 @@ describe('DatabaseInitializer', () => {
     } catch (error) {
       // Ignore errors
     }
-    
+
     if (existsSync(testDbPath)) {
       unlinkSync(testDbPath);
     }
@@ -130,13 +130,13 @@ describe('DatabaseInitializer', () => {
 
     it('should allow skipping migrations', async () => {
       await expect(
-        initializer.initialize({ runMigrations: false })
+        initializer.initialize({ runMigrations: false }),
       ).resolves.not.toThrow();
     });
 
     it('should allow skipping validation', async () => {
       await expect(
-        initializer.initialize({ validateSchema: false })
+        initializer.initialize({ validateSchema: false }),
       ).resolves.not.toThrow();
     });
   });
@@ -144,7 +144,7 @@ describe('DatabaseInitializer', () => {
   describe('getStatus', () => {
     it('should return status for uninitialized database', async () => {
       const status = await initializer.getStatus();
-      
+
       expect(status).toHaveProperty('connected');
       expect(status).toHaveProperty('migrationsApplied');
       expect(typeof status.connected).toBe('boolean');
@@ -154,7 +154,7 @@ describe('DatabaseInitializer', () => {
     it('should return status for initialized database', async () => {
       await initializer.initialize();
       const status = await initializer.getStatus();
-      
+
       expect(status.connected).toBe(true);
       expect(status.migrationsApplied).toBeGreaterThanOrEqual(0);
     });

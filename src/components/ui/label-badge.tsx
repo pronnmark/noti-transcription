@@ -28,7 +28,7 @@ export function LabelBadge({
   maxVisible = 3,
   size = 'sm',
   className,
-  onClick
+  onClick,
 }: LabelBadgeProps) {
   if (!labels || labels.length === 0) return null;
 
@@ -43,35 +43,35 @@ export function LabelBadge({
 
   const visibleLabels = labels.slice(0, maxVisible);
   const remainingCount = Math.max(0, labels.length - maxVisible);
-  
+
   const badgeSize = size === 'sm' ? 'text-xs' : 'text-sm';
   const iconSize = size === 'sm' ? 'w-2 h-2' : 'w-3 h-3';
 
   return (
-    <div className={cn("flex items-center gap-1 flex-wrap", className)}>
+    <div className={cn('flex items-center gap-1 flex-wrap', className)}>
       {visibleLabels.map((label) => (
         <Badge
           key={label}
           variant="secondary"
           className={cn(
             badgeSize,
-            "border",
+            'border',
             getLabelColor(label),
-            onClick && "cursor-pointer hover:opacity-80"
+            onClick && 'cursor-pointer hover:opacity-80',
           )}
           onClick={() => onClick?.(label)}
         >
-          <Tag className={cn(iconSize, "mr-1")} />
+          <Tag className={cn(iconSize, 'mr-1')} />
           {label}
         </Badge>
       ))}
-      
+
       {remainingCount > 0 && (
         <Badge
           variant="secondary"
           className={cn(
             badgeSize,
-            "bg-gray-100 text-gray-600 border-gray-200"
+            'bg-gray-100 text-gray-600 border-gray-200',
           )}
         >
           +{remainingCount} more

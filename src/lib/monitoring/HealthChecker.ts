@@ -1,27 +1,27 @@
-import { 
-  HealthCheck, 
-  HealthStatus, 
-  SystemHealth, 
-  IHealthChecker 
+import {
+  HealthCheck,
+  HealthStatus,
+  SystemHealth,
+  IHealthChecker,
 } from './types';
 
 export abstract class BaseHealthChecker implements IHealthChecker {
   constructor(
     protected name: string,
-    protected timeout: number = 5000
+    protected timeout: number = 5000,
   ) {}
 
   async check(): Promise<HealthCheck> {
     const startTime = Date.now();
-    
+
     try {
       const result = await Promise.race([
         this.performCheck(),
-        this.createTimeoutPromise()
+        this.createTimeoutPromise(),
       ]);
-      
+
       const duration = Date.now() - startTime;
-      
+
       return {
         name: this.name,
         status: result.status,
@@ -32,7 +32,7 @@ export abstract class BaseHealthChecker implements IHealthChecker {
       };
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       return {
         name: this.name,
         status: HealthStatus.UNHEALTHY,
@@ -72,7 +72,7 @@ export class DatabaseHealthChecker extends BaseHealthChecker {
     try {
       // Import database connection
       const { db } = await import('@/lib/db');
-      
+
       // Perform a simple query to test connectivity
       const result = await db.all('SELECT 1 as test');
 
@@ -104,7 +104,7 @@ export class DatabaseHealthChecker extends BaseHealthChecker {
 export class ServiceHealthChecker extends BaseHealthChecker {
   constructor(
     private serviceName: string,
-    timeout?: number
+    timeout?: number,
   ) {
     super(`service_${serviceName}`, timeout);
   }
@@ -116,7 +116,7 @@ export class ServiceHealthChecker extends BaseHealthChecker {
   }> {
     try {
       const { serviceContainer } = await import('@/lib/services');
-      
+
       // Check if service exists and is initialized
       if (!serviceContainer.hasService(this.serviceName)) {
         return {
@@ -128,7 +128,7 @@ export class ServiceHealthChecker extends BaseHealthChecker {
       // Get service health from container
       const health = await serviceContainer.healthCheck();
       const serviceHealth = health.services[this.serviceName];
-      
+
       if (serviceHealth === true) {
         return {
           status: HealthStatus.HEALTHY,
@@ -160,7 +160,7 @@ export class ServiceHealthChecker extends BaseHealthChecker {
 export class AIProviderHealthChecker extends BaseHealthChecker {
   constructor(
     private providerName: 'custom',
-    timeout?: number
+    timeout?: number,
   ) {
     super(`ai_provider_${providerName}`, timeout);
   }
@@ -172,7 +172,7 @@ export class AIProviderHealthChecker extends BaseHealthChecker {
   }> {
     try {
       let provider: any;
-      
+
       if (this.providerName === 'custom') {
         const { customAIService } = await import('@/lib/services/customAI');
         provider = customAIService;
@@ -187,7 +187,7 @@ export class AIProviderHealthChecker extends BaseHealthChecker {
 
       // Check if provider is available
       const isAvailable = await provider.isAvailable();
-      
+
       if (isAvailable) {
         return {
           status: HealthStatus.HEALTHY,
@@ -211,9 +211,9 @@ export class AIProviderHealthChecker extends BaseHealthChecker {
       return {
         status: HealthStatus.UNHEALTHY,
         message: `AI provider check failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        metadata: { 
+        metadata: {
           provider: this.providerName,
-          error: String(error) 
+          error: String(error),
         },
       };
     }
@@ -226,7 +226,7 @@ export class MemoryHealthChecker extends BaseHealthChecker {
       warning: number; // percentage
       critical: number; // percentage
     } = { warning: 80, critical: 90 },
-    timeout?: number
+    timeout?: number,
   ) {
     super('memory', timeout);
   }
@@ -239,7 +239,7 @@ export class MemoryHealthChecker extends BaseHealthChecker {
     const memUsage = process.memoryUsage();
     const totalMemory = require('os').totalmem();
     const usedPercentage = (memUsage.rss / totalMemory) * 100;
-    
+
     const metadata = {
       usedBytes: memUsage.rss,
       totalBytes: totalMemory,
@@ -277,7 +277,7 @@ export class DiskSpaceHealthChecker extends BaseHealthChecker {
       warning: number; // percentage
       critical: number; // percentage
     } = { warning: 80, critical: 90 },
-    timeout?: number
+    timeout?: number,
   ) {
     super('disk_space', timeout);
   }
@@ -290,12 +290,12 @@ export class DiskSpaceHealthChecker extends BaseHealthChecker {
     try {
       const fs = await import('fs/promises');
       const stats = await fs.statfs(this.path);
-      
+
       const totalBytes = stats.blocks * stats.bsize;
       const freeBytes = stats.bavail * stats.bsize;
       const usedBytes = totalBytes - freeBytes;
       const usedPercentage = (usedBytes / totalBytes) * 100;
-      
+
       const metadata = {
         path: this.path,
         totalBytes,
@@ -346,8 +346,8 @@ export class HealthCheckManager {
 
   async checkAll(): Promise<SystemHealth> {
     const startTime = Date.now();
-    
-    const checkPromises = this.checkers.map(checker => 
+
+    const checkPromises = this.checkers.map(checker =>
       checker.check().catch(error => ({
         name: 'unknown',
         status: HealthStatus.UNKNOWN,
@@ -355,14 +355,14 @@ export class HealthCheckManager {
         duration: 0,
         timestamp: new Date(),
         metadata: { error: String(error) },
-      }))
+      })),
     );
 
     const checks = await Promise.all(checkPromises);
-    
+
     // Determine overall health status
     const overall = this.determineOverallHealth(checks);
-    
+
     return {
       overall,
       checks,
@@ -379,25 +379,25 @@ export class HealthCheckManager {
     }
 
     const statuses = checks.map(check => check.status);
-    
+
     if (statuses.includes(HealthStatus.UNHEALTHY)) {
       return HealthStatus.UNHEALTHY;
     }
-    
+
     if (statuses.includes(HealthStatus.DEGRADED)) {
       return HealthStatus.DEGRADED;
     }
-    
+
     if (statuses.every(status => status === HealthStatus.HEALTHY)) {
       return HealthStatus.HEALTHY;
     }
-    
+
     return HealthStatus.UNKNOWN;
   }
 
   getCheckers(): string[] {
-    return this.checkers.map(checker => 
-      checker.check().then(result => result.name)
+    return this.checkers.map(checker =>
+      checker.check().then(result => result.name),
     ).map((promise, index) => `checker_${index}`); // Simplified for now
   }
 }

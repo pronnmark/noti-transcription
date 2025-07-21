@@ -5,7 +5,7 @@ import { SignJWT } from 'jose';
 // Get password from environment variable or use default
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'ddash';
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'noti-secret-key-change-in-production'
+  process.env.JWT_SECRET || 'noti-secret-key-change-in-production',
 );
 
 export async function POST(request: NextRequest) {
@@ -28,9 +28,9 @@ export async function POST(request: NextRequest) {
       .setExpirationTime('7d') // Token expires in 7 days
       .sign(JWT_SECRET);
 
-    // Set cookie
+    // Set cookie with consistent name for middleware compatibility
     const cookieStore = await cookies();
-    cookieStore.set('auth-token', token, {
+    cookieStore.set('noti-session', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',

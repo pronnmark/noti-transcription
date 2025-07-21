@@ -14,7 +14,7 @@ export function ProgressIndicator({ completed, total, label, className }: Progre
   const percentage = total > 0 ? (completed / total) * 100 : 0;
 
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn('space-y-2', className)}>
       {label && (
         <div className="flex items-center justify-between text-sm">
           <span className="text-muted-foreground">{label}</span>

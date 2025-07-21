@@ -6,7 +6,7 @@ import { ResponsiveLayout } from '@/components/layout/responsive-layout';
 import { InstallPrompt } from '@/components/ui/install-prompt';
 import { cn } from '@/lib/utils';
 
-const jetbrainsMono = JetBrains_Mono({ 
+const jetbrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   weight: ['100', '200', '300', '400', '500', '600', '700', '800'],
   variable: '--font-jetbrains-mono',
@@ -46,7 +46,7 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet" />
-        
+
         {/* PWA Meta Tags */}
         <meta name="application-name" content="Noti" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -56,18 +56,18 @@ export default function RootLayout({
         <meta name="msapplication-config" content="/browserconfig.xml" />
         <meta name="msapplication-TileColor" content="#3b82f6" />
         <meta name="msapplication-tap-highlight" content="no" />
-        
+
         {/* Apple Touch Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
         <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
-        
+
         {/* Favicons */}
         <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
         <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
-      <body className={cn(jetbrainsMono.className, "h-full bg-background")} suppressHydrationWarning>
+      <body className={cn(jetbrainsMono.className, 'h-full bg-background')} suppressHydrationWarning>
         <ResponsiveLayout>
           {children}
         </ResponsiveLayout>

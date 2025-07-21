@@ -19,13 +19,13 @@ interface EmotionalRadarChartProps {
   height?: number;
 }
 
-export function EmotionalRadarChart({ 
-  moodData, 
-  title = "Emotional Profile", 
-  description = "Multi-dimensional emotional state analysis",
-  height = 400 
+export function EmotionalRadarChart({
+  moodData,
+  title = 'Emotional Profile',
+  description = 'Multi-dimensional emotional state analysis',
+  height = 400,
 }: EmotionalRadarChartProps) {
-  
+
   // Transform mood data for radar chart
   const radarData = [
     { emotion: 'Happy', value: moodData.happy || 0, fullMark: 10 },
@@ -52,7 +52,7 @@ export function EmotionalRadarChart({
       frustrated: '#ef4444',
       stressed: '#dc2626',
       anxious: '#f97316',
-      sad: '#6b7280'
+      sad: '#6b7280',
     };
     return colors[emotion] || '#8b5cf6';
   };
@@ -68,9 +68,9 @@ export function EmotionalRadarChart({
           <RadarChart data={radarData}>
             <PolarGrid />
             <PolarAngleAxis dataKey="emotion" tick={{ fontSize: 12 }} />
-            <PolarRadiusAxis 
-              angle={90} 
-              domain={[0, 10]} 
+            <PolarRadiusAxis
+              angle={90}
+              domain={[0, 10]}
               tick={{ fontSize: 10 }}
               tickCount={6}
             />
@@ -92,7 +92,7 @@ export function EmotionalRadarChart({
             {sortedEmotions.map(([emotion, value], index) => (
               <div key={emotion} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div 
+                  <div
                     className="w-3 h-3 rounded-full"
                     style={{ backgroundColor: getEmotionColor(emotion) }}
                   />
@@ -100,11 +100,11 @@ export function EmotionalRadarChart({
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-20 bg-gray-200 rounded-full h-2">
-                    <div 
+                    <div
                       className="h-2 rounded-full transition-all duration-300"
-                      style={{ 
+                      style={{
                         width: `${((value || 0) / 10) * 100}%`,
-                        backgroundColor: getEmotionColor(emotion)
+                        backgroundColor: getEmotionColor(emotion),
                       }}
                     />
                   </div>
@@ -121,7 +121,7 @@ export function EmotionalRadarChart({
           <div className="text-sm text-gray-600">
             {sortedEmotions.length > 0 && (
               <p>
-                Primary emotion: <span className="font-medium">{sortedEmotions[0][0]}</span> 
+                Primary emotion: <span className="font-medium">{sortedEmotions[0][0]}</span>
                 {sortedEmotions[0][1] && ` (${sortedEmotions[0][1].toFixed(1)}/10)`}
               </p>
             )}
@@ -137,12 +137,12 @@ export function EmotionalRadarChart({
                 const positiveEmotions = (moodData.happy || 0) + (moodData.confident || 0) + (moodData.excited || 0) + (moodData.calm || 0);
                 const negativeEmotions = (moodData.frustrated || 0) + (moodData.stressed || 0) + (moodData.anxious || 0) + (moodData.sad || 0);
                 const ratio = positiveEmotions / Math.max(negativeEmotions, 1);
-                
-                if (ratio > 2) return "Strong positive emotional balance";
-                if (ratio > 1.5) return "Good emotional balance";
-                if (ratio > 1) return "Balanced emotional state";
-                if (ratio > 0.7) return "Slightly challenging emotional state";
-                return "Consider emotional wellness support";
+
+                if (ratio > 2) return 'Strong positive emotional balance';
+                if (ratio > 1.5) return 'Good emotional balance';
+                if (ratio > 1) return 'Balanced emotional state';
+                if (ratio > 0.7) return 'Slightly challenging emotional state';
+                return 'Consider emotional wellness support';
               })()}
             </p>
           </div>

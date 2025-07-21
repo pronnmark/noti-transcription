@@ -95,7 +95,7 @@ export abstract class BaseService implements IService {
 
   protected async executeWithErrorHandling<T>(
     operation: string,
-    fn: () => Promise<T>
+    fn: () => Promise<T>,
   ): Promise<T> {
     this.ensureInitialized();
 
@@ -175,7 +175,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => input != null && input !== '',
-      message: `${field} is required`
+      message: `${field} is required`,
     };
   }
 
@@ -183,7 +183,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'number' && !isNaN(input),
-      message: `${field} must be a valid number`
+      message: `${field} must be a valid number`,
     };
   }
 
@@ -191,7 +191,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'string',
-      message: `${field} must be a string`
+      message: `${field} must be a string`,
     };
   }
 
@@ -199,7 +199,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'string' && input.length >= min,
-      message: `${field} must be at least ${min} characters long`
+      message: `${field} must be at least ${min} characters long`,
     };
   }
 
@@ -207,7 +207,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'string' && input.length <= max,
-      message: `${field} must be no more than ${max} characters long`
+      message: `${field} must be no more than ${max} characters long`,
     };
   }
 
@@ -215,7 +215,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'number' && input > 0,
-      message: `${field} must be a positive number`
+      message: `${field} must be a positive number`,
     };
   }
 
@@ -223,7 +223,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => Array.isArray(input),
-      message: `${field} must be an array`
+      message: `${field} must be an array`,
     };
   }
 
@@ -231,7 +231,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => typeof input === 'object' && input !== null && !Array.isArray(input),
-      message: `${field} must be an object`
+      message: `${field} must be an object`,
     };
   }
 
@@ -239,7 +239,7 @@ export class ValidationRules {
     return {
       field,
       validator: (input: any) => values.includes(input),
-      message: `${field} must be one of: ${values.join(', ')}`
+      message: `${field} must be one of: ${values.join(', ')}`,
     };
   }
 
@@ -247,7 +247,7 @@ export class ValidationRules {
     return {
       field,
       validator: validatorFn,
-      message: `${field} ${message}`
+      message: `${field} ${message}`,
     };
   }
 }

@@ -15,19 +15,19 @@ export { MonitoringService } from './MonitoringService';
 
 // Import for internal use
 import { MonitoringService } from './MonitoringService';
-export { 
-  SystemMetricsCollector, 
-  HttpMetricsCollector, 
-  DatabaseMetricsCollector, 
-  AIServiceMetricsCollector 
+export {
+  SystemMetricsCollector,
+  HttpMetricsCollector,
+  DatabaseMetricsCollector,
+  AIServiceMetricsCollector,
 } from './MetricsCollector';
-export { 
+export {
   HealthCheckManager,
   DatabaseHealthChecker,
   ServiceHealthChecker,
   AIProviderHealthChecker,
   MemoryHealthChecker,
-  DiskSpaceHealthChecker
+  DiskSpaceHealthChecker,
 } from './HealthChecker';
 
 // Default configuration
@@ -107,44 +107,44 @@ export async function getPerformanceMetrics(): Promise<import('./types').Perform
 
 // Metric recording helpers
 export function recordHttpRequest(
-  method: string, 
-  path: string, 
-  statusCode: number, 
-  duration: number, 
-  requestSize?: number, 
-  responseSize?: number
+  method: string,
+  path: string,
+  statusCode: number,
+  duration: number,
+  requestSize?: number,
+  responseSize?: number,
 ): void {
   const service = getMonitoringService();
   service.recordHttpRequest(method, path, statusCode, duration, requestSize, responseSize);
 }
 
 export function recordDatabaseQuery(
-  operation: string, 
-  table: string, 
-  duration: number, 
-  success: boolean
+  operation: string,
+  table: string,
+  duration: number,
+  success: boolean,
 ): void {
   const service = getMonitoringService();
   service.recordDatabaseQuery(operation, table, duration, success);
 }
 
 export function recordAIRequest(
-  provider: string, 
-  model: string, 
-  operation: string, 
-  duration: number, 
-  success: boolean, 
-  errorType?: string
+  provider: string,
+  model: string,
+  operation: string,
+  duration: number,
+  success: boolean,
+  errorType?: string,
 ): void {
   const service = getMonitoringService();
   service.recordAIRequest(provider, model, operation, duration, success, errorType);
 }
 
 export function recordAITokenUsage(
-  provider: string, 
-  model: string, 
-  promptTokens: number, 
-  completionTokens: number
+  provider: string,
+  model: string,
+  promptTokens: number,
+  completionTokens: number,
 ): void {
   const service = getMonitoringService();
   service.recordAITokenUsage(provider, model, promptTokens, completionTokens);

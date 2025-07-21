@@ -155,7 +155,7 @@ describe('RepositoryFactory', () => {
 
       // Same type repositories should be identical
       expect(audioRepo1).toBe(audioRepo2);
-      
+
       // Different type repositories should be different
       expect(audioRepo1).not.toBe(transcriptionRepo);
     });

@@ -18,19 +18,19 @@ interface MoodTrendChartProps {
   height?: number;
 }
 
-export function MoodTrendChart({ 
-  data, 
-  title = "Mood Trends", 
-  description = "Daily mood patterns over time",
-  height = 400 
+export function MoodTrendChart({
+  data,
+  title = 'Mood Trends',
+  description = 'Daily mood patterns over time',
+  height = 400,
 }: MoodTrendChartProps) {
-  
+
   // Process data for chart
   const chartData = data.map(item => ({
     date: format(new Date(item.date), 'MMM dd'),
     mood: item.averageMood?.toFixed(1) || 0,
     sessions: item.sessionCount || 0,
-    emotion: item.dominantEmotion || 'neutral'
+    emotion: item.dominantEmotion || 'neutral',
   }));
 
   // Custom tooltip component
@@ -68,13 +68,13 @@ export function MoodTrendChart({
         <ResponsiveContainer width="100%" height={height}>
           <LineChart data={chartData}>
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis 
-              dataKey="date" 
+            <XAxis
+              dataKey="date"
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12 }}
             />
-            <YAxis 
+            <YAxis
               domain={[0, 10]}
               axisLine={false}
               tickLine={false}
@@ -82,10 +82,10 @@ export function MoodTrendChart({
             />
             <Tooltip content={<CustomTooltip />} />
             <Legend />
-            <Line 
-              type="monotone" 
-              dataKey="mood" 
-              stroke="#3b82f6" 
+            <Line
+              type="monotone"
+              dataKey="mood"
+              stroke="#3b82f6"
               strokeWidth={2}
               dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
@@ -93,7 +93,7 @@ export function MoodTrendChart({
             />
           </LineChart>
         </ResponsiveContainer>
-        
+
         {/* Summary statistics */}
         <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="text-center">

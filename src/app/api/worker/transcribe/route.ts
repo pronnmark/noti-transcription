@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Worker error:', error);
     return NextResponse.json({
-      error: error.message || 'Worker failed'
+      error: error.message || 'Worker failed',
     }, { status: 500 });
   }
 }
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const { fileId } = await request.json();
-    
+
     if (!fileId) {
       return NextResponse.json({ error: 'fileId required' }, { status: 400 });
     }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     return NextResponse.json({
-      error: error.message || 'Failed to trigger worker'
+      error: error.message || 'Failed to trigger worker',
     }, { status: 500 });
   }
 }

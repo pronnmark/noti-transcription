@@ -34,37 +34,37 @@ export const createError = {
     const { ValidationError } = require('./ValidationError');
     return new ValidationError(message, field, value);
   },
-  
+
   notFound: (resource: string, id?: string | number) => {
     const { AppError } = require('./AppError');
     return AppError.notFound(resource, id);
   },
-  
+
   unauthorized: (message?: string) => {
     const { AppError } = require('./AppError');
     return AppError.unauthorized(message);
   },
-  
+
   forbidden: (message?: string) => {
     const { AppError } = require('./AppError');
     return AppError.forbidden(message);
   },
-  
+
   conflict: (message: string) => {
     const { AppError } = require('./AppError');
     return AppError.conflict(message);
   },
-  
+
   internal: (message: string, cause?: Error) => {
     const { AppError } = require('./AppError');
     return AppError.internal(message, cause);
   },
-  
+
   database: (message: string, cause?: Error) => {
     const { DatabaseError } = require('./DatabaseError');
     return new DatabaseError(message, undefined, cause);
   },
-  
+
   aiService: (message: string, provider?: string, cause?: Error) => {
     const { AIServiceError } = require('./AIServiceError');
     return new AIServiceError(message, undefined, undefined, cause, { provider });

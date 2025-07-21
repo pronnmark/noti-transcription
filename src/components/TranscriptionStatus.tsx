@@ -25,7 +25,7 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
     try {
       const response = await fetch(`/api/transcribe/status/${fileId}`);
       const data = await response.json();
-      
+
       if (data.exists && data.job) {
         setStatus(data.job.status);
         setProgress(data.job.progress || 0);
@@ -42,10 +42,10 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
     setLoading(true);
     try {
       const response = await fetch(`/api/transcribe-simple/${fileId}`, {
-        method: 'POST'
+        method: 'POST',
       });
       const data = await response.json();
-      
+
       if (data.success) {
         setStatus('completed');
         setTranscript(data.transcript);
@@ -93,7 +93,7 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
       <div className="flex items-center gap-2">
         {getStatusIcon()}
         <span className="text-sm text-muted-foreground">{getStatusText()}</span>
-        
+
         {(status === 'none' || status === 'failed') && (
           <Button
             size="sm"
@@ -119,7 +119,7 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
       {transcript && (
         <div className="mt-2 p-3 bg-muted rounded-md">
           <p className="text-sm">
-            {Array.isArray(transcript) 
+            {Array.isArray(transcript)
               ? transcript.map((seg: any) => seg.text).join(' ')
               : transcript
             }

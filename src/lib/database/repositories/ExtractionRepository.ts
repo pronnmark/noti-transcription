@@ -67,7 +67,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
         .from(this.table)
         .where(and(
           eq(this.table.fileId, fileId),
-          eq(this.table.templateId, templateId)
+          eq(this.table.templateId, templateId),
         ))
         .orderBy(desc(this.table.createdAt));
       return result as Extraction[];
@@ -82,7 +82,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
         .update(this.table)
         .set({
           status,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(this.table.id, id))
         .returning();
@@ -103,7 +103,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
         .update(this.table)
         .set({
           comments: comment,
-          updatedAt: new Date().toISOString()
+          updatedAt: new Date().toISOString(),
         })
         .where(eq(this.table.id, id))
         .returning();

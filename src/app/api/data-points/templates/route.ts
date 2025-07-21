@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and } from "@/lib/db"
-import { dataPointTemplates, dataPoints } from "@/lib/db"
+import { db, eq, and } from '@/lib/db';
+import { dataPointTemplates, dataPoints } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const activeOnly = url.searchParams.get('activeOnly') === 'true';
     const defaultOnly = url.searchParams.get('defaultOnly') === 'true';
 
-    let whereConditions = [];
+    const whereConditions = [];
     if (activeOnly) {
       whereConditions.push(eq(dataPointTemplates.isActive, true));
     }
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       orderBy: (templates: any, { desc, asc }: any) => [
         desc(templates.isDefault),
         desc(templates.isActive),
-        asc(templates.name)
+        asc(templates.name),
       ],
     }) || [];
 
@@ -50,20 +50,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      name, 
-      description, 
-      analysisPrompt, 
-      outputSchema, 
+    const {
+      name,
+      description,
+      analysisPrompt,
+      outputSchema,
       visualizationType = 'chart',
       isActive = true,
-      isDefault = false 
+      isDefault = false,
     } = body;
 
     // Validate required fields
     if (!name || !analysisPrompt) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: name, analysisPrompt' 
+      return NextResponse.json({
+        error: 'Missing required fields: name, analysisPrompt',
       }, { status: 400 });
     }
 
@@ -100,21 +100,21 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
+    const {
       id,
-      name, 
-      description, 
-      analysisPrompt, 
-      outputSchema, 
+      name,
+      description,
+      analysisPrompt,
+      outputSchema,
       visualizationType,
       isActive,
-      isDefault 
+      isDefault,
     } = body;
 
     // Validate required fields
     if (!id) {
-      return NextResponse.json({ 
-        error: 'Missing required field: id' 
+      return NextResponse.json({
+        error: 'Missing required field: id',
       }, { status: 400 });
     }
 
@@ -172,8 +172,8 @@ export async function DELETE(request: NextRequest) {
     const id = url.searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ 
-        error: 'Missing required parameter: id' 
+      return NextResponse.json({
+        error: 'Missing required parameter: id',
       }, { status: 400 });
     }
 
@@ -192,8 +192,8 @@ export async function DELETE(request: NextRequest) {
     });
 
     if (dataPointsCount && dataPointsCount.length > 0) {
-      return NextResponse.json({ 
-        error: 'Cannot delete template that is in use. Deactivate it instead.' 
+      return NextResponse.json({
+        error: 'Cannot delete template that is in use. Deactivate it instead.',
       }, { status: 400 });
     }
 

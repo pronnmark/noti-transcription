@@ -10,20 +10,20 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
       includeStackTrace?: boolean;
       sanitizeErrors?: boolean;
       reportErrors?: boolean;
-    } = {}
+    } = {},
   ) {}
 
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext
+    context: RequestContext,
   ): Promise<NextResponse> {
     const startTime = Date.now();
 
     try {
       // Handle the error using the centralized error handler
       const errorResponse = await errorHandler.handleError(error, context.requestId);
-      
+
       // Log the error
       context.logger.error('Request failed with error', error instanceof Error ? error : new Error(String(error)), {
         method: context.method,
@@ -107,7 +107,7 @@ export class ValidationErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext
+    context: RequestContext,
   ): Promise<NextResponse> {
     if (!(error instanceof Error) || !error.message.includes('validation')) {
       throw error; // Re-throw if not a validation error
@@ -161,7 +161,7 @@ export class NotFoundErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext
+    context: RequestContext,
   ): Promise<NextResponse> {
     if (!(error instanceof AppError) || error.code !== ErrorCode.NOT_FOUND) {
       throw error; // Re-throw if not a not found error
@@ -206,7 +206,7 @@ export class RateLimitErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext
+    context: RequestContext,
   ): Promise<NextResponse> {
     if (!(error instanceof AppError) || error.code !== ErrorCode.RATE_LIMIT_EXCEEDED) {
       throw error; // Re-throw if not a rate limit error
@@ -249,7 +249,7 @@ export class RateLimitErrorMiddleware implements ErrorMiddlewareHandler {
 // Error middleware factory
 export function createErrorMiddleware(
   type: 'general' | 'validation' | 'not-found' | 'rate-limit' = 'general',
-  options?: any
+  options?: any,
 ): ErrorMiddlewareHandler {
   switch (type) {
     case 'validation':

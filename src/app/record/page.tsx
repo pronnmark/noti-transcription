@@ -111,21 +111,21 @@ export default function RecordPage() {
         setRecordingSupported(false);
         return;
       }
-      
+
       // Check if audio devices are available first
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(device => device.kind === 'audioinput');
-      
+
       const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
       setDeviceInfo(deviceDebug);
       console.log(deviceDebug);
-      
+
       if (audioInputs.length === 0) {
         console.log('No audio input devices found');
         setRecordingSupported(false);
         return;
       }
-      
+
       // Test with mobile-optimized constraints
       const mobileConstraints = {
         audio: isMobile ? {
@@ -133,20 +133,20 @@ export default function RecordPage() {
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: 16000, // Lower sample rate for mobile
-          channelCount: 1     // Mono for mobile
-        } : { 
+          channelCount: 1,     // Mono for mobile
+        } : {
           echoCancellation: false,
           noiseSuppression: false,
-          autoGainControl: false
-        }
+          autoGainControl: false,
+        },
       };
-      
+
       const stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
-      
+
       // Clean up test stream
       stream.getTracks().forEach(track => track.stop());
       setRecordingSupported(true);
-      
+
     } catch (error) {
       console.error('Recording not supported:', error);
       if (error instanceof Error) {
@@ -180,8 +180,8 @@ export default function RecordPage() {
               noiseSuppression: true,
               autoGainControl: true,
               sampleRate: 16000,
-              channelCount: 1
-            }
+              channelCount: 1,
+            },
           });
         } else {
           // Desktop optimal settings
@@ -190,15 +190,15 @@ export default function RecordPage() {
               echoCancellation: true,
               noiseSuppression: true,
               autoGainControl: true,
-              sampleRate: 44100
-            }
+              sampleRate: 44100,
+            },
           });
         }
       } catch (error) {
         console.log('Optimized settings failed, trying basic constraints:', error);
         // Fallback to basic constraints
-        stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: true 
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: true,
         });
       }
 
@@ -228,7 +228,7 @@ export default function RecordPage() {
 
       const recorder = new MediaRecorder(stream, {
         mimeType,
-        audioBitsPerSecond: isMobile ? 64000 : 128000 // Lower bitrate for mobile
+        audioBitsPerSecond: isMobile ? 64000 : 128000, // Lower bitrate for mobile
       });
 
       // Request wake lock for mobile to prevent screen sleep
@@ -247,10 +247,10 @@ export default function RecordPage() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
-        
+
         console.log('Recording stopped, chunks collected:', chunks.length);
         console.log('Total chunks size:', chunks.reduce((total, chunk) => total + chunk.size, 0), 'bytes');
-        
+
         if (chunks.length > 0) {
           const audioBlob = new Blob(chunks, { type: mimeType });
           console.log('Created audio blob:', audioBlob.size, 'bytes, type:', audioBlob.type);
@@ -259,7 +259,7 @@ export default function RecordPage() {
           console.error('No audio chunks collected');
           toast.error('No audio data recorded. Please try again.');
         }
-        
+
         setAudioChunks([]);
       };
 
@@ -278,7 +278,7 @@ export default function RecordPage() {
       setIsRecording(true);
       setIsPaused(false);
       setRecordingTime(0);
-      
+
       // Start recording with a small delay for mobile compatibility
       setTimeout(() => {
         if (recorder.state === 'inactive') {
@@ -290,7 +290,7 @@ export default function RecordPage() {
 
     } catch (error) {
       console.error('Error starting recording:', error);
-      
+
       let errorMessage = 'Failed to start recording. ';
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
@@ -307,7 +307,7 @@ export default function RecordPage() {
       } else {
         errorMessage += isMobile ? 'Please check microphone permissions in browser settings.' : 'Please check microphone permissions and device.';
       }
-      
+
       toast.error(errorMessage);
     }
   }
@@ -331,50 +331,50 @@ export default function RecordPage() {
   function stopRecording() {
     if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
       console.log('Stopping recording, current state:', mediaRecorder.state);
-      
+
       // Request final data before stopping
       if (mediaRecorder.state === 'recording') {
         mediaRecorder.requestData();
       }
-      
+
       mediaRecorder.stop();
       setIsRecording(false);
       setIsPaused(false);
       setRecordingTime(0);
-      
+
       // Reset auto-save state
       setLastAutoSave(null);
       setAutoSaveCounter(0);
-      
+
       // Release wake lock when recording stops
       if (isMobile) {
         releaseWakeLock();
       }
-      
+
       toast.success('Recording stopped');
     }
   }
 
   async function performAutoSave() {
     if (!mediaRecorder || !audioChunks.length) return;
-    
+
     try {
       console.log('Performing auto-save...');
-      
+
       // Request current data from MediaRecorder
       mediaRecorder.requestData();
-      
+
       // Wait a bit for the data to be available
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       if (audioChunks.length > 0) {
         // Create blob from current chunks
         const mimeType = mediaRecorder.mimeType || 'audio/webm';
         const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
-        
+
         const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
         const autoSaveCount = autoSaveCounter + 1;
-        
+
         // Choose appropriate file extension
         let extension = '.webm';
         if (mimeType.includes('mp4')) {
@@ -382,19 +382,19 @@ export default function RecordPage() {
         } else if (mimeType.includes('wav')) {
           extension = '.wav';
         }
-        
+
         const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
-        
+
         const formData = new FormData();
         formData.append('audio', autoSaveBlob, filename);
         formData.append('speakerCount', speakerCount.toString());
         formData.append('isDraft', 'true'); // Mark as draft to skip transcription
-        
+
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
         });
-        
+
         if (response.ok) {
           setLastAutoSave(new Date());
           setAutoSaveCounter(autoSaveCount);
@@ -420,7 +420,7 @@ export default function RecordPage() {
         size: audioBlob.size,
         type: audioBlob.type,
         lastModified: new Date().toISOString(),
-        isDraft
+        isDraft,
       });
 
       // Check if blob is empty
@@ -434,7 +434,7 @@ export default function RecordPage() {
       }
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      
+
       // Choose appropriate file extension based on MIME type
       let extension = '.webm';
       if (audioBlob.type.includes('mp4')) {
@@ -444,12 +444,12 @@ export default function RecordPage() {
       } else if (audioBlob.type.includes('webm')) {
         extension = '.webm';
       }
-      
-      const filename = isDraft 
+
+      const filename = isDraft
         ? `recording-draft-${timestamp}${extension}`
         : `recording-${timestamp}${extension}`;
       console.log('Upload filename:', filename);
-      
+
       const formData = new FormData();
       formData.append('audio', audioBlob, filename);
       formData.append('speakerCount', speakerCount.toString());
@@ -469,7 +469,7 @@ export default function RecordPage() {
 
       const result = await response.json();
       toast.success(isDraft ? 'Draft recording saved!' : 'Recording uploaded successfully!');
-      
+
       // Only redirect for final recordings, not drafts
       if (!isDraft) {
         setTimeout(() => {
@@ -509,9 +509,9 @@ export default function RecordPage() {
                 Audio Recording
               </CardTitle>
               <CardDescription>
-                {recordingSupported 
-                  ? "Record audio directly from your device" 
-                  : "Recording not supported on this device"
+                {recordingSupported
+                  ? 'Record audio directly from your device'
+                  : 'Recording not supported on this device'
                 }
               </CardDescription>
             </CardHeader>
@@ -552,10 +552,10 @@ export default function RecordPage() {
                     {isRecording && (
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
                         <div className={cn(
-                          "w-2 h-2 rounded-full",
-                          isPaused ? "bg-yellow-500" : "bg-red-500 animate-pulse"
+                          'w-2 h-2 rounded-full',
+                          isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse',
                         )} />
-                        {isPaused ? "Paused" : "Recording"}
+                        {isPaused ? 'Paused' : 'Recording'}
                         {isMobile && wakeLock && (
                           <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
                             🔒 Screen locked
@@ -658,8 +658,8 @@ export default function RecordPage() {
                     </div>
                   )}
                   <div className="mt-4">
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={() => window.location.href = '/files'}
                     >
                       Upload Files Instead
@@ -678,7 +678,7 @@ export default function RecordPage() {
                 <div className="text-sm text-muted-foreground">Choose audio files from your device</div>
               </CardContent>
             </Card>
-            
+
             <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => window.location.href = '/transcripts'}>
               <CardContent className="p-4 text-center">
                 <div className="text-lg font-medium">View Transcripts</div>

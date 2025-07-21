@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { notesService } from "@/lib/db"
+import { notesService } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 // DELETE /api/notes/:id
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Check authentication - temporarily relaxed for development
@@ -16,7 +16,7 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    
+
     const success = await notesService.delete(id);
     if (!success) {
       return NextResponse.json({ error: 'Note not found' }, { status: 404 });
@@ -28,7 +28,7 @@ export async function DELETE(
     console.error('Delete note API error:', error);
     return NextResponse.json(
       { error: 'Failed to delete note' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -36,7 +36,7 @@ export async function DELETE(
 // PATCH /api/notes/:id
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Check authentication - temporarily relaxed for development
@@ -60,7 +60,7 @@ export async function PATCH(
     console.error('Update note API error:', error);
     return NextResponse.json(
       { error: 'Failed to update note' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

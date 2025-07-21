@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, BarChart3, Plus, Settings, TrendingUp, Activity } from 'lucide-react';
+import { Loader2, BarChart3, Settings, TrendingUp, Activity } from 'lucide-react';
 import TemplateManager from '@/components/templates/TemplateManager';
 
 interface DataPointTemplate {
@@ -25,7 +25,7 @@ interface DataPoint {
   id: string;
   file_id: number;
   template_id: string;
-  analysis_results: any;
+  analysis_results: Record<string, unknown>;
   created_at: string;
 }
 
@@ -44,7 +44,7 @@ export default function DataPointsPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTemplate, setSelectedTemplate] = useState<string>('all');
-  const [selectedFile, setSelectedFile] = useState<number | null>(null);
+  const [_selectedFile, _setSelectedFile] = useState<number | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [showTemplateManager, setShowTemplateManager] = useState(false);
 
@@ -65,7 +65,7 @@ export default function DataPointsPage() {
       const dataPointsData = await dataPointsResponse.json();
       setDataPoints(dataPointsData.dataPoints || []);
     } catch (error) {
-      console.error('Error loading data:', error);
+      // Error already shown via toast
     } finally {
       setLoading(false);
     }
@@ -123,10 +123,10 @@ export default function DataPointsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          templateIds: templateIds
+          templateIds: templateIds,
         }),
       });
-      
+
       if (response.ok) {
         // Refresh data
         const dataPointsResponse = await fetch('/api/data-points');
@@ -134,7 +134,7 @@ export default function DataPointsPage() {
         setDataPoints(dataPointsData.dataPoints || []);
       }
     } catch (error) {
-      console.error('Error running analysis:', error);
+      toast.error('Failed to run analysis');
     } finally {
       setIsProcessing(false);
     }
@@ -211,8 +211,8 @@ export default function DataPointsPage() {
               <DialogHeader>
                 <DialogTitle>Data Point Template Management</DialogTitle>
               </DialogHeader>
-              <TemplateManager 
-                type="datapoint" 
+              <TemplateManager
+                type="datapoint"
                 templates={templates.map(template => ({
                   ...template,
                   isActive: template.is_active,
@@ -220,8 +220,8 @@ export default function DataPointsPage() {
                   createdAt: template.created_at,
                   updatedAt: template.updated_at,
                   visualizationType: template.visualization_type,
-                  outputSchema: template.output_schema
-                }))} 
+                  outputSchema: template.output_schema,
+                }))}
                 onTemplateChange={loadData}
               />
             </DialogContent>
@@ -240,7 +240,7 @@ export default function DataPointsPage() {
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
               <BarChart3 className="w-4 h-4 text-gray-500" />
-              <select 
+              <select
                 className="border rounded px-3 py-1 text-sm"
                 value={selectedTemplate}
                 onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -312,15 +312,15 @@ export default function DataPointsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <CardTitle className="text-lg">{file.originalFileName}</CardTitle>
-                      <Badge 
-                        variant="secondary" 
+                      <Badge
+                        variant="secondary"
                         className={getStatusColor(file.dataPointStatus)}
                       >
                         {file.dataPointStatus}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <Button 
+                      <Button
                         onClick={() => handleRunAnalysis(file.id, defaultTemplates.map(t => t.id))}
                         disabled={isProcessing}
                         size="sm"

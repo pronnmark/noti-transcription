@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  MiddlewareConfig, 
-  MiddlewareHandler, 
-  ErrorMiddlewareHandler, 
+import {
+  MiddlewareConfig,
+  MiddlewareHandler,
+  ErrorMiddlewareHandler,
   ResponseMiddlewareHandler,
   RequestContext,
-  ResponseContext 
+  ResponseContext,
 } from './types';
 import { RequestContextBuilder } from './RequestContext';
 import { ErrorMiddleware } from './ErrorMiddleware';
@@ -27,14 +27,14 @@ export class MiddlewareOrchestrator {
 
   async execute(
     request: NextRequest,
-    handler: (request: NextRequest, context: RequestContext) => Promise<NextResponse>
+    handler: (request: NextRequest, context: RequestContext) => Promise<NextResponse>,
   ): Promise<NextResponse> {
     let context: RequestContext;
 
     try {
       // Build request context
       context = await this.contextBuilder.build(request);
-      
+
       // Execute request middleware chain
       const response = await this.executeRequestChain(request, context, async () => {
         return await handler(request, context);
@@ -60,7 +60,7 @@ export class MiddlewareOrchestrator {
   private async executeRequestChain(
     request: NextRequest,
     context: RequestContext,
-    finalHandler: () => Promise<NextResponse>
+    finalHandler: () => Promise<NextResponse>,
   ): Promise<NextResponse> {
     let index = 0;
 
@@ -79,7 +79,7 @@ export class MiddlewareOrchestrator {
   private async executeErrorChain(
     error: unknown,
     request: NextRequest,
-    context: RequestContext
+    context: RequestContext,
   ): Promise<NextResponse> {
     for (const handler of this.errorHandlers) {
       try {
@@ -101,7 +101,7 @@ export class MiddlewareOrchestrator {
 
   private async executeResponseChain(
     response: NextResponse,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): Promise<NextResponse> {
     let currentResponse = response;
 
@@ -119,11 +119,11 @@ export class MiddlewareOrchestrator {
 
   private async buildResponseContext(
     response: NextResponse,
-    requestContext: RequestContext
+    requestContext: RequestContext,
   ): Promise<ResponseContext> {
     const duration = Date.now() - requestContext.startTime;
     const statusCode = response.status;
-    
+
     // Extract response headers
     const headers: Record<string, string> = {};
     for (const [key, value] of Array.from(response.headers.entries())) {
@@ -144,7 +144,7 @@ export class MiddlewareOrchestrator {
 
   private async createFallbackContext(request: NextRequest): Promise<RequestContext> {
     const { createServiceLogger } = await import('@/lib/logging');
-    
+
     return {
       requestId: `fallback_${Date.now()}`,
       startTime: Date.now(),
@@ -177,15 +177,15 @@ export class MiddlewareOrchestrator {
 
     // Add response handlers based on configuration
     const responseConfig = (this.config as any).responseHandling || {};
-    
+
     if (responseConfig.enableResponseFormatting !== false) {
       this.responseHandlers.push(new ResponseFormattingMiddleware());
     }
-    
+
     if (responseConfig.enablePagination !== false) {
       this.responseHandlers.push(new PaginationMiddleware());
     }
-    
+
     if (responseConfig.enableCacheControl !== false) {
       this.responseHandlers.push(new CacheControlMiddleware());
     }
@@ -225,7 +225,7 @@ export class MiddlewareOrchestrator {
     request: string[];
     error: string[];
     response: string[];
-  } {
+    } {
     return {
       request: this.requestHandlers.map(h => h.name),
       error: this.errorHandlers.map(h => h.name),

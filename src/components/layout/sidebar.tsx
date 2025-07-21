@@ -44,10 +44,10 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
     <div className="flex h-full w-64 flex-col border-r bg-card">
       {/* Logo */}
       <div className="flex h-16 items-center px-6 border-b bg-muted/30">
-        <Image 
-          src="/logo.svg" 
-          alt="Noti" 
-          width={120} 
+        <Image
+          src="/logo.svg"
+          alt="Noti"
+          width={120}
           height={32}
           className="h-8 w-auto"
           priority
@@ -68,7 +68,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                 'block rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 itemIsActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
               )}
             >
               {item.name}

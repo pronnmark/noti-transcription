@@ -1,12 +1,12 @@
-import { drizzle } from "drizzle-orm/better-sqlite3";
-import Database from "better-sqlite3";
-import * as schema from "./schema/index";
-import { join, resolve } from "path";
-import { existsSync, mkdirSync } from "fs";
-import { dirname } from "path";
+import { drizzle } from 'drizzle-orm/better-sqlite3';
+import Database from 'better-sqlite3';
+import * as schema from './schema/index';
+import { join, resolve } from 'path';
+import { existsSync, mkdirSync } from 'fs';
+import { dirname } from 'path';
 
 // Database configuration - ensure absolute path
-const DB_PATH = resolve(process.env.DATABASE_PATH || "sqlite.db");
+const DB_PATH = resolve(process.env.DATABASE_PATH || 'sqlite.db');
 const DB_OPTIONS: Database.Options = {
   verbose: process.env.NODE_ENV === 'development' ? console.log : undefined,
   fileMustExist: false,
@@ -17,14 +17,14 @@ const DB_OPTIONS: Database.Options = {
 function createDatabase(): Database.Database {
   try {
     console.log(`📂 Connecting to database: ${DB_PATH}`);
-    
+
     // Ensure the directory exists
     const dbDir = dirname(DB_PATH);
     if (!existsSync(dbDir)) {
       console.log(`📁 Creating database directory: ${dbDir}`);
       mkdirSync(dbDir, { recursive: true });
     }
-    
+
     // Log current working directory for debugging
     console.log(`📍 Current working directory: ${process.cwd()}`);
     console.log(`📍 Database will be created at: ${DB_PATH}`);
@@ -49,9 +49,9 @@ function createDatabase(): Database.Database {
       dbPath: DB_PATH,
       cwd: process.cwd(),
       error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     });
-    
+
     // Don't just throw - this might be causing the silent crash
     if (process.env.NODE_ENV === 'development') {
       console.error('💡 To fix this, try:');
@@ -59,7 +59,7 @@ function createDatabase(): Database.Database {
       console.error('   2. Ensure you have write access to:', DB_PATH);
       console.error('   3. Try deleting any existing sqlite.db file and let it recreate');
     }
-    
+
     throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
   }
 }
@@ -83,7 +83,7 @@ export function getDb() {
       console.log('🔧 Creating drizzle instance...');
       db = drizzle(getDatabase(), {
         schema,
-        logger: process.env.NODE_ENV === 'development'
+        logger: process.env.NODE_ENV === 'development',
       });
       console.log('✅ Drizzle instance created');
     } catch (error) {
@@ -119,19 +119,19 @@ export async function ensureConnection(): Promise<boolean> {
     const isHealthy = await healthCheck();
     if (!isHealthy) {
       console.warn('Database connection unhealthy, attempting to reconnect...');
-      
+
       // Reset connection and try again
       closeDatabase();
       const newCheck = await healthCheck();
-      
+
       if (!newCheck) {
         console.error('Failed to restore database connection');
         return false;
       }
-      
+
       console.log('✅ Database connection restored');
     }
-    
+
     return true;
   } catch (error) {
     console.error('Connection validation failed:', error);

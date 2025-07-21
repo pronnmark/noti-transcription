@@ -21,14 +21,14 @@ export class AIServiceError extends AppError {
     code: ErrorCode = ErrorCode.AI_SERVICE_ERROR,
     statusCode: number = 502,
     cause?: Error,
-    context: Partial<AIServiceErrorContext> = {}
+    context: Partial<AIServiceErrorContext> = {},
   ) {
     // Map AI service context to error metadata
     const metadata = {
       service: context.provider,
       operation: context.model,
       duration: context.responseTime,
-      ...context
+      ...context,
     };
 
     super(
@@ -38,7 +38,7 @@ export class AIServiceError extends AppError {
       ErrorSeverity.MEDIUM,
       true,
       metadata,
-      cause
+      cause,
     );
 
     this.provider = context.provider;
@@ -52,63 +52,63 @@ export class AIServiceError extends AppError {
       ErrorCode.UNAUTHORIZED,
       401,
       cause,
-      { provider }
+      { provider },
     );
   }
 
   static quotaExceeded(provider: string, model?: string, cause?: Error): AIServiceError {
-    const message = model 
+    const message = model
       ? `Quota exceeded for ${provider} model '${model}'`
       : `Quota exceeded for ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.AI_QUOTA_EXCEEDED,
       429,
       cause,
-      { provider, model }
+      { provider, model },
     );
   }
 
   static rateLimit(provider: string, retryAfter?: number, cause?: Error): AIServiceError {
-    const message = retryAfter 
+    const message = retryAfter
       ? `Rate limit exceeded for ${provider}. Retry after ${retryAfter} seconds.`
       : `Rate limit exceeded for ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.RATE_LIMIT_EXCEEDED,
       429,
       cause,
-      { provider, retryCount: retryAfter }
+      { provider, retryCount: retryAfter },
     );
   }
 
   static invalidResponse(provider: string, model?: string, cause?: Error): AIServiceError {
-    const message = model 
+    const message = model
       ? `Invalid response from ${provider} model '${model}'`
       : `Invalid response from ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.AI_INVALID_RESPONSE,
       502,
       cause,
-      { provider, model }
+      { provider, model },
     );
   }
 
   static timeoutError(provider: string, model?: string, responseTime?: number, cause?: Error): AIServiceError {
-    const message = model 
+    const message = model
       ? `Timeout calling ${provider} model '${model}'`
       : `Timeout calling ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.TIMEOUT_ERROR,
       408,
       cause,
-      { provider, model, responseTime }
+      { provider, model, responseTime },
     );
   }
 
@@ -118,7 +118,7 @@ export class AIServiceError extends AppError {
       ErrorCode.NOT_FOUND,
       404,
       cause,
-      { provider, model }
+      { provider, model },
     );
   }
 
@@ -128,7 +128,7 @@ export class AIServiceError extends AppError {
       ErrorCode.INVALID_INPUT,
       400,
       cause,
-      { provider }
+      { provider },
     );
   }
 
@@ -138,7 +138,7 @@ export class AIServiceError extends AppError {
       ErrorCode.SERVICE_UNAVAILABLE,
       503,
       cause,
-      { provider }
+      { provider },
     );
   }
 
@@ -148,35 +148,35 @@ export class AIServiceError extends AppError {
       ErrorCode.NETWORK_ERROR,
       502,
       cause,
-      { provider }
+      { provider },
     );
   }
 
   static contentFilter(provider: string, reason?: string, cause?: Error): AIServiceError {
-    const message = reason 
+    const message = reason
       ? `Content filtered by ${provider}: ${reason}`
       : `Content filtered by ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.FORBIDDEN,
       403,
       cause,
-      { provider }
+      { provider },
     );
   }
 
   static tokenLimit(provider: string, model?: string, tokens?: number, cause?: Error): AIServiceError {
-    const message = model 
+    const message = model
       ? `Token limit exceeded for ${provider} model '${model}'${tokens ? ` (${tokens} tokens)` : ''}`
       : `Token limit exceeded for ${provider}`;
-    
+
     return new AIServiceError(
       message,
       ErrorCode.AI_QUOTA_EXCEEDED,
       413,
       cause,
-      { provider, model, tokens }
+      { provider, model, tokens },
     );
   }
 
@@ -186,9 +186,9 @@ export class AIServiceError extends AppError {
       ErrorCode.TIMEOUT_ERROR,
       ErrorCode.NETWORK_ERROR,
       ErrorCode.SERVICE_UNAVAILABLE,
-      ErrorCode.RATE_LIMIT_EXCEEDED
+      ErrorCode.RATE_LIMIT_EXCEEDED,
     ];
-    
+
     return retryableCodes.includes(this.code);
   }
 
@@ -197,16 +197,16 @@ export class AIServiceError extends AppError {
     switch (this.code) {
       case ErrorCode.RATE_LIMIT_EXCEEDED:
         return (this.retryCount || 60) * 1000; // Use retryAfter or default to 60 seconds
-      
+
       case ErrorCode.TIMEOUT_ERROR:
         return 5000; // 5 seconds
-      
+
       case ErrorCode.NETWORK_ERROR:
         return 2000; // 2 seconds
-      
+
       case ErrorCode.SERVICE_UNAVAILABLE:
         return 30000; // 30 seconds
-      
+
       default:
         return 1000; // 1 second default
     }
@@ -217,31 +217,31 @@ export class AIServiceError extends AppError {
     switch (this.code) {
       case ErrorCode.UNAUTHORIZED:
         return 'AI service authentication failed. Please check your API configuration.';
-      
+
       case ErrorCode.AI_QUOTA_EXCEEDED:
         return 'AI service quota exceeded. Please try again later or upgrade your plan.';
-      
+
       case ErrorCode.RATE_LIMIT_EXCEEDED:
         return 'Too many requests to AI service. Please wait a moment and try again.';
-      
+
       case ErrorCode.TIMEOUT_ERROR:
         return 'AI service request timed out. Please try again.';
-      
+
       case ErrorCode.SERVICE_UNAVAILABLE:
         return 'AI service is temporarily unavailable. Please try again later.';
-      
+
       case ErrorCode.NETWORK_ERROR:
         return 'Unable to connect to AI service. Please check your internet connection.';
-      
+
       case ErrorCode.FORBIDDEN:
         return 'Content was filtered by the AI service. Please modify your input.';
-      
+
       case ErrorCode.NOT_FOUND:
         return 'The requested AI model is not available.';
-      
+
       case ErrorCode.INVALID_INPUT:
         return 'Invalid input provided to AI service. Please check your request.';
-      
+
       default:
         return 'An error occurred with the AI service. Please try again later.';
     }

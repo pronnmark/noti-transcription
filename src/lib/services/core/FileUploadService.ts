@@ -28,13 +28,13 @@ export interface UploadResult {
 
 export class FileUploadService extends BaseService {
   private readonly VALID_MIME_TYPES = [
-    'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/mp4', 
+    'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/mp4',
     'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/x-m4a',
-    'audio/flac', 'audio/x-flac', 'audio/aac', 'audio/x-aac'
+    'audio/flac', 'audio/x-flac', 'audio/aac', 'audio/x-aac',
   ];
 
   private readonly VALID_EXTENSIONS = [
-    'mp3', 'wav', 'm4a', 'mp4', 'webm', 'ogg', 'flac', 'aac'
+    'mp3', 'wav', 'm4a', 'mp4', 'webm', 'ogg', 'flac', 'aac',
   ];
 
   private readonly MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
@@ -63,7 +63,7 @@ export class FileUploadService extends BaseService {
         fileSize: file?.size,
         fileType: file?.type,
         fileConstructor: file?.constructor?.name,
-        options
+        options,
       });
 
       // Validate input (SOLID: Single Responsibility)
@@ -93,33 +93,33 @@ export class FileUploadService extends BaseService {
         this._logger.error('Failed to read file buffer', error);
         throw createError.internal('Failed to read file data');
       }
-      
+
       // Generate file hash for duplicate detection
       const fileHash = this.generateFileHash(buffer);
-      
+
       // Check for duplicates (unless explicitly allowed)
       if (!options.allowDuplicates) {
         await this.checkForDuplicates(file, fileHash);
       }
-      
+
       // Save file to disk
       const { fileName, filePath } = await this.saveFileToDisk(file, buffer);
-      
+
       // Extract audio metadata
       const duration = await this.extractDuration(filePath);
-      
+
       // Create database record
       const audioFile = await this.createDatabaseRecord(file, fileName, fileHash, duration);
-      
+
       // Start transcription if not a draft
       let transcriptionStarted = false;
       if (!options.isDraft) {
         transcriptionStarted = await this.startTranscription(audioFile.id, filePath, options.speakerCount);
       }
-      
+
       return {
         fileId: audioFile.id,
-        message: options.isDraft 
+        message: options.isDraft
           ? 'Draft recording saved successfully'
           : 'File uploaded successfully, transcription started',
         isDraft: !!options.isDraft,
@@ -153,15 +153,15 @@ export class FileUploadService extends BaseService {
     // Validate file type
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const baseMimeType = file.type.split(';')[0].trim();
-    
-    const isValidType = this.VALID_MIME_TYPES.includes(baseMimeType) || 
+
+    const isValidType = this.VALID_MIME_TYPES.includes(baseMimeType) ||
                        this.VALID_MIME_TYPES.includes(file.type) ||
-                       (file.type === 'application/octet-stream' && 
+                       (file.type === 'application/octet-stream' &&
                         this.VALID_EXTENSIONS.includes(fileExtension || ''));
-    
+
     if (!isValidType) {
       throw createError.validation(
-        `Invalid file type: ${file.type}. Supported formats: ${this.VALID_EXTENSIONS.join(', ')}`
+        `Invalid file type: ${file.type}. Supported formats: ${this.VALID_EXTENSIONS.join(', ')}`,
       );
     }
   }
@@ -170,7 +170,7 @@ export class FileUploadService extends BaseService {
     if (options.speakerCount !== undefined) {
       this.validateInput(options.speakerCount, [
         ValidationRules.isNumber('speakerCount'),
-        ValidationRules.custom('speakerCount', (val) => val >= 1 && val <= 10, 'must be between 1 and 10')
+        ValidationRules.custom('speakerCount', (val) => val >= 1 && val <= 10, 'must be between 1 and 10'),
       ]);
     }
   }
@@ -182,13 +182,13 @@ export class FileUploadService extends BaseService {
   private async checkForDuplicates(file: File, fileHash: string): Promise<void> {
     const { getServiceLocator } = await import('../ServiceLocator');
     const { audioService } = getServiceLocator();
-    
+
     const duplicateCheck = await audioService.checkForDuplicates({
       fileHash,
       originalFileName: file.name,
-      fileSize: file.size
+      fileSize: file.size,
     });
-    
+
     if (duplicateCheck.isDuplicate) {
       const error = createError.validation('Duplicate file detected');
       error.metadata = {
@@ -198,8 +198,8 @@ export class FileUploadService extends BaseService {
           id: duplicateCheck.existingFile.id,
           originalFileName: duplicateCheck.existingFile.originalFileName,
           uploadedAt: duplicateCheck.existingFile.uploadedAt,
-          duration: duplicateCheck.existingFile.duration
-        } : null
+          duration: duplicateCheck.existingFile.duration,
+        } : null,
       };
       error.statusCode = 409; // Conflict
       throw error;
@@ -210,23 +210,23 @@ export class FileUploadService extends BaseService {
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'mp3';
     const fileName = `${uuidv4()}.${fileExtension}`;
     const filePath = join(this.UPLOAD_DIR, fileName);
-    
+
     await fs.writeFile(filePath, buffer);
-    
+
     this._logger.info('File saved to disk', {
       fileName,
       originalName: file.name,
       size: file.size,
-      path: filePath
+      path: filePath,
     });
-    
+
     return { fileName, filePath };
   }
 
   private async extractDuration(filePath: string): Promise<number> {
     try {
       const { stdout } = await execAsync(
-        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`
+        `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${filePath}"`,
       );
       const duration = Math.round(parseFloat(stdout.trim()) || 0);
       this._logger.debug('Extracted audio duration', { filePath, duration });
@@ -240,7 +240,7 @@ export class FileUploadService extends BaseService {
   private async createDatabaseRecord(file: File, fileName: string, fileHash: string, duration: number) {
     const { getServiceLocator } = await import('../ServiceLocator');
     const { audioService } = getServiceLocator();
-    
+
     return await audioService.createFile({
       fileName,
       originalFileName: file.name,
@@ -255,25 +255,25 @@ export class FileUploadService extends BaseService {
     try {
       // Convert to WAV if needed
       const wavPath = await this.ensureWavFormat(filePath);
-      
+
       // Start transcription through service
       const { getServiceLocator } = await import('../ServiceLocator');
       const { transcriptionService } = getServiceLocator();
-      
+
       // Create transcription job
       const job = await transcriptionService.createJob({
         fileId,
         language: 'auto',
         modelSize: 'large-v3',
         diarization: true,
-        status: 'pending'
+        status: 'pending',
       });
-      
+
       // Start background transcription (don't await)
       this.startBackgroundTranscription(job.id, wavPath, speakerCount).catch(error => {
         this._logger.error('Background transcription failed', error instanceof Error ? error : new Error(String(error)));
       });
-      
+
       return true;
     } catch (error) {
       this._logger.error('Failed to start transcription', error instanceof Error ? error : new Error(String(error)));
@@ -285,12 +285,12 @@ export class FileUploadService extends BaseService {
     if (filePath.endsWith('.wav')) {
       return filePath;
     }
-    
+
     const wavPath = filePath.replace(/\.[^/.]+$/, '.wav');
-    
+
     try {
       await execAsync(
-        `ffmpeg -i "${filePath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`
+        `ffmpeg -i "${filePath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`,
       );
       this._logger.info('Converted audio to WAV format', { original: filePath, wav: wavPath });
       return wavPath;

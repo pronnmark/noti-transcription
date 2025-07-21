@@ -35,10 +35,10 @@ const LABEL_COLORS = [
 export function LabelEditor({
   labels,
   onChange,
-  placeholder = "Add labels...",
+  placeholder = 'Add labels...',
   maxLabels = 10,
   className,
-  disabled = false
+  disabled = false,
 }: LabelEditorProps) {
   const [inputValue, setInputValue] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -132,11 +132,11 @@ export function LabelEditor({
   };
 
   const filteredSuggestions = suggestions.filter(
-    suggestion => !labels.includes(suggestion.label)
+    suggestion => !labels.includes(suggestion.label),
   );
 
   return (
-    <div ref={containerRef} className={cn("relative", className)}>
+    <div ref={containerRef} className={cn('relative', className)}>
       <div className="flex flex-wrap items-center gap-1">
         {/* Existing Labels */}
         {labels.map((label) => (
@@ -144,9 +144,9 @@ export function LabelEditor({
             key={label}
             variant="secondary"
             className={cn(
-              "text-xs border",
+              'text-xs border',
               getLabelColor(label),
-              !disabled && "group hover:pr-1 transition-all"
+              !disabled && 'group hover:pr-1 transition-all',
             )}
           >
             <Tag className="w-3 h-3 mr-1" />
@@ -182,7 +182,7 @@ export function LabelEditor({
                   className="h-6 text-xs w-32 px-2"
                   autoFocus
                 />
-                
+
                 {/* Suggestions Dropdown */}
                 {showSuggestions && filteredSuggestions.length > 0 && (
                   <div className="absolute top-full left-0 mt-1 w-48 bg-white border rounded-md shadow-lg z-50 max-h-32 overflow-y-auto">

@@ -10,14 +10,14 @@ export function useMediaQuery(query: string): boolean {
     // Return false initially to prevent hydration mismatch
     return false;
   });
-  
+
   const [mounted, setMounted] = useState(false);
 
   const updateMatches = useCallback(() => {
     if (typeof window === 'undefined') {
       return;
     }
-    
+
     try {
       const media = window.matchMedia(query);
       setMatches(media.matches);
@@ -29,17 +29,17 @@ export function useMediaQuery(query: string): boolean {
 
   useEffect(() => {
     setMounted(true);
-    
+
     // Check if window is available (client-side)
     if (typeof window === 'undefined') {
       return;
     }
-    
+
     let media: MediaQueryList | null = null;
-    
+
     try {
       media = window.matchMedia(query);
-      
+
       // Set the initial value after mount
       setMatches(media.matches);
 
@@ -59,7 +59,7 @@ export function useMediaQuery(query: string): boolean {
       // Cleanup
       return () => {
         if (!media) return;
-        
+
         try {
           if (media.removeEventListener) {
             media.removeEventListener('change', listener);

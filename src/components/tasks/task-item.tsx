@@ -65,13 +65,13 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
 
   return (
     <Card className={cn(
-      "transition-all duration-200",
-      isCompleted && "opacity-60",
-      className
+      'transition-all duration-200',
+      isCompleted && 'opacity-60',
+      className,
     )}>
       <CardContent className={cn(
-        "p-4",
-        isMobile ? "space-y-3" : "space-y-4"
+        'p-4',
+        isMobile ? 'space-y-3' : 'space-y-4',
       )}>
         {/* Main task content */}
         <div className="flex items-start gap-3">
@@ -82,23 +82,23 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
               onToggle={onToggleStatus}
             />
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className={cn(
-                  "text-sm font-medium leading-relaxed",
-                  isCompleted && "line-through text-muted-foreground"
+                  'text-sm font-medium leading-relaxed',
+                  isCompleted && 'line-through text-muted-foreground',
                 )}>
                   {note.content}
                 </p>
-                
+
                 {/* Metadata */}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge variant="outline" className={cn("text-xs", getTypeColor(note.noteType))}>
+                  <Badge variant="outline" className={cn('text-xs', getTypeColor(note.noteType))}>
                     {note.noteType}
                   </Badge>
-                  <Badge variant="outline" className={cn("text-xs", getPriorityColor(note.priority))}>
+                  <Badge variant="outline" className={cn('text-xs', getPriorityColor(note.priority))}>
                     {note.priority}
                   </Badge>
                   {isCompleted && note.completedAt && (
@@ -108,7 +108,7 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
                   )}
                 </div>
               </div>
-              
+
               <div className="flex-shrink-0 text-right">
                 <div className="text-xs text-muted-foreground">
                   #{index + 1}

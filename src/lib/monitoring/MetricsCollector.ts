@@ -1,10 +1,10 @@
-import { 
-  Metric, 
-  MetricType, 
-  MetricValue, 
-  MetricLabels, 
+import {
+  Metric,
+  MetricType,
+  MetricValue,
+  MetricLabels,
   IMetricsCollector,
-  MetricCollector 
+  MetricCollector,
 } from './types';
 
 export class BaseMetricsCollector implements IMetricsCollector {
@@ -23,7 +23,7 @@ export class BaseMetricsCollector implements IMetricsCollector {
     type: MetricType,
     description: string,
     unit?: string,
-    labels?: string[]
+    labels?: string[],
   ): void {
     this.metrics.set(name, {
       name,
@@ -61,7 +61,7 @@ export class BaseMetricsCollector implements IMetricsCollector {
 
     const lastValue = metric.values[metric.values.length - 1];
     const newValue = lastValue ? lastValue.value + 1 : 1;
-    
+
     this.addValue(name, newValue, labels);
   }
 
@@ -117,11 +117,11 @@ export class SystemMetricsCollector extends BaseMetricsCollector implements Metr
 
   private collectMemoryMetrics(): void {
     const memUsage = process.memoryUsage();
-    
+
     this.setGauge('memory_usage_bytes', memUsage.rss);
     this.setGauge('heap_used_bytes', memUsage.heapUsed);
     this.setGauge('heap_total_bytes', memUsage.heapTotal);
-    
+
     // Calculate memory usage percentage (rough estimate)
     const totalMemory = require('os').totalmem();
     const memoryPercentage = (memUsage.rss / totalMemory) * 100;
@@ -130,7 +130,7 @@ export class SystemMetricsCollector extends BaseMetricsCollector implements Metr
 
   private collectProcessMetrics(): void {
     this.setGauge('process_uptime_seconds', process.uptime());
-    
+
     // CPU usage (simplified)
     const cpuUsage = process.cpuUsage();
     const totalCpuTime = cpuUsage.user + cpuUsage.system;
@@ -161,28 +161,28 @@ export class HttpMetricsCollector extends BaseMetricsCollector implements Metric
     this.createMetric('http_request_duration_milliseconds', MetricType.HISTOGRAM, 'HTTP request duration', 'milliseconds', ['method', 'status', 'path']);
     this.createMetric('http_request_size_bytes', MetricType.HISTOGRAM, 'HTTP request size', 'bytes', ['method', 'path']);
     this.createMetric('http_response_size_bytes', MetricType.HISTOGRAM, 'HTTP response size', 'bytes', ['method', 'status', 'path']);
-    
+
     // Error metrics
     this.createMetric('http_errors_total', MetricType.COUNTER, 'Total HTTP errors', 'errors', ['method', 'status', 'path']);
-    
+
     // Active connections
     this.createMetric('http_active_requests', MetricType.GAUGE, 'Active HTTP requests', 'requests');
   }
 
   recordRequest(method: string, path: string, statusCode: number, duration: number, requestSize?: number, responseSize?: number): void {
     const labels = { method, status: statusCode.toString(), path };
-    
+
     this.incrementCounter('http_requests_total', labels);
     this.observeHistogram('http_request_duration_milliseconds', duration, labels);
-    
+
     if (requestSize) {
       this.observeHistogram('http_request_size_bytes', requestSize, { method, path });
     }
-    
+
     if (responseSize) {
       this.observeHistogram('http_response_size_bytes', responseSize, labels);
     }
-    
+
     if (statusCode >= 400) {
       this.incrementCounter('http_errors_total', labels);
     }
@@ -205,24 +205,24 @@ export class DatabaseMetricsCollector extends BaseMetricsCollector implements Me
     // Query metrics
     this.createMetric('database_queries_total', MetricType.COUNTER, 'Total database queries', 'queries', ['operation', 'table']);
     this.createMetric('database_query_duration_milliseconds', MetricType.HISTOGRAM, 'Database query duration', 'milliseconds', ['operation', 'table']);
-    
+
     // Connection metrics
     this.createMetric('database_connections_active', MetricType.GAUGE, 'Active database connections', 'connections');
     this.createMetric('database_connections_idle', MetricType.GAUGE, 'Idle database connections', 'connections');
-    
+
     // Error metrics
     this.createMetric('database_errors_total', MetricType.COUNTER, 'Total database errors', 'errors', ['operation', 'table']);
-    
+
     // Transaction metrics
     this.createMetric('database_transactions_total', MetricType.COUNTER, 'Total database transactions', 'transactions', ['status']);
   }
 
   recordQuery(operation: string, table: string, duration: number, success: boolean): void {
     const labels = { operation, table };
-    
+
     this.incrementCounter('database_queries_total', labels);
     this.observeHistogram('database_query_duration_milliseconds', duration, labels);
-    
+
     if (!success) {
       this.incrementCounter('database_errors_total', labels);
     }
@@ -250,24 +250,24 @@ export class AIServiceMetricsCollector extends BaseMetricsCollector implements M
     // Request metrics
     this.createMetric('ai_requests_total', MetricType.COUNTER, 'Total AI service requests', 'requests', ['provider', 'model', 'operation']);
     this.createMetric('ai_request_duration_milliseconds', MetricType.HISTOGRAM, 'AI request duration', 'milliseconds', ['provider', 'model', 'operation']);
-    
+
     // Token metrics
     this.createMetric('ai_tokens_used_total', MetricType.COUNTER, 'Total tokens used', 'tokens', ['provider', 'model', 'type']);
     this.createMetric('ai_cost_total', MetricType.COUNTER, 'Total AI service cost', 'currency', ['provider', 'model']);
-    
+
     // Error metrics
     this.createMetric('ai_errors_total', MetricType.COUNTER, 'Total AI service errors', 'errors', ['provider', 'model', 'error_type']);
-    
+
     // Rate limiting
     this.createMetric('ai_rate_limit_hits_total', MetricType.COUNTER, 'Total rate limit hits', 'hits', ['provider']);
   }
 
   recordRequest(provider: string, model: string, operation: string, duration: number, success: boolean, errorType?: string): void {
     const labels = { provider, model, operation };
-    
+
     this.incrementCounter('ai_requests_total', labels);
     this.observeHistogram('ai_request_duration_milliseconds', duration, labels);
-    
+
     if (!success && errorType) {
       this.incrementCounter('ai_errors_total', { provider, model, error_type: errorType });
     }

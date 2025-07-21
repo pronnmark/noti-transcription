@@ -13,7 +13,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
       includeRequestId?: boolean;
       includeVersion?: boolean;
       version?: string;
-    } = {}
+    } = {},
   ) {
     this.options = {
       wrapResponses: true,
@@ -29,7 +29,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): Promise<NextResponse> {
     // Skip formatting for non-JSON responses
     const contentType = response.headers.get('content-type') || '';
@@ -114,7 +114,7 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): Promise<NextResponse> {
     // Only process successful JSON responses
     const contentType = response.headers.get('content-type') || '';
@@ -166,7 +166,7 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
     page: number,
     limit: number,
     total: number | undefined,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): PaginatedApiResponse {
     const totalItems = total || data.length;
     const totalPages = Math.ceil(totalItems / limit);
@@ -199,7 +199,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
       threshold?: number;
       level?: number;
       types?: string[];
-    } = {}
+    } = {},
   ) {
     this.options = {
       threshold: 1024, // 1KB
@@ -211,7 +211,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): Promise<NextResponse> {
     const contentType = response.headers.get('content-type') || '';
     const contentLength = context.size || 0;
@@ -231,7 +231,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
       // For now, just add the header indicating compression support
       // In a real implementation, you would compress the response body
       response.headers.set('Vary', 'Accept-Encoding');
-      
+
       return response;
     } catch (error) {
       context.logger.warn('Failed to compress response', error instanceof Error ? error : new Error(String(error)));
@@ -254,7 +254,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
       apiMaxAge?: number;
       noCache?: string[];
       mustRevalidate?: string[];
-    } = {}
+    } = {},
   ) {
     this.options = {
       defaultMaxAge: 0,
@@ -268,7 +268,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext
+    context: RequestContext & ResponseContext,
   ): Promise<NextResponse> {
     // Skip if cache-control header is already set
     if (response.headers.has('cache-control')) {
@@ -300,8 +300,8 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
     if (path.startsWith('/api/')) {
       const mustRevalidate = this.options.mustRevalidate!.some(pattern => path.startsWith(pattern));
       const maxAge = this.options.apiMaxAge;
-      
-      return mustRevalidate 
+
+      return mustRevalidate
         ? `public, max-age=${maxAge}, must-revalidate`
         : `public, max-age=${maxAge}`;
     }

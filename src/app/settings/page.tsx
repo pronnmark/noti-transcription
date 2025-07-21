@@ -31,11 +31,7 @@ interface AISettings {
   openaiApiKey: string;
   aiExtractEnabled: boolean;
   aiExtractModel: string;
-  aiExtractPrompt: string;
 }
-
-
-
 
 const MODEL_SIZES = [
   { value: 'tiny', label: 'Tiny (39M)' },
@@ -82,11 +78,7 @@ export default function SettingsPage() {
     openaiApiKey: '',
     aiExtractEnabled: false,
     aiExtractModel: '',
-    aiExtractPrompt: 'Summarize the key points from this transcript.',
   });
-
-
-
 
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({
     huggingfaceToken: false,
@@ -107,7 +99,7 @@ export default function SettingsPage() {
       const response = await fetch('/api/settings');
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.transcription) {
           setTranscriptionSettings(prev => ({ ...prev, ...data.transcription }));
         }
@@ -123,14 +115,14 @@ export default function SettingsPage() {
 
   async function saveSettings() {
     setIsSaving(true);
-    
+
     // Validate AI settings before saving
     if (!validateAISettings()) {
       setIsSaving(false);
       toast.error('Please fix validation errors before saving');
       return;
     }
-    
+
     try {
       const response = await fetch('/api/settings', {
         method: 'POST',
@@ -159,7 +151,6 @@ export default function SettingsPage() {
   function toggleTokenVisibility(field: string) {
     setShowTokens(prev => ({ ...prev, [field]: !prev[field] }));
   }
-
 
   function validateAISettings(): boolean {
     const errors: Record<string, string> = {};
@@ -211,397 +202,386 @@ export default function SettingsPage() {
     return Object.keys(errors).length === 0;
   }
 
-
   return (
-    <div className="h-full flex flex-col">
-      <div className="border-b buzz-header-desktop">
+    <div className="standard-page-bg min-h-screen overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      {/* Header - Now part of scrollable content */}
+      <div className="space-y-2 buzz-header-desktop">
         <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
-        <p className="text-muted-foreground mt-2 text-base">Configure your transcription preferences</p>
+        <p className="text-muted-foreground text-base">Configure your transcription preferences</p>
       </div>
+      <Tabs defaultValue="essential" className="space-y-4 sm:space-y-6">
+        <TabsList>
+          <TabsTrigger value="essential">Essential</TabsTrigger>
+          <TabsTrigger value="advanced">Advanced</TabsTrigger>
+        </TabsList>
 
-      <div className="flex-1 p-6 overflow-auto">
-        <Tabs defaultValue="essential" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="essential">Essential</TabsTrigger>
-            <TabsTrigger value="advanced">Advanced</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="essential" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Basic Transcription</CardTitle>
-                <CardDescription>Essential settings for speech-to-text transcription</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="modelSize">Model Size</Label>
-                    <Select
-                      value={transcriptionSettings.modelSize}
-                      onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, modelSize: value }))}
-                    >
-                      <SelectTrigger id="modelSize">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {MODEL_SIZES.map(model => (
-                          <SelectItem key={model.value} value={model.value}>
-                            {model.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="language">Language</Label>
-                    <Select
-                      value={transcriptionSettings.language}
-                      onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, language: value }))}
-                    >
-                      <SelectTrigger id="language">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {LANGUAGES.map(lang => (
-                          <SelectItem key={lang.value} value={lang.value}>
-                            {lang.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Speaker Detection</CardTitle>
-                <CardDescription>Identify different speakers in conversations</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <Label htmlFor="diarization">Enable Speaker Detection</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Automatically identify different speakers
-                    </p>
-                  </div>
-                  <Switch
-                    id="diarization"
-                    checked={transcriptionSettings.enableSpeakerDiarization}
-                    onCheckedChange={(checked) => setTranscriptionSettings(prev => ({ ...prev, enableSpeakerDiarization: checked }))}
-                  />
-                </div>
-
-                {transcriptionSettings.enableSpeakerDiarization && (
-                  <div className="space-y-2">
-                    <Label htmlFor="huggingfaceToken">HuggingFace Token</Label>
-                    <div className="flex gap-2">
-                      <Input
-                        id="huggingfaceToken"
-                        type={showTokens.huggingfaceToken ? 'text' : 'password'}
-                        value={transcriptionSettings.huggingfaceToken}
-                        onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, huggingfaceToken: e.target.value }))}
-                        placeholder="hf_..."
-                      />
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => toggleTokenVisibility('huggingfaceToken')}
-                      >
-                        {showTokens.huggingfaceToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </Button>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Required for speaker detection. Get one from huggingface.co
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>OpenAI-Compatible AI API</CardTitle>
-                <CardDescription>Configure any OpenAI-compatible AI service for summarization and note extraction</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="rounded-lg border p-4 bg-muted/20">
-                  <h4 className="font-medium mb-2">Supported Providers</h4>
-                  <div className="grid grid-cols-2 gap-2 text-sm">
-                    <div><strong>OpenAI:</strong> https://api.openai.com/v1</div>
-                    <div><strong>Anthropic:</strong> https://api.anthropic.com/v1</div>
-                    <div><strong>OpenRouter:</strong> https://openrouter.ai/api/v1</div>
-                    <div><strong>Local (LM Studio):</strong> http://localhost:1234/v1</div>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    All providers must support OpenAI's /chat/completions API format
-                  </p>
-                </div>
-
+        <TabsContent value="essential" className="space-y-4 sm:space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Basic Transcription</CardTitle>
+              <CardDescription>Essential settings for speech-to-text transcription</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="customAiBaseUrl">API Base URL</Label>
-                  <Input
-                    id="customAiBaseUrl"
-                    type="url"
-                    value={aiSettings.customAiBaseUrl}
-                    onChange={(e) => {
-                      setAISettings(prev => ({ ...prev, customAiBaseUrl: e.target.value }));
-                      // Clear validation error when user starts typing
-                      if (validationErrors.customAiBaseUrl) {
-                        setValidationErrors(prev => ({ ...prev, customAiBaseUrl: '' }));
-                      }
-                    }}
-                    placeholder="https://api.openai.com/v1"
-                    className={validationErrors.customAiBaseUrl ? 'border-red-500' : ''}
-                  />
-                  {validationErrors.customAiBaseUrl && (
-                    <p className="text-sm text-red-500">{validationErrors.customAiBaseUrl}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    Complete base URL including /v1 endpoint (must support OpenAI chat/completions format)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="customAiApiKey">API Key</Label>
-                  <div className="flex gap-2">
-                    <Input
-                      id="customAiApiKey"
-                      type={showTokens.customAiApiKey ? 'text' : 'password'}
-                      value={aiSettings.customAiApiKey}
-                      onChange={(e) => {
-                        setAISettings(prev => ({ ...prev, customAiApiKey: e.target.value }));
-                        // Clear validation error when user starts typing
-                        if (validationErrors.customAiApiKey) {
-                          setValidationErrors(prev => ({ ...prev, customAiApiKey: '' }));
-                        }
-                      }}
-                      placeholder="sk-... (OpenAI) or claude-... (Anthropic)"
-                      className={validationErrors.customAiApiKey ? 'border-red-500' : ''}
-                    />
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={() => toggleTokenVisibility('customAiApiKey')}
-                    >
-                      {showTokens.customAiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </Button>
-                  </div>
-                  {validationErrors.customAiApiKey && (
-                    <p className="text-sm text-red-500">{validationErrors.customAiApiKey}</p>
-                  )}
-                  <p className="text-sm text-muted-foreground">
-                    API key from your chosen provider (get from provider's dashboard)
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="customAiModel">Model Name</Label>
-                  <Input
-                    id="customAiModel"
-                    type="text"
-                    value={aiSettings.customAiModel}
-                    onChange={(e) => {
-                      setAISettings(prev => ({ ...prev, customAiModel: e.target.value }));
-                      // Clear validation error when user starts typing
-                      if (validationErrors.customAiModel) {
-                        setValidationErrors(prev => ({ ...prev, customAiModel: '' }));
-                      }
-                    }}
-                    placeholder="gpt-3.5-turbo"
-                    className={validationErrors.customAiModel ? 'border-red-500' : ''}
-                  />
-                  {validationErrors.customAiModel && (
-                    <p className="text-sm text-red-500">{validationErrors.customAiModel}</p>
-                  )}
-                  <div className="text-sm text-muted-foreground">
-                    <p>Common models by provider:</p>
-                    <div className="mt-1 grid grid-cols-1 gap-1 text-xs">
-                      <div><strong>OpenAI:</strong> gpt-3.5-turbo, gpt-4, gpt-4-turbo</div>
-                      <div><strong>Anthropic:</strong> claude-3-sonnet-20240229, claude-3-haiku-20240307</div>
-                      <div><strong>OpenRouter:</strong> anthropic/claude-3-sonnet, openai/gpt-4</div>
-                      <div><strong>Local:</strong> llama-3.1-8b, mixtral-8x7b-instruct</div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-          </TabsContent>
-
-          <TabsContent value="advanced" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Advanced Transcription</CardTitle>
-                <CardDescription>Fine-tune transcription performance and processing</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="device">Processing Device</Label>
+                  <Label htmlFor="modelSize">Model Size</Label>
                   <Select
-                    value={transcriptionSettings.preferredDevice}
-                    onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, preferredDevice: value }))}
+                    value={transcriptionSettings.modelSize}
+                    onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, modelSize: value }))}
                   >
-                    <SelectTrigger id="device">
+                    <SelectTrigger id="modelSize">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="auto">Auto (GPU with CPU fallback)</SelectItem>
-                      <SelectItem value="cuda">GPU Only</SelectItem>
-                      <SelectItem value="cpu">CPU Only</SelectItem>
+                      {MODEL_SIZES.map(model => (
+                        <SelectItem key={model.value} value={model.value}>
+                          {model.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="batchSize">Batch Size</Label>
-                    <Input
-                      id="batchSize"
-                      type="number"
-                      value={transcriptionSettings.batchSize}
-                      onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 16 }))}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="threads">CPU Threads</Label>
-                    <Input
-                      id="threads"
-                      type="number"
-                      value={transcriptionSettings.threads}
-                      onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, threads: parseInt(e.target.value) || 4 }))}
-                    />
-                  </div>
-                </div>
-
-                {transcriptionSettings.enableSpeakerDiarization && (
-                  <div className="space-y-2">
-                    <Label htmlFor="speakerCount">Number of Speakers (optional)</Label>
-                    <Input
-                      id="speakerCount"
-                      type="number"
-                      min="2"
-                      max="20"
-                      value={transcriptionSettings.speakerCount || ''}
-                      onChange={(e) => setTranscriptionSettings(prev => ({ 
-                        ...prev, 
-                        speakerCount: e.target.value ? parseInt(e.target.value) : undefined 
-                      }))}
-                      placeholder="Auto-detect"
-                    />
-                    <p className="text-sm text-muted-foreground">
-                      Specify exact number if known. Leave empty to auto-detect.
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>AI Models & Prompts</CardTitle>
-                <CardDescription>Configure AI model selection and default prompts</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="aiModel">AI Model (OpenRouter)</Label>
-                  <Input
-                    id="aiModel"
-                    type="text"
-                    value={aiSettings.aiExtractModel}
-                    onChange={(e) => setAISettings(prev => ({ ...prev, aiExtractModel: e.target.value }))}
-                    placeholder="e.g. anthropic/claude-sonnet-4"
-                  />
+                  <Label htmlFor="language">Language</Label>
+                  <Select
+                    value={transcriptionSettings.language}
+                    onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, language: value }))}
+                  >
+                    <SelectTrigger id="language">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGES.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          {lang.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Speaker Detection</CardTitle>
+              <CardDescription>Identify different speakers in conversations</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="diarization">Enable Speaker Detection</Label>
                   <p className="text-sm text-muted-foreground">
-                    Enter any valid OpenRouter model ID.
+                      Automatically identify different speakers
                   </p>
                 </div>
+                <Switch
+                  id="diarization"
+                  checked={transcriptionSettings.enableSpeakerDiarization}
+                  onCheckedChange={(checked) => setTranscriptionSettings(prev => ({ ...prev, enableSpeakerDiarization: checked }))}
+                />
+              </div>
 
+              {transcriptionSettings.enableSpeakerDiarization && (
                 <div className="space-y-2">
-                  <Label htmlFor="aiPrompt">Default Extraction Prompt</Label>
-                  <textarea
-                    id="aiPrompt"
-                    className="w-full min-h-[100px] px-3 py-2 text-sm rounded-md border border-input bg-background"
-                    value={aiSettings.aiExtractPrompt}
-                    onChange={(e) => setAISettings(prev => ({ ...prev, aiExtractPrompt: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
-                  <div className="flex gap-2">
+                  <Label htmlFor="huggingfaceToken">HuggingFace Token</Label>
+                  <div className="flex gap-2 min-w-0">
                     <Input
-                      id="openaiKey"
-                      type={showTokens.openaiApiKey ? 'text' : 'password'}
-                      value={aiSettings.openaiApiKey}
-                      onChange={(e) => setAISettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
-                      placeholder="sk-..."
+                      className="flex-1 min-w-0"
+                      id="huggingfaceToken"
+                      type={showTokens.huggingfaceToken ? 'text' : 'password'}
+                      value={transcriptionSettings.huggingfaceToken}
+                      onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, huggingfaceToken: e.target.value }))}
+                      placeholder="hf_..."
                     />
                     <Button
                       variant="outline"
                       size="icon"
-                      onClick={() => toggleTokenVisibility('openaiApiKey')}
+                      onClick={() => toggleTokenVisibility('huggingfaceToken')}
                     >
-                      {showTokens.openaiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showTokens.huggingfaceToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </Button>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                      Required for speaker detection. Get one from huggingface.co
+                  </p>
                 </div>
-              </CardContent>
-            </Card>
+              )}
+            </CardContent>
+          </Card>
 
-
-
-          </TabsContent>
-        </Tabs>
-
-        {/* Account & System Section */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Account & System</CardTitle>
-            <CardDescription>User account and application information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="text-sm font-medium">Application Version</p>
-                <p className="text-xs text-muted-foreground">v1.0.0</p>
+          <Card>
+            <CardHeader>
+              <CardTitle>OpenAI-Compatible AI API</CardTitle>
+              <CardDescription>Configure any OpenAI-compatible AI service for summarization and note extraction</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="standard-card p-4 bg-muted/20">
+                <h4 className="font-medium mb-2">Supported Providers</h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                  <div className="break-all"><strong>OpenAI:</strong> https://api.openai.com/v1</div>
+                  <div className="break-all"><strong>Anthropic:</strong> https://api.anthropic.com/v1</div>
+                  <div className="break-all"><strong>OpenRouter:</strong> https://openrouter.ai/api/v1</div>
+                  <div className="break-all"><strong>Local (LM Studio):</strong> http://localhost:1234/v1</div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                    All providers must support OpenAI's /chat/completions API format
+                </p>
               </div>
-              <Button
-                variant="destructive"
-                onClick={async () => {
-                  try {
-                    const response = await fetch('/api/auth/logout', { method: 'POST' });
-                    if (response.ok) {
-                      toast.success('Logged out successfully');
-                      window.location.href = '/login';
-                    }
-                  } catch (error) {
-                    console.error('Logout failed:', error);
-                    toast.error('Logout failed');
-                  }
-                }}
-                className="touch-target-44"
-              >
-                Logout
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
 
-        <div className="flex justify-end gap-4 mt-6">
-          <Button variant="outline" onClick={loadSettings}>
-            <RefreshCw className="h-4 w-4 mr-2" />
+              <div className="space-y-2">
+                <Label htmlFor="customAiBaseUrl">API Base URL</Label>
+                <Input
+                  id="customAiBaseUrl"
+                  type="url"
+                  value={aiSettings.customAiBaseUrl}
+                  onChange={(e) => {
+                    setAISettings(prev => ({ ...prev, customAiBaseUrl: e.target.value }));
+                    // Clear validation error when user starts typing
+                    if (validationErrors.customAiBaseUrl) {
+                      setValidationErrors(prev => ({ ...prev, customAiBaseUrl: '' }));
+                    }
+                  }}
+                  placeholder="https://api.openai.com/v1"
+                  className={validationErrors.customAiBaseUrl ? 'border-red-500' : ''}
+                />
+                {validationErrors.customAiBaseUrl && (
+                  <p className="text-sm text-red-500">{validationErrors.customAiBaseUrl}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                    Complete base URL including /v1 endpoint (must support OpenAI chat/completions format)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customAiApiKey">API Key</Label>
+                <div className="flex gap-2 min-w-0">
+                  <Input
+                    className="flex-1 min-w-0"
+                    id="customAiApiKey"
+                    type={showTokens.customAiApiKey ? 'text' : 'password'}
+                    value={aiSettings.customAiApiKey}
+                    onChange={(e) => {
+                      setAISettings(prev => ({ ...prev, customAiApiKey: e.target.value }));
+                      // Clear validation error when user starts typing
+                      if (validationErrors.customAiApiKey) {
+                        setValidationErrors(prev => ({ ...prev, customAiApiKey: '' }));
+                      }
+                    }}
+                    placeholder="sk-... (OpenAI) or claude-... (Anthropic)"
+                    className={validationErrors.customAiApiKey ? 'border-red-500' : ''}
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => toggleTokenVisibility('customAiApiKey')}
+                  >
+                    {showTokens.customAiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+                {validationErrors.customAiApiKey && (
+                  <p className="text-sm text-red-500">{validationErrors.customAiApiKey}</p>
+                )}
+                <p className="text-sm text-muted-foreground">
+                    API key from your chosen provider (get from provider's dashboard)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="customAiModel">Model Name</Label>
+                <Input
+                  id="customAiModel"
+                  type="text"
+                  value={aiSettings.customAiModel}
+                  onChange={(e) => {
+                    setAISettings(prev => ({ ...prev, customAiModel: e.target.value }));
+                    // Clear validation error when user starts typing
+                    if (validationErrors.customAiModel) {
+                      setValidationErrors(prev => ({ ...prev, customAiModel: '' }));
+                    }
+                  }}
+                  placeholder="gpt-3.5-turbo"
+                  className={validationErrors.customAiModel ? 'border-red-500' : ''}
+                />
+                {validationErrors.customAiModel && (
+                  <p className="text-sm text-red-500">{validationErrors.customAiModel}</p>
+                )}
+                <div className="text-sm text-muted-foreground">
+                  <p>Common models by provider:</p>
+                  <div className="mt-1 grid grid-cols-1 gap-1 text-xs">
+                    <div><strong>OpenAI:</strong> gpt-3.5-turbo, gpt-4, gpt-4-turbo</div>
+                    <div><strong>Anthropic:</strong> claude-3-sonnet-20240229, claude-3-haiku-20240307</div>
+                    <div><strong>OpenRouter:</strong> anthropic/claude-3-sonnet, openai/gpt-4</div>
+                    <div><strong>Local:</strong> llama-3.1-8b, mixtral-8x7b-instruct</div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+        </TabsContent>
+
+        <TabsContent value="advanced" className="space-y-4 sm:space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Advanced Transcription</CardTitle>
+              <CardDescription>Fine-tune transcription performance and processing</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="device">Processing Device</Label>
+                <Select
+                  value={transcriptionSettings.preferredDevice}
+                  onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, preferredDevice: value }))}
+                >
+                  <SelectTrigger id="device">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="auto">Auto (GPU with CPU fallback)</SelectItem>
+                    <SelectItem value="cuda">GPU Only</SelectItem>
+                    <SelectItem value="cpu">CPU Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="batchSize">Batch Size</Label>
+                  <Input
+                    id="batchSize"
+                    type="number"
+                    value={transcriptionSettings.batchSize}
+                    onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 16 }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="threads">CPU Threads</Label>
+                  <Input
+                    id="threads"
+                    type="number"
+                    value={transcriptionSettings.threads}
+                    onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, threads: parseInt(e.target.value) || 4 }))}
+                  />
+                </div>
+              </div>
+
+              {transcriptionSettings.enableSpeakerDiarization && (
+                <div className="space-y-2">
+                  <Label htmlFor="speakerCount">Number of Speakers (optional)</Label>
+                  <Input
+                    id="speakerCount"
+                    type="number"
+                    min="2"
+                    max="20"
+                    value={transcriptionSettings.speakerCount || ''}
+                    onChange={(e) => setTranscriptionSettings(prev => ({
+                      ...prev,
+                      speakerCount: e.target.value ? parseInt(e.target.value) : undefined,
+                    }))}
+                    placeholder="Auto-detect"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                      Specify exact number if known. Leave empty to auto-detect.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Models & Prompts</CardTitle>
+              <CardDescription>Configure AI model selection and default prompts</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="aiModel">AI Model (OpenRouter)</Label>
+                <Input
+                  id="aiModel"
+                  type="text"
+                  value={aiSettings.aiExtractModel}
+                  onChange={(e) => setAISettings(prev => ({ ...prev, aiExtractModel: e.target.value }))}
+                  placeholder="e.g. anthropic/claude-sonnet-4"
+                />
+                <p className="text-sm text-muted-foreground">
+                    Enter any valid OpenRouter model ID.
+                </p>
+              </div>
+
+
+              <div className="space-y-2">
+                <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
+                <div className="flex gap-2 min-w-0">
+                  <Input
+                    className="flex-1 min-w-0"
+                    id="openaiKey"
+                    type={showTokens.openaiApiKey ? 'text' : 'password'}
+                    value={aiSettings.openaiApiKey}
+                    onChange={(e) => setAISettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
+                    placeholder="sk-..."
+                  />
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={() => toggleTokenVisibility('openaiApiKey')}
+                  >
+                    {showTokens.openaiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+        </TabsContent>
+      </Tabs>
+
+      {/* Account & System Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account & System</CardTitle>
+          <CardDescription>User account and application information</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+            <div>
+              <p className="text-sm font-medium">Application Version</p>
+              <p className="text-xs text-muted-foreground">v1.0.0</p>
+            </div>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  const response = await fetch('/api/auth/logout', { method: 'POST' });
+                  if (response.ok) {
+                    toast.success('Logged out successfully');
+                    window.location.href = '/login';
+                  }
+                } catch (error) {
+                  console.error('Logout failed:', error);
+                  toast.error('Logout failed');
+                }
+              }}
+              className="touch-target-44"
+            >
+                Logout
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end gap-4 mt-6">
+        <Button variant="outline" onClick={loadSettings}>
+          <RefreshCw className="h-4 w-4 mr-2" />
             Reset
-          </Button>
-          <Button onClick={saveSettings} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Settings'}
-          </Button>
-        </div>
+        </Button>
+        <Button onClick={saveSettings} disabled={isSaving}>
+          <Save className="h-4 w-4 mr-2" />
+          {isSaving ? 'Saving...' : 'Save Settings'}
+        </Button>
       </div>
     </div>
   );

@@ -32,8 +32,8 @@ export default function DocsPage() {
       <div className="flex-1 p-4 sm:p-6 overflow-hidden">
         <Tabs defaultValue="overview" className="h-full">
           <TabsList className={cn(
-            "grid w-full",
-            isMobile ? "grid-cols-2 mb-4" : "grid-cols-5 mb-6"
+            'grid w-full',
+            isMobile ? 'grid-cols-2 mb-4' : 'grid-cols-5 mb-6',
           )}>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="notes">Notes AI</TabsTrigger>
@@ -67,7 +67,7 @@ export default function DocsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
                         <FileText className="h-4 w-4 text-green-600" />
@@ -79,7 +79,7 @@ export default function DocsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                         <Brain className="h-4 w-4 text-purple-600" />
@@ -91,7 +91,7 @@ export default function DocsPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center">
                         <ListTodo className="h-4 w-4 text-orange-600" />
@@ -437,31 +437,31 @@ INCLUDE examples:
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-3">✅ Mark as Complete</h3>
                         <p className="text-sm text-muted-foreground">
-                          Click the checkbox next to any task or question to mark it as complete. 
+                          Click the checkbox next to any task or question to mark it as complete.
                           Completed items will be visually distinguished but remain accessible.
                         </p>
                       </div>
-                      
+
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-3">💬 Add Comments</h3>
                         <p className="text-sm text-muted-foreground">
-                          Add notes, observations, or updates to any extracted item. 
+                          Add notes, observations, or updates to any extracted item.
                           Comments help track progress and provide context for future reference.
                         </p>
                       </div>
-                      
+
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-3">🔗 Transcript Links</h3>
                         <p className="text-sm text-muted-foreground">
-                          Each note is automatically linked to the exact moment in the audio where it was mentioned. 
+                          Each note is automatically linked to the exact moment in the audio where it was mentioned.
                           Click the timestamp to jump directly to that point in the transcript.
                         </p>
                       </div>
-                      
+
                       <div className="border rounded-lg p-4">
                         <h3 className="font-medium mb-3">📊 Progress Tracking</h3>
                         <p className="text-sm text-muted-foreground">
-                          Monitor completion rates for different types of items. 
+                          Monitor completion rates for different types of items.
                           Visual progress indicators help you stay on top of action items.
                         </p>
                       </div>
@@ -488,7 +488,7 @@ INCLUDE examples:
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
                           <span className="text-blue-600 text-sm">👆</span>
@@ -500,7 +500,7 @@ INCLUDE examples:
                           </p>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-start gap-3">
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                           <span className="text-purple-600 text-sm">🎯</span>

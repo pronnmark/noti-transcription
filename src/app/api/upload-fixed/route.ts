@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import { NextRequest } from 'next/server';
 import { createApiHandler, ApiServices } from '../../../lib/api/ApiHandler';
 
 // Configure route to handle large file uploads
@@ -7,7 +7,7 @@ export const maxDuration = 300; // 5 minutes timeout
 
 export const POST = createApiHandler(async (request: NextRequest) => {
   console.log('Upload-fixed handler started');
-  
+
   // Parse form data
   let formData;
   try {
@@ -17,10 +17,10 @@ export const POST = createApiHandler(async (request: NextRequest) => {
     console.error('Failed to parse formData:', e);
     throw e;
   }
-  
+
   const file = formData.get('audio') as File;
   console.log('File extracted:', { hasFile: !!file, name: file?.name, size: file?.size });
-  
+
   if (!file) {
     throw new Error('No file provided');
   }
@@ -29,7 +29,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   const speakerCountParam = formData.get('speakerCount') as string;
   const allowDuplicatesParam = formData.get('allowDuplicates') as string;
   const isDraftParam = formData.get('isDraft') as string;
-  
+
   const speakerCount = speakerCountParam ? parseInt(speakerCountParam) : 2;
   const allowDuplicates = allowDuplicatesParam === 'true';
   const isDraft = isDraftParam === 'true';
@@ -37,14 +37,14 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   console.log('Upload fixed - file info:', {
     name: file.name,
     size: file.size,
-    type: file.type
+    type: file.type,
   });
 
   // Upload file using the service
   const result = await ApiServices.fileUpload.uploadFile(file, {
     speakerCount,
     allowDuplicates,
-    isDraft
+    isDraft,
   });
 
   console.log('Upload fixed - result:', result);
@@ -56,7 +56,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
       transcriptionStatus: result.transcriptionStarted ? 'processing' : 'pending',
       message: result.message,
       isDraft: result.isDraft,
-      duration: result.duration
-    }
+      duration: result.duration,
+    },
   };
 });

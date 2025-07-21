@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../lib/database/client';
 import { audioFiles, fileLabels } from '../../../lib/database/schema/audio';
 import { transcriptionJobs } from '../../../lib/database/schema/transcripts';
@@ -8,7 +8,7 @@ import { eq, desc, sql } from 'drizzle-orm';
 export async function GET(request: NextRequest) {
   try {
     const db = getDb();
-    
+
     // Get query parameters
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1', 10);
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * limit;
     const includeDates = searchParams.get('includeDates') === 'true';
     const dateFilter = searchParams.get('date'); // YYYY-MM-DD format
-    
+
     // Build the base query
     let filesQueryBuilder = db
       .select({
@@ -45,13 +45,13 @@ export async function GET(request: NextRequest) {
     if (dateFilter) {
       const startOfDay = Math.floor(new Date(dateFilter + 'T00:00:00.000Z').getTime() / 1000);
       const endOfDay = Math.floor(new Date(dateFilter + 'T23:59:59.999Z').getTime() / 1000);
-      
+
       filesQueryBuilder = filesQueryBuilder.where(
         sql`(
           (${audioFiles.recordedAt} IS NOT NULL AND ${audioFiles.recordedAt} BETWEEN ${startOfDay} AND ${endOfDay})
           OR 
           (${audioFiles.recordedAt} IS NULL AND ${audioFiles.uploadedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-        )`
+        )`,
       );
     }
 
@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
       .orderBy(desc(audioFiles.recordedAt), desc(audioFiles.id))
       .limit(limit)
       .offset(offset);
-    
+
     // Get total count (with same date filtering)
     let countQuery = db
       .select({ count: sql<number>`COUNT(*)` })
@@ -70,19 +70,19 @@ export async function GET(request: NextRequest) {
     if (dateFilter) {
       const startOfDay = Math.floor(new Date(dateFilter + 'T00:00:00.000Z').getTime() / 1000);
       const endOfDay = Math.floor(new Date(dateFilter + 'T23:59:59.999Z').getTime() / 1000);
-      
+
       countQuery = countQuery.where(
         sql`(
           (${audioFiles.recordedAt} IS NOT NULL AND ${audioFiles.recordedAt} BETWEEN ${startOfDay} AND ${endOfDay})
           OR 
           (${audioFiles.recordedAt} IS NULL AND ${audioFiles.uploadedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-        )`
+        )`,
       );
     }
 
     const countResult = await countQuery;
     const total = countResult[0]?.count || 0;
-    
+
     // Format files for UI
     const files = filesQuery.map(file => ({
       id: file.id,
@@ -109,9 +109,9 @@ export async function GET(request: NextRequest) {
         }
       })(),
       notesStatus: 'pending',
-      notesCount: 0
+      notesCount: 0,
     }));
-    
+
     // Get recording dates if requested
     let recordingDates: string[] = [];
     if (includeDates) {
@@ -121,7 +121,7 @@ export async function GET(request: NextRequest) {
           uploadedAt: audioFiles.uploadedAt,
         })
         .from(audioFiles);
-      
+
       const uniqueDates = new Set<string>();
       datesQuery.forEach(row => {
         const date = row.recordedAt || row.uploadedAt;
@@ -130,13 +130,13 @@ export async function GET(request: NextRequest) {
           uniqueDates.add(dateStr);
         }
       });
-      
+
       recordingDates = Array.from(uniqueDates).sort();
     }
 
     // Check if client wants grouped response
     const groupByDate = searchParams.get('groupByDate') === 'true';
-    
+
     if (groupByDate) {
       // Group files by recording date (or upload date as fallback)
       if (!files || files.length === 0) {
@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
           page,
           limit,
           totalPages: 0,
-          ...(includeDates && { recordingDates })
+          ...(includeDates && { recordingDates }),
         });
       }
 
@@ -155,25 +155,25 @@ export async function GET(request: NextRequest) {
         if (!file || (!file.recordedAt && !file.createdAt)) {
           return groups; // Skip files without valid dates
         }
-        
+
         const dateToUse = file.recordedAt || file.createdAt;
         const dateKey = new Date(dateToUse).toISOString().split('T')[0]; // YYYY-MM-DD format
-        
+
         if (!groups[dateKey]) {
           groups[dateKey] = {
             date: dateKey,
             displayDate: new Date(dateKey).toLocaleDateString('en-US', {
               weekday: 'long',
-              year: 'numeric', 
+              year: 'numeric',
               month: 'long',
-              day: 'numeric'
+              day: 'numeric',
             }),
             files: [],
             count: 0,
-            hasTimeData: false
+            hasTimeData: false,
           };
         }
-        
+
         // Check if this file has time data (not just date)
         if (file.recordedAt) {
           const recordedDate = new Date(file.recordedAt);
@@ -182,17 +182,17 @@ export async function GET(request: NextRequest) {
             groups[dateKey].hasTimeData = true;
           }
         }
-        
+
         groups[dateKey].files.push(file);
         groups[dateKey].count++;
         return groups;
       }, {} as Record<string, any>);
-      
+
       // Convert to array and sort by date (newest first)
-      const groupedArray = Object.values(groupedFiles).sort((a: any, b: any) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+      const groupedArray = Object.values(groupedFiles).sort((a: any, b: any) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
       );
-      
+
       return NextResponse.json({
         files,
         groupedFiles: groupedArray,
@@ -201,10 +201,10 @@ export async function GET(request: NextRequest) {
         limit,
         totalPages: Math.ceil(total / limit),
         groupedByDate: true,
-        ...(includeDates && { recordingDates })
+        ...(includeDates && { recordingDates }),
       });
     }
-    
+
     return NextResponse.json({
       files,
       total,
@@ -212,17 +212,17 @@ export async function GET(request: NextRequest) {
       limit,
       totalPages: Math.ceil(total / limit),
       groupedByDate: false,
-      ...(includeDates && { recordingDates })
+      ...(includeDates && { recordingDates }),
     });
-    
+
   } catch (error) {
     console.error('Files API error:', error);
     return NextResponse.json(
-      { 
+      {
         error: 'Failed to load files',
-        message: error instanceof Error ? error.message : 'Unknown error'
-      }, 
-      { status: 500 }
+        message: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 },
     );
   }
 }

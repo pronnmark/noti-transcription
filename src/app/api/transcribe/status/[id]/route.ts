@@ -7,7 +7,7 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Check auth
@@ -30,9 +30,9 @@ export async function GET(
       .limit(1);
 
     if (!job) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         exists: false,
-        message: 'No transcription job found for this file' 
+        message: 'No transcription job found for this file',
       });
     }
 
@@ -48,14 +48,14 @@ export async function GET(
         lastError: job.lastError,
         startedAt: job.startedAt,
         completedAt: job.completedAt,
-        createdAt: job.createdAt
-      }
+        createdAt: job.createdAt,
+      },
     });
 
   } catch (error: any) {
     console.error('Status check error:', error);
     return NextResponse.json({
-      error: error.message || 'Failed to check status'
+      error: error.message || 'Failed to check status',
     }, { status: 500 });
   }
 }

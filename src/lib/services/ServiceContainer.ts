@@ -136,7 +136,7 @@ export class ServiceContainer {
   private logServiceStatus(): void {
     const status = serviceRegistry.getServiceStatus();
     console.log('📊 Service Status:');
-    
+
     for (const [name, info] of Object.entries(status)) {
       const statusIcon = info.initialized ? '✅' : '❌';
       console.log(`  ${statusIcon} ${name}: ${info.initialized ? 'Ready' : 'Not Ready'}`);
@@ -163,8 +163,6 @@ export class ServiceContainer {
   get customAIService(): CustomAIService {
     return serviceRegistry.resolve<CustomAIService>('customAIService');
   }
-
-
 
   get storageService(): LocalStorageService {
     return serviceRegistry.resolve<LocalStorageService>('storageService');
@@ -206,7 +204,7 @@ export class ServiceContainer {
     return {
       healthy,
       services: serviceHealth,
-      errors
+      errors,
     };
   }
 
@@ -216,16 +214,16 @@ export class ServiceContainer {
     initializedServices: number;
     healthyServices: number;
     initializationOrder: string[];
-  } {
+    } {
     const status = serviceRegistry.getServiceStatus();
     const totalServices = Object.keys(status).length;
     const initializedServices = Object.values(status).filter(s => s.initialized).length;
-    
+
     return {
       totalServices,
       initializedServices,
       healthyServices: initializedServices, // Simplified for now
-      initializationOrder: serviceRegistry.getInitializationOrder()
+      initializationOrder: serviceRegistry.getInitializationOrder(),
     };
   }
 

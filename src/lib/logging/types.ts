@@ -55,22 +55,22 @@ export interface ILogger {
   warn(message: string, context?: LogContext): void;
   error(message: string, error?: Error, context?: LogContext): void;
   fatal(message: string, error?: Error, context?: LogContext): void;
-  
+
   // Contextual logging
   child(context: LogContext): ILogger;
   withContext(context: LogContext): ILogger;
-  
+
   // Performance logging
   time(label: string): void;
   timeEnd(label: string, context?: LogContext): void;
-  
+
   // Structured logging
   log(level: LogLevel, message: string, context?: LogContext, error?: Error): void;
-  
+
   // Configuration
   setLevel(level: LogLevel): void;
   getLevel(): LogLevel;
-  
+
   // Lifecycle
   flush(): Promise<void>;
   close(): Promise<void>;
@@ -124,7 +124,7 @@ export function parseLogLevel(level: string | number): LogLevel {
   if (typeof level === 'number') {
     return level as LogLevel;
   }
-  
+
   const normalizedLevel = level.toLowerCase() as LogLevelString;
   return LOG_LEVEL_VALUES[normalizedLevel] ?? LogLevel.INFO;
 }

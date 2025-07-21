@@ -38,7 +38,7 @@ export type ApiHandler<T = any> = (
 // KISS principle - Simple, focused API handler
 export class ApiHandlerBuilder {
   private static _logger: any;
-  
+
   private static get logger() {
     if (!this._logger) {
       this._logger = createServiceLogger('ApiHandler');
@@ -72,7 +72,7 @@ export class ApiHandlerBuilder {
 
         // Create success response
         const response = this.createSuccessResponse(result, context);
-        
+
         logger.info('API request completed', {
           executionTime: Date.now() - startTime,
           status: 'success',
@@ -89,7 +89,7 @@ export class ApiHandlerBuilder {
             stack: error.stack,
             name: error.name,
             cause: (error as any).cause,
-            code: (error as any).code
+            code: (error as any).code,
           });
         }
 
@@ -99,7 +99,7 @@ export class ApiHandlerBuilder {
         const response = this.createErrorResponse(handledError, context);
 
         return NextResponse.json(response, {
-          status: handledError.error.statusCode || 500
+          status: handledError.error.statusCode || 500,
         });
       }
     };
@@ -168,11 +168,11 @@ export class ApiValidation {
   static getQueryParam(request: NextRequest, param: string, required = false): string | null {
     const url = new URL(request.url);
     const value = url.searchParams.get(param);
-    
+
     if (required && !value) {
       throw new Error(`Missing required query parameter: ${param}`);
     }
-    
+
     return value;
   }
 
@@ -180,13 +180,13 @@ export class ApiValidation {
     // Extract from URL path - simplified implementation
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/').filter(Boolean);
-    
+
     // This is a simplified implementation - in a real app you'd use a proper router
     const paramIndex = pathSegments.findIndex(segment => segment.startsWith(':'));
     if (paramIndex === -1) {
       throw new Error(`Path parameter ${param} not found`);
     }
-    
+
     return pathSegments[paramIndex + 1] || '';
   }
 }
@@ -208,7 +208,7 @@ export class ApiServices {
   static get summarization() {
     return serviceContainer.summarizationService;
   }
-  
+
   static get fileUpload() {
     return serviceContainer.fileUploadService;
   }
@@ -216,8 +216,6 @@ export class ApiServices {
   static get customAI() {
     return serviceContainer.customAIService;
   }
-
-
 
   static get storage() {
     return serviceContainer.storageService;

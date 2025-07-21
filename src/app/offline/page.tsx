@@ -15,7 +15,7 @@ export default function OfflinePage() {
     const handleOffline = () => setIsOnline(false);
 
     setIsOnline(navigator.onLine);
-    
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
@@ -46,7 +46,7 @@ export default function OfflinePage() {
           <h1 className="text-2xl font-semibold text-foreground mb-3">
             You're Offline
           </h1>
-          
+
           <p className="text-muted-foreground mb-8 leading-relaxed">
             It looks like you've lost your internet connection. Some features may not be available while offline.
           </p>

@@ -2,18 +2,18 @@ import { BaseService, ValidationRules } from './BaseService';
 import { RepositoryFactory } from '../../database/repositories';
 import type { ExtractionRepository } from '../../database/repositories/ExtractionRepository';
 import type { ExtractionTemplateRepository } from '../../database/repositories/TemplateRepository';
-import type { 
-  IExtractionService, 
-  ExtractionSettings, 
-  BatchExtractionResult, 
-  ExtractionResult 
+import type {
+  IExtractionService,
+  ExtractionSettings,
+  BatchExtractionResult,
+  ExtractionResult,
 } from './interfaces';
-import type { 
-  Extraction, 
-  NewExtraction, 
-  ExtractionTemplate, 
+import type {
+  Extraction,
+  NewExtraction,
+  ExtractionTemplate,
   NewExtractionTemplate,
-  TranscriptSegment 
+  TranscriptSegment,
 } from '../../database/schema';
 
 export class ExtractionService extends BaseService implements IExtractionService {
@@ -52,7 +52,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       return await this.templateRepository.findById(id);
@@ -67,7 +67,7 @@ export class ExtractionService extends BaseService implements IExtractionService
         ValidationRules.isString('name'),
         ValidationRules.isString('prompt'),
         ValidationRules.minLength('name', 1),
-        ValidationRules.minLength('prompt', 10)
+        ValidationRules.minLength('prompt', 10),
       ]);
 
       // Check if template with same name exists
@@ -87,7 +87,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       // Check if template exists
@@ -115,7 +115,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       // Check if template exists
@@ -146,7 +146,7 @@ export class ExtractionService extends BaseService implements IExtractionService
         ValidationRules.required('templateId'),
         ValidationRules.isNumber('fileId'),
         ValidationRules.isString('templateId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       // Verify template exists
@@ -166,7 +166,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       return await this.extractionRepository.findByFileId(fileId);
@@ -178,7 +178,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(templateId, [
         ValidationRules.required('templateId'),
         ValidationRules.isString('templateId'),
-        ValidationRules.minLength('templateId', 1)
+        ValidationRules.minLength('templateId', 1),
       ]);
 
       return await this.extractionRepository.findByTemplateId(templateId);
@@ -187,20 +187,20 @@ export class ExtractionService extends BaseService implements IExtractionService
 
   // Batch operations
   async extractFromTranscript(
-    fileId: number, 
-    transcript: TranscriptSegment[], 
-    templateIds?: string[]
+    fileId: number,
+    transcript: TranscriptSegment[],
+    templateIds?: string[],
   ): Promise<Extraction[]> {
     return this.executeWithErrorHandling('extractFromTranscript', async () => {
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       this.validateInput(transcript, [
         ValidationRules.required('transcript'),
-        ValidationRules.isArray('transcript')
+        ValidationRules.isArray('transcript'),
       ]);
 
       // Get templates to use
@@ -225,7 +225,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       }
 
       const extractions: Extraction[] = [];
-      
+
       for (const template of templates) {
         try {
           const extractionData: NewExtraction = {
@@ -252,9 +252,9 @@ export class ExtractionService extends BaseService implements IExtractionService
   }
 
   async extractWithSettings(
-    fileId: number, 
-    transcript: TranscriptSegment[], 
-    settings: ExtractionSettings
+    fileId: number,
+    transcript: TranscriptSegment[],
+    settings: ExtractionSettings,
   ): Promise<BatchExtractionResult> {
     return this.executeWithErrorHandling('extractWithSettings', async () => {
       const startTime = Date.now();
@@ -277,7 +277,7 @@ export class ExtractionService extends BaseService implements IExtractionService
 
       for (const template of selectedTemplates) {
         const extractionStartTime = Date.now();
-        
+
         try {
           const extractionData: NewExtraction = {
             fileId,
@@ -290,7 +290,7 @@ export class ExtractionService extends BaseService implements IExtractionService
           };
 
           await this.extractionRepository.create(extractionData);
-          
+
           const executionTime = Date.now() - extractionStartTime;
           results.push({
             type: this.getExtractionTypeFromTemplate(template.name),
@@ -298,7 +298,7 @@ export class ExtractionService extends BaseService implements IExtractionService
             count: 1,
             executionTime,
           });
-          
+
           successfulExtractions++;
         } catch (error) {
           const executionTime = Date.now() - extractionStartTime;
@@ -308,7 +308,7 @@ export class ExtractionService extends BaseService implements IExtractionService
             error: error instanceof Error ? error.message : 'Unknown error',
             executionTime,
           });
-          
+
           failedExtractions++;
           this._logger.error(`Failed extraction for template ${template.id}`,
             error instanceof Error ? error : new Error(String(error)));
@@ -316,7 +316,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       }
 
       const totalExecutionTime = Date.now() - startTime;
-      
+
       const batchResult: BatchExtractionResult = {
         success: failedExtractions === 0,
         results,
@@ -346,7 +346,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       return await this.extractionRepository.findById(id);
@@ -358,7 +358,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       const existing = await this.extractionRepository.findById(id);
@@ -368,7 +368,7 @@ export class ExtractionService extends BaseService implements IExtractionService
 
       const updated = await this.extractionRepository.update(id, {
         ...data,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       this._logger.info(`Updated extraction ${id}`);
@@ -381,7 +381,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       const deleted = await this.extractionRepository.delete(id);
@@ -398,13 +398,13 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       this.validateInput(comment, [
         ValidationRules.required('comment'),
         ValidationRules.isString('comment'),
-        ValidationRules.minLength('comment', 1)
+        ValidationRules.minLength('comment', 1),
       ]);
 
       const existing = await this.extractionRepository.findById(id);
@@ -419,7 +419,7 @@ export class ExtractionService extends BaseService implements IExtractionService
 
       await this.extractionRepository.update(id, {
         comments: newComments,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       this._logger.info(`Added comment to extraction ${id}`);
@@ -432,12 +432,12 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       this.validateInput(comment, [
         ValidationRules.required('comment'),
-        ValidationRules.isString('comment')
+        ValidationRules.isString('comment'),
       ]);
 
       const existing = await this.extractionRepository.findById(id);
@@ -447,7 +447,7 @@ export class ExtractionService extends BaseService implements IExtractionService
 
       await this.extractionRepository.update(id, {
         comments: comment,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       this._logger.info(`Updated comment for extraction ${id}`);
@@ -460,12 +460,12 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(id, [
         ValidationRules.required('id'),
         ValidationRules.isString('id'),
-        ValidationRules.minLength('id', 1)
+        ValidationRules.minLength('id', 1),
       ]);
 
       this.validateInput(status, [
         ValidationRules.required('status'),
-        ValidationRules.oneOf('status', ['active', 'completed', 'archived'])
+        ValidationRules.oneOf('status', ['active', 'completed', 'archived']),
       ]);
 
       const existing = await this.extractionRepository.findById(id);
@@ -475,7 +475,7 @@ export class ExtractionService extends BaseService implements IExtractionService
 
       await this.extractionRepository.update(id, {
         status,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString(),
       });
 
       this._logger.info(`Updated status for extraction ${id} to ${status}`);
@@ -505,7 +505,7 @@ export class ExtractionService extends BaseService implements IExtractionService
       this.validateInput(fileId, [
         ValidationRules.required('fileId'),
         ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId')
+        ValidationRules.isPositive('fileId'),
       ]);
 
       const extractions = await this.extractionRepository.findByFileId(fileId);
@@ -590,7 +590,7 @@ export class ExtractionService extends BaseService implements IExtractionService
     return this.executeWithErrorHandling('getExtractionsByStatus', async () => {
       this.validateInput(status, [
         ValidationRules.required('status'),
-        ValidationRules.oneOf('status', ['active', 'completed', 'archived'])
+        ValidationRules.oneOf('status', ['active', 'completed', 'archived']),
       ]);
 
       return await this.extractionRepository.findByStatus(status);

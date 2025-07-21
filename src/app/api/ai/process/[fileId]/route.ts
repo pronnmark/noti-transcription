@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq } from "@/lib/db"
+import { db, eq } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
-import * as schema from "@/lib/db"
+import * as schema from '@/lib/db';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     // Check authentication
@@ -18,13 +18,13 @@ export async function POST(
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
     const body = await request.json();
-    
-    const { 
+
+    const {
       processType, // 'summarization', 'extractions', 'datapoints', 'all'
       templateIds = [],
       customPrompt,
       model = 'anthropic/claude-sonnet-4',
-      temperature = 0.3
+      temperature = 0.3,
     } = body;
 
     // Validate template IDs exist in database before processing
@@ -33,16 +33,16 @@ export async function POST(
       const validTemplates = await db.select({ id: summarizationPrompts.id })
         .from(summarizationPrompts)
         .where(eq(summarizationPrompts.isActive, true));
-      
+
       const validTemplateIds = new Set(validTemplates.map((t: { id: string }) => t.id));
       const invalidTemplateIds = templateIds.filter((id: string) => !validTemplateIds.has(id));
-      
+
       if (invalidTemplateIds.length > 0) {
         console.error(`❌ Invalid template IDs provided: ${invalidTemplateIds.join(', ')}`);
-        return NextResponse.json({ 
+        return NextResponse.json({
           error: 'Invalid template IDs provided',
           invalidTemplateIds,
-          validTemplateIds: Array.from(validTemplateIds)
+          validTemplateIds: Array.from(validTemplateIds),
         }, { status: 400 });
       }
     }
@@ -75,7 +75,7 @@ export async function POST(
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -85,14 +85,14 @@ export async function POST(
             {
               templateId: templateIds[0],
               customPrompt,
-              model
-            }
+              model,
+            },
           );
 
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -106,7 +106,7 @@ export async function POST(
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -114,13 +114,13 @@ export async function POST(
             fileIdInt,
             transcriptionJob.transcript,
             templateIds,
-            { model, temperature }
+            { model, temperature },
           );
 
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -134,7 +134,7 @@ export async function POST(
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -142,13 +142,13 @@ export async function POST(
             fileIdInt,
             transcriptionJob.transcript,
             templateIds,
-            { model, temperature }
+            { model, temperature },
           );
 
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -158,7 +158,7 @@ export async function POST(
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -166,13 +166,13 @@ export async function POST(
           results = await adaptiveAIService.processFileWithDefaults(
             fileIdInt,
             transcriptionJob.transcript,
-            { model, temperature }
+            { model, temperature },
           );
 
           // Update file timestamp
           await db.update(schema.audioFiles)
             .set({
-              updatedAt: new Date()
+              updatedAt: new Date(),
             })
             .where(eq(schema.audioFiles.id, fileIdInt));
 
@@ -188,22 +188,22 @@ export async function POST(
         success: true,
         processType,
         results,
-        fileId: fileIdInt
+        fileId: fileIdInt,
       });
 
     } catch (aiError) {
       console.error('AI processing error:', aiError);
-      
+
       // Update file timestamp
       await db.update(schema.audioFiles)
         .set({
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(schema.audioFiles.id, fileIdInt));
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Failed to process with AI',
-        details: String(aiError)
+        details: String(aiError),
       }, { status: 500 });
     }
 

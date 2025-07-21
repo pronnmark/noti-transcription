@@ -32,5 +32,5 @@ export type {
   NewSummarization,
   SummarizationTemplate,
   NewSummarizationTemplate,
-  TranscriptSegment
+  TranscriptSegment,
 } from './schema';

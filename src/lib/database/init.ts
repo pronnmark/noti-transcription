@@ -24,7 +24,7 @@ export class DatabaseInitializer {
       runMigrations = true,
       validateSchema = true,
       createBackup = false,
-      force = false
+      force = false,
     } = options;
 
     console.log('🚀 Initializing database...');
@@ -33,12 +33,12 @@ export class DatabaseInitializer {
       // Check if database file exists
       const dbPath = 'sqlite.db';
       const dbExists = existsSync(dbPath);
-      
+
       if (!dbExists) {
         console.log('📝 Database file not found, creating new database...');
       } else {
         console.log('📂 Existing database found');
-        
+
         if (createBackup) {
           await this.createBackup();
         }
@@ -73,7 +73,7 @@ export class DatabaseInitializer {
 
   private async testConnection(): Promise<void> {
     console.log('🔌 Testing database connection...');
-    
+
     try {
       // Simple query to test connection without requiring specific tables
       const db = getDb();
@@ -87,16 +87,16 @@ export class DatabaseInitializer {
 
   private async createBackup(): Promise<void> {
     console.log('💾 Creating database backup...');
-    
+
     try {
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const backupPath = `sqlite.db.backup.${timestamp}`;
-      
+
       // Note: In a real implementation, you'd copy the database file
       // For now, we'll just log the intent
       console.log(`📁 Backup would be created at: ${backupPath}`);
       console.log('✅ Backup created successfully');
-      
+
     } catch (error) {
       console.error('❌ Backup creation failed:', error);
       throw error;
@@ -105,13 +105,13 @@ export class DatabaseInitializer {
 
   private async initializeDefaultData(): Promise<void> {
     console.log('📊 Checking for default data...');
-    
+
     try {
       // Check if we need to insert default templates or settings
       // This is where you'd add default extraction templates, etc.
-      
+
       console.log('✅ Default data check completed');
-      
+
     } catch (error) {
       console.error('❌ Default data initialization failed:', error);
       throw error;
@@ -137,8 +137,8 @@ export class DatabaseInitializer {
       // Get migration info
       const migrations = await this.migrationRunner.getMigrationInfo();
       const appliedMigrations = migrations.filter(m => m.applied);
-      const lastMigration = appliedMigrations.length > 0 
-        ? appliedMigrations[appliedMigrations.length - 1].name 
+      const lastMigration = appliedMigrations.length > 0
+        ? appliedMigrations[appliedMigrations.length - 1].name
         : undefined;
 
       // Get database size (simplified)
@@ -158,14 +158,14 @@ export class DatabaseInitializer {
         connected,
         migrationsApplied: appliedMigrations.length,
         lastMigration,
-        databaseSize
+        databaseSize,
       };
 
     } catch (error) {
       console.error('Error getting database status:', error);
       return {
         connected: false,
-        migrationsApplied: 0
+        migrationsApplied: 0,
       };
     }
   }
@@ -182,7 +182,7 @@ export class DatabaseInitializer {
       // In a real implementation, you'd drop all tables or delete the database file
       // For now, we'll just log the intent
       console.log('🔄 Database reset completed');
-      
+
     } catch (error) {
       console.error('❌ Database reset failed:', error);
       throw error;

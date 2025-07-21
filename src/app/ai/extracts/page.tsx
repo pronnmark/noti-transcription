@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+// import { ScrollArea } from '@/components/ui/scroll-area';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { Badge } from '@/components/ui/badge';
 import { Sparkles, Loader2, Trash2, FileText, ChevronDown, ChevronRight } from 'lucide-react';
@@ -61,10 +61,10 @@ export default function AIExtractsPage() {
       if (filesResponse.ok) {
         const filesData = await filesResponse.json();
         const filesWithExtracts = filesData.files.filter((f: AudioFile) => f.hasAiExtract);
-        
+
         // Load extracts for each file and group by file
         const fileGroups: FileWithExtracts[] = [];
-        
+
         for (const file of filesWithExtracts) {
           try {
             const extractResponse = await fetch(`/api/extract?fileId=${file.id}`);
@@ -73,38 +73,38 @@ export default function AIExtractsPage() {
               // Add filename to each extract
               const extractsWithFilename = extractData.extracts.map((extract: Extract) => ({
                 ...extract,
-                filename: file.originalName
+                filename: file.originalName,
               }));
-              
+
               // Sort extracts by creation date (newest first)
               extractsWithFilename.sort((a: Extract, b: Extract) => b.createdAt.localeCompare(a.createdAt));
-              
+
               fileGroups.push({
                 file,
-                extracts: extractsWithFilename
+                extracts: extractsWithFilename,
               });
             }
           } catch (error) {
-            console.error(`Failed to load extracts for file ${file.id}:`, error);
+            // Failed to load extracts for file - already handled by empty array
             // Add file with empty extracts array if extraction fails
             fileGroups.push({
               file,
-              extracts: []
+              extracts: [],
             });
           }
         }
-        
+
         // Sort file groups by most recent extract date
         fileGroups.sort((a, b) => {
           const aLatest = a.extracts.length > 0 ? a.extracts[0].createdAt : a.file.createdAt;
           const bLatest = b.extracts.length > 0 ? b.extracts[0].createdAt : b.file.createdAt;
           return bLatest.localeCompare(aLatest);
         });
-        
+
         setFileGroups(fileGroups);
       }
     } catch (error) {
-      console.error('Failed to load extracts:', error);
+      toast.error('Failed to load extracts');
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +130,7 @@ export default function AIExtractsPage() {
       await loadExtracts();
     } catch (error) {
       toast.error(`Failed to delete extract`);
-      console.error('Delete error:', error);
+      // Delete error already shown via toast
     } finally {
       setDeletingExtracts(prev => {
         const newSet = new Set(prev);
@@ -148,7 +148,7 @@ export default function AIExtractsPage() {
       day: 'numeric',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   }
 
@@ -216,7 +216,7 @@ export default function AIExtractsPage() {
                       return newSet;
                     });
                   };
-                  
+
                   return (
                     <Collapsible key={fileGroup.file.id} open={isFileExpanded} onOpenChange={toggleFileExpanded}>
                       <div className="border rounded-lg">
@@ -262,7 +262,7 @@ export default function AIExtractsPage() {
                             </CollapsibleTrigger>
                           </div>
                         </div>
-                        
+
                         {/* File Extracts */}
                         <CollapsibleContent className="px-4 pb-4">
                           <div className="space-y-3 pt-3">
@@ -285,7 +285,7 @@ export default function AIExtractsPage() {
                                     return newSet;
                                   });
                                 };
-                                
+
                                 return (
                                   <Collapsible key={extract.id} open={isExtractExpanded} onOpenChange={toggleExtractExpanded}>
                                     <div className="border rounded-lg ml-4">
@@ -337,7 +337,7 @@ export default function AIExtractsPage() {
                                           </Button>
                                         </div>
                                       </div>
-                                      
+
                                       <CollapsibleContent className="px-3 pb-3">
                                         <div className="space-y-3 border-t pt-3">
                                           <div className="text-sm bg-muted/50 rounded-lg p-3 max-h-40 overflow-y-auto">

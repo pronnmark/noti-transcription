@@ -1,27 +1,27 @@
-import { 
-  IMonitoringService, 
-  MonitoringConfig, 
-  Metric, 
-  SystemHealth, 
+import {
+  IMonitoringService,
+  MonitoringConfig,
+  Metric,
+  SystemHealth,
   PerformanceMetrics,
   MetricCollector,
   MetricExporter,
-  IHealthChecker
+  IHealthChecker,
 } from './types';
 import { BaseService } from '../services/core/BaseService';
-import { 
-  SystemMetricsCollector, 
-  HttpMetricsCollector, 
-  DatabaseMetricsCollector, 
-  AIServiceMetricsCollector 
+import {
+  SystemMetricsCollector,
+  HttpMetricsCollector,
+  DatabaseMetricsCollector,
+  AIServiceMetricsCollector,
 } from './MetricsCollector';
-import { 
+import {
   HealthCheckManager,
   DatabaseHealthChecker,
   ServiceHealthChecker,
   AIProviderHealthChecker,
   MemoryHealthChecker,
-  DiskSpaceHealthChecker
+  DiskSpaceHealthChecker,
 } from './HealthChecker';
 
 export class MonitoringService extends BaseService implements IMonitoringService {
@@ -44,13 +44,13 @@ export class MonitoringService extends BaseService implements IMonitoringService
     super('MonitoringService');
     this.config = config;
     this.healthManager = new HealthCheckManager();
-    
+
     // Initialize built-in collectors
     this.systemCollector = new SystemMetricsCollector();
     this.httpCollector = new HttpMetricsCollector();
     this.databaseCollector = new DatabaseMetricsCollector();
     this.aiServiceCollector = new AIServiceMetricsCollector();
-    
+
     this.setupDefaultCollectors();
     this.setupDefaultHealthChecks();
   }
@@ -190,19 +190,19 @@ export class MonitoringService extends BaseService implements IMonitoringService
   private setupDefaultHealthChecks(): void {
     // Database health check
     this.addHealthCheck(new DatabaseHealthChecker(this.config.healthChecks.timeout));
-    
+
     // Memory health check
     this.addHealthCheck(new MemoryHealthChecker());
-    
+
     // Disk space health check
     this.addHealthCheck(new DiskSpaceHealthChecker());
-    
+
     // Service health checks
     const services = ['audioService', 'transcriptionService', 'extractionService', 'summarizationService'];
     for (const service of services) {
       this.addHealthCheck(new ServiceHealthChecker(service, this.config.healthChecks.timeout));
     }
-    
+
     // AI provider health checks
     this.addHealthCheck(new AIProviderHealthChecker('gemini', this.config.healthChecks.timeout));
   }
@@ -254,7 +254,7 @@ export class MonitoringService extends BaseService implements IMonitoringService
 
   private async exportMetrics(): Promise<void> {
     const metrics = await this.getMetrics();
-    
+
     for (const [name, exporter] of Array.from(this.exporters.entries())) {
       try {
         await exporter.export(metrics);
@@ -267,11 +267,11 @@ export class MonitoringService extends BaseService implements IMonitoringService
   private buildPerformanceMetrics(metrics: Metric[]): PerformanceMetrics {
     // This is a simplified implementation
     // In a real system, you would aggregate the metrics properly
-    
+
     const now = new Date();
     const memUsage = process.memoryUsage();
     const totalMemory = require('os').totalmem();
-    
+
     return {
       requestCount: 0, // Would be calculated from http_requests_total
       requestDuration: {
@@ -317,7 +317,7 @@ export class MonitoringService extends BaseService implements IMonitoringService
     collectorsCount: number;
     exportersCount: number;
     healthCheckersCount: number;
-  } {
+    } {
     return {
       isRunning: this.isRunning,
       collectorsCount: this.collectors.size,

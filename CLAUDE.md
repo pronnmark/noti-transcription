@@ -21,11 +21,39 @@
 
 ## Key Fixes Implemented
 
-### 1. Ultra-Simplified Authentication
-- **Middleware**: Reduced from 119 lines to 19 lines
-- **Change**: Removed ALL authentication - system runs without any auth requirements
-- **File**: `/src/middleware.ts`
-- **Benefit**: Eliminates complexity, makes testing easier
+### 1. Production Authentication System
+- **Authentication**: Full password-based authentication system enabled
+- **Features**: Login pages, middleware protection, session management
+- **Default Password**: `ddash` (configurable via AUTH_PASSWORD environment variable)
+- **Components**:
+  - `/src/middleware.ts` - Enforces authentication on all routes except public ones
+  - `/src/app/page.tsx` - Homepage with authentication form
+  - `/src/app/login/page.tsx` - Dedicated login page
+  - `/src/lib/auth-client.ts` - Client-side authentication utilities
+- **API Endpoints**:
+  - `POST /api/auth` - Session token authentication
+  - `POST /api/auth/login` - JWT authentication 
+  - `POST /api/auth/logout` - Logout functionality
+- **Status**: Fully functional, production-ready authentication
+
+#### Authentication Flow Details
+- **Session Token System**: Primary authentication method
+  - Login via `POST /api/auth` with password
+  - Returns base64-encoded session token
+  - Token stored in localStorage and cookies
+  - Middleware checks for 'noti-session' cookies or 'x-session-token' headers
+- **JWT System**: Alternative authentication method (separate login page)
+  - Login via `POST /api/auth/login` with password  
+  - Returns HTTP-only JWT token in 'auth-token' cookie
+  - 7-day expiration with automatic renewal
+- **Middleware Protection**: 
+  - All routes protected except: `/`, `/api/auth*`, `/_next*`, static assets
+  - Redirects unauthenticated users to homepage login
+  - API routes return 401 for unauthenticated requests
+- **Access Methods**:
+  - Website: Login at https://noti.se (homepage) or https://noti.se/login
+  - API: Include session token in `x-session-token` header or `authorization` header
+  - Cookie-based: Automatic after web login
 
 ### 2. Comprehensive Audio Format Support
 - **Upload Endpoint**: Enhanced with full Whisper format validation
@@ -60,7 +88,7 @@
 - **Result**: AI summarization now works without foreign key constraint errors
 - **Status**: Fully functional, ready for AI service integration
 
-### 5. Speaker Diarization with Format Conversion
+### 6. Speaker Diarization with Format Conversion
 - **Files Updated**: 
   - `/src/lib/transcription.ts` - Enhanced with format conversion tracking
   - `/scripts/transcribe.py` - Added FFmpeg conversion layer + metadata output
@@ -77,21 +105,21 @@
 - **Format**: `{"speaker": "SPEAKER_00", "text": "...", "start": 0, "end": 5}`
 - **Status**: Working with full format support and proper error visibility
 
-### 5. Summarization API
+### 7. Summarization API
 - **File**: `/src/app/api/summarization/[fileId]/route.ts`
 - **Changes**: 
-  - Removed auth requirement
+  - Integrated with authentication system
   - Added placeholder summarization
   - Ready for DDwrappy AI integration
-- **Status**: Working
+- **Status**: Working with authentication
 
-### 6. Notes API Implementation
+### 8. Notes API Implementation
 - **File**: `/src/app/api/notes/route.ts`
 - **Features**: Full CRUD operations (GET, POST, PATCH, DELETE)
 - **Database**: Created notes table with file_id foreign key
 - **Status**: Fully functional
 
-### 7. DDwrappy AI Integration
+### 9. DDwrappy AI Integration
 - **Purpose**: Local-first AI processing using Claude Code OpenAI API wrapper
 - **Configuration**: Default AI settings now point to DDwrappy at `http://localhost:8000/v1`
 - **Files Updated**:
@@ -111,7 +139,7 @@
 - **Setup**: Container-based deployment with health monitoring
 - **Status**: Ready for local AI processing, fallback to external providers available
 
-### 8. Domain Configuration (July 21, 2025)
+### 10. Domain Configuration (July 21, 2025)
 - **Domain**: noti.se and www.noti.se fully operational
 - **SSL**: Let's Encrypt certificates with auto-renewal
 - **Reverse Proxy**: Enhanced Caddy configuration on 192.168.0.108
@@ -155,30 +183,50 @@
 - **Port**: 5173 (development)
 - **Domain**: noti.se (production HTTPS access)
 - **Reverse Proxy**: Caddy on 192.168.0.108 with HTTP/3 and SSL certificates
-- **Authentication**: Disabled (ultra-simplified)
+- **Authentication**: Enabled (password-based with session management)
 
 ## Development Commands
 ```bash
 # Start development server
 npm run dev
 
-# Test file upload (supports all 10 Whisper formats)
-curl -X POST http://localhost:5173/api/upload -F "file=@testfile.mp3"
-curl -X POST http://localhost:5173/api/upload -F "file=@testfile.m4a"
-curl -X POST http://localhost:5173/api/upload -F "file=@testfile.wav"
+# Authentication (required for API access)
+# Login and get session token
+curl -X POST http://localhost:5173/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"password": "ddash"}'
+# Returns: {"success": true, "sessionToken": "base64-encoded-token"}
+
+# Set session token for subsequent requests
+SESSION_TOKEN="your-session-token-here"
+
+# Test file upload (supports all 10 Whisper formats) - requires authentication
+curl -X POST http://localhost:5173/api/upload \
+  -H "x-session-token: $SESSION_TOKEN" \
+  -F "file=@testfile.mp3"
+
+curl -X POST http://localhost:5173/api/upload \
+  -H "x-session-token: $SESSION_TOKEN" \
+  -F "file=@testfile.m4a"
 
 # Upload with speaker count specification (1-10 speakers)
-curl -X POST http://localhost:5173/api/upload -F "file=@meeting.mp3" -F "speakerCount=3"
-curl -X POST http://localhost:5173/api/upload -F "file=@interview.wav" -F "speakerCount=2"
+curl -X POST http://localhost:5173/api/upload \
+  -H "x-session-token: $SESSION_TOKEN" \
+  -F "file=@meeting.mp3" -F "speakerCount=3"
 
 # Process transcriptions
-curl -X GET http://localhost:5173/api/worker/transcribe
+curl -X GET http://localhost:5173/api/worker/transcribe \
+  -H "x-session-token: $SESSION_TOKEN"
 
 # Check files
-curl -s http://localhost:5173/api/files | jq .
+curl -s http://localhost:5173/api/files \
+  -H "x-session-token: $SESSION_TOKEN" | jq .
 
 # Create note
-curl -X POST http://localhost:5173/api/notes -H "Content-Type: application/json" -d '{"fileId": 1, "content": "Test note"}'
+curl -X POST http://localhost:5173/api/notes \
+  -H "Content-Type: application/json" \
+  -H "x-session-token: $SESSION_TOKEN" \
+  -d '{"fileId": 1, "content": "Test note"}'
 
 # Diagnose speaker diarization
 node diagnose-speakers-enhanced.js
@@ -193,11 +241,20 @@ curl http://localhost:8000/v1/models       # List available Claude models
 curl http://localhost:8000/v1/auth/status  # Check authentication status
 ./manage.sh status                         # Container management (if available)
 
-# Domain testing
+# Domain testing (with authentication)
 curl -I https://noti.se                    # Test HTTPS access
 curl -I http://noti.se                     # Test HTTP redirect  
-curl https://noti.se/api/health             # Test API through domain
-curl -X POST https://noti.se/api/upload -F "file=@test.mp3"  # Test file upload through domain
+curl https://noti.se/api/health             # Test health endpoint (public)
+
+# Authenticate through domain
+curl -X POST https://noti.se/api/auth \
+  -H "Content-Type: application/json" \
+  -d '{"password": "ddash"}'
+
+# Test authenticated file upload through domain
+curl -X POST https://noti.se/api/upload \
+  -H "x-session-token: $SESSION_TOKEN" \
+  -F "file=@test.mp3"
 ```
 
 ## Next Steps for AI Integration

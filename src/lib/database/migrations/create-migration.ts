@@ -45,7 +45,7 @@ export class MigrationGenerator {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     const seconds = String(now.getSeconds()).padStart(2, '0');
-    
+
     return `${year}${month}${day}${hours}${minutes}${seconds}`;
   }
 
@@ -94,7 +94,7 @@ ${template.up}
 );
 
 CREATE INDEX idx_new_table_name ON new_table(name);`,
-        down: 'DROP TABLE IF EXISTS new_table;'
+        down: 'DROP TABLE IF EXISTS new_table;',
       },
 
       'add-column': {
@@ -102,14 +102,14 @@ CREATE INDEX idx_new_table_name ON new_table(name);`,
         description: 'Add a new column to an existing table',
         up: `ALTER TABLE existing_table ADD COLUMN new_column TEXT;`,
         down: `-- SQLite doesn't support DROP COLUMN directly
--- You would need to recreate the table without the column`
+-- You would need to recreate the table without the column`,
       },
 
       'add-index': {
         name: 'add_index',
         description: 'Add an index to improve query performance',
         up: `CREATE INDEX idx_table_column ON table_name(column_name);`,
-        down: `DROP INDEX IF EXISTS idx_table_column;`
+        down: `DROP INDEX IF EXISTS idx_table_column;`,
       },
 
       'seed-data': {
@@ -118,8 +118,8 @@ CREATE INDEX idx_new_table_name ON new_table(name);`,
         up: `INSERT INTO table_name (column1, column2) VALUES 
   ('value1', 'value2'),
   ('value3', 'value4');`,
-        down: `DELETE FROM table_name WHERE column1 IN ('value1', 'value3');`
-      }
+        down: `DELETE FROM table_name WHERE column1 IN ('value1', 'value3');`,
+      },
     };
   }
 }
@@ -168,7 +168,7 @@ async function main() {
           name: migrationName,
           description: 'Custom migration',
           up: '-- Add your SQL statements here\n',
-          down: '-- Add rollback statements here\n'
+          down: '-- Add rollback statements here\n',
         };
 
         generator.generateMigration(customTemplate);

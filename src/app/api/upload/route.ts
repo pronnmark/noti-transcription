@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 import { getDb } from '../../../lib/database/client';
@@ -21,7 +21,7 @@ const SUPPORTED_MIME_TYPES = [
   'audio/ogg', 'application/ogg',
   'audio/ogg',
   'audio/wav', 'audio/x-wav',
-  'video/webm', 'audio/webm'
+  'video/webm', 'audio/webm',
 ];
 
 function getFileExtension(filename: string): string {
@@ -31,47 +31,47 @@ function getFileExtension(filename: string): string {
 function validateAudioFormat(file: File): { valid: boolean; error?: string } {
   const extension = getFileExtension(file.name);
   const mimeType = file.type.toLowerCase();
-  
+
   // Check file extension
   if (!SUPPORTED_FORMATS.includes(extension)) {
     return {
       valid: false,
-      error: `Unsupported file format: .${extension}. Supported formats: ${SUPPORTED_FORMATS.join(', ')}`
+      error: `Unsupported file format: .${extension}. Supported formats: ${SUPPORTED_FORMATS.join(', ')}`,
     };
   }
-  
+
   // If MIME type is provided, validate it too
   if (mimeType && !SUPPORTED_MIME_TYPES.includes(mimeType)) {
     console.warn(`Unknown MIME type: ${mimeType} for extension: ${extension} - proceeding based on extension`);
   }
-  
+
   return { valid: true };
 }
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
-    
+
     // Try both common field names
     const file = formData.get('file') || formData.get('audio');
-    
+
     if (!file || !(file instanceof File)) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'No file provided',
         receivedFields: Array.from(formData.keys()),
-        hint: 'Expected field name: file or audio'
+        hint: 'Expected field name: file or audio',
       }, { status: 400 });
     }
-    
+
     // Validate audio format
     const formatValidation = validateAudioFormat(file);
     if (!formatValidation.valid) {
       return NextResponse.json({
         error: formatValidation.error,
-        supportedFormats: SUPPORTED_FORMATS
+        supportedFormats: SUPPORTED_FORMATS,
       }, { status: 400 });
     }
-    
+
     // Extract and validate speaker count (optional)
     let speakerCount: number | undefined;
     const speakerCountField = formData.get('speakerCount');
@@ -80,23 +80,23 @@ export async function POST(request: NextRequest) {
       if (isNaN(parsedCount) || parsedCount < 1 || parsedCount > 10) {
         return NextResponse.json({
           error: 'Invalid speaker count. Must be a number between 1 and 10.',
-          providedValue: speakerCountField.toString()
+          providedValue: speakerCountField.toString(),
         }, { status: 400 });
       }
       speakerCount = parsedCount;
       console.log(`User specified ${speakerCount} speakers for diarization`);
     }
-    
+
     // Create upload directory
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     await fs.mkdir(uploadDir, { recursive: true });
-    
+
     // Save file with simple timestamp name
     const fileName = `${Date.now()}_${file.name}`;
     const buffer = Buffer.from(await file.arrayBuffer());
     const filePath = join(uploadDir, fileName);
     await fs.writeFile(filePath, buffer);
-    
+
     // Extract complete audio metadata (duration, recording date, etc.)
     let recordedAt: Date | null = null;
     let duration: number = 0;
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
       console.warn('Failed to extract audio metadata:', error);
       // Continue with defaults - not a critical error
     }
-    
+
     // Save to database
     const db = getDb();
     const [record] = await db.insert(audioFiles).values({
@@ -119,9 +119,9 @@ export async function POST(request: NextRequest) {
       fileSize: file.size,
       fileHash: null,
       duration: duration,
-      recordedAt: recordedAt
+      recordedAt: recordedAt,
     }).returning();
-    
+
     // Create transcription job
     await db.insert(transcriptionJobs).values({
       fileId: record.id,
@@ -129,9 +129,9 @@ export async function POST(request: NextRequest) {
       modelSize: 'large-v3',
       diarization: true,
       speakerCount: speakerCount,
-      progress: 0
+      progress: 0,
     });
-    
+
     // Auto-trigger transcription worker (non-blocking)
     // This runs in the background without blocking the upload response
     setImmediate(async () => {
@@ -143,21 +143,21 @@ export async function POST(request: NextRequest) {
         console.error('Error in transcription worker:', error);
       }
     });
-    
-    return NextResponse.json({ 
-      success: true, 
+
+    return NextResponse.json({
+      success: true,
       fileId: record.id,
       fileName: record.fileName,
       transcriptionStatus: 'pending',
       speakerCount: speakerCount || null,
-      speakerDetection: speakerCount ? 'user_specified' : 'auto_detect'
+      speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
     });
-    
+
   } catch (error: any) {
     console.error('Upload error:', error);
-    return NextResponse.json({ 
+    return NextResponse.json({
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     }, { status: 500 });
   }
 }

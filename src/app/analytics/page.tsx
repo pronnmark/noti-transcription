@@ -109,7 +109,7 @@ export default function AnalyticsPage() {
       avgEnergy,
       avgStress,
       moodTrend,
-      activeDays: metrics.length
+      activeDays: metrics.length,
     };
   }
 
@@ -177,7 +177,7 @@ export default function AnalyticsPage() {
                   <div className="text-2xl font-bold">{stats.avgMood.toFixed(1)}</div>
                   <div className="flex items-center gap-1 text-xs text-muted-foreground">
                     <span>Trend:</span>
-                    <Badge variant={stats.moodTrend > 0 ? "default" : "secondary"}>
+                    <Badge variant={stats.moodTrend > 0 ? 'default' : 'secondary'}>
                       {stats.moodTrend > 0 ? '+' : ''}{stats.moodTrend.toFixed(1)}
                     </Badge>
                   </div>
@@ -234,15 +234,15 @@ export default function AnalyticsPage() {
             </TabsList>
 
             <TabsContent value="trends" className="space-y-6">
-              <MoodTrendChart 
-                data={metrics} 
+              <MoodTrendChart
+                data={metrics}
                 height={isMobile ? 300 : 400}
               />
             </TabsContent>
 
             <TabsContent value="energy" className="space-y-6">
-              <EnergyBarChart 
-                data={metrics} 
+              <EnergyBarChart
+                data={metrics}
                 height={isMobile ? 300 : 400}
               />
             </TabsContent>
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
               <div className="grid gap-6 md:grid-cols-2">
                 {/* Current Emotional State */}
                 {selectedEvaluation && (
-                  <EmotionalRadarChart 
+                  <EmotionalRadarChart
                     moodData={parseMoodData(selectedEvaluation.mood)}
                     title="Latest Emotional State"
                     description={`From ${format(new Date(selectedEvaluation.createdAt), 'MMM dd, yyyy')}`}
@@ -270,11 +270,11 @@ export default function AnalyticsPage() {
                   <CardContent>
                     <div className="space-y-3">
                       {recentEvaluations.map((evaluation) => (
-                        <div 
+                        <div
                           key={evaluation.id}
                           className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                            selectedEvaluation?.id === evaluation.id 
-                              ? 'border-primary bg-primary/5' 
+                            selectedEvaluation?.id === evaluation.id
+                              ? 'border-primary bg-primary/5'
                               : 'hover:bg-muted/50'
                           }`}
                           onClick={() => setSelectedEvaluation(evaluation)}

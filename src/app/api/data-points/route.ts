@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from "@/lib/db"
-import * as schema from "@/lib/db"
+import { db, eq, and, inArray } from '@/lib/db';
+import * as schema from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const templateId = url.searchParams.get('templateId');
 
     // Build query conditions
-    let whereConditions = [];
+    const whereConditions = [];
     if (fileId) {
       whereConditions.push(eq(schema.dataPoints.fileId, parseInt(fileId)));
     }
@@ -37,15 +37,15 @@ export async function GET(request: NextRequest) {
     }) || [];
 
     const templateMap = Object.fromEntries(
-      templates.map((t: any) => [t.id, t])
+      templates.map((t: any) => [t.id, t]),
     );
 
     // Enrich data points with template information
     const enrichedDataPoints = dataPointsResult.map((dataPoint: any) => ({
       ...dataPoint,
       template: templateMap[dataPoint.templateId] || null,
-      analysis_results: typeof dataPoint.analysisResults === 'string' 
-        ? JSON.parse(dataPoint.analysisResults) 
+      analysis_results: typeof dataPoint.analysisResults === 'string'
+        ? JSON.parse(dataPoint.analysisResults)
         : dataPoint.analysisResults,
     }));
 
@@ -68,17 +68,17 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      fileId, 
-      templateId, 
+    const {
+      fileId,
+      templateId,
       analysisResults,
-      model = 'gemini-2.5-flash'
+      model = 'gemini-2.5-flash',
     } = body;
 
     // Validate required fields
     if (!fileId || !templateId || !analysisResults) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: fileId, templateId, analysisResults' 
+      return NextResponse.json({
+        error: 'Missing required fields: fileId, templateId, analysisResults',
       }, { status: 400 });
     }
 
@@ -114,8 +114,8 @@ export async function POST(request: NextRequest) {
       success: true,
       dataPoint: {
         ...dataPoint,
-        analysis_results: typeof dataPoint?.analysisResults === 'string' 
-          ? JSON.parse(dataPoint.analysisResults) 
+        analysis_results: typeof dataPoint?.analysisResults === 'string'
+          ? JSON.parse(dataPoint.analysisResults)
           : dataPoint?.analysisResults,
       },
     });

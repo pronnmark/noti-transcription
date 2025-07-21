@@ -20,9 +20,9 @@ describe('BaseRepository', () => {
       runMigrations: true,
       validateSchema: false,
       createBackup: false,
-      force: true
+      force: true,
     });
-    
+
     repository = new TestAudioRepository();
   });
 
@@ -237,7 +237,7 @@ describe('BaseRepository', () => {
       };
 
       const created = await repository.create(newAudio);
-      
+
       expect(await repository.exists(created.id)).toBe(true);
       expect(await repository.exists(99999)).toBe(false);
     });

@@ -1,6 +1,6 @@
-import { getDb } from "../client";
-import { eq, and, or, SQL, count } from "drizzle-orm";
-import { SQLiteTableWithColumns } from "drizzle-orm/sqlite-core";
+import { getDb } from '../client';
+import { eq, and, or, SQL, count } from 'drizzle-orm';
+import { SQLiteTableWithColumns } from 'drizzle-orm/sqlite-core';
 
 export interface IRepository<T, CreateT> {
   findById(id: number | string): Promise<T | null>;
@@ -17,11 +17,10 @@ export interface IRepository<T, CreateT> {
 }
 
 export abstract class BaseRepository<T, CreateT>
-  implements IRepository<T, CreateT>
-{
+implements IRepository<T, CreateT> {
   constructor(
     protected table: SQLiteTableWithColumns<any>,
-    protected primaryKey: keyof T = "id" as keyof T
+    protected primaryKey: keyof T = 'id' as keyof T,
   ) {}
 
   async findById(id: number | string): Promise<T | null> {

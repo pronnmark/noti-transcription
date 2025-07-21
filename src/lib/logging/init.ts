@@ -13,11 +13,11 @@ try {
   const environment = process.env.NODE_ENV || 'development';
   const config = createDefaultConfig(environment);
   LoggerFactory.initialize(config);
-  
+
   const logger = LoggerFactory.getInstance().getLogger('logging-init');
   logger.info('LoggerFactory initialized with default configuration', {
     environment,
-    service: 'noti'
+    service: 'noti',
   });
 }
 

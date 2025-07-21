@@ -17,7 +17,7 @@ export function TaskCheckbox({ id, checked, onToggle, className }: TaskCheckboxP
 
   const handleToggle = async () => {
     if (isToggling) return;
-    
+
     setIsToggling(true);
     try {
       await onToggle(id, !checked);
@@ -35,9 +35,9 @@ export function TaskCheckbox({ id, checked, onToggle, className }: TaskCheckboxP
       onCheckedChange={handleToggle}
       disabled={isToggling}
       className={cn(
-        "transition-all duration-200",
-        isToggling && "opacity-50 cursor-not-allowed",
-        className
+        'transition-all duration-200',
+        isToggling && 'opacity-50 cursor-not-allowed',
+        className,
       )}
     />
   );

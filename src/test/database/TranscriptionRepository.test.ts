@@ -14,9 +14,9 @@ describe('TranscriptionRepository', () => {
       runMigrations: true,
       validateSchema: false,
       createBackup: false,
-      force: true
+      force: true,
     });
-    
+
     transcriptionRepository = new TranscriptionRepository();
     audioRepository = new AudioRepository();
 
@@ -196,7 +196,7 @@ describe('TranscriptionRepository', () => {
 
     it('should throw error for non-existent job', async () => {
       await expect(
-        transcriptionRepository.updateStatus(99999, 'completed')
+        transcriptionRepository.updateStatus(99999, 'completed'),
       ).rejects.toThrow();
     });
   });
@@ -217,7 +217,7 @@ describe('TranscriptionRepository', () => {
 
     it('should throw error for non-existent job', async () => {
       await expect(
-        transcriptionRepository.updateProgress(99999, 50)
+        transcriptionRepository.updateProgress(99999, 50),
       ).rejects.toThrow();
     });
   });
@@ -260,7 +260,7 @@ describe('TranscriptionRepository', () => {
       ];
 
       await expect(
-        transcriptionRepository.completeTranscription(99999, transcript)
+        transcriptionRepository.completeTranscription(99999, transcript),
       ).rejects.toThrow();
     });
   });

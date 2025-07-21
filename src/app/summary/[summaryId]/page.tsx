@@ -43,7 +43,7 @@ export default function SummaryPage() {
   const container2Ref = useRef<HTMLDivElement>(null);
   const container3Ref = useRef<HTMLDivElement>(null);
   const container4Ref = useRef<HTMLDivElement>(null);
-  
+
   const [debugInfo, setDebugInfo] = useState<{[key: string]: any}>({});
   const [scrollEvents, setScrollEvents] = useState<string[]>([]);
 
@@ -57,7 +57,7 @@ export default function SummaryPage() {
         offsetHeight: elem.offsetHeight,
         scrollTop: elem.scrollTop,
         canScroll: elem.scrollHeight > elem.clientHeight,
-        hasScrollbar: elem.scrollHeight > elem.clientHeight && elem.offsetHeight > 0
+        hasScrollbar: elem.scrollHeight > elem.clientHeight && elem.offsetHeight > 0,
       };
     }
     return null;
@@ -81,7 +81,7 @@ export default function SummaryPage() {
   const updateDebugInfo = () => {
     setDebugInfo({
       container1: measureContainer(container1Ref, 'Container1'),
-      container2: measureContainer(container2Ref, 'Container2'), 
+      container2: measureContainer(container2Ref, 'Container2'),
       container3: measureContainer(container3Ref, 'Container3'),
       container4: measureContainer(container4Ref, 'Container4'),
     });
@@ -117,24 +117,24 @@ export default function SummaryPage() {
       // Wait for DOM to be ready, then setup debugging
       setTimeout(() => {
         updateDebugInfo();
-        
+
         // Add event listeners to all containers
         const containers = [
           { ref: container1Ref, name: 'Container1' },
           { ref: container2Ref, name: 'Container2' },
           { ref: container3Ref, name: 'Container3' },
-          { ref: container4Ref, name: 'Container4' }
+          { ref: container4Ref, name: 'Container4' },
         ];
 
         containers.forEach(({ ref, name }) => {
           if (ref.current) {
             const element = ref.current;
-            
+
             const onScroll = () => logScrollEvent('scroll', name);
             const onWheel = () => logScrollEvent('wheel', name);
             const onTouchStart = () => logScrollEvent('touchstart', name);
             const onTouchMove = () => logScrollEvent('touchmove', name);
-            
+
             element.addEventListener('scroll', onScroll);
             element.addEventListener('wheel', onWheel);
             element.addEventListener('touchstart', onTouchStart);
@@ -152,7 +152,7 @@ export default function SummaryPage() {
 
         // Update measurements every 2 seconds
         const interval = setInterval(updateDebugInfo, 2000);
-        
+
         return () => {
           clearInterval(interval);
           containers.forEach(({ ref }) => {
@@ -174,7 +174,7 @@ export default function SummaryPage() {
 
   const handleRegenerate = async () => {
     if (!summary) return;
-    
+
     setIsRegenerating(true);
     try {
       const response = await fetch(`/api/ai/dynamic-process/${summary.file.id}`, {
@@ -186,7 +186,7 @@ export default function SummaryPage() {
           summarizationPromptId: summary.template?.id || null,
         }),
       });
-      
+
       if (response.ok) {
         toast.success('New summary generated');
         // Navigate back to the summarization list to see the new summary
@@ -204,9 +204,9 @@ export default function SummaryPage() {
 
   const handleDelete = async () => {
     if (!summary) return;
-    
+
     const confirmed = window.confirm('Are you sure you want to delete this summary? This action cannot be undone.');
-    
+
     if (!confirmed) return;
 
     setIsDeleting(true);
@@ -214,7 +214,7 @@ export default function SummaryPage() {
       const response = await fetch(`/api/summary/${summaryId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         toast.success('Summary deleted successfully');
         // Navigate back to the summarization list
@@ -238,7 +238,7 @@ export default function SummaryPage() {
       month: 'long',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
@@ -290,7 +290,7 @@ export default function SummaryPage() {
                 <p className="text-sm text-gray-600">{summary.file.originalFileName}</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -347,14 +347,14 @@ export default function SummaryPage() {
                   {summary.template && (
                     <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
                       {summary.template.name}
-                      {summary.template.isDefault && " (Default)"}
+                      {summary.template.isDefault && ' (Default)'}
                     </Badge>
                   )}
                   <Badge variant="outline" className="text-xs">
                     {summary.model}
                   </Badge>
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
@@ -363,17 +363,17 @@ export default function SummaryPage() {
                   </div>
                 </div>
               </div>
-              
+
               {summary.template?.description && (
                 <div className="text-sm text-gray-600">
                   <strong>Template:</strong> {summary.template.description}
                 </div>
               )}
             </CardHeader>
-            
+
             <CardContent className="p-6">
               {/* SUCCESS: Using the proven working approach from Test 1 */}
-              <div 
+              <div
                 className="overflow-y-auto border rounded-lg p-4 bg-white"
                 style={{ height: '60vh' }}
               >
@@ -381,7 +381,7 @@ export default function SummaryPage() {
                   {summary.content}
                 </div>
               </div>
-              
+
               {/* Actions */}
               <div className="mt-6 flex justify-center">
                 <Button

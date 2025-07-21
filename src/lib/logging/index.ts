@@ -13,12 +13,12 @@ export * from './LoggerFactory';
 import { LoggerFactory } from './LoggerFactory';
 
 // Re-export commonly used items
-export { 
-  LoggerFactory, 
-  initializeLogging, 
-  getGlobalLogger, 
-  setGlobalLogger, 
-  log 
+export {
+  LoggerFactory,
+  initializeLogging,
+  getGlobalLogger,
+  setGlobalLogger,
+  log,
 } from './LoggerFactory';
 
 export { Logger, PerformanceLogger, RequestLogger } from './Logger';

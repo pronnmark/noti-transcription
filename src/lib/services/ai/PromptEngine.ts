@@ -210,7 +210,7 @@ Transcript:
         version: '1.0.0',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      }
+      },
     ];
 
     for (const template of defaultTemplates) {
@@ -312,7 +312,7 @@ Transcript:
 
     return {
       valid: errors.length === 0,
-      errors
+      errors,
     };
   }
 

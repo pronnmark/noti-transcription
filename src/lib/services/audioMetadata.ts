@@ -19,10 +19,10 @@ export async function extractAudioMetadata(filePath: string): Promise<AudioMetad
   try {
     // Check if file exists
     const stats = await fs.stat(filePath);
-    
+
     // Run FFprobe to get metadata
     const metadata = await runFFprobe(filePath);
-    
+
     return {
       duration: metadata.duration,
       recordedAt: metadata.recordedAt || metadata.creationTime || new Date(stats.birthtime),
@@ -31,17 +31,17 @@ export async function extractAudioMetadata(filePath: string): Promise<AudioMetad
       sampleRate: metadata.sampleRate,
       channels: metadata.channels,
       fileSize: stats.size,
-      creationTime: metadata.creationTime
+      creationTime: metadata.creationTime,
     };
   } catch (error) {
     console.error('Failed to extract audio metadata:', error);
-    
+
     // Fallback to file system stats
     try {
       const stats = await fs.stat(filePath);
       return {
         fileSize: stats.size,
-        recordedAt: new Date(stats.birthtime) // Use file creation time as fallback
+        recordedAt: new Date(stats.birthtime), // Use file creation time as fallback
       };
     } catch (fallbackError) {
       console.error('Failed to get file stats:', fallbackError);
@@ -70,7 +70,7 @@ function runFFprobe(filePath: string): Promise<FFprobeResult> {
       '-print_format', 'json',
       '-show_format',
       '-show_streams',
-      filePath
+      filePath,
     ]);
 
     let stdout = '';
@@ -124,8 +124,8 @@ function parseFFprobeOutput(data: any): FFprobeResult {
 
   // Extract stream information (focus on first audio stream)
   if (data.streams && Array.isArray(data.streams)) {
-    const audioStream = data.streams.find((stream: any) => 
-      stream.codec_type === 'audio'
+    const audioStream = data.streams.find((stream: any) =>
+      stream.codec_type === 'audio',
     );
 
     if (audioStream) {
@@ -157,7 +157,7 @@ function parseCreationTime(tags: Record<string, any>): Date | undefined {
     'date',
     'DATE',
     'recorded_date',
-    'RECORDED_DATE', 
+    'RECORDED_DATE',
     'recording_date',
     'RECORDING_DATE',
     'timestamp',
@@ -171,7 +171,7 @@ function parseCreationTime(tags: Record<string, any>): Date | undefined {
     'time',
     'TIME',
     'original_date',
-    'ORIGINAL_DATE'
+    'ORIGINAL_DATE',
   ];
 
   for (const key of creationTimeKeys) {
@@ -245,7 +245,7 @@ export async function extractRecordingDate(filePath: string): Promise<Date | nul
  */
 export async function extractBatchMetadata(filePaths: string[]): Promise<Map<string, AudioMetadata>> {
   const results = new Map<string, AudioMetadata>();
-  
+
   // Process files in parallel with a reasonable concurrency limit
   const concurrency = 5;
   for (let i = 0; i < filePaths.length; i += concurrency) {
@@ -259,9 +259,9 @@ export async function extractBatchMetadata(filePaths: string[]): Promise<Map<str
         results.set(filePath, {});
       }
     });
-    
+
     await Promise.all(promises);
   }
-  
+
   return results;
 }

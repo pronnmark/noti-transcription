@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { jwtVerify, SignJWT } from 'jose';
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'noti-secret-key-change-in-production'
+  process.env.JWT_SECRET || 'noti-secret-key-change-in-production',
 );
 
 export async function createSession(): Promise<string> {
@@ -19,7 +19,7 @@ export async function createSession(): Promise<string> {
 
 export async function validateSession(token: string | null | undefined): Promise<boolean> {
   if (!token) return false;
-  
+
   try {
     // Verify JWT token
     await jwtVerify(token, JWT_SECRET);
@@ -39,13 +39,13 @@ export async function getSessionFromRequest(request: NextRequest): Promise<strin
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('auth-token');
   if (sessionCookie?.value) return sessionCookie.value;
-  
+
   // Check Authorization header as fallback
   const authHeader = request.headers.get('authorization');
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
-  
+
   return null;
 }
 
@@ -62,7 +62,7 @@ export async function setSessionCookie(token: string) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
-    path: '/'
+    path: '/',
   });
 }
 

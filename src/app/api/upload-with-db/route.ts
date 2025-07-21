@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateSession } from '../../../lib/auth';
 import { promises as fs } from 'fs';
@@ -10,26 +10,26 @@ import { audioFiles } from '../../../lib/database/schema/audio';
 // Test upload with database operations
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
-  
+
   try {
     // Step 1: Check authentication
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     const isValid = await validateSession(token);
-    
+
     if (!isValid) {
-      return NextResponse.json({ 
-        error: 'Authentication required' 
+      return NextResponse.json({
+        error: 'Authentication required',
       }, { status: 401 });
     }
 
     // Step 2: Get file
     const formData = await request.formData();
     const file = formData.get('audio') as File;
-    
+
     if (!file || file.size === 0) {
-      return NextResponse.json({ 
-        error: 'No file provided or file is empty' 
+      return NextResponse.json({
+        error: 'No file provided or file is empty',
       }, { status: 400 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Step 5: Save file
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     await fs.mkdir(uploadDir, { recursive: true });
-    
+
     const fileName = `${uuidv4()}_${file.name}`;
     const filePath = join(uploadDir, fileName);
     await fs.writeFile(filePath, buffer);
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     try {
       const db = getDb();
       console.log('Got database instance');
-      
+
       // Insert into audio_files table
       const insertData = {
         fileName: fileName,
@@ -67,11 +67,11 @@ export async function POST(request: NextRequest) {
         fileHash: fileHash,
         duration: 0, // We'll set this to 0 for now
       };
-      
+
       console.log('Inserting into database:', insertData);
-      
+
       dbResult = await db.insert(audioFiles).values(insertData).returning();
-      
+
       console.log('Database insert successful:', dbResult);
     } catch (dbError) {
       console.error('Database error:', dbError);
@@ -81,17 +81,17 @@ export async function POST(request: NextRequest) {
       } catch (e) {
         console.error('Failed to clean up file:', e);
       }
-      
-      return NextResponse.json({ 
+
+      return NextResponse.json({
         error: 'Database operation failed',
         details: dbError instanceof Error ? dbError.message : String(dbError),
-        stack: dbError instanceof Error ? dbError.stack : undefined
+        stack: dbError instanceof Error ? dbError.stack : undefined,
       }, { status: 500 });
     }
 
     // Step 7: Return success
     const executionTime = Date.now() - startTime;
-    
+
     return NextResponse.json({
       success: true,
       message: 'File uploaded with database record',
@@ -102,9 +102,9 @@ export async function POST(request: NextRequest) {
         type: file.type,
         savedAs: fileName,
         hash: fileHash,
-        dbRecord: dbResult[0]
+        dbRecord: dbResult[0],
       },
-      executionTime
+      executionTime,
     });
 
   } catch (error) {
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       error: 'Unexpected error',
       details: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined
+      stack: error instanceof Error ? error.stack : undefined,
     }, { status: 500 });
   }
 }

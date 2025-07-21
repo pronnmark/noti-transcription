@@ -47,12 +47,12 @@ export interface PerformanceMetrics {
     p99: number;
   };
   requestsPerSecond: number;
-  
+
   // Error metrics
   errorCount: number;
   errorRate: number;
   errorsByType: Record<string, number>;
-  
+
   // System metrics
   memoryUsage: {
     used: number;
@@ -63,29 +63,29 @@ export interface PerformanceMetrics {
       total: number;
     };
   };
-  
+
   cpuUsage?: {
     percentage: number;
     loadAverage: number[];
   };
-  
+
   // Service metrics
   serviceHealth: Record<string, boolean>;
   serviceResponseTimes: Record<string, number>;
-  
+
   // Database metrics
   databaseConnections?: {
     active: number;
     idle: number;
     total: number;
   };
-  
+
   databaseQueries?: {
     count: number;
     avgDuration: number;
     slowQueries: number;
   };
-  
+
   // AI service metrics
   aiRequests?: {
     count: number;
@@ -93,7 +93,7 @@ export interface PerformanceMetrics {
     tokenUsage: number;
     cost: number;
   };
-  
+
   timestamp: Date;
 }
 
@@ -158,7 +158,7 @@ export interface Alert {
 // Monitoring configuration
 export interface MonitoringConfig {
   enabled: boolean;
-  
+
   // Metrics collection
   metrics: {
     enabled: boolean;
@@ -166,7 +166,7 @@ export interface MonitoringConfig {
     retention: number; // seconds
     collectors: string[];
   };
-  
+
   // Health checks
   healthChecks: {
     enabled: boolean;
@@ -174,21 +174,21 @@ export interface MonitoringConfig {
     timeout: number; // milliseconds
     checks: string[];
   };
-  
+
   // Alerting
   alerting: {
     enabled: boolean;
     rules: AlertRule[];
     channels: string[];
   };
-  
+
   // Export configuration
   export: {
     enabled: boolean;
     interval: number; // milliseconds
     exporters: string[];
   };
-  
+
   // Performance tracking
   performance: {
     enabled: boolean;

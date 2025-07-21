@@ -24,7 +24,7 @@ export class ValidationError extends AppError {
     field?: string,
     value?: any,
     rules: ValidationRule[] = [],
-    context: Partial<ValidationErrorContext> = {}
+    context: Partial<ValidationErrorContext> = {},
   ) {
     // Map validation context to error metadata
     const metadata = {
@@ -42,7 +42,7 @@ export class ValidationError extends AppError {
       400,
       ErrorSeverity.LOW,
       true,
-      metadata
+      metadata,
     );
 
     this.field = field;
@@ -55,7 +55,7 @@ export class ValidationError extends AppError {
       `Field '${field}' is required`,
       field,
       value,
-      [{ field, rule: 'required', message: 'This field is required', value }]
+      [{ field, rule: 'required', message: 'This field is required', value }],
     );
   }
 
@@ -65,12 +65,12 @@ export class ValidationError extends AppError {
       `Field '${field}' must be of type '${expectedType}', got '${actualType}'`,
       field,
       actualValue,
-      [{ 
-        field, 
-        rule: 'type', 
-        message: `Must be of type '${expectedType}'`, 
-        value: actualValue 
-      }]
+      [{
+        field,
+        rule: 'type',
+        message: `Must be of type '${expectedType}'`,
+        value: actualValue,
+      }],
     );
   }
 
@@ -79,20 +79,20 @@ export class ValidationError extends AppError {
       `Field '${field}' has invalid format, expected '${format}'`,
       field,
       value,
-      [{ 
-        field, 
-        rule: 'format', 
-        message: `Must match format '${format}'`, 
-        value 
-      }]
+      [{
+        field,
+        rule: 'format',
+        message: `Must match format '${format}'`,
+        value,
+      }],
     );
   }
 
   static outOfRange(
-    field: string, 
-    min?: number, 
-    max?: number, 
-    value?: any
+    field: string,
+    min?: number,
+    max?: number,
+    value?: any,
   ): ValidationError {
     let message = `Field '${field}' is out of range`;
     if (min !== undefined && max !== undefined) {
@@ -107,20 +107,20 @@ export class ValidationError extends AppError {
       message,
       field,
       value,
-      [{ 
-        field, 
-        rule: 'range', 
-        message: `Must be between ${min} and ${max}`, 
-        value 
-      }]
+      [{
+        field,
+        rule: 'range',
+        message: `Must be between ${min} and ${max}`,
+        value,
+      }],
     );
   }
 
   static invalidLength(
-    field: string, 
-    minLength?: number, 
-    maxLength?: number, 
-    actualLength?: number
+    field: string,
+    minLength?: number,
+    maxLength?: number,
+    actualLength?: number,
   ): ValidationError {
     let message = `Field '${field}' has invalid length`;
     if (minLength !== undefined && maxLength !== undefined) {
@@ -139,12 +139,12 @@ export class ValidationError extends AppError {
       message,
       field,
       actualLength,
-      [{ 
-        field, 
-        rule: 'length', 
-        message: `Length must be between ${minLength} and ${maxLength}`, 
-        value: actualLength 
-      }]
+      [{
+        field,
+        rule: 'length',
+        message: `Length must be between ${minLength} and ${maxLength}`,
+        value: actualLength,
+      }],
     );
   }
 
@@ -153,12 +153,12 @@ export class ValidationError extends AppError {
       `Field '${field}' must be one of: ${validChoices.join(', ')}`,
       field,
       value,
-      [{ 
-        field, 
-        rule: 'choice', 
-        message: `Must be one of: ${validChoices.join(', ')}`, 
-        value 
-      }]
+      [{
+        field,
+        rule: 'choice',
+        message: `Must be one of: ${validChoices.join(', ')}`,
+        value,
+      }],
     );
   }
 
@@ -167,12 +167,12 @@ export class ValidationError extends AppError {
       message,
       field,
       value,
-      [{ 
-        field, 
-        rule: rule || 'custom', 
-        message, 
-        value 
-      }]
+      [{
+        field,
+        rule: rule || 'custom',
+        message,
+        value,
+      }],
     );
   }
 
@@ -182,34 +182,34 @@ export class ValidationError extends AppError {
       message || defaultMessage,
       undefined,
       undefined,
-      rules
+      rules,
     );
   }
 
   // Helper method to get all validation errors as a formatted object
   getValidationErrors(): Record<string, string[]> {
     const errors: Record<string, string[]> = {};
-    
+
     for (const rule of this.rules) {
       if (!errors[rule.field]) {
         errors[rule.field] = [];
       }
       errors[rule.field].push(rule.message);
     }
-    
+
     return errors;
   }
 
   // Helper method to get the first error for each field
   getFirstErrors(): Record<string, string> {
     const errors: Record<string, string> = {};
-    
+
     for (const rule of this.rules) {
       if (!errors[rule.field]) {
         errors[rule.field] = rule.message;
       }
     }
-    
+
     return errors;
   }
 }

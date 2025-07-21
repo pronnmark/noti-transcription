@@ -10,29 +10,29 @@ export async function POST(request: NextRequest) {
     if (password === AUTH_PASSWORD) {
       // Generate a simple session token
       const sessionToken = Buffer.from(`noti-session-${Date.now()}-${Math.random()}`).toString('base64');
-      
+
       return NextResponse.json({
         success: true,
         sessionToken,
-        message: 'Authentication successful'
+        message: 'Authentication successful',
       });
     } else {
       return NextResponse.json({
         success: false,
-        message: 'Invalid password'
+        message: 'Invalid password',
       }, { status: 401 });
     }
   } catch (error) {
     console.error('Auth error:', error);
     return NextResponse.json({
       success: false,
-      message: 'Authentication failed'
+      message: 'Authentication failed',
     }, { status: 500 });
   }
 }
 
 export async function GET() {
   return NextResponse.json({
-    message: 'Auth endpoint - use POST to authenticate'
+    message: 'Auth endpoint - use POST to authenticate',
   });
 }

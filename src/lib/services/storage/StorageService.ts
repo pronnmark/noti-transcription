@@ -38,7 +38,7 @@ export abstract class StorageService extends BaseService implements IStorageServ
   async listFiles(path: string): Promise<string[]> {
     return this.executeWithErrorHandling(`listFiles(${path})`, async () => {
       const fullPath = this.getFullPath(path);
-      
+
       if (!(await this.fileExists(path))) {
         return [];
       }
@@ -54,7 +54,7 @@ export abstract class StorageService extends BaseService implements IStorageServ
     return this.executeWithErrorHandling(`getFileStats(${path})`, async () => {
       const fullPath = this.getFullPath(path);
       const stats = await fs.stat(fullPath);
-      
+
       return {
         size: stats.size,
         created: stats.birthtime,
@@ -88,7 +88,7 @@ export abstract class StorageService extends BaseService implements IStorageServ
     const nameWithoutExt = basename(originalName, ext);
     const timestamp = Date.now();
     const random = Math.random().toString(36).substring(2, 8);
-    
+
     return `${nameWithoutExt}_${timestamp}_${random}${ext}`;
   }
 
@@ -106,16 +106,16 @@ export class LocalStorageService extends StorageService {
   async saveFile(path: string, data: Buffer): Promise<string> {
     return this.executeWithErrorHandling(`saveFile(${path})`, async () => {
       this.validatePath(path);
-      
+
       const fullPath = this.getFullPath(path);
       const directory = dirname(fullPath);
-      
+
       // Ensure directory exists
       await fs.mkdir(directory, { recursive: true });
-      
+
       // Write file
       await fs.writeFile(fullPath, data);
-      
+
       this._logger.info(`File saved: ${path} (${data.length} bytes)`);
       return fullPath;
     });
@@ -124,10 +124,10 @@ export class LocalStorageService extends StorageService {
   async readFile(path: string): Promise<Buffer> {
     return this.executeWithErrorHandling(`readFile(${path})`, async () => {
       this.validatePath(path);
-      
+
       const fullPath = this.getFullPath(path);
       const data = await fs.readFile(fullPath);
-      
+
       this._logger.debug(`File read: ${path} (${data.length} bytes)`);
       return data;
     });
@@ -136,9 +136,9 @@ export class LocalStorageService extends StorageService {
   async deleteFile(path: string): Promise<boolean> {
     return this.executeWithErrorHandling(`deleteFile(${path})`, async () => {
       this.validatePath(path);
-      
+
       const fullPath = this.getFullPath(path);
-      
+
       try {
         await fs.unlink(fullPath);
         this._logger.info(`File deleted: ${path}`);
@@ -156,9 +156,9 @@ export class LocalStorageService extends StorageService {
   async fileExists(path: string): Promise<boolean> {
     return this.executeWithErrorHandling(`fileExists(${path})`, async () => {
       this.validatePath(path);
-      
+
       const fullPath = this.getFullPath(path);
-      
+
       try {
         await fs.access(fullPath);
         return true;
@@ -173,17 +173,17 @@ export class LocalStorageService extends StorageService {
     return this.executeWithErrorHandling(`moveFile(${fromPath} -> ${toPath})`, async () => {
       this.validatePath(fromPath);
       this.validatePath(toPath);
-      
+
       const fromFullPath = this.getFullPath(fromPath);
       const toFullPath = this.getFullPath(toPath);
       const toDirectory = dirname(toFullPath);
-      
+
       // Ensure destination directory exists
       await fs.mkdir(toDirectory, { recursive: true });
-      
+
       // Move file
       await fs.rename(fromFullPath, toFullPath);
-      
+
       this._logger.info(`File moved: ${fromPath} -> ${toPath}`);
     });
   }
@@ -192,17 +192,17 @@ export class LocalStorageService extends StorageService {
     return this.executeWithErrorHandling(`copyFile(${fromPath} -> ${toPath})`, async () => {
       this.validatePath(fromPath);
       this.validatePath(toPath);
-      
+
       const fromFullPath = this.getFullPath(fromPath);
       const toFullPath = this.getFullPath(toPath);
       const toDirectory = dirname(toFullPath);
-      
+
       // Ensure destination directory exists
       await fs.mkdir(toDirectory, { recursive: true });
-      
+
       // Copy file
       await fs.copyFile(fromFullPath, toFullPath);
-      
+
       this._logger.info(`File copied: ${fromPath} -> ${toPath}`);
     });
   }
@@ -210,14 +210,14 @@ export class LocalStorageService extends StorageService {
   async getDirectorySize(path: string = ''): Promise<number> {
     return this.executeWithErrorHandling(`getDirectorySize(${path})`, async () => {
       const fullPath = this.getFullPath(path);
-      
+
       const calculateSize = async (dirPath: string): Promise<number> => {
         let totalSize = 0;
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const entryPath = join(dirPath, entry.name);
-          
+
           if (entry.isFile()) {
             const stats = await fs.stat(entryPath);
             totalSize += stats.size;
@@ -225,10 +225,10 @@ export class LocalStorageService extends StorageService {
             totalSize += await calculateSize(entryPath);
           }
         }
-        
+
         return totalSize;
       };
-      
+
       return await calculateSize(fullPath);
     });
   }
@@ -238,13 +238,13 @@ export class LocalStorageService extends StorageService {
       const fullPath = this.getFullPath(path);
       const cutoffTime = Date.now() - maxAge;
       let deletedCount = 0;
-      
+
       const cleanup = async (dirPath: string): Promise<void> => {
         const entries = await fs.readdir(dirPath, { withFileTypes: true });
-        
+
         for (const entry of entries) {
           const entryPath = join(dirPath, entry.name);
-          
+
           if (entry.isFile()) {
             const stats = await fs.stat(entryPath);
             if (stats.mtime.getTime() < cutoffTime) {
@@ -256,10 +256,10 @@ export class LocalStorageService extends StorageService {
           }
         }
       };
-      
+
       await cleanup(fullPath);
       this._logger.info(`Cleaned up ${deletedCount} old files from ${path}`);
-      
+
       return deletedCount;
     });
   }

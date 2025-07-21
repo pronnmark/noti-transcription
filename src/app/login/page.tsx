@@ -73,16 +73,16 @@ export default function LoginPage() {
                     className="h-12 text-base"
                   />
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  className="w-full h-12 text-base font-medium" 
+
+                <Button
+                  type="submit"
+                  className="w-full h-12 text-base font-medium"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Logging in...' : 'Continue'}
                 </Button>
               </form>
-              
+
               <div className="mt-6 text-center text-xs text-muted-foreground">
                 <p>Contact your administrator for access</p>
               </div>

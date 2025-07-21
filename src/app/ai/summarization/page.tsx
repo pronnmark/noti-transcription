@@ -44,7 +44,6 @@ interface DateGroup {
   hasTimeData?: boolean;
 }
 
-
 interface SummaryContent {
   file: {
     id: number;
@@ -90,7 +89,7 @@ export default function SummarizationPage() {
   const sortFiles = (files: AudioFile[]) => {
     return [...files].sort((a, b) => {
       let comparison = 0;
-      
+
       switch (sortBy) {
         case 'date':
           const dateA = new Date(a.recordedAt || a.createdAt).getTime();
@@ -108,7 +107,7 @@ export default function SummarizationPage() {
           break;
         case 'status':
           const statusOrder = { 'completed': 4, 'processing': 3, 'pending': 2, 'failed': 1 };
-          comparison = (statusOrder[a.transcriptionStatus as keyof typeof statusOrder] || 0) - 
+          comparison = (statusOrder[a.transcriptionStatus as keyof typeof statusOrder] || 0) -
                       (statusOrder[b.transcriptionStatus as keyof typeof statusOrder] || 0);
           break;
         case 'labels':
@@ -119,7 +118,7 @@ export default function SummarizationPage() {
         default:
           comparison = 0;
       }
-      
+
       return sortOrder === 'desc' ? -comparison : comparison;
     });
   };
@@ -127,7 +126,7 @@ export default function SummarizationPage() {
   const applySortingToGroups = (groups: DateGroup[]) => {
     return groups.map(group => ({
       ...group,
-      files: sortFiles(group.files)
+      files: sortFiles(group.files),
     }));
   };
 
@@ -143,11 +142,11 @@ export default function SummarizationPage() {
           const sortedGroups = applySortingToGroups(data.groupedFiles);
           setGroupedFiles(sortedGroups);
         }
-        
+
         // Load summaries for all files that have them
         await loadAllSummaries(filesData);
       } catch (error) {
-        console.error('Error loading files:', error);
+        // Error loading files - already shown via toast
       } finally {
         setLoading(false);
       }
@@ -155,7 +154,6 @@ export default function SummarizationPage() {
 
     loadFiles();
   }, []);
-
 
   // Re-sort files when sort options change
   useEffect(() => {
@@ -165,38 +163,38 @@ export default function SummarizationPage() {
         if (!file || (!file.recordedAt && !file.createdAt)) {
           return groups;
         }
-        
+
         const dateToUse = file.recordedAt || file.createdAt;
         const dateKey = new Date(dateToUse).toISOString().split('T')[0];
-        
+
         if (!groups[dateKey]) {
           groups[dateKey] = {
             date: dateKey,
             displayDate: new Date(dateKey).toLocaleDateString('en-US', {
               weekday: 'long',
-              year: 'numeric', 
+              year: 'numeric',
               month: 'long',
-              day: 'numeric'
+              day: 'numeric',
             }),
             files: [],
             count: 0,
-            hasTimeData: false
+            hasTimeData: false,
           };
         }
-        
+
         groups[dateKey].files.push(file);
         groups[dateKey].count++;
         if (file.recordedAt) {
           groups[dateKey].hasTimeData = true;
         }
-        
+
         return groups;
       }, {} as Record<string, DateGroup>);
 
-      const groupsArray = Object.values(groupedFiles).sort((a, b) => 
-        new Date(b.date).getTime() - new Date(a.date).getTime()
+      const groupsArray = Object.values(groupedFiles).sort((a, b) =>
+        new Date(b.date).getTime() - new Date(a.date).getTime(),
       );
-      
+
       const sortedGroups = applySortingToGroups(groupsArray);
       setGroupedFiles(sortedGroups);
     }
@@ -215,7 +213,7 @@ export default function SummarizationPage() {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   }
 
@@ -225,7 +223,7 @@ export default function SummarizationPage() {
     return date.toLocaleTimeString('en-US', {
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
   }
 
@@ -267,11 +265,11 @@ export default function SummarizationPage() {
       toast.error('Please select a template first');
       return;
     }
-    
+
     const templateToUse = template || selectedTemplate;
     setIsProcessing(true);
     setProcessingFileId(fileId);
-    
+
     try {
       const response = await fetch(`/api/ai/dynamic-process/${fileId}`, {
         method: 'POST',
@@ -282,29 +280,29 @@ export default function SummarizationPage() {
           summarizationPromptId: templateToUse?.id,
         }),
       });
-      
+
       if (response.ok) {
         toast.success('Summary generated successfully');
-        
+
         // Update only the specific file's hasAiExtract status
-        const updatedFiles = files.map(file => 
-          file.id === fileId 
+        const updatedFiles = files.map(file =>
+          file.id === fileId
             ? { ...file, hasAiExtract: true, extractCount: (file.extractCount || 0) + 1 }
-            : file
+            : file,
         );
         setFiles(updatedFiles);
-        
+
         // Update grouped files with the same change
         const updatedGroupedFiles = groupedFiles.map(group => ({
           ...group,
-          files: group.files.map(file => 
-            file.id === fileId 
+          files: group.files.map(file =>
+            file.id === fileId
               ? { ...file, hasAiExtract: true, extractCount: (file.extractCount || 0) + 1 }
-              : file
-          )
+              : file,
+          ),
         }));
         setGroupedFiles(updatedGroupedFiles);
-        
+
         // Load summary only for this specific file
         try {
           const summaryResponse = await fetch(`/api/summarization/${fileId}`);
@@ -312,18 +310,18 @@ export default function SummarizationPage() {
             const summaryData = await summaryResponse.json();
             setFileSummaries(prev => ({
               ...prev,
-              [fileId]: summaryData.summarizations || []
+              [fileId]: summaryData.summarizations || [],
             }));
           }
         } catch (summaryError) {
-          console.error('Error loading new summary:', summaryError);
+          // Error loading new summary - will retry on next load
         }
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to generate summary');
       }
     } catch (error) {
-      console.error('Error generating summary:', error);
+      // Error generating summary - already shown via toast
       toast.error('Failed to generate summary');
     } finally {
       setIsProcessing(false);
@@ -331,13 +329,12 @@ export default function SummarizationPage() {
     }
   };
 
-
   // Load summaries for all files that have them upfront
   const loadAllSummaries = async (files: AudioFile[]) => {
     const filesWithSummaries = files.filter(file => file.hasAiExtract);
-    
+
     if (filesWithSummaries.length === 0) return;
-    
+
     try {
       const summaryPromises = filesWithSummaries.map(async (file) => {
         const response = await fetch(`/api/summarization/${file.id}`);
@@ -347,16 +344,16 @@ export default function SummarizationPage() {
         }
         return { fileId: file.id, summaries: [] };
       });
-      
+
       const results = await Promise.all(summaryPromises);
       const summariesMap = results.reduce((acc, result) => {
         acc[result.fileId] = result.summaries;
         return acc;
       }, {} as Record<string, any[]>);
-      
+
       setFileSummaries(summariesMap);
     } catch (error) {
-      console.error('Error loading summaries:', error);
+      // Error loading summaries - already shown via toast
     }
   };
 
@@ -364,18 +361,17 @@ export default function SummarizationPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-    
+
     if (diffHours < 1) return 'Just now';
     if (diffHours < 24) return `${diffHours}h ago`;
     if (diffHours < 48) return 'Yesterday';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-
   const handleRegenerateSummary = async (fileId: string) => {
     setRegeneratingSummary(true);
     setProcessingFileId(fileId);
-    
+
     try {
       const response = await fetch(`/api/ai/dynamic-process/${fileId}`, {
         method: 'POST',
@@ -386,10 +382,10 @@ export default function SummarizationPage() {
           templateId: 'prompt-general', // Use default template
         }),
       });
-      
+
       if (response.ok) {
         toast.success('Summary regenerated successfully');
-        
+
         // Load summary only for this specific file
         try {
           const summaryResponse = await fetch(`/api/summarization/${fileId}`);
@@ -397,18 +393,18 @@ export default function SummarizationPage() {
             const summaryData = await summaryResponse.json();
             setFileSummaries(prev => ({
               ...prev,
-              [fileId]: summaryData.summarizations || []
+              [fileId]: summaryData.summarizations || [],
             }));
           }
         } catch (summaryError) {
-          console.error('Error loading regenerated summary:', summaryError);
+          // Error loading regenerated summary - will retry on next load
         }
       } else {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to regenerate summary');
       }
     } catch (error) {
-      console.error('Error regenerating summary:', error);
+      // Error regenerating summary - already shown via toast
       toast.error('Failed to regenerate summary');
     } finally {
       setRegeneratingSummary(false);
@@ -418,7 +414,7 @@ export default function SummarizationPage() {
 
   const handleDeleteSummary = async (summaryId: string, fileId: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this summary? This action cannot be undone.');
-    
+
     if (!confirmed) return;
 
     setDeletingSummary(summaryId);
@@ -426,16 +422,16 @@ export default function SummarizationPage() {
       const response = await fetch(`/api/summary/${summaryId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         toast.success('Summary deleted successfully');
-        
+
         // Remove the summary from local state immediately
         setFileSummaries(prev => ({
           ...prev,
-          [fileId]: prev[fileId]?.filter(summary => summary.id !== summaryId) || []
+          [fileId]: prev[fileId]?.filter(summary => summary.id !== summaryId) || [],
         }));
-        
+
         // Refresh files to update hasAiExtract status
         const filesResponse = await fetch('/api/files?groupByDate=true');
         const data = await filesResponse.json();
@@ -450,7 +446,7 @@ export default function SummarizationPage() {
         toast.error(errorData.error || 'Failed to delete summary');
       }
     } catch (error) {
-      console.error('Error deleting summary:', error);
+      // Error deleting summary - already shown via toast
       toast.error('Failed to delete summary');
     } finally {
       setDeletingSummary(null);
@@ -469,7 +465,7 @@ export default function SummarizationPage() {
     <div className={
       // Mobile: Full screen natural scrolling
       // Desktop: Fixed viewport height with internal scrolling
-      isMobile ? "min-h-screen" : "h-full"
+      isMobile ? 'min-h-screen' : 'h-full'
     }>
       {/* Header - Hidden on mobile as it's handled by responsive layout */}
       {!isMobile && (
@@ -479,8 +475,8 @@ export default function SummarizationPage() {
               <h1 className="ios-title1 text-foreground">AI Summaries</h1>
               <p className="text-muted-foreground text-sm mt-2 font-light">Generate summaries from your recordings</p>
             </div>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={() => setIsTemplateModalOpen(true)}
               className="flex items-center gap-2 font-medium"
@@ -494,8 +490,8 @@ export default function SummarizationPage() {
 
       {/* Content */}
       <div className={cn(
-        "flex-1",
-        isMobile ? "p-4 pb-safe" : "p-6 overflow-y-auto"
+        'flex-1',
+        isMobile ? 'p-4 pb-safe' : 'p-6 overflow-y-auto',
       )}>
         {/* Sort Controls */}
         {(groupedFiles.length > 0 || files.length > 0) && (
@@ -516,32 +512,32 @@ export default function SummarizationPage() {
                     <SelectItem value="labels">Labels</SelectItem>
                   </SelectContent>
                 </Select>
-                
+
                 <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="desc">
-                      {sortBy === 'date' ? 'Newest First' : 
-                       sortBy === 'duration' ? 'Longest First' :
-                       sortBy === 'name' ? 'Z-A' :
-                       sortBy === 'speakers' ? 'Most First' :
-                       sortBy === 'labels' ? 'Z-A' :
-                       'Completed First'}
+                      {sortBy === 'date' ? 'Newest First' :
+                        sortBy === 'duration' ? 'Longest First' :
+                          sortBy === 'name' ? 'Z-A' :
+                            sortBy === 'speakers' ? 'Most First' :
+                              sortBy === 'labels' ? 'Z-A' :
+                                'Completed First'}
                     </SelectItem>
                     <SelectItem value="asc">
-                      {sortBy === 'date' ? 'Oldest First' : 
-                       sortBy === 'duration' ? 'Shortest First' :
-                       sortBy === 'name' ? 'A-Z' :
-                       sortBy === 'speakers' ? 'Fewest First' :
-                       sortBy === 'labels' ? 'A-Z' :
-                       'Pending First'}
+                      {sortBy === 'date' ? 'Oldest First' :
+                        sortBy === 'duration' ? 'Shortest First' :
+                          sortBy === 'name' ? 'A-Z' :
+                            sortBy === 'speakers' ? 'Fewest First' :
+                              sortBy === 'labels' ? 'A-Z' :
+                                'Pending First'}
                     </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="text-sm text-gray-600">
                 {files.length} file{files.length !== 1 ? 's' : ''} • {Math.round((files.reduce((total, file) => total + (file.duration || 0), 0)) / 60)} min total
               </div>
@@ -584,11 +580,11 @@ export default function SummarizationPage() {
                 <AccordionContent>
                   <div className="space-y-3">
                     {group.files.map((file) => (
-                      <Card 
-                        key={file.id} 
+                      <Card
+                        key={file.id}
                         className={`transition-all duration-200 touch-manipulation ${
-                          processingFileId === file.id 
-                            ? 'shadow-md bg-gray-50 border-gray-200' 
+                          processingFileId === file.id
+                            ? 'shadow-md bg-gray-50 border-gray-200'
                             : 'hover:shadow-sm border-gray-100 bg-white'
                         }`}
                       >
@@ -604,7 +600,7 @@ export default function SummarizationPage() {
                                 </div>
                               )}
                             </div>
-                            
+
                             {/* File Metadata Row */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
@@ -613,7 +609,7 @@ export default function SummarizationPage() {
                                   <Clock className="h-3 w-3" />
                                   {formatDuration(file.duration)}
                                 </div>
-                                
+
                                 {/* Speaker Count */}
                                 {file.transcriptionStatus === 'completed' && (
                                   <div className="flex items-center gap-1 text-sm">
@@ -632,7 +628,7 @@ export default function SummarizationPage() {
                                     )}
                                   </div>
                                 )}
-                                
+
                                 {/* Recording Time */}
                                 {file.recordedAt && (
                                   <div className="flex items-center gap-1 text-xs text-gray-500">
@@ -641,12 +637,12 @@ export default function SummarizationPage() {
                                   </div>
                                 )}
                               </div>
-                              
+
                               {/* Status Badge */}
                               <div className="flex items-center gap-2">
                                 {getTranscriptionStatusIcon(file.transcriptionStatus)}
-                                <Badge 
-                                  variant="secondary" 
+                                <Badge
+                                  variant="secondary"
                                   className={getStatusColor(file.transcriptionStatus)}
                                 >
                                   {file.transcriptionStatus}
@@ -668,10 +664,10 @@ export default function SummarizationPage() {
                               <h4 className="text-sm font-medium text-gray-900 mb-3">
                                 AI Summaries ({fileSummaries[file.id].length})
                               </h4>
-                              
+
                               {fileSummaries[file.id].map((summary: any, index: number) => (
-                                <div 
-                                  key={summary.id} 
+                                <div
+                                  key={summary.id}
                                   onClick={() => router.push(`/summary/${summary.id}`)}
                                   className="group relative p-4 bg-white border border-gray-100 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-gray-200"
                                 >
@@ -681,20 +677,20 @@ export default function SummarizationPage() {
                                       <span className="text-xs text-gray-500 font-medium">
                                         {formatRelativeDate(summary.createdAt)}
                                       </span>
-                                      
+
                                       {summary.template && (
                                         <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">
                                           {summary.template.name}
                                         </span>
                                       )}
-                                      
+
                                       {index === 0 && (
                                         <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded font-medium">
                                           Latest
                                         </span>
                                       )}
                                     </div>
-                                    
+
                                     {/* Delete action - only visible on hover */}
                                     <button
                                       onClick={(e) => {
@@ -712,15 +708,15 @@ export default function SummarizationPage() {
                                       )}
                                     </button>
                                   </div>
-                                  
+
                                   {/* Summary preview */}
                                   <p className="text-sm text-gray-700 leading-relaxed">
-                                    {summary.content.length > 120 
+                                    {summary.content.length > 120
                                       ? `${summary.content.substring(0, 120)}...`
                                       : summary.content
                                     }
                                   </p>
-                                  
+
                                   {/* Subtle click indicator */}
                                   <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-gray-200 transition-all duration-200"></div>
                                 </div>
@@ -738,15 +734,15 @@ export default function SummarizationPage() {
                                     templateType="summarization"
                                     selectedTemplateId={selectedTemplate?.id}
                                     onTemplateSelect={setSelectedTemplate}
-                                    placeholder={file.hasAiExtract ? "Choose template for new summary..." : "Choose template for summary..."}
+                                    placeholder={file.hasAiExtract ? 'Choose template for new summary...' : 'Choose template for summary...'}
                                     size="sm"
                                     showManagement={true}
                                     onManagementClick={() => setIsTemplateModalOpen(true)}
                                     className="w-full"
                                   />
-                                  
+
                                   {/* Generate Button */}
-                                  <Button 
+                                  <Button
                                     onClick={() => handleGenerateSummary(file.id)}
                                     disabled={processingFileId === file.id || !selectedTemplate}
                                     size="sm"
@@ -757,13 +753,13 @@ export default function SummarizationPage() {
                                     ) : (
                                       <FileText className="w-4 h-4 mr-2" />
                                     )}
-                                    {processingFileId === file.id ? 
-                                      'Generating...' : 
+                                    {processingFileId === file.id ?
+                                      'Generating...' :
                                       (file.hasAiExtract ? 'Generate New Summary' : 'Generate Summary')
                                     }
                                   </Button>
                                 </div>
-                                
+
                                 {/* Multi-summary indicator */}
                                 {file.hasAiExtract && (
                                   <p className="text-xs text-gray-400 text-center font-medium">
@@ -772,7 +768,6 @@ export default function SummarizationPage() {
                                 )}
                               </div>
                             )}
-                            
 
                             {/* Secondary Actions - Simplified */}
                             {file.hasTranscript && (

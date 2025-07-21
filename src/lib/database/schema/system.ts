@@ -167,4 +167,4 @@ export type NewExtractionDefinition = typeof extractionDefinitions.$inferInsert;
 export type ExtractionResult = typeof extractionResults.$inferSelect;
 export type NewExtractionResult = typeof extractionResults.$inferInsert;
 export type AIProcessingSession = typeof aiProcessingSessions.$inferSelect;
-export type NewAIProcessingSession = typeof aiProcessingSessions.$inferInsert; 
+export type NewAIProcessingSession = typeof aiProcessingSessions.$inferInsert;

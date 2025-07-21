@@ -135,7 +135,7 @@ export default function HomePage() {
             </div>
           </CardContent>
         </Card>
-        
+
         <div className="mt-8 text-center text-sm text-gray-500">
           <div className="flex items-center justify-center gap-2">
             <span>Powered by</span>

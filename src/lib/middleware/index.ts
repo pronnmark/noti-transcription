@@ -13,7 +13,7 @@ export {
   MiddlewareOrchestrator,
   getDefaultOrchestrator,
   setDefaultOrchestrator,
-  createDefaultMiddlewareConfig
+  createDefaultMiddlewareConfig,
 } from './MiddlewareOrchestrator';
 
 // Import for internal use
@@ -25,9 +25,9 @@ export { ErrorMiddleware, createErrorMiddleware } from './ErrorMiddleware';
 // Utility functions for creating middleware
 export function withMiddleware(
   handler: (request: import('next/server').NextRequest, context: import('./types').RequestContext) => Promise<import('next/server').NextResponse>,
-  config?: import('./types').MiddlewareConfig
+  config?: import('./types').MiddlewareConfig,
 ) {
-  const orchestrator = config 
+  const orchestrator = config
     ? new MiddlewareOrchestrator(config)
     : getDefaultOrchestrator();
 
@@ -38,7 +38,7 @@ export function withMiddleware(
 
 // Helper for API route error handling
 export function withErrorHandling(
-  handler: (request: import('next/server').NextRequest) => Promise<import('next/server').NextResponse>
+  handler: (request: import('next/server').NextRequest) => Promise<import('next/server').NextResponse>,
 ) {
   return withMiddleware(async (request, context) => {
     try {
@@ -56,7 +56,7 @@ export function withLogging(
     logBody?: boolean;
     logHeaders?: boolean;
     skipPaths?: string[];
-  }
+  },
 ) {
   const config = {
     logging: {
@@ -78,7 +78,7 @@ export function createApiResponse<T>(
     statusCode?: number;
     message?: string;
     meta?: Record<string, any>;
-  }
+  },
 ): import('./types').ApiResponse<T> {
   return {
     success: true,
@@ -96,7 +96,7 @@ export function createErrorResponse(
   message: string,
   code: string,
   statusCode: number = 500,
-  details?: any
+  details?: any,
 ): import('./types').ApiResponse {
   return {
     success: false,
@@ -115,7 +115,7 @@ export function createErrorResponse(
 export function createPaginatedResponse<T>(
   data: T[],
   pagination: import('./types').PaginationMeta,
-  meta?: Record<string, any>
+  meta?: Record<string, any>,
 ): import('./types').PaginatedApiResponse<T> {
   return {
     success: true,

@@ -22,31 +22,31 @@ const IOSCard = forwardRef<HTMLDivElement, IOSCardProps>(
         ref={ref}
         className={cn(
           // Base unibody construction - no borders, only space and shadow
-          "bg-white rounded-2xl overflow-hidden",
-          "transition-all duration-300 ease-out",
-          
+          'bg-white rounded-xl overflow-hidden',
+          'transition-all duration-300 ease-out',
+
           // Variant-specific styling following iOS design patterns
           variant === 'default' && [
-            "shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
+            'shadow-[0_1px_3px_rgba(0,0,0,0.08)]',
           ],
           variant === 'elevated' && [
-            "shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.1)]",
+            'shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.1)]',
           ],
           variant === 'interactive' && [
-            "shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
-            "hover:shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.1)]",
-            "active:scale-[0.98] active:shadow-[0_1px_2px_rgba(0,0,0,0.06)]",
-            "cursor-pointer touch-manipulation",
+            'shadow-[0_1px_3px_rgba(0,0,0,0.08)]',
+            'hover:shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.1)]',
+            'active:scale-[0.98] active:shadow-[0_1px_2px_rgba(0,0,0,0.06)]',
+            'cursor-pointer touch-manipulation',
           ],
-          
-          className
+
+          className,
         )}
         {...props}
       >
         {children}
       </div>
     );
-  }
+  },
 );
 
 IOSCard.displayName = 'IOSCard';
@@ -63,8 +63,8 @@ const IOSCardContent = forwardRef<
     ref={ref}
     className={cn(
       // Generous iOS-style padding following 8pt grid system
-      "px-5 py-4",
-      className
+      'px-5 py-4',
+      className,
     )}
     {...props}
   />
@@ -83,8 +83,8 @@ const IOSCardHeader = forwardRef<
     ref={ref}
     className={cn(
       // iOS system typography with generous spacing
-      "px-5 pt-5 pb-2",
-      className
+      'px-5 pt-5 pb-2',
+      className,
     )}
     {...props}
   />
@@ -103,8 +103,8 @@ const IOSCardTitle = forwardRef<
     ref={ref}
     className={cn(
       // iOS Large Title style - clear hierarchy
-      "text-lg font-semibold leading-tight tracking-tight text-gray-900",
-      className
+      'text-lg font-semibold leading-tight tracking-tight text-gray-900',
+      className,
     )}
     {...props}
   />
@@ -123,8 +123,8 @@ const IOSCardDescription = forwardRef<
     ref={ref}
     className={cn(
       // iOS secondary text style - clear but understated
-      "text-sm font-normal leading-relaxed text-gray-600 mt-1",
-      className
+      'text-sm font-normal leading-relaxed text-gray-600 mt-1',
+      className,
     )}
     {...props}
   />
@@ -143,8 +143,8 @@ const IOSCardFooter = forwardRef<
     ref={ref}
     className={cn(
       // Consistent footer styling with subtle separation
-      "px-5 pb-5 pt-2",
-      className
+      'px-5 pb-5 pt-2',
+      className,
     )}
     {...props}
   />

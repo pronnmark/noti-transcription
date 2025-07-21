@@ -49,7 +49,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
         variant="ghost"
         size="sm"
         onClick={() => setIsEditing(true)}
-        className={cn("text-muted-foreground hover:text-foreground", className)}
+        className={cn('text-muted-foreground hover:text-foreground', className)}
       >
         <MessageCircle className="h-4 w-4 mr-2" />
         Add comment
@@ -59,7 +59,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
 
   if (!isEditing) {
     return (
-      <div className={cn("space-y-2", className)}>
+      <div className={cn('space-y-2', className)}>
         <div className="flex items-center gap-2">
           <MessageCircle className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium">Comment</span>
@@ -80,7 +80,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
   }
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div className={cn('space-y-3', className)}>
       <div className="flex items-center gap-2">
         <MessageCircle className="h-4 w-4 text-muted-foreground" />
         <span className="text-sm font-medium">
@@ -95,16 +95,16 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
         disabled={isSaving}
       />
       <div className="flex gap-2">
-        <Button 
-          onClick={handleSave} 
+        <Button
+          onClick={handleSave}
           disabled={isSaving || !comment.trim()}
           size="sm"
         >
           <Save className="h-4 w-4 mr-2" />
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           onClick={handleCancel}
           disabled={isSaving}
           size="sm"

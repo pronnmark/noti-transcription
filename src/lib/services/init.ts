@@ -19,22 +19,22 @@ export async function initializeServicesOnce(): Promise<void> {
   initializationPromise = (async () => {
     try {
       console.log('🚀 Starting service initialization...');
-      
+
       await startApplication();
-      
+
       isInitialized = true;
       console.log('✅ Services initialized successfully');
-      
+
       // Set up error handlers
       serviceLifecycleManager.on('error', (event) => {
         console.error('🚨 Service error:', event.error);
       });
-      
+
       serviceLifecycleManager.on('shutdown', (event) => {
         console.log('🛑 Service shutdown initiated:', event.data);
         isInitialized = false;
       });
-      
+
     } catch (error) {
       console.error('❌ Service initialization failed:', error);
       isInitialized = false;

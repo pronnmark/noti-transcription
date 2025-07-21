@@ -1,7 +1,7 @@
-import { BaseRepository } from "./BaseRepository";
-import { transcriptionJobs, TranscriptionJob, NewTranscriptionJob, TranscriptSegment } from "../schema";
-import { getDb } from "../client";
-import { eq, and, desc } from "drizzle-orm";
+import { BaseRepository } from './BaseRepository';
+import { transcriptionJobs, TranscriptionJob, NewTranscriptionJob, TranscriptSegment } from '../schema';
+import { getDb } from '../client';
+import { eq, and, desc } from 'drizzle-orm';
 
 export class TranscriptionRepository extends BaseRepository<TranscriptionJob, NewTranscriptionJob> {
   constructor() {
@@ -52,7 +52,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
     try {
       const updateData: any = {
         status,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       };
 
       if (status === 'processing') {
@@ -85,7 +85,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
         .update(this.table)
         .set({
           progress,
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(this.table.id, id))
         .returning();
@@ -102,7 +102,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
 
   async completeTranscription(
     id: number,
-    transcript: TranscriptSegment[]
+    transcript: TranscriptSegment[],
   ): Promise<TranscriptionJob> {
     try {
       const [result] = await db
@@ -112,7 +112,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
           status: 'completed',
           progress: 100,
           completedAt: new Date(),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         })
         .where(eq(this.table.id, id))
         .returning();

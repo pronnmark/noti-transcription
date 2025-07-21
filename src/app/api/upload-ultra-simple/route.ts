@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { validateSession } from '../../../lib/auth';
 import { promises as fs } from 'fs';
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     // 2. Get file
     const formData = await request.formData();
     const file = formData.get('audio') as File;
-    
+
     if (!file || file.size === 0) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
     // 3. Save file
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     await fs.mkdir(uploadDir, { recursive: true });
-    
+
     const fileName = `${uuidv4()}_${file.name}`;
     const filePath = join(uploadDir, fileName);
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       originalFileType: file.type || 'audio/mpeg',
       fileSize: file.size,
       fileHash: uuidv4(), // Simple unique ID instead of hash
-      duration: 0
+      duration: 0,
     }).returning();
 
     // 5. Return success
@@ -56,8 +56,8 @@ export async function POST(request: NextRequest) {
         transcriptionStatus: 'pending',
         message: 'File uploaded successfully',
         isDraft: false,
-        duration: 0
-      }
+        duration: 0,
+      },
     });
 
   } catch (error: any) {
@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
       error: {
         message: error.message || 'Upload failed',
         type: error.constructor.name,
-        code: error.code || 'UNKNOWN'
-      }
+        code: error.code || 'UNKNOWN',
+      },
     }, { status: 500 });
   }
 }

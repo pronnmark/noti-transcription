@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from "@/lib/db"
-import { extractions, extractionTemplates, audioFiles } from "@/lib/db"
+import { db, eq, and, inArray } from '@/lib/db';
+import { extractions, extractionTemplates, audioFiles } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const status = url.searchParams.get('status');
 
     // Build query conditions
-    let whereConditions = [];
+    const whereConditions = [];
     if (fileId) {
       whereConditions.push(eq(extractions.fileId, parseInt(fileId)));
     }
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
     }) || [];
 
     const templateMap = Object.fromEntries(
-      templates.map((t: any) => [t.id, t])
+      templates.map((t: any) => [t.id, t]),
     );
 
     // Enrich extractions with template information
@@ -69,22 +69,22 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { 
-      fileId, 
-      templateId, 
-      content, 
-      context, 
-      speaker, 
-      timestamp, 
+    const {
+      fileId,
+      templateId,
+      content,
+      context,
+      speaker,
+      timestamp,
       priority = 'medium',
       metadata = {},
-      comments 
+      comments,
     } = body;
 
     // Validate required fields
     if (!fileId || !templateId || !content) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: fileId, templateId, content' 
+      return NextResponse.json({
+        error: 'Missing required fields: fileId, templateId, content',
       }, { status: 400 });
     }
 

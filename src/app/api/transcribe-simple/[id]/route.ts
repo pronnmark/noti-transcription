@@ -12,7 +12,7 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     // Check auth
@@ -24,7 +24,7 @@ export async function POST(
 
     const fileId = parseInt(params.id);
     const db = getDb();
-    
+
     // Get file
     const [file] = await db.select().from(audioFiles).where(eq(audioFiles.id, fileId)).limit(1);
     if (!file) {
@@ -38,9 +38,9 @@ export async function POST(
       .limit(1);
 
     if (existingJobs.length > 0 && existingJobs[0].status === 'completed') {
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: 'Transcription already completed',
-        transcript: existingJobs[0].transcript
+        transcript: existingJobs[0].transcript,
       });
     }
 
@@ -56,7 +56,7 @@ export async function POST(
         fileId: fileId,
         status: 'processing',
         modelSize: 'base',
-        progress: 0
+        progress: 0,
       }).returning();
       jobId = job.id;
     }
@@ -69,12 +69,12 @@ export async function POST(
     try {
       // Check if whisper is available
       await execAsync('which whisper');
-      
+
       // Run whisper
       console.log('Running whisper transcription...');
       const { stdout, stderr } = await execAsync(
         `whisper "${audioPath}" --model base --language en --output_format json --output_dir /tmp`,
-        { maxBuffer: 10 * 1024 * 1024 }
+        { maxBuffer: 10 * 1024 * 1024 },
       );
 
       // Read the JSON output
@@ -86,41 +86,41 @@ export async function POST(
       const segments = result.segments.map((seg: any) => ({
         start: seg.start,
         end: seg.end,
-        text: seg.text.trim()
+        text: seg.text.trim(),
       }));
 
       // Update job
       await db.update(transcriptionJobs)
-        .set({ 
+        .set({
           status: 'completed',
           progress: 100,
           transcript: segments,
-          completedAt: new Date()
+          completedAt: new Date(),
         })
         .where(eq(transcriptionJobs.id, jobId));
 
       return NextResponse.json({
         success: true,
         transcript: segments,
-        text: result.text
+        text: result.text,
       });
 
     } catch (whisperError) {
       console.log('Whisper not available, using fallback...');
-      
+
       // Fallback: Create a dummy transcription
       const dummyTranscript = [{
         start: 0,
         end: file.duration || 10,
-        text: `[Transcription pending for ${file.original_file_name}. Audio duration: ${file.duration || 0} seconds]`
+        text: `[Transcription pending for ${file.original_file_name}. Audio duration: ${file.duration || 0} seconds]`,
       }];
 
       await db.update(transcriptionJobs)
-        .set({ 
+        .set({
           status: 'completed',
           progress: 100,
           transcript: dummyTranscript,
-          completedAt: new Date()
+          completedAt: new Date(),
         })
         .where(eq(transcriptionJobs.id, jobId));
 
@@ -128,14 +128,14 @@ export async function POST(
         success: true,
         transcript: dummyTranscript,
         text: dummyTranscript[0].text,
-        note: 'Using placeholder transcription. Install whisper for real transcription.'
+        note: 'Using placeholder transcription. Install whisper for real transcription.',
       });
     }
 
   } catch (error: any) {
     console.error('Transcription error:', error);
     return NextResponse.json({
-      error: error.message || 'Transcription failed'
+      error: error.message || 'Transcription failed',
     }, { status: 500 });
   }
 }

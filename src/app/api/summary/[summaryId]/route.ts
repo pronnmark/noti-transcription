@@ -6,12 +6,12 @@ import { eq } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ summaryId: string }> }
+  { params }: { params: Promise<{ summaryId: string }> },
 ) {
   try {
     const { summaryId } = await params;
     const db = getDb();
-    
+
     // Get the specific summary with related file and template info
     const summaryResults = await db
       .select({
@@ -24,15 +24,15 @@ export async function GET(
         updatedAt: summarizations.updatedAt,
         fileId: summarizations.fileId,
         templateId: summarizations.templateId,
-        
+
         // File fields
         fileName: audioFiles.fileName,
         originalFileName: audioFiles.originalFileName,
-        
+
         // Template fields
         templateName: summarizationPrompts.name,
         templateDescription: summarizationPrompts.description,
-        templateIsDefault: summarizationPrompts.isDefault
+        templateIsDefault: summarizationPrompts.isDefault,
       })
       .from(summarizations)
       .innerJoin(audioFiles, eq(summarizations.fileId, audioFiles.id))
@@ -63,15 +63,15 @@ export async function GET(
         id: result.templateId,
         name: result.templateName,
         description: result.templateDescription,
-        isDefault: result.templateIsDefault
-      } : null
+        isDefault: result.templateIsDefault,
+      } : null,
     };
 
     return NextResponse.json({
       summary,
-      success: true
+      success: true,
     });
-    
+
   } catch (error) {
     console.error('Error fetching summary:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -80,12 +80,12 @@ export async function GET(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ summaryId: string }> }
+  { params }: { params: Promise<{ summaryId: string }> },
 ) {
   try {
     const { summaryId } = await params;
     const db = getDb();
-    
+
     // First check if the summary exists
     const existingSummary = await db
       .select({ id: summarizations.id })
@@ -104,9 +104,9 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Summary deleted successfully'
+      message: 'Summary deleted successfully',
     });
-    
+
   } catch (error) {
     console.error('Error deleting summary:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

@@ -1,7 +1,7 @@
-import { BaseRepository } from "./BaseRepository";
-import { audioFiles, AudioFile, NewAudioFile } from "../schema";
-import { getDb } from "../client";
-import { eq, desc, asc, and, gte, lte, SQL, sum, avg, count } from "drizzle-orm";
+import { BaseRepository } from './BaseRepository';
+import { audioFiles, AudioFile, NewAudioFile } from '../schema';
+import { getDb } from '../client';
+import { eq, desc, asc, and, gte, lte, SQL, sum, avg, count } from 'drizzle-orm';
 
 export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
   constructor() {
@@ -59,8 +59,8 @@ export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
         .where(
           and(
             gte(this.table.uploadedAt, Math.floor(startDate.getTime() / 1000)),
-            lte(this.table.uploadedAt, Math.floor(endDate.getTime() / 1000))
-          )
+            lte(this.table.uploadedAt, Math.floor(endDate.getTime() / 1000)),
+          ),
         )
         .orderBy(desc(this.table.uploadedAt));
       return result as AudioFile[];
