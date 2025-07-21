@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +38,55 @@ export default function SummaryPage() {
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Scrolling test laboratory refs and state
+  const container1Ref = useRef<HTMLDivElement>(null);
+  const container2Ref = useRef<HTMLDivElement>(null);
+  const container3Ref = useRef<HTMLDivElement>(null);
+  const container4Ref = useRef<HTMLDivElement>(null);
+  
+  const [debugInfo, setDebugInfo] = useState<{[key: string]: any}>({});
+  const [scrollEvents, setScrollEvents] = useState<string[]>([]);
+
+  // Debugging functions
+  const measureContainer = (ref: React.RefObject<HTMLDivElement>, name: string) => {
+    if (ref.current) {
+      const elem = ref.current;
+      return {
+        clientHeight: elem.clientHeight,
+        scrollHeight: elem.scrollHeight,
+        offsetHeight: elem.offsetHeight,
+        scrollTop: elem.scrollTop,
+        canScroll: elem.scrollHeight > elem.clientHeight,
+        hasScrollbar: elem.scrollHeight > elem.clientHeight && elem.offsetHeight > 0
+      };
+    }
+    return null;
+  };
+
+  const logScrollEvent = (event: string, container: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setScrollEvents(prev => [...prev.slice(-9), `${timestamp}: ${event} on ${container}`]);
+  };
+
+  const testProgrammaticScroll = (ref: React.RefObject<HTMLDivElement>, name: string, amount: number) => {
+    if (ref.current) {
+      const oldScrollTop = ref.current.scrollTop;
+      ref.current.scrollTop += amount;
+      const newScrollTop = ref.current.scrollTop;
+      logScrollEvent(`Programmatic scroll ${oldScrollTop}→${newScrollTop}`, name);
+      updateDebugInfo();
+    }
+  };
+
+  const updateDebugInfo = () => {
+    setDebugInfo({
+      container1: measureContainer(container1Ref, 'Container1'),
+      container2: measureContainer(container2Ref, 'Container2'), 
+      container3: measureContainer(container3Ref, 'Container3'),
+      container4: measureContainer(container4Ref, 'Container4'),
+    });
+  };
+
   useEffect(() => {
     const fetchSummary = async () => {
       try {
@@ -61,6 +110,60 @@ export default function SummaryPage() {
       fetchSummary();
     }
   }, [summaryId]);
+
+  // Scrolling test laboratory setup
+  useEffect(() => {
+    if (summary) {
+      // Wait for DOM to be ready, then setup debugging
+      setTimeout(() => {
+        updateDebugInfo();
+        
+        // Add event listeners to all containers
+        const containers = [
+          { ref: container1Ref, name: 'Container1' },
+          { ref: container2Ref, name: 'Container2' },
+          { ref: container3Ref, name: 'Container3' },
+          { ref: container4Ref, name: 'Container4' }
+        ];
+
+        containers.forEach(({ ref, name }) => {
+          if (ref.current) {
+            const element = ref.current;
+            
+            const onScroll = () => logScrollEvent('scroll', name);
+            const onWheel = () => logScrollEvent('wheel', name);
+            const onTouchStart = () => logScrollEvent('touchstart', name);
+            const onTouchMove = () => logScrollEvent('touchmove', name);
+            
+            element.addEventListener('scroll', onScroll);
+            element.addEventListener('wheel', onWheel);
+            element.addEventListener('touchstart', onTouchStart);
+            element.addEventListener('touchmove', onTouchMove);
+
+            // Cleanup function stored for later
+            (element as any)._cleanup = () => {
+              element.removeEventListener('scroll', onScroll);
+              element.removeEventListener('wheel', onWheel);
+              element.removeEventListener('touchstart', onTouchStart);
+              element.removeEventListener('touchmove', onTouchMove);
+            };
+          }
+        });
+
+        // Update measurements every 2 seconds
+        const interval = setInterval(updateDebugInfo, 2000);
+        
+        return () => {
+          clearInterval(interval);
+          containers.forEach(({ ref }) => {
+            if (ref.current && (ref.current as any)._cleanup) {
+              (ref.current as any)._cleanup();
+            }
+          });
+        };
+      }, 100);
+    }
+  }, [summary]);
 
   const handleCopy = () => {
     if (summary) {
@@ -168,7 +271,7 @@ export default function SummaryPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
+    <div className="h-screen bg-gray-50 flex flex-col">
       {/* Header */}
       <div className="bg-white border-b flex-shrink-0">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -232,9 +335,9 @@ export default function SummaryPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden">
-        <div className="max-w-4xl mx-auto px-4 py-6 h-full flex flex-col">
-          <Card className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 min-h-0">
+        <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col min-h-0">
+          <Card className="flex-1 flex flex-col min-h-0">
             <CardHeader className="flex-shrink-0">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -268,25 +371,29 @@ export default function SummaryPage() {
               )}
             </CardHeader>
             
-            <CardContent className="flex-1 overflow-y-auto">
-              <div className="prose prose-sm max-w-none h-full">
+            <CardContent className="p-6">
+              {/* SUCCESS: Using the proven working approach from Test 1 */}
+              <div 
+                className="overflow-y-auto border rounded-lg p-4 bg-white"
+                style={{ height: '60vh' }}
+              >
                 <div className="whitespace-pre-wrap text-gray-800 leading-relaxed break-words">
                   {summary.content}
                 </div>
               </div>
+              
+              {/* Actions */}
+              <div className="mt-6 flex justify-center">
+                <Button
+                  variant="outline"
+                  onClick={() => router.push('/ai/summarization')}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to All Summaries
+                </Button>
+              </div>
             </CardContent>
           </Card>
-        
-          {/* Actions */}
-          <div className="mt-6 flex justify-center flex-shrink-0">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/ai/summarization')}
-            >
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Back to All Summaries
-            </Button>
-          </div>
         </div>
       </div>
     </div>

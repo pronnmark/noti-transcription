@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and } from '@/lib/db/sqlite';
-import { dataPointTemplates, dataPoints } from '@/lib/db/sqliteSchema';
+import { db, eq, and } from "@/lib/db"
+import { dataPointTemplates, dataPoints } from "@/lib/db"
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const templates = await db.query.dataPointTemplates?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (templates, { desc, asc }) => [
+      orderBy: (templates: any, { desc, asc }: any) => [
         desc(templates.isDefault),
         desc(templates.isActive),
         asc(templates.name)
@@ -68,10 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
-    const templateId = `dp_template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    await db.insert(dataPointTemplates).values({
-      id: templateId,
+    const [template] = await db.insert(dataPointTemplates).values({
       name: name,
       description: description || null,
       analysisPrompt: analysisPrompt,
@@ -79,14 +76,9 @@ export async function POST(request: NextRequest) {
       visualizationType: visualizationType,
       isActive: isActive,
       isDefault: isDefault,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    }).returning();
 
-    // Get the created template
-    const template = await db.query.dataPointTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, templateId),
-    });
+    // Template already returned from insert, no need to fetch again
 
     return NextResponse.json({
       success: true,
@@ -128,7 +120,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if template exists
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     if (!existingTemplate) {
@@ -154,7 +146,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the updated template
     const template = await db.query.dataPointTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     return NextResponse.json({
@@ -187,7 +179,7 @@ export async function DELETE(request: NextRequest) {
 
     // Check if template exists
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     if (!existingTemplate) {
@@ -196,7 +188,7 @@ export async function DELETE(request: NextRequest) {
 
     // Check if template is in use
     const dataPointsCount = await db.query.dataPoints?.findMany({
-      where: (dataPoints, { eq }) => eq(dataPoints.templateId, id),
+      where: (dataPoints: any, { eq }: any) => eq(dataPoints.templateId, id),
     });
 
     if (dataPointsCount && dataPointsCount.length > 0) {

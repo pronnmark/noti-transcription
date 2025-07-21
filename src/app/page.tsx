@@ -1,263 +1,146 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Badge } from '@/components/ui/badge';
-import { Upload, FileText, ListTodo } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ClientOnly } from '@/components/client-only';
-import { useMediaQuery } from '@/hooks/use-media-query';
-
-interface AudioFile {
-  id: string;
-  filename: string;
-  originalName: string;
-  size: number;
-  mimeType: string;
-  createdAt: string;
-  updatedAt: string;
-  transcriptionStatus?: 'pending' | 'processing' | 'completed' | 'error';
-  hasTranscript?: boolean;
-  hasAiExtract?: boolean;
-  duration?: number;
-  notesStatus?: 'pending' | 'processing' | 'completed' | 'failed';
-  notesCount?: any;
-}
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Mic, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { getSessionToken, setSessionToken } from '@/lib/auth-client';
 
 export default function HomePage() {
-  const [files, setFiles] = useState<AudioFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [recentFiles, setRecentFiles] = useState<AudioFile[]>([]);
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const router = useRouter();
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    loadFiles();
-    // Poll for updates every 10 seconds
-    const interval = setInterval(loadFiles, 10000);
-    return () => clearInterval(interval);
-  }, []);
+    // Check if already authenticated
+    const sessionToken = getSessionToken();
+    if (sessionToken) {
+      router.replace('/dashboard');
+    } else {
+      setIsCheckingAuth(false);
+    }
+  }, [router]);
 
-  async function loadFiles() {
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!password.trim()) {
+      toast.error('Please enter a password');
+      return;
+    }
+
+    setIsLoading(true);
     try {
-      const response = await fetch('/api/files');
-      if (response.ok) {
-        const data = await response.json();
-        setFiles(data.files);
-        // Get 5 most recent files - sort by string comparison to avoid Date issues
-        const sorted = [...data.files].sort((a, b) => 
-          b.updatedAt.localeCompare(a.updatedAt)
-        );
-        setRecentFiles(sorted.slice(0, 5));
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSessionToken(data.sessionToken);
+        toast.success('Welcome to Noti!');
+        router.replace('/dashboard');
+      } else {
+        toast.error(data.message || 'Invalid password');
       }
     } catch (error) {
-      console.error('Failed to load files:', error);
+      console.error('Login error:', error);
+      toast.error('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  }
+  };
 
-  // Calculate statistics
-  const totalFiles = files.length;
-  const transcribedFiles = files.filter(f => f.transcriptionStatus === 'completed').length;
-  const processingFiles = files.filter(f => f.transcriptionStatus === 'processing').length;
-
-  function formatDuration(seconds: number): string {
-    if (seconds < 60) return `${Math.floor(seconds)}s`;
-    if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
-    return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
-  }
-
-  function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
-    if (diffHours < 1) return 'Just now';
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffHours < 48) return 'Yesterday';
-    
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
-  }
-
-  if (isLoading) {
+  if (isCheckingAuth) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-muted-foreground">Loading...</div>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header - Hidden on mobile */}
-      {!isMobile && (
-        <div className="border-b p-4 sm:p-6">
-          <h1 className="text-2xl sm:text-3xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Welcome to Noti - Your AI-powered transcription hub</p>
-        </div>
-      )}
-
-      {/* Content */}
-      <div className="flex-1 p-4 sm:p-6 overflow-auto">
-        <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
-          {/* Quick Actions - Compact */}
-          <div className={cn(
-            "grid gap-3",
-            isMobile ? "grid-cols-2" : "grid-cols-4"
-          )}>
-            <Button 
-              className="h-16 flex flex-col items-center justify-center gap-1 text-center"
-              variant="outline"
-              onClick={() => window.location.href = '/files'}
-            >
-              <Upload className="h-4 w-4" />
-              <div className="text-xs font-medium">Upload Files</div>
-            </Button>
-            
-            <Button 
-              className="h-16 flex flex-col items-center justify-center gap-1 text-center"
-              variant="outline"
-              onClick={() => window.location.href = '/record'}
-            >
-              <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center">
-                <div className="h-2 w-2 rounded-full bg-white" />
-              </div>
-              <div className="text-xs font-medium">Record</div>
-            </Button>
-            
-            <Button 
-              className="h-16 flex flex-col items-center justify-center gap-1 text-center"
-              variant="outline"
-              onClick={() => window.location.href = '/transcripts'}
-            >
-              <FileText className="h-4 w-4" />
-              <div className="text-xs font-medium">Transcripts</div>
-              <div className="text-xs text-muted-foreground">{transcribedFiles}</div>
-            </Button>
-            
-            <Button 
-              className="h-16 flex flex-col items-center justify-center gap-1 text-center"
-              variant="outline"
-              onClick={() => window.location.href = '/ai/notes'}
-            >
-              <ListTodo className="h-4 w-4" />
-              <div className="text-xs font-medium">AI Notes</div>
-            </Button>
-          </div>
-
-          {/* Statistics - Simplified */}
-          <div className={cn(
-            "grid gap-3",
-            isMobile ? "grid-cols-2" : "grid-cols-3"
-          )}>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">Total Files</CardDescription>
-                <CardTitle className="text-2xl">{totalFiles}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {processingFiles > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {processingFiles} processing
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="pb-2">
-                <CardDescription className="text-xs">Transcribed</CardDescription>
-                <CardTitle className="text-2xl">{transcribedFiles}</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <Progress value={(transcribedFiles / Math.max(totalFiles, 1)) * 100} className="h-1" />
-                <p className="text-xs text-muted-foreground mt-1">
-                  {Math.round((transcribedFiles / Math.max(totalFiles, 1)) * 100)}%
-                </p>
-              </CardContent>
-            </Card>
-
-            {processingFiles > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardDescription className="text-xs">Processing</CardDescription>
-                  <CardTitle className="text-2xl">{processingFiles}</CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p className="text-xs text-muted-foreground">
-                    In queue
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-
-          {/* Recent Activity - Compact */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Recent Files</CardTitle>
-              <CardDescription className="text-sm">Your latest transcriptions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {recentFiles.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-muted-foreground text-sm">No files yet</p>
-                  <Button 
-                    className="mt-3" 
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.location.href = '/files'}
+    <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="w-full max-w-md px-6">
+        <Card className="border-0 shadow-xl">
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-2xl w-fit">
+              <Mic className="h-8 w-8 text-blue-600" />
+            </div>
+            <CardTitle className="text-2xl font-bold text-gray-900">
+              Welcome to Noti
+            </CardTitle>
+            <CardDescription className="text-gray-600">
+              AI Audio Transcription Dashboard
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                  Access Password
+                </label>
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter password"
+                    className="pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    disabled={isLoading}
+                    autoFocus
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
-                    Upload your first file
-                  </Button>
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </button>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {recentFiles.map((file) => (
-                    <div 
-                      key={file.id} 
-                      className={cn(
-                        "flex items-center justify-between p-3 rounded-lg border hover:bg-accent/50 transition-colors cursor-pointer",
-                        isMobile && "min-h-[48px]"
-                      )}
-                      onClick={() => {
-                        if (file.transcriptionStatus === 'completed') {
-                          window.location.href = `/transcript/${file.id}`;
-                        }
-                      }}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <FileText className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium truncate text-sm">{file.originalName}</p>
-                          <ClientOnly fallback={<p className="text-xs text-muted-foreground">Loading...</p>}>
-                            <p className="text-xs text-muted-foreground">
-                              {formatDate(file.updatedAt)} • {file.duration ? formatDuration(file.duration) : 'Processing...'}
-                            </p>
-                          </ClientOnly>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {file.transcriptionStatus === 'completed' && (
-                          <Badge variant="secondary" className="text-xs px-2 py-0">Done</Badge>
-                        )}
-                        {file.transcriptionStatus === 'processing' && (
-                          <Badge variant="secondary" className="text-xs px-2 py-0">Processing</Badge>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
+              </div>
+              <Button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  'Sign In'
+                )}
+              </Button>
+            </form>
+            <div className="mt-6 pt-6 border-t border-gray-200">
+              <div className="text-center text-sm text-gray-500">
+                Secure access to audio transcription tools
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <div className="mt-8 text-center text-sm text-gray-500">
+          <div className="flex items-center justify-center gap-2">
+            <span>Powered by</span>
+            <div className="font-semibold text-blue-600">Noti.se</div>
+          </div>
         </div>
       </div>
     </div>

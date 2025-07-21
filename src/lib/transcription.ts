@@ -2,7 +2,7 @@ import { spawn } from "child_process";
 import { join } from "path";
 import { readFile } from "fs/promises";
 import { AudioService } from "./services/core/AudioService";
-import { autoExtractionService } from "./services/autoExtractionService";
+import { detectAndApplySpeakerNames } from "./services/speakerDetectionService";
 import type { TranscriptSegment } from "./database/schema";
 import { getDb } from "./database/client";
 import { transcriptionJobs } from "./database/schema/transcripts";
@@ -391,12 +391,33 @@ export async function startTranscription(
         }
       }
 
-      // Update job as completed with the transcript
+      // Apply speaker name detection if we have speakers
+      let finalSegments = result.segments;
+      if (diarizationStatus === 'success') {
+        try {
+          console.log(`🎯 Starting speaker name detection for file ${fileId}...`);
+          const speakerResult = await detectAndApplySpeakerNames(result.segments);
+          
+          if (speakerResult.success && speakerResult.updatedTranscript) {
+            finalSegments = speakerResult.updatedTranscript;
+            console.log(`✅ Speaker detection completed for file ${fileId}:`, speakerResult.stats);
+          } else {
+            console.log(`ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`);
+          }
+        } catch (speakerError) {
+          console.error(`⚠️ Speaker detection failed for file ${fileId}:`, speakerError);
+          // Continue with original segments - don't fail transcription
+        }
+      } else {
+        console.log(`ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`);
+      }
+
+      // Update job as completed with the transcript (potentially with updated speaker names)
       await db.update(transcriptionJobs)
         .set({ 
           status: 'completed',
           progress: 100,
-          transcript: result.segments,
+          transcript: finalSegments,
           diarizationStatus: diarizationStatus,
           diarizationError: diarizationError,
           completedAt: new Date()
@@ -407,48 +428,8 @@ export async function startTranscription(
         `✅ File ${fileId} transcription process completed successfully`
       );
 
-      // Automatically run configured extractions (tasks, psychology, etc.)
-      try {
-        console.log(`🤖 Starting automatic extractions for file ${fileId}...`);
-        const extractionResult = await autoExtractionService.runAutoExtractions(
-          fileId,
-          result.segments
-        );
-
-        if (extractionResult.success) {
-          console.log(`✅ Automatic extractions completed for file ${fileId}:`);
-          console.log(
-            `- Successful: ${extractionResult.successfulExtractions}/${extractionResult.results.length}`
-          );
-          console.log(
-            `- Failed: ${extractionResult.failedExtractions}/${extractionResult.results.length}`
-          );
-          console.log(`- Total time: ${extractionResult.totalExecutionTime}ms`);
-
-          // Log details for each extraction
-          extractionResult.results.forEach((result) => {
-            const status = result.success ? "✅" : "❌";
-            const count = result.count ? ` (${result.count} items)` : "";
-            const time = result.executionTime
-              ? ` in ${result.executionTime}ms`
-              : "";
-            console.log(`  ${status} ${result.type}${count}${time}`);
-            if (result.error) {
-              console.log(`    Error: ${result.error}`);
-            }
-          });
-        } else {
-          console.log(
-            `⚠️ Automatic extractions completed with errors for file ${fileId}`
-          );
-        }
-      } catch (error) {
-        console.error(
-          `❌ Automatic extractions error for file ${fileId}:`,
-          error
-        );
-        // Don't fail the transcription if extractions fail
-      }
+      console.log(`✅ Transcription completed successfully for file ${fileId}`);
+      // Note: Auto-extraction system has been removed for simplicity
     } else {
       await db.update(transcriptionJobs)
         .set({ 

@@ -1,142 +1,182 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { notesService } from '@/lib/db/notesService';
-import { requireAuth } from '@/lib/auth';
+import { NextRequest, NextResponse } from "next/server";
+import Database from 'better-sqlite3';
+import { join } from 'path';
 
-// GET /api/notes?fileId=123&type=task&status=active
+// Simple notes API using SQLite directly
+const getDb = () => new Database(join(process.cwd(), 'sqlite.db'));
+
 export async function GET(request: NextRequest) {
   try {
-    // Check authentication - temporarily relaxed for development
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      console.warn('⚠️ Authentication bypassed for development - please login for production use');
-      // Continue anyway for now
-    }
-
     const { searchParams } = new URL(request.url);
     const fileId = searchParams.get('fileId');
-    const noteType = searchParams.get('type');
-    const status = searchParams.get('status');
-
-    if (!fileId) {
-      return NextResponse.json({ error: 'File ID is required' }, { status: 400 });
-    }
-
+    
+    const db = getDb();
+    
     let notes;
-    if (noteType) {
-      notes = await notesService.findByFileIdAndType(parseInt(fileId), noteType);
+    if (fileId) {
+      // Get notes for specific file
+      notes = db.prepare(`
+        SELECT n.*, af.original_file_name 
+        FROM notes n
+        JOIN audio_files af ON n.file_id = af.id
+        WHERE n.file_id = ?
+        ORDER BY n.created_at DESC
+      `).all(parseInt(fileId));
     } else {
-      notes = await notesService.findByFileId(parseInt(fileId));
+      // Get all notes
+      notes = db.prepare(`
+        SELECT n.*, af.original_file_name 
+        FROM notes n
+        JOIN audio_files af ON n.file_id = af.id
+        ORDER BY n.created_at DESC
+        LIMIT 100
+      `).all();
     }
-
-    // Filter by status if provided
-    if (status) {
-      notes = notes.filter(note => note.status === status);
-    }
-
-    // Group notes by type for easier consumption
-    const groupedNotes = {
-      tasks: notes.filter(n => n.noteType === 'task'),
-      questions: notes.filter(n => n.noteType === 'question'),
-      decisions: notes.filter(n => n.noteType === 'decision'),
-      followups: notes.filter(n => n.noteType === 'followup'),
-      mentions: notes.filter(n => n.noteType === 'mention'),
-    };
-
+    
+    db.close();
+    
     return NextResponse.json({
       notes,
-      grouped: groupedNotes,
-      total: notes.length,
-      counts: {
-        tasks: groupedNotes.tasks.length,
-        questions: groupedNotes.questions.length,
-        decisions: groupedNotes.decisions.length,
-        followups: groupedNotes.followups.length,
-        mentions: groupedNotes.mentions.length,
-      }
+      total: notes.length
     });
-
-  } catch (error) {
-    console.error('Get notes API error:', error);
+  } catch (error: any) {
+    console.error('Notes GET error:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch notes' },
+      { error: error.message || 'Failed to fetch notes' },
       { status: 500 }
     );
   }
 }
 
-// POST /api/notes - Create a manual note
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication - temporarily relaxed for development
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      console.warn('⚠️ Authentication bypassed for development - please login for production use');
-      // Continue anyway for now
-    }
-
     const body = await request.json();
-    const { fileId, noteType, content, speaker, timestamp, priority, context } = body;
-
-    if (!fileId || !noteType || !content) {
+    const { fileId, content } = body;
+    
+    if (!fileId || !content) {
       return NextResponse.json(
-        { error: 'fileId, noteType, and content are required' },
+        { error: 'fileId and content are required' },
         { status: 400 }
       );
     }
-
-    const note = await notesService.create({
-      fileId: parseInt(fileId),
-      noteType,
-      content,
-      speaker,
-      timestamp,
-      priority: priority || 'medium',
-      context,
-      status: 'active'
+    
+    const db = getDb();
+    
+    // Check if file exists
+    const file = db.prepare('SELECT id FROM audio_files WHERE id = ?').get(fileId);
+    if (!file) {
+      db.close();
+      return NextResponse.json(
+        { error: 'File not found' },
+        { status: 404 }
+      );
+    }
+    
+    // Insert note
+    const result = db.prepare(`
+      INSERT INTO notes (file_id, content)
+      VALUES (?, ?)
+    `).run(fileId, content);
+    
+    // Get the created note
+    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(result.lastInsertRowid);
+    
+    db.close();
+    
+    return NextResponse.json({
+      success: true,
+      note
     });
-
-    // Update file notes count
-    await notesService.updateFileNotesCount(parseInt(fileId));
-
-    return NextResponse.json({ success: true, note });
-
-  } catch (error) {
-    console.error('Create note API error:', error);
+  } catch (error: any) {
+    console.error('Notes POST error:', error);
     return NextResponse.json(
-      { error: 'Failed to create note' },
+      { error: error.message || 'Failed to create note' },
       { status: 500 }
     );
   }
 }
 
-// PATCH /api/notes - Update note
 export async function PATCH(request: NextRequest) {
   try {
-    // Check authentication - temporarily relaxed for development
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      console.warn('⚠️ Authentication bypassed for development - please login for production use');
-      // Continue anyway for now
-    }
-
     const body = await request.json();
-    const { id, ...updates } = body;
-
-    if (!id) {
-      return NextResponse.json({ error: 'Note ID is required' }, { status: 400 });
+    const { id, content } = body;
+    
+    if (!id || !content) {
+      return NextResponse.json(
+        { error: 'id and content are required' },
+        { status: 400 }
+      );
     }
-
-    const updated = await notesService.update(id, updates);
-    if (!updated) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
+    
+    const db = getDb();
+    
+    // Update note
+    const result = db.prepare(`
+      UPDATE notes 
+      SET content = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ?
+    `).run(content, id);
+    
+    if (result.changes === 0) {
+      db.close();
+      return NextResponse.json(
+        { error: 'Note not found' },
+        { status: 404 }
+      );
     }
-
-    return NextResponse.json({ success: true, note: updated });
-
-  } catch (error) {
-    console.error('Update note API error:', error);
+    
+    // Get the updated note
+    const note = db.prepare('SELECT * FROM notes WHERE id = ?').get(id);
+    
+    db.close();
+    
+    return NextResponse.json({
+      success: true,
+      note
+    });
+  } catch (error: any) {
+    console.error('Notes PATCH error:', error);
     return NextResponse.json(
-      { error: 'Failed to update note' },
+      { error: error.message || 'Failed to update note' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'id is required' },
+        { status: 400 }
+      );
+    }
+    
+    const db = getDb();
+    
+    // Delete note
+    const result = db.prepare('DELETE FROM notes WHERE id = ?').run(parseInt(id));
+    
+    db.close();
+    
+    if (result.changes === 0) {
+      return NextResponse.json(
+        { error: 'Note not found' },
+        { status: 404 }
+      );
+    }
+    
+    return NextResponse.json({
+      success: true,
+      message: 'Note deleted'
+    });
+  } catch (error: any) {
+    console.error('Notes DELETE error:', error);
+    return NextResponse.json(
+      { error: error.message || 'Failed to delete note' },
       { status: 500 }
     );
   }

@@ -1,0 +1,21 @@
+{
+  "extends": [
+    "next/core-web-vitals"
+  ],
+  "rules": {
+    // AI-friendly rules
+    "no-unused-vars": "warn",
+    "no-console": "warn",
+    "prefer-const": "error",
+    
+    // React/Next.js specific
+    "react/no-unescaped-entities": "warn",
+    "react/display-name": "warn",
+    "react-hooks/exhaustive-deps": "warn"
+  },
+  "env": {
+    "browser": true,
+    "es2023": true,
+    "node": true
+  }
+}

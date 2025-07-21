@@ -1,3 +1,27 @@
+const withPWA = require('next-pwa')({
+  dest: 'public',
+  register: true,
+  skipWaiting: true,
+  reloadOnOnline: true,
+  fallbacks: {
+    image: '/static/images/fallback.png',
+    document: '/offline',
+  },
+  runtimeCaching: [
+    {
+      urlPattern: /^https?.*/,
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'offlineCache',
+        expiration: {
+          maxEntries: 200,
+          maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        },
+      },
+    },
+  ],
+});
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configure allowed dev origins for Next.js development
@@ -48,7 +72,7 @@ const nextConfig = {
     return config;
   },
   
-  // Allow cross-origin requests from noti.se domain
+  // Allow cross-origin requests and configure for reverse proxy
   async headers() {
     return [
       {
@@ -64,12 +88,24 @@ const nextConfig = {
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization'
+            value: 'Content-Type, Authorization, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host'
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN'
           }
         ]
       }
     ]
+  },
+  
+  // Configure for reverse proxy environment
+  trailingSlash: false,
+  
+  // Ensure proper hostname handling behind proxy
+  async rewrites() {
+    return []
   }
 }
 
-module.exports = nextConfig
+module.exports = withPWA(nextConfig)

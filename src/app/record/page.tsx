@@ -642,36 +642,6 @@ export default function RecordPage() {
                     )}
                   </div>
 
-                  {/* Recording Tips */}
-                  <div className="bg-muted/50 rounded-lg p-4">
-                    <h4 className="font-medium mb-2 flex items-center gap-2">
-                      <Mic className="h-4 w-4" />
-                      Recording Tips
-                    </h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Allow microphone permissions when prompted</li>
-                      <li>• Use HTTPS for best compatibility (especially iOS)</li>
-                      <li>• Keep the browser tab active during recording</li>
-                      <li>• Recording automatically uploads when stopped</li>
-                      <li>• Auto-saves every 10 minutes to prevent data loss</li>
-                      <li>• Supports: iPhone Safari, Chrome, Firefox, Edge</li>
-                      <li>• For best quality, record in a quiet environment</li>
-                      {isMobile && (
-                        <>
-                          <li>• 📱 Mobile optimized: Lower bitrate for faster upload</li>
-                          <li>• 🔒 Screen will stay awake during recording</li>
-                          <li>• 🎤 Use device orientation for best microphone position</li>
-                        </>
-                      )}
-                    </ul>
-                    {deviceInfo && (
-                      <div className="mt-3 pt-3 border-t border-muted-foreground/20">
-                        <div className="text-xs text-muted-foreground">
-                          🔍 Debug: {deviceInfo}
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </>
               ) : (
                 <div className="text-center py-8">

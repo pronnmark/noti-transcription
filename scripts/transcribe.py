@@ -191,24 +191,25 @@ def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="
                 for item in diarize_segments.itertracks(yield_label=True):
                     segment_count += 1
                     
-                    # 🔥 BULLETPROOF UNPACKING - Handle ANY format defensively
+                    # 🔥 HUGGINGFACE CANONICAL PATTERN - (turn, _, speaker)
                     try:
-                        # Convert to list to handle any iterable format
-                        item_list = list(item)
-                        print(f">>🔍 Item {segment_count}: type={type(item)}, len={len(item_list)}, content={item_list[:2]}")
-                        
-                        if len(item_list) >= 2:
-                            turn = item_list[0]
-                            speaker = item_list[-1]  # Last item is always speaker
-                            
-                            # Validate turn object has start/end
-                            if hasattr(turn, 'start') and hasattr(turn, 'end'):
-                                detected_speakers.add(str(speaker))
-                                print(f">>✅ Segment: {turn.start:.2f}s - {turn.end:.2f}s -> {speaker}")
-                            else:
-                                print(f">>⚠️ Invalid turn object: {turn}")
+                        # HuggingFace canonical format: (turn, _, speaker) 
+                        if len(item) >= 3:
+                            turn, _, speaker = item  # CORRECT: speaker is middle element
+                            print(f">>🔍 Item {segment_count}: {turn.start:.2f}s-{turn.end:.2f}s -> {speaker}")
+                        elif len(item) == 2:
+                            turn, speaker = item  # Fallback for 2-tuple
+                            print(f">>🔍 Item {segment_count}: {turn.start:.2f}s-{turn.end:.2f}s -> {speaker} (2-tuple)")
                         else:
-                            print(f">>⚠️ Item too short: {item_list}")
+                            print(f">>⚠️ Unexpected item length: {len(item)}")
+                            continue
+                            
+                        # Validate turn object has start/end
+                        if hasattr(turn, 'start') and hasattr(turn, 'end'):
+                            detected_speakers.add(str(speaker))
+                            print(f">>✅ Segment: {turn.start:.2f}s - {turn.end:.2f}s -> {speaker}")
+                        else:
+                            print(f">>⚠️ Invalid turn object: {turn}")
                             
                     except Exception as item_error:
                         print(f">>❌ Failed to process item: {item_error}")
@@ -236,42 +237,42 @@ def transcribe_audio(audio_file, model_size="base", device="cpu", compute_type="
             try:
                 print(f">>🚀 SUPER SAIYAN: Analyzing diarization segment structure...")
                 
-                # 🔥 BULLETPROOF SEGMENT EXTRACTION - Same defensive approach
-                print(f">>🔥 SEQUENTIAL THINKING: Bulletproof segment extraction v2025-07-19")
+                # 🔥 HUGGINGFACE CANONICAL EXTRACTION - (turn, _, speaker)
+                print(f">>🔥 HUGGINGFACE CANONICAL: Using (turn, _, speaker) pattern v2025-07-19")
                 
                 for item in diarize_segments.itertracks(yield_label=True):
                     try:
-                        # Convert to list to handle any iterable format
-                        item_list = list(item)
-                        
-                        if len(item_list) >= 2:
-                            turn = item_list[0]
-                            speaker = item_list[-1]  # Last item is always speaker
-                            
-                            # Validate and extract timing
-                            if hasattr(turn, 'start') and hasattr(turn, 'end'):
-                                start_time = float(turn.start)
-                                end_time = float(turn.end)
-                                speaker_label = str(speaker)
-                                
-                                # Validate segment timing
-                                if start_time >= 0 and end_time > start_time:
-                                    diarization_turns.append({
-                                        'start': start_time,
-                                        'end': end_time, 
-                                        'speaker': speaker_label,
-                                        'duration': end_time - start_time
-                                    })
-                                    
-                                    # Debug first few segments
-                                    if len(diarization_turns) <= 3:
-                                        print(f">>✅ Valid segment {len(diarization_turns)}: {start_time:.2f}-{end_time:.2f}s -> {speaker_label}")
-                                else:
-                                    print(f">>⚠️ Invalid timing: {start_time}-{end_time} for {speaker_label}")
-                            else:
-                                print(f">>⚠️ Turn missing start/end: {turn}")
+                        # HuggingFace canonical format: (turn, _, speaker)
+                        if len(item) >= 3:
+                            turn, _, speaker = item  # CORRECT: speaker is middle element
+                        elif len(item) == 2:
+                            turn, speaker = item  # Fallback for 2-tuple
                         else:
-                            print(f">>⚠️ Item too short for extraction: {len(item_list)}")
+                            print(f">>⚠️ Unexpected item length: {len(item)}")
+                            continue
+                            
+                        # Validate and extract timing
+                        if hasattr(turn, 'start') and hasattr(turn, 'end'):
+                            start_time = float(turn.start)
+                            end_time = float(turn.end)
+                            speaker_label = str(speaker)
+                                
+                            # Validate segment timing
+                            if start_time >= 0 and end_time > start_time:
+                                diarization_turns.append({
+                                    'start': start_time,
+                                    'end': end_time, 
+                                    'speaker': speaker_label,
+                                    'duration': end_time - start_time
+                                })
+                                
+                                # Debug first few segments
+                                if len(diarization_turns) <= 3:
+                                    print(f">>✅ Valid segment {len(diarization_turns)}: {start_time:.2f}-{end_time:.2f}s -> {speaker_label}")
+                            else:
+                                print(f">>⚠️ Invalid timing: {start_time}-{end_time} for {speaker_label}")
+                        else:
+                            print(f">>⚠️ Turn missing start/end: {turn}")
                             
                     except Exception as extract_error:
                         print(f">>❌ Extraction failed: {extract_error}")

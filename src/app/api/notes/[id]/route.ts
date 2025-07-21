@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { notesService } from '@/lib/db/notesService';
+import { notesService } from "@/lib/db"
 import { requireAuth } from '@/lib/auth';
 
 // DELETE /api/notes/:id

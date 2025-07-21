@@ -4,25 +4,32 @@
 
 @layer base {
   :root {
+    /* Design Buzz: Monochromatic foundation with single functional accent */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --foreground: 215 25% 17%;  /* Slate-900 equivalent - WCAG AAA compliant */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 215 25% 17%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 215 25% 17%;
+    
+    /* Single functional accent - blue for interactive elements only */
+    --primary: 221 83% 53%;  /* Blue-600 equivalent */
+    --primary-foreground: 0 0% 100%;
+    
+    /* Refined gray hierarchy - WCAG AA+ compliant */
+    --secondary: 215 20% 97%;  /* Subtle card backgrounds */
+    --secondary-foreground: 215 25% 17%;
+    --muted: 215 16% 97%;  /* Very subtle backgrounds */
+    --muted-foreground: 215 16% 46%;  /* Slate-600 - WCAG AA+ compliant */
+    --accent: 221 39% 97%;  /* Blue-50 equivalent for accent backgrounds */
+    --accent-foreground: 221 83% 53%;
+    
+    /* System colors */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 12% 92%;  /* Slate-200 equivalent */
+    --input: 215 12% 92%;
+    --ring: 221 83% 53%;  /* Match primary */
     --radius: 0.75rem;
   }
 
@@ -55,6 +62,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-weight: 300; /* Lighter default weight for JetBrains Mono */
   }
   
   /* PWA mobile optimizations */
@@ -91,17 +99,162 @@
   .safe-area-inset-left { padding-left: env(safe-area-inset-left, 0); }
   .safe-area-inset-right { padding-right: env(safe-area-inset-right, 0); }
   
-  /* Touch target optimization for iOS */
+  /* Touch target optimization for iOS - 44px minimum per HIG */
   .touch-target-44 {
     min-height: 44px;
     min-width: 44px;
   }
+  
+  /* Touch manipulation for smoother interactions */
+  .touch-manipulation {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* JetBrains Mono typography scale - Refined weights for technical elegance */
+  .ios-largetitle { 
+    font-size: 2.125rem; /* 34px */
+    font-weight: 500; /* Reduced from 700 */
+    line-height: 1.176;
+    letter-spacing: -0.011em;
+  }
+  
+  .ios-title1 { 
+    font-size: 1.75rem; /* 28px */
+    font-weight: 500; /* Reduced from 700 */
+    line-height: 1.214;
+    letter-spacing: -0.008em;
+  }
+  
+  .ios-title2 { 
+    font-size: 1.375rem; /* 22px */
+    font-weight: 500; /* Reduced from 700 */
+    line-height: 1.273;
+    letter-spacing: -0.006em;
+  }
+  
+  .ios-title3 { 
+    font-size: 1.25rem; /* 20px */
+    font-weight: 400; /* Reduced from 600 */
+    line-height: 1.25;
+    letter-spacing: -0.003em;
+  }
+  
+  .ios-headline { 
+    font-size: 1.0625rem; /* 17px */
+    font-weight: 400; /* Reduced from 600 */
+    line-height: 1.294;
+    letter-spacing: -0.002em;
+  }
+  
+  .ios-body { 
+    font-size: 1.0625rem; /* 17px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.294;
+    letter-spacing: -0.002em;
+  }
+  
+  .ios-callout { 
+    font-size: 1rem; /* 16px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.313;
+    letter-spacing: -0.001em;
+  }
+  
+  .ios-subheadline { 
+    font-size: 0.9375rem; /* 15px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.267;
+    letter-spacing: 0;
+  }
+  
+  .ios-footnote { 
+    font-size: 0.8125rem; /* 13px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.231;
+    letter-spacing: 0;
+  }
+  
+  .ios-caption1 { 
+    font-size: 0.75rem; /* 12px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.333;
+    letter-spacing: 0;
+  }
+  
+  .ios-caption2 { 
+    font-size: 0.6875rem; /* 11px */
+    font-weight: 300; /* Reduced from 400 */
+    line-height: 1.364;
+    letter-spacing: 0;
+  }
+  
+  /* iOS-native spacing system following 8pt grid */
+  .ios-spacing-xs { padding: 0.25rem; } /* 4px */
+  .ios-spacing-sm { padding: 0.5rem; }  /* 8px */
+  .ios-spacing-md { padding: 1rem; }    /* 16px */
+  .ios-spacing-lg { padding: 1.5rem; }  /* 24px */
+  .ios-spacing-xl { padding: 2rem; }    /* 32px */
+  
+  /* iOS-native margin system */
+  .ios-margin-xs { margin: 0.25rem; }  /* 4px */
+  .ios-margin-sm { margin: 0.5rem; }   /* 8px */
+  .ios-margin-md { margin: 1rem; }     /* 16px */
+  .ios-margin-lg { margin: 1.5rem; }   /* 24px */
+  .ios-margin-xl { margin: 2rem; }     /* 32px */
+  
+  /* iOS-native gap system */
+  .ios-gap-xs { gap: 0.25rem; }  /* 4px */
+  .ios-gap-sm { gap: 0.5rem; }   /* 8px */
+  .ios-gap-md { gap: 1rem; }     /* 16px */
+  .ios-gap-lg { gap: 1.5rem; }   /* 24px */
+  .ios-gap-xl { gap: 2rem; }     /* 32px */
   
   /* PWA-specific mobile optimizations */
   .pwa-scrollable {
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
+  
+  /* iOS-native blur background */
+  .ios-blur {
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    background-color: rgba(255, 255, 255, 0.8);
+  }
+  
+  /* iOS-native shadows */
+  .ios-shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+  
+  .ios-shadow-md {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.1);
+  }
+  
+  .ios-shadow-lg {
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  }
+
+  /* Design Buzz: Honest material shadows - soft elevation without decoration */
+  .buzz-shadow-sm {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  }
+
+  .buzz-shadow-md {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  }
+
+  .buzz-shadow-lg {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 4px 8px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Design Buzz: Systematic 8pt grid spacing */
+  .buzz-header-desktop { padding: 2rem 3rem; } /* 32px vertical, 48px horizontal */
+  .buzz-header-mobile { padding: 1.5rem 1rem; } /* 24px vertical, 16px horizontal */
+  .buzz-content-spacing { padding: 1.5rem; } /* 24px all around */
+  .buzz-section-gap { gap: 2rem; } /* 32px between major sections */
+  .buzz-element-gap { gap: 1rem; } /* 16px between related elements */
   
   /* Animation utilities */
   .animate-slide-in-from-left {
@@ -114,6 +267,33 @@
     }
     to {
       transform: translateX(0);
+    }
+  }
+  
+  /* Accordion animations */
+  .animate-accordion-down {
+    animation: accordion-down 0.2s ease-out;
+  }
+  
+  .animate-accordion-up {
+    animation: accordion-up 0.2s ease-out;
+  }
+  
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
     }
   }
   

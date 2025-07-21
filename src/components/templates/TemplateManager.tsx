@@ -46,8 +46,8 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
     analysisPrompt: '',
     expectedOutputFormat: '',
     outputSchema: '',
-    visualizationType: 'chart' as const,
-    defaultPriority: 'medium' as const,
+    visualizationType: 'chart' as 'chart' | 'gauge' | 'text' | 'mixed',
+    defaultPriority: 'medium' as 'high' | 'medium' | 'low',
     isActive: true,
     isDefault: false,
   });

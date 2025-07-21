@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from '@/lib/db/sqlite';
-import { extractions, extractionTemplates, audioFiles } from '@/lib/db/sqliteSchema';
+import { db, eq, and, inArray } from "@/lib/db"
+import { extractions, extractionTemplates, audioFiles } from "@/lib/db"
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -24,28 +24,28 @@ export async function GET(request: NextRequest) {
     if (templateId) {
       whereConditions.push(eq(extractions.templateId, templateId));
     }
-    if (status) {
-      whereConditions.push(eq(extractions.status, status));
+    if (status && ['active', 'completed', 'archived'].includes(status)) {
+      whereConditions.push(eq(extractions.status, status as 'active' | 'completed' | 'archived'));
     }
 
     // Get extractions with template information
     const extractionsResult = await db.query.extractions?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (extractions, { desc }) => [desc(extractions.createdAt)],
+      orderBy: (extractions: any, { desc }: any) => [desc(extractions.createdAt)],
     }) || [];
 
     // Get template names for display
-    const templateIds = Array.from(new Set(extractionsResult.map(e => e.templateId)));
+    const templateIds = Array.from(new Set(extractionsResult.map((e: any) => e.templateId))) as string[];
     const templates = await db.query.extractionTemplates?.findMany({
       where: inArray(extractionTemplates.id, templateIds),
     }) || [];
 
     const templateMap = Object.fromEntries(
-      templates.map(t => [t.id, t])
+      templates.map((t: any) => [t.id, t])
     );
 
     // Enrich extractions with template information
-    const enrichedExtractions = extractionsResult.map(extraction => ({
+    const enrichedExtractions = extractionsResult.map((extraction: any) => ({
       ...extraction,
       template: templateMap[extraction.templateId] || null,
     }));
@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
 
     // Verify file exists
     const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles, { eq }) => eq(audioFiles.id, parseInt(fileId)),
+      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
     });
 
     if (!file) {
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     // Verify template exists
     const template = await db.query.extractionTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, templateId),
+      where: (templates: any, { eq }: any) => eq(templates.id, templateId),
     });
 
     if (!template) {
@@ -107,10 +107,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create extraction
-    const extractionId = `ext_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    await db.insert(extractions).values({
-      id: extractionId,
+    const [extraction] = await db.insert(extractions).values({
       fileId: parseInt(fileId),
       templateId: templateId,
       content: content,
@@ -121,14 +118,9 @@ export async function POST(request: NextRequest) {
       status: 'active',
       metadata: JSON.stringify(metadata),
       comments: comments || null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    }).returning();
 
-    // Get the created extraction
-    const extraction = await db.query.extractions?.findFirst({
-      where: (extractions, { eq }) => eq(extractions.id, extractionId),
-    });
+    // Extraction already returned from insert, no need to fetch again
 
     return NextResponse.json({
       success: true,

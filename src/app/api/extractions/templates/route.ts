@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and } from '@/lib/db/sqlite';
-import { extractionTemplates, extractions } from '@/lib/db/sqliteSchema';
+import { db, eq, and } from "@/lib/db"
+import { extractionTemplates, extractions } from "@/lib/db"
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
 
     const templates = await db.query.extractionTemplates?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (templates, { desc, asc }) => [
+      orderBy: (templates: any, { desc, asc }: any) => [
         desc(templates.isDefault),
         desc(templates.isActive),
         asc(templates.name)
@@ -68,10 +68,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
-    const templateId = `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    await db.insert(extractionTemplates).values({
-      id: templateId,
+    const [template] = await db.insert(extractionTemplates).values({
       name: name,
       description: description || null,
       prompt: prompt,
@@ -79,14 +76,9 @@ export async function POST(request: NextRequest) {
       defaultPriority: defaultPriority,
       isActive: isActive,
       isDefault: isDefault,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    }).returning();
 
-    // Get the created template
-    const template = await db.query.extractionTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, templateId),
-    });
+    // Template already returned from insert, no need to fetch again
 
     return NextResponse.json({
       success: true,
@@ -128,7 +120,7 @@ export async function PUT(request: NextRequest) {
 
     // Check if template exists
     const existingTemplate = await db.query.extractionTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     if (!existingTemplate) {
@@ -154,7 +146,7 @@ export async function PUT(request: NextRequest) {
 
     // Get the updated template
     const template = await db.query.extractionTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     return NextResponse.json({
@@ -187,7 +179,7 @@ export async function DELETE(request: NextRequest) {
 
     // Check if template exists
     const existingTemplate = await db.query.extractionTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, id),
+      where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
 
     if (!existingTemplate) {
@@ -196,7 +188,7 @@ export async function DELETE(request: NextRequest) {
 
     // Check if template is in use
     const extractionsCount = await db.query.extractions?.findMany({
-      where: (extractions, { eq }) => eq(extractions.templateId, id),
+      where: (extractions: any, { eq }: any) => eq(extractions.templateId, id),
     });
 
     if (extractionsCount && extractionsCount.length > 0) {

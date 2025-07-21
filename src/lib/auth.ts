@@ -1,38 +1,43 @@
 import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
+import { jwtVerify, SignJWT } from 'jose';
 
-const sessions = new Map<string, { createdAt: number }>();
-const SESSION_DURATION = 24 * 60 * 60 * 1000; // 24 hours
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'noti-secret-key-change-in-production'
+);
 
 export async function createSession(): Promise<string> {
-  const token = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  sessions.set(token, { createdAt: Date.now() });
+  // Create JWT token
+  const token = await new SignJWT({ authenticated: true })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d') // Token expires in 7 days
+    .sign(JWT_SECRET);
+
   return token;
 }
 
 export async function validateSession(token: string | null | undefined): Promise<boolean> {
   if (!token) return false;
   
-  const session = sessions.get(token);
-  if (!session) return false;
-  
-  // Check if session is expired
-  if (Date.now() - session.createdAt > SESSION_DURATION) {
-    sessions.delete(token);
+  try {
+    // Verify JWT token
+    await jwtVerify(token, JWT_SECRET);
+    return true;
+  } catch (error) {
     return false;
   }
-  
-  return true;
 }
 
 export async function deleteSession(token: string): Promise<void> {
-  sessions.delete(token);
+  // JWT tokens are stateless, so we don't need to delete anything
+  // Session invalidation is handled by clearing the cookie
 }
 
 export async function getSessionFromRequest(request: NextRequest): Promise<string | null> {
-  // Check cookie first
+  // Check cookie first - use the same cookie name as middleware
   const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get('session');
+  const sessionCookie = cookieStore.get('auth-token');
   if (sessionCookie?.value) return sessionCookie.value;
   
   // Check Authorization header as fallback
@@ -52,11 +57,11 @@ export async function requireAuth(request: NextRequest): Promise<boolean> {
 // Helper to set session cookie
 export async function setSessionCookie(token: string) {
   const cookieStore = await cookies();
-  cookieStore.set('session', token, {
+  cookieStore.set('auth-token', token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 60 * 60 * 24, // 24 hours
+    maxAge: 60 * 60 * 24 * 7, // 7 days
     path: '/'
   });
 }
@@ -64,5 +69,5 @@ export async function setSessionCookie(token: string) {
 // Helper to clear session cookie
 export async function clearSessionCookie() {
   const cookieStore = await cookies();
-  cookieStore.delete('session');
+  cookieStore.delete('auth-token');
 }

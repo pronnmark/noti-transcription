@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getAvailableModels } from '@/lib/services/openrouter';
+import { getAvailableModels } from '@/lib/services/customAI';
 
 export async function GET() {
   try {
-    const models = getAvailableModels();
+    const modelDetails = getAvailableModels();
+    const models = modelDetails.map(model => model.id);
     
     return NextResponse.json({
       models,
-      recommended: {
-        summarization: 'anthropic/claude-sonnet-4',
-        extraction: 'anthropic/claude-sonnet-4', 
-        dataPoints: 'anthropic/claude-3-haiku', // Faster for structured analysis
-        longTranscripts: 'google/gemini-pro-1.5' // Huge context window
-      }
+      modelDetails,
+      configured: models.length > 0,
+      message: models.length === 0 ? 'No AI models configured. Please configure custom AI endpoint in Settings or set environment variables.' : undefined
     });
   } catch (error) {
     console.error('Error fetching available models:', error);

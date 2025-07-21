@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from '@/lib/db/sqlite';
-import * as schema from '@/lib/db/sqliteSchema';
+import { db, eq, and, inArray } from "@/lib/db"
+import * as schema from "@/lib/db"
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -27,21 +27,21 @@ export async function GET(request: NextRequest) {
     // Get data points with template information
     const dataPointsResult = await db.query.dataPoints?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (dataPoints, { desc }) => [desc(dataPoints.createdAt)],
+      orderBy: (dataPoints: any, { desc }: any) => [desc(dataPoints.createdAt)],
     }) || [];
 
     // Get template names for display
-    const templateIds = Array.from(new Set(dataPointsResult.map(dp => dp.templateId)));
+    const templateIds = Array.from(new Set(dataPointsResult.map((dp: any) => dp.templateId))) as string[];
     const templates = await db.query.dataPointTemplates?.findMany({
-      where: inArray(schema.dataPointTemplates.id, templateIds),
+      where: templateIds.length > 0 ? inArray(schema.dataPointTemplates.id, templateIds) : undefined,
     }) || [];
 
     const templateMap = Object.fromEntries(
-      templates.map(t => [t.id, t])
+      templates.map((t: any) => [t.id, t])
     );
 
     // Enrich data points with template information
-    const enrichedDataPoints = dataPointsResult.map(dataPoint => ({
+    const enrichedDataPoints = dataPointsResult.map((dataPoint: any) => ({
       ...dataPoint,
       template: templateMap[dataPoint.templateId] || null,
       analysis_results: typeof dataPoint.analysisResults === 'string' 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
       fileId, 
       templateId, 
       analysisResults,
-      model = 'openrouter/auto'
+      model = 'gemini-2.5-flash'
     } = body;
 
     // Validate required fields
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
 
     // Verify file exists
     const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles, { eq }) => eq(audioFiles.id, parseInt(fileId)),
+      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
     });
 
     if (!file) {
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
 
     // Verify template exists
     const template = await db.query.dataPointTemplates?.findFirst({
-      where: (templates, { eq }) => eq(templates.id, templateId),
+      where: (templates: any, { eq }: any) => eq(templates.id, templateId),
     });
 
     if (!template) {
@@ -101,22 +101,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Create data point
-    const dataPointId = `dp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    await db.insert(schema.dataPoints).values({
-      id: dataPointId,
+    const [dataPoint] = await db.insert(schema.dataPoints).values({
       fileId: parseInt(fileId),
       templateId: templateId,
       analysisResults: JSON.stringify(analysisResults),
       model: model,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
+    }).returning();
 
-    // Get the created data point
-    const dataPoint = await db.query.dataPoints?.findFirst({
-      where: (dataPoints, { eq }) => eq(dataPoints.id, dataPointId),
-    });
+    // Data point already returned from insert, no need to fetch again
 
     return NextResponse.json({
       success: true,

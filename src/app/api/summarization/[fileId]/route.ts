@@ -1,47 +1,70 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, schema, eq } from '@/lib/db/sqlite';
-import { requireAuth } from '@/lib/auth';
-import { openRouterService } from '@/lib/services/openrouter';
+import { getDb } from '../../../../lib/database/client';
+import { audioFiles } from '../../../../lib/database/schema/audio';
+import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
+import { summarizations, summarizationPrompts } from '../../../../lib/database/schema';
+import { eq, desc } from 'drizzle-orm';
+import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    // Check authentication
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
+    const db = getDb();
     
-    // Get file with summarization data
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles, { eq }) => eq(audioFiles.id, fileIdInt),
-    });
-
-    if (!file) {
+    // Get file
+    const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
+    
+    if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    // Get summarizations for this file
-    const summarizations = await db.query.summarizations?.findMany({
-      where: (summarizations, { eq }) => eq(summarizations.fileId, fileIdInt),
-      orderBy: (summarizations, { desc }) => [desc(summarizations.createdAt)],
-    }) || [];
+    // Get summarizations for this file with template details
+    const summaries = await db
+      .select({
+        id: summarizations.id,
+        content: summarizations.content,
+        model: summarizations.model,
+        prompt: summarizations.prompt,
+        createdAt: summarizations.createdAt,
+        updatedAt: summarizations.updatedAt,
+        templateId: summarizations.templateId,
+        templateName: summarizationPrompts.name,
+        templateDescription: summarizationPrompts.description,
+        templateIsDefault: summarizationPrompts.isDefault
+      })
+      .from(summarizations)
+      .leftJoin(summarizationPrompts, eq(summarizations.templateId, summarizationPrompts.id))
+      .where(eq(summarizations.fileId, fileIdInt))
+      .orderBy(desc(summarizations.createdAt));
+
+    // Restructure summaries to include nested template objects
+    const formattedSummaries = summaries.map(summary => ({
+      id: summary.id,
+      content: summary.content,
+      model: summary.model,
+      prompt: summary.prompt,
+      createdAt: summary.createdAt,
+      updatedAt: summary.updatedAt,
+      template: summary.templateId ? {
+        id: summary.templateId,
+        name: summary.templateName,
+        description: summary.templateDescription,
+        isDefault: summary.templateIsDefault
+      } : null
+    }));
 
     return NextResponse.json({
       file: {
-        id: file.id,
-        fileName: file.fileName,
-        originalFileName: file.originalFileName,
-        summarizationStatus: file.summarizationStatus || 'pending',
-        summarizationContent: file.summarizationContent,
-        transcript: file.transcript,
+        id: file[0].id,
+        fileName: file[0].fileName,
+        originalFileName: file[0].originalFileName,
       },
-      summarizations: summarizations,
+      summarizations: formattedSummaries,
+      totalSummaries: formattedSummaries.length,
     });
   } catch (error) {
     console.error('Error fetching summarization:', error);
@@ -54,36 +77,42 @@ export async function POST(
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
-    // Check authentication
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
     const body = await request.json();
     const { templateId, customPrompt } = body;
+    const db = getDb();
 
-    // Get file with transcript
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles, { eq }) => eq(audioFiles.id, fileIdInt),
-    });
-
-    if (!file) {
+    // Get file
+    const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
+    
+    if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    if (!file.transcript) {
+    // Get transcript
+    const transcription = await db
+      .select()
+      .from(transcriptionJobs)
+      .where(eq(transcriptionJobs.fileId, fileIdInt))
+      .limit(1);
+
+    if (!transcription.length || !transcription[0].transcript) {
       return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
     }
 
     // Get template if provided
     let template = null;
     if (templateId) {
-      template = await db.query.summarizationTemplates?.findFirst({
-        where: (templates, { eq }) => eq(templates.id, templateId),
-      });
+      const templates = await db
+        .select()
+        .from(summarizationPrompts)
+        .where(eq(summarizationPrompts.id, templateId))
+        .limit(1);
+      
+      if (templates.length) {
+        template = templates[0];
+      }
     }
 
     // Use template prompt or custom prompt or default
@@ -101,45 +130,61 @@ export async function POST(
       {transcript}
     `;
 
-    // Update file status to processing
-    await db.update(schema.audioFiles)
-      .set({ 
-        summarizationStatus: 'processing',
-        updatedAt: new Date() 
-      })
-      .where(eq(schema.audioFiles.id, fileIdInt));
-
     try {
-      // Format transcript for AI processing
-      const transcriptText = Array.isArray(file.transcript) 
-        ? file.transcript.map(segment => 
+      // Format transcript - handle both string and already-parsed JSON
+      let transcriptData;
+      if (typeof transcription[0].transcript === 'string') {
+        transcriptData = JSON.parse(transcription[0].transcript);
+      } else {
+        transcriptData = transcription[0].transcript;
+      }
+      
+      const transcriptText = Array.isArray(transcriptData)
+        ? transcriptData.map((segment: any) =>
             `${segment.speaker || 'Speaker'}: ${segment.text}`
           ).join('\n')
-        : String(file.transcript);
+        : String(transcriptData);
 
-      // Generate summary using AI
-      const finalPrompt = prompt.replace('{transcript}', transcriptText);
-      const summary = await openRouterService.generateText(finalPrompt);
-
-      // Update file with summarization results
-      await db.update(schema.audioFiles)
-        .set({ 
-          summarizationStatus: 'completed',
-          summarizationContent: summary,
-          updatedAt: new Date() 
-        })
-        .where(eq(schema.audioFiles.id, fileIdInt));
+      // Try to use AI service for real summarization
+      let summary: string;
+      let model: string;
+      
+      try {
+        const { customAIService } = await import('@/lib/services/customAI');
+        
+        // Generate real AI summary
+        summary = await customAIService.extractFromTranscript(
+          transcriptText,
+          prompt
+        );
+        
+        const modelInfo = customAIService.getModelInfo();
+        model = modelInfo.name;
+        
+      } catch (aiError) {
+        console.error('AI summarization failed:', aiError);
+        
+        // Fallback to informative message when AI is not configured
+        summary = `Summary of ${file[0].originalFileName}:\n\n` +
+          `AI summarization is not available. Error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}\n\n` +
+          `To enable AI summarization, please:\n` +
+          `1. Set CUSTOM_AI_BASE_URL, CUSTOM_AI_API_KEY, and CUSTOM_AI_MODEL environment variables, OR\n` +
+          `2. Configure custom AI endpoint in Settings\n\n` +
+          `Transcript length: ${transcriptText.length} characters\n` +
+          `Number of segments: ${Array.isArray(transcriptData) ? transcriptData.length : 1}`;
+        
+        model = 'unconfigured';
+      }
 
       // Store in summarizations table
-      await db.insert(schema.summarizations).values({
-        id: `sum_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      const summaryId = uuidv4();
+      await db.insert(summarizations).values({
+        id: summaryId,
         fileId: fileIdInt,
         templateId: templateId || null,
-        model: 'openrouter/auto',
-        prompt: finalPrompt,
+        model: model,
+        prompt: prompt.substring(0, 1000),
         content: summary,
-        createdAt: new Date(),
-        updatedAt: new Date(),
       });
 
       return NextResponse.json({
@@ -149,17 +194,7 @@ export async function POST(
       });
 
     } catch (aiError) {
-      console.error('AI summarization error:', aiError);
-      
-      // Update file status to failed
-      await db.update(schema.audioFiles)
-        .set({ 
-          summarizationStatus: 'failed',
-          lastError: String(aiError),
-          updatedAt: new Date() 
-        })
-        .where(eq(schema.audioFiles.id, fileIdInt));
-
+      console.error('Summarization error:', aiError);
       return NextResponse.json({ 
         error: 'Failed to generate summary',
         details: String(aiError)

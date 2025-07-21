@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id: fileId } = await params;
-    const transcript = await getTranscript(fileId);
+    const transcript = await getTranscript(parseInt(fileId));
     
     if (!transcript) {
       return NextResponse.json(

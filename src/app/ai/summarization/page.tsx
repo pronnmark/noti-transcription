@@ -586,8 +586,10 @@ export default function SummarizationPage() {
                     {group.files.map((file) => (
                       <Card 
                         key={file.id} 
-                        className={`hover:shadow-sm transition-shadow touch-manipulation ${
-                          processingFileId === file.id ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-50' : ''
+                        className={`transition-all duration-200 touch-manipulation ${
+                          processingFileId === file.id 
+                            ? 'shadow-md bg-gray-50 border-gray-200' 
+                            : 'hover:shadow-sm border-gray-100 bg-white'
                         }`}
                       >
                         <CardContent className="p-4 sm:p-5">
@@ -596,7 +598,7 @@ export default function SummarizationPage() {
                             <div className="flex items-center gap-2 mb-2">
                               <h3 className="font-medium text-sm text-gray-900">{file.originalName}</h3>
                               {processingFileId === file.id && (
-                                <div className="flex items-center gap-1 px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs">
+                                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                   Processing
                                 </div>
@@ -607,7 +609,7 @@ export default function SummarizationPage() {
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 {/* Duration - Prominent */}
-                                <div className="flex items-center gap-1 text-sm font-medium text-blue-600">
+                                <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
                                   <Clock className="h-3 w-3" />
                                   {formatDuration(file.duration)}
                                 </div>
@@ -660,140 +662,134 @@ export default function SummarizationPage() {
                             </div>
                           )}
 
-                          {/* AI Summaries - Compact Inline List */}
+                          {/* AI Summaries - Clean Clickable Cards */}
                           {file.hasAiExtract && fileSummaries[file.id] && fileSummaries[file.id].length > 0 && (
-                            <div className="mt-3 space-y-2">
-                              <h4 className="text-xs font-medium text-gray-600 mb-2">AI Summaries ({fileSummaries[file.id].length})</h4>
+                            <div className="mt-4 space-y-3">
+                              <h4 className="text-sm font-medium text-gray-900 mb-3">
+                                AI Summaries ({fileSummaries[file.id].length})
+                              </h4>
+                              
                               {fileSummaries[file.id].map((summary: any, index: number) => (
-                                <div key={summary.id} className="flex items-center justify-between p-2 bg-gray-50 rounded border">
-                                  {/* Summary Info */}
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-2 mb-1">
-                                      <span className="text-xs text-gray-500">
+                                <div 
+                                  key={summary.id} 
+                                  onClick={() => router.push(`/summary/${summary.id}`)}
+                                  className="group relative p-4 bg-white border border-gray-100 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-gray-200"
+                                >
+                                  {/* Header with metadata */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs text-gray-500 font-medium">
                                         {formatRelativeDate(summary.createdAt)}
                                       </span>
+                                      
                                       {summary.template && (
-                                        <Badge variant="outline" className="text-xs py-0 px-1">
+                                        <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">
                                           {summary.template.name}
-                                        </Badge>
+                                        </span>
                                       )}
+                                      
                                       {index === 0 && (
-                                        <Badge variant="default" className="text-xs py-0 px-1">
+                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded font-medium">
                                           Latest
-                                        </Badge>
+                                        </span>
                                       )}
                                     </div>
-                                    <p className="text-xs text-gray-700 truncate">
-                                      {summary.content.substring(0, 80)}...
-                                    </p>
-                                  </div>
-                                  
-                                  {/* Action Buttons */}
-                                  <div className="flex items-center gap-1 ml-2">
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => router.push(`/summary/${summary.id}`)}
-                                      className="h-6 w-6 p-0"
-                                      title="View full summary"
-                                    >
-                                      <Eye className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => {
-                                        navigator.clipboard.writeText(summary.content);
-                                        toast.success('Summary copied');
+                                    
+                                    {/* Delete action - only visible on hover */}
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleDeleteSummary(summary.id, file.id);
                                       }}
-                                      className="h-6 w-6 p-0"
-                                      title="Copy summary"
-                                    >
-                                      <Copy className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() => handleDeleteSummary(summary.id, file.id)}
                                       disabled={deletingSummary === summary.id}
-                                      className="h-6 w-6 p-0 hover:text-red-600"
+                                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600"
                                       title="Delete summary"
                                     >
                                       {deletingSummary === summary.id ? (
-                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        <Loader2 className="w-4 h-4 animate-spin" />
                                       ) : (
-                                        <Trash2 className="w-3 h-3" />
+                                        <Trash2 className="w-4 h-4" />
                                       )}
-                                    </Button>
+                                    </button>
                                   </div>
+                                  
+                                  {/* Summary preview */}
+                                  <p className="text-sm text-gray-700 leading-relaxed">
+                                    {summary.content.length > 120 
+                                      ? `${summary.content.substring(0, 120)}...`
+                                      : summary.content
+                                    }
+                                  </p>
+                                  
+                                  {/* Subtle click indicator */}
+                                  <div className="absolute inset-0 rounded-lg ring-1 ring-transparent group-hover:ring-gray-200 transition-all duration-200"></div>
                                 </div>
                               ))}
                             </div>
                           )}
 
                           {/* Action Buttons */}
-                          <div className="flex flex-col gap-3">
-                            {file.transcriptionStatus === 'completed' && !file.hasAiExtract && (
-                              <div className="space-y-2">
+                          <div className="mt-5 pt-4 border-t border-gray-100">
+                            {file.transcriptionStatus === 'completed' && (
+                              <div className="space-y-3">
                                 {/* Template Selection */}
-                                <TemplateSelector
-                                  templateType="summarization"
-                                  selectedTemplateId={selectedTemplate?.id}
-                                  onTemplateSelect={setSelectedTemplate}
-                                  placeholder="Choose template for summary..."
-                                  size="sm"
-                                  showManagement={true}
-                                  onManagementClick={() => setIsTemplateModalOpen(true)}
-                                  className="w-full"
-                                />
+                                <div className="space-y-2">
+                                  <TemplateSelector
+                                    templateType="summarization"
+                                    selectedTemplateId={selectedTemplate?.id}
+                                    onTemplateSelect={setSelectedTemplate}
+                                    placeholder={file.hasAiExtract ? "Choose template for new summary..." : "Choose template for summary..."}
+                                    size="sm"
+                                    showManagement={true}
+                                    onManagementClick={() => setIsTemplateModalOpen(true)}
+                                    className="w-full"
+                                  />
+                                  
+                                  {/* Generate Button */}
+                                  <Button 
+                                    onClick={() => handleGenerateSummary(file.id)}
+                                    disabled={processingFileId === file.id || !selectedTemplate}
+                                    size="sm"
+                                    className="w-full bg-gray-900 hover:bg-gray-800 text-white border-0"
+                                  >
+                                    {processingFileId === file.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                      <FileText className="w-4 h-4 mr-2" />
+                                    )}
+                                    {processingFileId === file.id ? 
+                                      'Generating...' : 
+                                      (file.hasAiExtract ? 'Generate New Summary' : 'Generate Summary')
+                                    }
+                                  </Button>
+                                </div>
                                 
-                                {/* Generate Button */}
-                                <Button 
-                                  onClick={() => handleGenerateSummary(file.id)}
-                                  disabled={processingFileId === file.id || !selectedTemplate}
-                                  size="sm"
-                                  className="w-full"
-                                >
-                                  {processingFileId === file.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                  ) : (
-                                    <FileText className="w-4 h-4 mr-2" />
-                                  )}
-                                  {processingFileId === file.id ? 'Generating...' : 'Generate Summary'}
-                                </Button>
+                                {/* Multi-summary indicator */}
+                                {file.hasAiExtract && (
+                                  <p className="text-xs text-gray-400 text-center font-medium">
+                                    Multiple summaries supported with different templates
+                                  </p>
+                                )}
                               </div>
                             )}
                             
 
-                            {/* Secondary Actions */}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                {file.hasTranscript && (
+                            {/* Secondary Actions - Simplified */}
+                            {file.hasTranscript && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
                                   <DropdownMenuItem onClick={() => window.location.href = `/transcript/${file.id}`}>
                                     <FileText className="h-4 w-4 mr-2" />
                                     View Transcript
                                   </DropdownMenuItem>
-                                )}
-                                {file.hasAiExtract && selectedTemplate && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleGenerateSummary(file.id)}
-                                    disabled={processingFileId === file.id}
-                                  >
-                                    {processingFileId === file.id ? (
-                                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                    ) : (
-                                      <RefreshCw className="h-4 w-4 mr-2" />
-                                    )}
-                                    {processingFileId === file.id ? 'Generating...' : 'Generate New Summary'}
-                                  </DropdownMenuItem>
-                                )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
 
                         </CardContent>
