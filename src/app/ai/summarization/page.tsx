@@ -11,6 +11,7 @@ import { Loader2, FileText, Clock, Calendar, Clock3, Trash2 } from 'lucide-react
 import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { TelegramShareButton } from '@/components/ui/telegram-share-button';
 
 interface AudioFile {
   id: string;
@@ -490,24 +491,40 @@ export default function SummarizationPage() {
                                   onClick={() => router.push(`/summary/${summary.id}`)}
                                   className="group relative p-4 bg-white border border-gray-100 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-gray-200"
                                 >
-                                  {/* Simple header with delete action */}
-                                  <div className="flex items-center justify-end mb-2">
-                                    {/* Delete action - only visible on hover */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteSummary(summary.id, file.id);
-                                      }}
-                                      disabled={deletingSummary === summary.id}
-                                      className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600"
-                                      title="Delete summary"
-                                    >
-                                      {deletingSummary === summary.id ? (
-                                        <Loader2 className="w-4 h-4 animate-spin" />
-                                      ) : (
-                                        <Trash2 className="w-4 h-4" />
-                                      )}
-                                    </button>
+                                  {/* Header with actions */}
+                                  <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                      {/* Telegram share button */}
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <TelegramShareButton
+                                          fileId={parseInt(file.id)}
+                                          fileName={file.originalName}
+                                          content={summary.content}
+                                          summarizationId={summary.id}
+                                          size="sm"
+                                          variant="ghost"
+                                        />
+                                      </div>
+                                    </div>
+                                    
+                                    <div className="flex items-center gap-1">
+                                      {/* Delete action - only visible on hover */}
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          handleDeleteSummary(summary.id, file.id);
+                                        }}
+                                        disabled={deletingSummary === summary.id}
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-1 hover:bg-red-50 rounded text-gray-400 hover:text-red-600"
+                                        title="Delete summary"
+                                      >
+                                        {deletingSummary === summary.id ? (
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                        ) : (
+                                          <Trash2 className="w-4 h-4" />
+                                        )}
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Summary preview */}

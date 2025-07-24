@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Copy, RefreshCw, FileText, Calendar, User, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { TelegramShareButton } from '@/components/ui/telegram-share-button';
 
 interface SummaryData {
   id: string;
@@ -301,6 +302,15 @@ export default function SummaryPage() {
                 <Copy className="w-3 h-3 mr-1" />
                 Copy
               </Button>
+              <TelegramShareButton
+                fileId={summary.file.id}
+                fileName={summary.file.originalFileName}
+                content={summary.content}
+                summarizationId={summary.id}
+                size="sm"
+                variant="outline"
+                className="h-8 px-3"
+              />
               <Button
                 variant="outline"
                 size="sm"

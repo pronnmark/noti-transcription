@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Eye, EyeOff, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Save, RefreshCw, Eye, EyeOff, Plus, Edit2, Trash2, Send, TestTube } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -51,6 +51,21 @@ interface SummarizationTemplate {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+}
+
+interface TelegramSettings {
+  id: number | null;
+  hasBotToken: boolean;
+  botTokenSource: 'database' | 'environment';
+  chatConfigurations: ChatConfiguration[];
+  defaultChatId: string | null;
+  isEnabled: boolean;
+}
+
+interface ChatConfiguration {
+  name: string;
+  chatId: string;
+  type: 'user' | 'group' | 'channel';
 }
 
 const MODEL_SIZES = [
@@ -120,9 +135,29 @@ export default function SettingsPage() {
     isDefault: false,
   });
 
+  const [telegramSettings, setTelegramSettings] = useState<TelegramSettings>({
+    id: null,
+    hasBotToken: false,
+    botTokenSource: 'environment',
+    chatConfigurations: [],
+    defaultChatId: null,
+    isEnabled: true,
+  });
+
+  const [telegramForm, setTelegramForm] = useState({
+    botToken: '',
+    newChatName: '',
+    newChatId: '',
+    newChatType: 'group' as 'user' | 'group' | 'channel',
+    testChatId: '',
+  });
+
+  const [isTesting, setIsTesting] = useState(false);
+
   useEffect(() => {
     loadSettings();
     loadTemplates();
+    loadTelegramSettings();
   }, []);
 
   async function loadSettings() {
@@ -323,6 +358,108 @@ export default function SettingsPage() {
     }
   }
 
+  // Telegram settings functions
+  async function loadTelegramSettings() {
+    try {
+      const response = await fetch('/api/telegram/settings');
+      if (response.ok) {
+        const data = await response.json();
+        setTelegramSettings(data.settings);
+      }
+    } catch (error) {
+      console.error('Failed to load Telegram settings:', error);
+    }
+  }
+
+  async function saveTelegramSettings() {
+    try {
+      const response = await fetch('/api/telegram/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          botToken: telegramForm.botToken || null,
+          chatConfigurations: telegramSettings.chatConfigurations,
+          defaultChatId: telegramSettings.defaultChatId,
+          isEnabled: telegramSettings.isEnabled,
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Telegram settings saved successfully');
+        loadTelegramSettings();
+        setTelegramForm(prev => ({ ...prev, botToken: '' })); // Clear form token
+      } else {
+        throw new Error('Failed to save Telegram settings');
+      }
+    } catch (error) {
+      toast.error('Failed to save Telegram settings');
+      console.error('Save Telegram settings error:', error);
+    }
+  }
+
+  function addChatConfiguration() {
+    if (!telegramForm.newChatName.trim() || !telegramForm.newChatId.trim()) {
+      toast.error('Chat name and ID are required');
+      return;
+    }
+
+    const newChat: ChatConfiguration = {
+      name: telegramForm.newChatName.trim(),
+      chatId: telegramForm.newChatId.trim(),
+      type: telegramForm.newChatType,
+    };
+
+    setTelegramSettings(prev => ({
+      ...prev,
+      chatConfigurations: [...prev.chatConfigurations, newChat],
+    }));
+
+    // Clear form
+    setTelegramForm(prev => ({
+      ...prev,
+      newChatName: '',
+      newChatId: '',
+      newChatType: 'group',
+    }));
+  }
+
+  function removeChatConfiguration(index: number) {
+    setTelegramSettings(prev => ({
+      ...prev,
+      chatConfigurations: prev.chatConfigurations.filter((_, i) => i !== index),
+    }));
+  }
+
+  async function testTelegramConnection() {
+    if (!telegramForm.testChatId.trim()) {
+      toast.error('Please enter a chat ID to test');
+      return;
+    }
+
+    setIsTesting(true);
+    try {
+      const response = await fetch('/api/telegram/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          testChatId: telegramForm.testChatId.trim(),
+        }),
+      });
+
+      if (response.ok) {
+        toast.success('Test message sent successfully! Check your Telegram.');
+      } else {
+        const data = await response.json();
+        toast.error(`Test failed: ${data.error}`);
+      }
+    } catch (error) {
+      toast.error('Failed to test connection');
+      console.error('Test connection error:', error);
+    } finally {
+      setIsTesting(false);
+    }
+  }
+
   return (
     <div className="standard-page-bg min-h-screen overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header - Now part of scrollable content */}
@@ -335,6 +472,7 @@ export default function SettingsPage() {
           <TabsTrigger value="essential">Essential</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="telegram">Telegram</TabsTrigger>
         </TabsList>
 
         <TabsContent value="essential" className="space-y-4 sm:space-y-6">
@@ -607,6 +745,182 @@ export default function SettingsPage() {
                     </div>
                   ))}
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="telegram" className="space-y-4 sm:space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Telegram Integration</CardTitle>
+              <CardDescription>Configure Telegram bot and chat settings for sharing summaries</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="telegramEnabled">Enable Telegram Integration</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Allow sharing summaries to Telegram chats
+                  </p>
+                </div>
+                <Switch
+                  id="telegramEnabled"
+                  checked={telegramSettings.isEnabled}
+                  onCheckedChange={(checked) => setTelegramSettings(prev => ({ ...prev, isEnabled: checked }))}
+                />
+              </div>
+
+              {telegramSettings.isEnabled && (
+                <>
+                  <div className="standard-card p-4 bg-muted/20">
+                    <h4 className="font-medium mb-2">Bot Configuration</h4>
+                    <p className="text-sm text-muted-foreground mb-2">
+                      Current bot token source: <strong>{telegramSettings.botTokenSource}</strong>
+                      {telegramSettings.botTokenSource === 'environment' && ' (from .env file)'}
+                    </p>
+                    {telegramSettings.hasBotToken ? (
+                      <p className="text-sm text-green-600">✓ Bot token is configured</p>
+                    ) : (
+                      <p className="text-sm text-yellow-600">⚠ No bot token found in environment or database</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="botToken">Override Bot Token (Optional)</Label>
+                    <div className="flex gap-2">
+                      <Input
+                        id="botToken"
+                        type="password"
+                        value={telegramForm.botToken}
+                        onChange={(e) => setTelegramForm(prev => ({ ...prev, botToken: e.target.value }))}
+                        placeholder="Bot token (leave empty to use environment variable)"
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      Leave empty to use TELEGRAM_BOT_TOKEN from environment. 
+                      Override here to use a different bot for this instance.
+                    </p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h4 className="font-medium">Chat Configurations</h4>
+                    
+                    {telegramSettings.chatConfigurations.length === 0 ? (
+                      <div className="text-center py-4 text-muted-foreground border rounded-lg">
+                        <p>No chat configurations added yet.</p>
+                        <p className="text-sm">Add chats below to enable targeted sharing.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {telegramSettings.chatConfigurations.map((chat, index) => (
+                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{chat.name}</span>
+                                <span className="px-2 py-1 text-xs bg-muted rounded">{chat.type}</span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{chat.chatId}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setTelegramSettings(prev => ({ ...prev, defaultChatId: chat.chatId }))}
+                                disabled={telegramSettings.defaultChatId === chat.chatId}
+                              >
+                                {telegramSettings.defaultChatId === chat.chatId ? 'Default' : 'Set Default'}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon"
+                                onClick={() => removeChatConfiguration(index)}
+                                className="text-destructive hover:text-destructive"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="border rounded-lg p-4 space-y-4">
+                      <h5 className="font-medium">Add New Chat</h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="newChatName">Chat Name</Label>
+                          <Input
+                            id="newChatName"
+                            value={telegramForm.newChatName}
+                            onChange={(e) => setTelegramForm(prev => ({ ...prev, newChatName: e.target.value }))}
+                            placeholder="e.g., Family Group"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newChatId">Chat ID</Label>
+                          <Input
+                            id="newChatId"
+                            value={telegramForm.newChatId}
+                            onChange={(e) => setTelegramForm(prev => ({ ...prev, newChatId: e.target.value }))}
+                            placeholder="e.g., -123456789"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="newChatType">Type</Label>
+                          <Select
+                            value={telegramForm.newChatType}
+                            onValueChange={(value: 'user' | 'group' | 'channel') => 
+                              setTelegramForm(prev => ({ ...prev, newChatType: value }))
+                            }
+                          >
+                            <SelectTrigger id="newChatType">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="user">User</SelectItem>
+                              <SelectItem value="group">Group</SelectItem>
+                              <SelectItem value="channel">Channel</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <Button onClick={addChatConfiguration} className="w-full">
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Chat Configuration
+                      </Button>
+                    </div>
+
+                    <div className="border rounded-lg p-4 space-y-4">
+                      <h5 className="font-medium">Test Connection</h5>
+                      <div className="flex gap-2">
+                        <Input
+                          value={telegramForm.testChatId}
+                          onChange={(e) => setTelegramForm(prev => ({ ...prev, testChatId: e.target.value }))}
+                          placeholder="Enter chat ID to test (e.g., -123456789)"
+                          className="flex-1"
+                        />
+                        <Button 
+                          onClick={testTelegramConnection} 
+                          disabled={isTesting}
+                          variant="outline"
+                        >
+                          {isTesting ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <TestTube className="h-4 w-4 mr-2" />}
+                          {isTesting ? 'Testing...' : 'Test'}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        This will send a test message to verify your bot configuration.
+                      </p>
+                    </div>
+
+                    <Button onClick={saveTelegramSettings} className="w-full">
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Telegram Settings
+                    </Button>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
