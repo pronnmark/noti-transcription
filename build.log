@@ -1,0 +1,1307 @@
+
+> noti@0.1.0 build
+> next build
+
+   ▲ Next.js 15.3.5
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+> [PWA] Compile server
+> [PWA] Compile server
+> [PWA] Compile client (static)
+> [PWA] Auto register service worker with: /home/philip/Documents/projects/noti/node_modules/next-pwa/register.js
+> [PWA] Service worker: /home/philip/Documents/projects/noti/public/sw.js
+> [PWA]   url: /sw.js
+> [PWA]   scope: /
+> [PWA] Fallback to precache routes when fetch failed from cache or network:
+> [PWA]   document (page): /offline
+> [PWA]   image: /static/images/fallback.png
+ ✓ Compiled successfully in 11.0s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./src/app/ai/data-points/page.tsx
+68:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+137:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/ai/extractions/page.tsx
+73:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+142:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/ai/extracts/page.tsx
+87:20  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+106:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+131:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/ai/summarization/page.tsx
+172:16  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+261:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+310:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/ai/tasks/page.tsx
+17:5  Warning: Unexpected console statement.  no-console
+31:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/analytics/page.tsx
+21:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/ai/dynamic-process/[fileId]/route.ts
+13:5  Warning: Unexpected console statement.  no-console
+36:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+36:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+86:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+251:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+288:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+288:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/ai/models/route.ts
+8:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/ai/process/[fileId]/route.ts
+11:5  Warning: Unexpected console statement.  no-console
+60:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+60:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+69:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+69:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+78:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/auth/login/route.ts
+9:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/auth/route.ts
+7:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/data-points/route.ts
+10:5  Warning: Unexpected console statement.  no-console
+38:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+38:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+42:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+48:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+52:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+95:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+95:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/data-points/templates/route.ts
+10:5  Warning: Unexpected console statement.  no-console
+36:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+36:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+139:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+190:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+190:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+199:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+199:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/extraction-definitions/route.ts
+18:5  Warning: Unexpected console statement.  no-console
+43:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+66:5  Warning: Unexpected console statement.  no-console
+89:16  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+104:5  Warning: Unexpected console statement.  no-console
+131:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/extractions/route.ts
+3:44  Warning: 'audioFiles' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+34:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+38:70  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+44:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+48:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+58:5  Warning: Unexpected console statement.  no-console
+93:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+93:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+102:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+102:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/extractions/templates/route.ts
+3:31  Warning: 'extractions' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+28:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+28:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+39:5  Warning: Unexpected console statement.  no-console
+89:5  Warning: Unexpected console statement.  no-console
+123:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+123:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+131:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:5  Warning: Unexpected console statement.  no-console
+182:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+191:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+191:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+210:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/files/[id]/labels/route.ts
+30:5  Warning: Unexpected console statement.  no-console
+95:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/files/[id]/route.ts
+58:5  Warning: Unexpected console statement.  no-console
+99:5  Warning: Unexpected console statement.  no-console
+142:48  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+150:48  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+156:51  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+160:49  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+163:7  Warning: Unexpected console statement.  no-console
+178:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/files/[id]/speakers/route.ts
+32:5  Warning: Unexpected console statement.  no-console
+104:5  Warning: Unexpected console statement.  no-console
+134:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/files/route.ts
+107:18  Warning: '_e' is defined but never used.  @typescript-eslint/no-unused-vars
+189:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:73  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+219:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/labels/route.ts
+4:10  Warning: 'sql' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+67:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/notes/[id]/comment/route.ts
+24:5  Warning: Unexpected console statement.  no-console
+49:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/notes/[id]/route.ts
+14:7  Warning: Unexpected console statement.  no-console
+28:5  Warning: Unexpected console statement.  no-console
+45:7  Warning: Unexpected console statement.  no-console
+60:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/notes/[id]/toggle/route.ts
+24:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/notes/route.ts
+42:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+43:5  Warning: Unexpected console statement.  no-console
+90:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+91:5  Warning: Unexpected console statement.  no-console
+137:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+138:5  Warning: Unexpected console statement.  no-console
+176:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+177:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/notes/stats/route.ts
+17:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/settings/route.ts
+10:5  Warning: Unexpected console statement.  no-console
+34:5  Warning: Unexpected console statement.  no-console
+54:7  Warning: Unexpected console statement.  no-console
+79:5  Warning: Unexpected console statement.  no-console
+80:5  Warning: Unexpected console statement.  no-console
+97:5  Warning: Unexpected console statement.  no-console
+172:27  Warning: 'request' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+177:5  Warning: Unexpected console statement.  no-console
+200:5  Warning: Unexpected console statement.  no-console
+201:5  Warning: Unexpected console statement.  no-console
+202:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/summarization/[fileId]/route.ts
+70:5  Warning: Unexpected console statement.  no-console
+143:40  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+165:9  Warning: Unexpected console statement.  no-console
+203:7  Warning: Unexpected console statement.  no-console
+211:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/summarization-prompts/route.ts
+31:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+72:5  Warning: Unexpected console statement.  no-console
+132:5  Warning: Unexpected console statement.  no-console
+192:5  Warning: Unexpected console statement.  no-console
+230:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/summary/[summaryId]/route.ts
+76:5  Warning: Unexpected console statement.  no-console
+111:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/tasks/route.ts
+29:5  Warning: Unexpected console statement.  no-console
+38:11  Warning: 'withFileInfo' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+56:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/tasks/stats/route.ts
+4:27  Warning: 'request' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+13:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/telegram/settings/route.ts
+28:5  Warning: Unexpected console statement.  no-console
+74:5  Warning: Unexpected console statement.  no-console
+134:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/telegram/share/route.ts
+3:44  Warning: 'audioFiles' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+118:5  Warning: Unexpected console statement.  no-console
+127:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+130:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/api/test-speaker-detection/[fileId]/route.ts
+11:5  Warning: Unexpected console statement.  no-console
+72:5  Warning: Unexpected console statement.  no-console
+142:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/transcribe/[id]/route.ts
+16:5  Warning: Unexpected console statement.  no-console
+72:7  Warning: Unexpected console statement.  no-console
+81:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+82:5  Warning: Unexpected console statement.  no-console
+89:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+133:14  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+152:44  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+156:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/transcribe/retry/[fileId]/route.ts
+11:5  Warning: Unexpected console statement.  no-console
+85:9  Warning: Unexpected console statement.  no-console
+116:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/transcribe/status/[id]/route.ts
+55:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+56:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/transcribe-simple/[id]/route.ts
+15:5  Warning: Unexpected console statement.  no-console
+83:15  Warning: 'stdout' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+83:23  Warning: 'stderr' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+94:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+116:14  Warning: 'whisperError' is defined but never used.  @typescript-eslint/no-unused-vars
+143:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+144:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/transcript/[id]/route.ts
+32:65  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+41:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+55:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload/route.ts
+16:5  Warning: Unexpected console statement.  no-console
+207:9  Warning: Unexpected console statement.  no-console
+222:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload-fixed/route.ts
+8:5  Warning: Unexpected console statement.  no-console
+25:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload-simple/route.ts
+12:5  Warning: Unexpected console statement.  no-console
+37:7  Warning: Unexpected console statement.  no-console
+76:7  Warning: Unexpected console statement.  no-console
+89:7  Warning: Unexpected console statement.  no-console
+104:7  Warning: Unexpected console statement.  no-console
+128:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload-ultra-simple/route.ts
+63:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+64:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload-v2/route.ts
+11:5  Warning: Unexpected console statement.  no-console
+86:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/upload-with-db/route.ts
+14:5  Warning: Unexpected console statement.  no-console
+50:20  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+85:7  Warning: Unexpected console statement.  no-console
+90:9  Warning: Unexpected console statement.  no-console
+119:5  Warning: Unexpected console statement.  no-console
+
+./src/app/api/worker/transcribe/route.ts
+12:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+13:5  Warning: Unexpected console statement.  no-console
+32:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/app/dashboard/page.tsx
+28:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+35:11  Warning: 'DashboardStats' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+102:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+124:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+131:12  Warning: 'formatDuration' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+233:40  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+234:39  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+235:39  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+236:45  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+
+./src/app/docs/page.tsx
+25:71  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+171:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+171:35  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+171:64  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+172:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+172:69  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+173:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+173:63  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+192:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+192:38  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+192:69  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+193:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+193:55  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+194:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+194:71  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+213:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+213:36  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+213:67  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+214:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+214:37  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+214:74  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+215:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+215:66  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+234:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+234:37  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+234:65  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+234:75  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+235:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+235:67  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+236:33  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+236:75  Warning: `"` can be escaped with `&quot;`, `&ldquo;`, `&#34;`, `&rdquo;`.  react/no-unescaped-entities
+
+./src/app/extract/[id]/page.tsx
+57:7  Warning: Unexpected console statement.  no-console
+
+./src/app/files/page.tsx
+89:7  Warning: Unexpected console statement.  no-console
+150:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/layout.tsx
+48:9  Warning: Custom fonts not added in `pages/_document.js` will only load for a single page. This is discouraged. See: https://nextjs.org/docs/messages/no-page-custom-font  @next/next/no-page-custom-font
+
+./src/app/login/page.tsx
+37:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/app/offline/page.tsx
+47:16  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+51:30  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/page.tsx
+56:7  Warning: Unexpected console statement.  no-console
+
+./src/app/record/page.tsx
+42:9  Warning: Unexpected console statement.  no-console
+53:7  Warning: Unexpected console statement.  no-console
+56:9  Warning: Unexpected console statement.  no-console
+83:7  Warning: Unexpected console statement.  no-console
+86:11  Warning: Unexpected console statement.  no-console
+88:11  Warning: Unexpected console statement.  no-console
+90:11  Warning: Unexpected console statement.  no-console
+101:7  Warning: Unexpected console statement.  no-console
+152:11  Warning: Unexpected console statement.  no-console
+154:11  Warning: Unexpected console statement.  no-console
+159:7  Warning: Unexpected console statement.  no-console
+186:9  Warning: Unexpected console statement.  no-console
+218:77  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+226:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+228:9  Warning: Unexpected console statement.  no-console
+231:7  Warning: Unexpected console statement.  no-console
+239:7  Warning: Unexpected console statement.  no-console
+245:7  Warning: Unexpected console statement.  no-console
+250:7  Warning: Unexpected console statement.  no-console
+256:11  Warning: Unexpected console statement.  no-console
+260:11  Warning: Unexpected console statement.  no-console
+272:7  Warning: Unexpected console statement.  no-console
+275:7  Warning: Unexpected console statement.  no-console
+285:7  Warning: Unexpected console statement.  no-console
+322:9  Warning: Unexpected console statement.  no-console
+371:11  Warning: Unexpected console statement.  no-console
+378:9  Warning: Unexpected console statement.  no-console
+379:9  Warning: Unexpected console statement.  no-console
+383:11  Warning: Unexpected console statement.  no-console
+386:11  Warning: Unexpected console statement.  no-console
+394:9  Warning: Unexpected console statement.  no-console
+414:11  Warning: Unexpected console statement.  no-console
+420:7  Warning: Unexpected console statement.  no-console
+461:7  Warning: Unexpected console statement.  no-console
+490:7  Warning: Unexpected console statement.  no-console
+504:9  Warning: Unexpected console statement.  no-console
+522:7  Warning: Unexpected console statement.  no-console
+538:9  Warning: Unexpected console statement.  no-console
+540:9  Warning: Unexpected console statement.  no-console
+553:13  Warning: 'result' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+565:7  Warning: Unexpected console statement.  no-console
+
+./src/app/settings/page.tsx
+12:61  Warning: 'Send' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+20:3  Warning: 'DialogTrigger' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+178:7  Warning: Unexpected console statement.  no-console
+211:7  Warning: Unexpected console statement.  no-console
+279:7  Warning: Unexpected console statement.  no-console
+335:7  Warning: Unexpected console statement.  no-console
+357:7  Warning: Unexpected console statement.  no-console
+370:7  Warning: Unexpected console statement.  no-console
+396:7  Warning: Unexpected console statement.  no-console
+457:7  Warning: Unexpected console statement.  no-console
+590:54  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+634:21  Error: No duplicate props allowed  react/jsx-no-duplicate-props
+648:73  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+1066:19  Warning: Unexpected console statement.  no-console
+
+./src/app/summary/[summaryId]/page.tsx
+5:41  Warning: 'CardTitle' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+8:58  Warning: 'User' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+48:10  Warning: 'debugInfo' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+48:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+49:10  Warning: 'scrollEvents' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+52:67  Warning: 'name' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+72:9  Warning: 'testProgrammaticScroll' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+99:11  Warning: Unexpected console statement.  no-console
+103:9  Warning: Unexpected console statement.  no-console
+145:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+161:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+167:6  Warning: React Hook useEffect has a missing dependency: 'updateDebugInfo'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+199:7  Warning: Unexpected console statement.  no-console
+228:7  Warning: Unexpected console statement.  no-console
+262:30  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+262:51  Warning: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./src/app/transcript/[id]/page.tsx
+9:10  Warning: 'DropdownMenu' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:24  Warning: 'DropdownMenuContent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:45  Warning: 'DropdownMenuItem' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+9:63  Warning: 'DropdownMenuTrigger' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+14:78  Warning: 'Download' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+14:88  Warning: 'RefreshCw' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+105:6  Warning: React Hook useEffect has missing dependencies: 'loadFileInfo', 'loadSummaries', and 'loadTranscript'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+120:7  Warning: Unexpected console statement.  no-console
+135:7  Warning: Unexpected console statement.  no-console
+147:7  Warning: Unexpected console statement.  no-console
+164:7  Warning: Unexpected console statement.  no-console
+188:7  Warning: Unexpected console statement.  no-console
+209:7  Warning: Unexpected console statement.  no-console
+291:7  Warning: Unexpected console statement.  no-console
+347:7  Warning: Unexpected console statement.  no-console
+434:12  Warning: 'handleExport' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+461:7  Warning: Unexpected console statement.  no-console
+490:9  Warning: 'uniqueSpeakerIds' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/TemplateManagementModal.tsx
+121:7  Warning: Unexpected console statement.  no-console
+161:7  Warning: Unexpected console statement.  no-console
+188:7  Warning: Unexpected console statement.  no-console
+218:7  Warning: Unexpected console statement.  no-console
+
+./src/components/TranscriptionStatus.tsx
+15:48  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+22:6  Warning: React Hook useEffect has a missing dependency: 'checkStatus'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+37:7  Warning: Unexpected console statement.  no-console
+56:7  Warning: Unexpected console statement.  no-console
+123:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/ai/AIProcessingPanel.tsx
+10:57  Warning: 'Settings' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+83:7  Warning: Unexpected console statement.  no-console
+97:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+123:9  Warning: Unexpected console statement.  no-console
+129:7  Warning: Unexpected console statement.  no-console
+
+./src/components/charts/EmotionalRadarChart.tsx
+92:52  Warning: 'index' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/charts/EnergyBarChart.tsx
+37:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/charts/MoodTrendChart.tsx
+37:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/extraction/ExtractionDefinitionManager.tsx
+13:30  Warning: 'Save' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:36  Warning: 'X' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:39  Warning: 'Brain' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+61:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+86:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+114:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+137:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+159:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/layout/bottom-nav.tsx
+5:46  Warning: 'Plus' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/layout/responsive-layout.tsx
+6:10  Warning: 'Button' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+11:10  Warning: 'Settings' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+81:9  Warning: 'getPageTitle' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/layout/sidebar.tsx
+7:10  Warning: 'useState' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/tasks/comment-form.tsx
+35:7  Warning: Unexpected console statement.  no-console
+
+./src/components/tasks/task-checkbox.tsx
+26:7  Warning: Unexpected console statement.  no-console
+
+./src/components/templates/TemplateManager.tsx
+3:20  Warning: 'useEffect' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:10  Warning: 'Tabs' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:16  Warning: 'TabsContent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:29  Warning: 'TabsList' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:39  Warning: 'TabsTrigger' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+14:30  Warning: 'Settings' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+14:40  Warning: 'Play' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+122:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+198:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+246:14  Warning: 'err' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/collapsible.tsx
+1:13  Warning: 'React' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/input.tsx
+5:18  Error: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/components/ui/install-prompt.tsx
+51:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+196:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/components/ui/label-editor.tsx
+73:7  Warning: Unexpected console statement.  no-console
+
+./src/components/ui/mobile-file-card.tsx
+4:10  Warning: 'cn' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+12:3  Warning: 'Calendar' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+13:3  Warning: 'Clock3' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+14:3  Warning: 'FileAudio' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+17:3  Warning: 'Edit3' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+18:3  Warning: 'Trash2' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+19:3  Warning: 'Eye' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+39:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:10  Warning: 'isEditing' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+71:21  Warning: 'setIsEditing' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+122:9  Warning: 'getStatusColor' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/components/ui/telegram-share-button.tsx
+65:7  Warning: Unexpected console statement.  no-console
+101:15  Warning: 'data' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+110:7  Warning: Unexpected console statement.  no-console
+
+./src/components/ui/template-selector.tsx
+7:19  Warning: 'Plus' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+8:10  Warning: 'toast' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+75:6  Warning: React Hook useEffect has a missing dependency: 'loadTemplates'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+100:62  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+113:7  Warning: Unexpected console statement.  no-console
+
+./src/components/ui/textarea.tsx
+5:18  Error: An interface declaring no members is equivalent to its supertype.  @typescript-eslint/no-empty-object-type
+
+./src/hooks/use-media-query.ts
+16:9  Warning: 'updateMatches' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+25:7  Warning: Unexpected console statement.  no-console
+71:11  Warning: Unexpected console statement.  no-console
+75:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/api/ApiHandler.ts
+12:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+18:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+30:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+33:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+40:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+91:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+92:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+163:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/auth.ts
+27:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+32:37  Warning: 'token' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/bootstrap.ts
+1:44  Warning: 'createDefaultConfig' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+33:7  Warning: Unexpected console statement.  no-console
+37:5  Warning: Unexpected console statement.  no-console
+56:7  Warning: Unexpected console statement.  no-console
+61:7  Warning: Unexpected console statement.  no-console
+68:7  Warning: Unexpected console statement.  no-console
+72:5  Warning: Unexpected console statement.  no-console
+91:7  Warning: Unexpected console statement.  no-console
+93:7  Warning: Unexpected console statement.  no-console
+99:5  Warning: Unexpected console statement.  no-console
+111:5  Warning: Unexpected console statement.  no-console
+140:5  Warning: Unexpected console statement.  no-console
+144:5  Warning: Unexpected console statement.  no-console
+148:5  Warning: Unexpected console statement.  no-console
+153:7  Warning: Unexpected console statement.  no-console
+157:5  Warning: Unexpected console statement.  no-console
+161:5  Warning: Unexpected console statement.  no-console
+166:7  Warning: Unexpected console statement.  no-console
+172:9  Warning: Unexpected console statement.  no-console
+184:7  Warning: Unexpected console statement.  no-console
+190:9  Warning: Unexpected console statement.  no-console
+197:53  Warning: 'promise' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+198:7  Warning: Unexpected console statement.  no-console
+205:9  Warning: Unexpected console statement.  no-console
+211:5  Warning: Unexpected console statement.  no-console
+242:7  Warning: Unexpected console statement.  no-console
+249:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+265:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+272:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+308:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+312:56  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/database/client.ts
+4:10  Warning: 'join' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+11:53  Warning: Unexpected console statement.  no-console
+19:5  Warning: Unexpected console statement.  no-console
+24:7  Warning: Unexpected console statement.  no-console
+29:5  Warning: Unexpected console statement.  no-console
+30:5  Warning: Unexpected console statement.  no-console
+43:5  Warning: Unexpected console statement.  no-console
+47:5  Warning: Unexpected console statement.  no-console
+48:5  Warning: Unexpected console statement.  no-console
+57:7  Warning: Unexpected console statement.  no-console
+58:7  Warning: Unexpected console statement.  no-console
+59:7  Warning: Unexpected console statement.  no-console
+60:7  Warning: Unexpected console statement.  no-console
+83:7  Warning: Unexpected console statement.  no-console
+88:7  Warning: Unexpected console statement.  no-console
+90:7  Warning: Unexpected console statement.  no-console
+108:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+110:5  Warning: Unexpected console statement.  no-console
+121:7  Warning: Unexpected console statement.  no-console
+128:9  Warning: Unexpected console statement.  no-console
+132:7  Warning: Unexpected console statement.  no-console
+137:5  Warning: Unexpected console statement.  no-console
+149:7  Warning: Unexpected console statement.  no-console
+152:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/database/init.ts
+3:10  Warning: 'audioFiles' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+5:10  Warning: 'join' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+30:5  Warning: Unexpected console statement.  no-console
+38:9  Warning: Unexpected console statement.  no-console
+40:9  Warning: Unexpected console statement.  no-console
+66:7  Warning: Unexpected console statement.  no-console
+69:7  Warning: Unexpected console statement.  no-console
+75:5  Warning: Unexpected console statement.  no-console
+80:13  Warning: 'result' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+81:7  Warning: Unexpected console statement.  no-console
+83:7  Warning: Unexpected console statement.  no-console
+89:5  Warning: Unexpected console statement.  no-console
+97:7  Warning: Unexpected console statement.  no-console
+98:7  Warning: Unexpected console statement.  no-console
+101:7  Warning: Unexpected console statement.  no-console
+107:5  Warning: Unexpected console statement.  no-console
+113:7  Warning: Unexpected console statement.  no-console
+116:7  Warning: Unexpected console statement.  no-console
+149:22  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+165:7  Warning: Unexpected console statement.  no-console
+178:5  Warning: Unexpected console statement.  no-console
+179:5  Warning: Unexpected console statement.  no-console
+184:7  Warning: Unexpected console statement.  no-console
+187:7  Warning: Unexpected console statement.  no-console
+208:9  Warning: Unexpected console statement.  no-console
+209:9  Warning: Unexpected console statement.  no-console
+210:9  Warning: Unexpected console statement.  no-console
+212:11  Warning: Unexpected console statement.  no-console
+215:11  Warning: Unexpected console statement.  no-console
+223:9  Warning: Unexpected console statement.  no-console
+224:9  Warning: Unexpected console statement.  no-console
+225:9  Warning: Unexpected console statement.  no-console
+226:9  Warning: Unexpected console statement.  no-console
+233:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/database/migrations/create-migration.ts
+32:7  Warning: Unexpected console statement.  no-console
+35:7  Warning: Unexpected console statement.  no-console
+139:11  Warning: Unexpected console statement.  no-console
+140:11  Warning: Unexpected console statement.  no-console
+148:11  Warning: Unexpected console statement.  no-console
+149:11  Warning: Unexpected console statement.  no-console
+163:11  Warning: Unexpected console statement.  no-console
+178:9  Warning: Unexpected console statement.  no-console
+181:11  Warning: Unexpected console statement.  no-console
+186:9  Warning: Unexpected console statement.  no-console
+187:9  Warning: Unexpected console statement.  no-console
+188:9  Warning: Unexpected console statement.  no-console
+189:9  Warning: Unexpected console statement.  no-console
+190:9  Warning: Unexpected console statement.  no-console
+191:9  Warning: Unexpected console statement.  no-console
+192:9  Warning: Unexpected console statement.  no-console
+193:9  Warning: Unexpected console statement.  no-console
+194:9  Warning: Unexpected console statement.  no-console
+201:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/database/migrations/migration-runner.ts
+21:5  Warning: Unexpected console statement.  no-console
+31:7  Warning: Unexpected console statement.  no-console
+42:7  Warning: Unexpected console statement.  no-console
+43:7  Warning: Unexpected console statement.  no-console
+46:7  Warning: Unexpected console statement.  no-console
+56:9  Warning: Unexpected console statement.  no-console
+63:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:7  Warning: Unexpected console statement.  no-console
+77:5  Warning: Unexpected console statement.  no-console
+83:9  Warning: Unexpected console statement.  no-console
+87:7  Warning: Unexpected console statement.  no-console
+88:7  Warning: Unexpected console statement.  no-console
+90:38  Warning: 'index' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+93:9  Warning: Unexpected console statement.  no-console
+96:7  Warning: Unexpected console statement.  no-console
+99:7  Warning: Unexpected console statement.  no-console
+105:5  Warning: Unexpected console statement.  no-console
+112:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+117:9  Warning: Unexpected console statement.  no-console
+120:7  Warning: Unexpected console statement.  no-console
+124:7  Warning: Unexpected console statement.  no-console
+149:9  Warning: Unexpected console statement.  no-console
+150:9  Warning: Unexpected console statement.  no-console
+151:9  Warning: Unexpected console statement.  no-console
+152:9  Warning: Unexpected console statement.  no-console
+159:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/database/repositories/AudioRepository.ts
+4:20  Warning: 'asc' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:40  Warning: 'SQL' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/database/repositories/BaseRepository.ts
+2:14  Warning: 'and' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+2:19  Warning: 'or' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+22:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+83:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/database/repositories/ExtractionRepository.ts
+3:10  Warning: 'getDb' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:25  Warning: 'asc' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/database/repositories/SummarizationRepository.ts
+3:10  Warning: 'getDb' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/database/repositories/TemplateRepository.ts
+10:10  Warning: 'getDb' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/database/repositories/TranscriptRepository.ts
+3:10  Warning: 'getDb' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+4:14  Warning: 'and' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+53:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/database/repositories/index.ts
+74:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+76:47  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+77:50  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+78:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+79:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/database/schema/extractions.ts
+6:3  Warning: 'real' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/database/schema/system.ts
+5:31  Warning: 'summarizationTemplates' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/db.ts
+80:7  Warning: Unexpected console statement.  no-console
+93:7  Warning: Unexpected console statement.  no-console
+120:7  Warning: Unexpected console statement.  no-console
+122:7  Warning: Unexpected console statement.  no-console
+127:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+136:9  Warning: Unexpected console statement.  no-console
+141:9  Warning: Unexpected console statement.  no-console
+148:7  Warning: Unexpected console statement.  no-console
+153:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:7  Warning: Unexpected console statement.  no-console
+174:7  Warning: Unexpected console statement.  no-console
+179:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+194:7  Warning: Unexpected console statement.  no-console
+202:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+211:7  Warning: Unexpected console statement.  no-console
+223:7  Warning: Unexpected console statement.  no-console
+235:7  Warning: Unexpected console statement.  no-console
+243:22  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+248:7  Warning: Unexpected console statement.  no-console
+260:7  Warning: Unexpected console statement.  no-console
+265:45  Warning: 'type' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+275:7  Warning: Unexpected console statement.  no-console
+280:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+282:13  Warning: 'result' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+287:7  Warning: Unexpected console statement.  no-console
+294:13  Warning: 'result' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+297:7  Warning: Unexpected console statement.  no-console
+327:7  Warning: Unexpected console statement.  no-console
+352:7  Warning: Unexpected console statement.  no-console
+377:7  Warning: Unexpected console statement.  no-console
+382:30  Warning: 'fileId' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+388:7  Warning: Unexpected console statement.  no-console
+420:7  Warning: Unexpected console statement.  no-console
+451:7  Warning: Unexpected console statement.  no-console
+463:7  Warning: Unexpected console statement.  no-console
+474:7  Warning: Unexpected console statement.  no-console
+510:7  Warning: Unexpected console statement.  no-console
+525:38  Warning: 'filePath' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/errors/AppError.ts
+65:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/errors/DatabaseError.ts
+7:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+10:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+61:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+97:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+115:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/errors/ErrorHandler.ts
+22:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+115:9  Warning: Unexpected console statement.  no-console
+118:9  Warning: Unexpected console statement.  no-console
+121:9  Warning: Unexpected console statement.  no-console
+124:9  Warning: Unexpected console statement.  no-console
+127:9  Warning: Unexpected console statement.  no-console
+137:9  Warning: Unexpected console statement.  no-console
+
+./src/lib/errors/ErrorReporter.ts
+13:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+74:7  Warning: Unexpected console statement.  no-console
+88:24  Warning: Unexpected console statement.  no-console
+130:26  Warning: Unexpected console statement.  no-console
+142:5  Warning: Unexpected console statement.  no-console
+154:5  Warning: Unexpected console statement.  no-console
+203:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+247:7  Warning: Unexpected console statement.  no-console
+260:7  Warning: Unexpected console statement.  no-console
+264:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/errors/ValidationError.ts
+7:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+12:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+19:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+25:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+53:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+62:73  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+77:63  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+95:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+151:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+165:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/errors/index.ts
+33:57  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:33  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+39:26  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+44:26  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+49:26  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+54:26  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+59:26  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+64:31  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+69:32  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./src/lib/logging/Logger.ts
+153:9  Warning: Unexpected console statement.  no-console
+
+./src/lib/logging/LoggerFactory.ts
+17:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+23:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:59  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+238:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+241:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+244:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+247:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+253:68  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/logging/formatters.ts
+251:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/logging/index.ts
+28:83  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+32:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+34:37  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+44:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+45:37  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+56:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+57:37  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+64:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+68:12  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+69:37  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./src/lib/logging/init.ts
+11:10  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/logging/transports.ts
+23:9  Warning: Unexpected console statement.  no-console
+26:9  Warning: Unexpected console statement.  no-console
+29:9  Warning: Unexpected console statement.  no-console
+33:9  Warning: Unexpected console statement.  no-console
+36:9  Warning: Unexpected console statement.  no-console
+108:7  Warning: Unexpected console statement.  no-console
+138:47  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+145:55  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+149:69  Warning: Unexpected empty arrow function.  @typescript-eslint/no-empty-function
+151:7  Warning: Unexpected console statement.  no-console
+158:28  Warning: Unexpected console statement.  no-console
+166:26  Warning: Unexpected console statement.  no-console
+256:7  Warning: Unexpected console statement.  no-console
+273:26  Warning: Unexpected console statement.  no-console
+342:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/logging/types.ts
+11:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+26:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/ErrorMiddleware.ts
+21:11  Warning: 'startTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+252:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/LoggingMiddleware.ts
+55:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+135:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+253:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+295:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+315:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/middleware/MiddlewareOrchestrator.ts
+179:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/RequestContext.ts
+164:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+202:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+214:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+214:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+255:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/ResponseMiddleware.ts
+1:10  Warning: 'NextRequest' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+65:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+71:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+79:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+147:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+165:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/index.ts
+43:41  Warning: 'context' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+80:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+118:25  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/middleware/types.ts
+17:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+24:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+119:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+126:15  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:43  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+155:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+156:11  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+157:12  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:13  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/monitoring/HealthChecker.ts
+50:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+70:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+115:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+171:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+174:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+237:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+240:25  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+288:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+348:11  Warning: 'startTime' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/monitoring/MetricsCollector.ts
+4:3  Warning: 'MetricValue' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+126:25  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./src/lib/monitoring/MonitoringService.ts
+267:35  Warning: 'metrics' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+273:25  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+
+./src/lib/monitoring/types.ts
+114:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+155:29  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+250:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/ServiceConfig.ts
+125:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:42  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+194:11  Warning: 'updatedConfig' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+277:45  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/ServiceContainer.ts
+18:25  Warning: Unexpected empty constructor.  @typescript-eslint/no-empty-function
+29:7  Warning: Unexpected console statement.  no-console
+33:5  Warning: Unexpected console statement.  no-console
+58:7  Warning: Unexpected console statement.  no-console
+63:7  Warning: Unexpected console statement.  no-console
+70:7  Warning: Unexpected console statement.  no-console
+74:5  Warning: Unexpected console statement.  no-console
+80:7  Warning: Unexpected console statement.  no-console
+82:7  Warning: Unexpected console statement.  no-console
+88:5  Warning: Unexpected console statement.  no-console
+105:5  Warning: Unexpected console statement.  no-console
+109:5  Warning: Unexpected console statement.  no-console
+114:5  Warning: Unexpected console statement.  no-console
+118:5  Warning: Unexpected console statement.  no-console
+124:5  Warning: Unexpected console statement.  no-console
+128:5  Warning: Unexpected console statement.  no-console
+133:5  Warning: Unexpected console statement.  no-console
+138:5  Warning: Unexpected console statement.  no-console
+142:7  Warning: Unexpected console statement.  no-console
+185:5  Warning: Unexpected console statement.  no-console
+202:5  Warning: Unexpected console statement.  no-console
+231:54  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+235:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/ServiceLifecycle.ts
+10:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/adaptiveAI.ts
+3:14  Warning: 'eq' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+3:18  Warning: 'and' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+28:14  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+34:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+75:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+82:9  Warning: Unexpected console statement.  no-console
+145:13  Warning: 'model' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+149:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+162:9  Warning: Unexpected console statement.  no-console
+205:9  Warning: Unexpected console statement.  no-console
+207:9  Warning: Unexpected console statement.  no-console
+230:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+230:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+243:9  Warning: Unexpected console statement.  no-console
+274:9  Warning: Unexpected console statement.  no-console
+276:9  Warning: Unexpected console statement.  no-console
+300:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+300:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+304:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+304:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+317:7  Warning: Unexpected console statement.  no-console
+330:9  Warning: Unexpected console statement.  no-console
+344:9  Warning: Unexpected console statement.  no-console
+380:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+380:67  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+399:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+399:66  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+410:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/ai/AIProvider.ts
+1:31  Warning: 'ValidationRules' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+22:33  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+71:106  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+112:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+141:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+194:46  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+204:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/audioMetadata.ts
+44:5  Warning: Unexpected console statement.  no-console
+54:7  Warning: Unexpected console statement.  no-console
+118:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+134:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+160:49  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+232:5  Warning: Unexpected console statement.  no-console
+245:5  Warning: Unexpected console statement.  no-console
+265:9  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/core/AudioService.ts
+5:40  Warning: 'TranscriptSegment' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/core/BaseService.ts
+1:25  Warning: 'ServiceEvent' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+10:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+17:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+21:42  Error: A `require()` style import is forbidden.  @typescript-eslint/no-require-imports
+23:16  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+26:36  Warning: Unexpected empty method 'recordHttpRequest'.  @typescript-eslint/no-empty-function
+27:38  Warning: Unexpected empty method 'recordDatabaseQuery'.  @typescript-eslint/no-empty-function
+28:34  Warning: Unexpected empty method 'recordAIRequest'.  @typescript-eslint/no-empty-function
+29:37  Warning: Unexpected empty method 'recordAITokenUsage'.  @typescript-eslint/no-empty-function
+138:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+139:90  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+168:20  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+177:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+185:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+193:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+201:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+209:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+217:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+225:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+233:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+238:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+241:26  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+246:53  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+257:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+264:27  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+268:21  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+272:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+301:28  Warning: 'newConfig' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/core/ServiceRegistry.ts
+23:5  Warning: Unexpected console statement.  no-console
+47:9  Warning: Unexpected console statement.  no-console
+61:5  Warning: Unexpected console statement.  no-console
+69:5  Warning: Unexpected console statement.  no-console
+71:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+79:11  Warning: Unexpected console statement.  no-console
+81:11  Warning: Unexpected console statement.  no-console
+84:9  Warning: Unexpected console statement.  no-console
+101:5  Warning: Unexpected console statement.  no-console
+105:5  Warning: Unexpected console statement.  no-console
+107:51  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+118:11  Warning: Unexpected console statement.  no-console
+120:11  Warning: Unexpected console statement.  no-console
+123:9  Warning: Unexpected console statement.  no-console
+137:7  Warning: Unexpected console statement.  no-console
+140:5  Warning: Unexpected console statement.  no-console
+167:11  Warning: Unexpected console statement.  no-console
+174:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+175:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+180:34  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+181:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+219:60  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+220:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:38  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:71  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+226:9  Warning: Unexpected console statement.  no-console
+240:44  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+242:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+252:28  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/core/SimpleFileUploadService.ts
+223:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+223:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/core/SummarizationService.ts
+220:64  Warning: 'prompt' is defined but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+
+./src/lib/services/core/interfaces.ts
+79:24  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+80:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+109:52  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+109:97  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+163:16  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+192:18  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+200:10  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/customAI.ts
+60:13  Warning: 'settings' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+99:58  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+99:103  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+132:32  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+158:61  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+421:37  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+455:5  Warning: Unexpected console statement.  no-console
+466:5  Warning: Unexpected console statement.  no-console
+468:5  Warning: Unexpected console statement.  no-console
+478:30  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+480:36  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+523:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/dynamicPromptGenerator.ts
+13:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+59:41  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+60:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+147:39  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+186:11  Warning: Unexpected console statement.  no-console
+196:7  Warning: Unexpected console statement.  no-console
+262:35  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+281:11  Warning: Unexpected console statement.  no-console
+283:11  Warning: Unexpected console statement.  no-console
+294:15  Warning: Unexpected console statement.  no-console
+296:15  Warning: Unexpected console statement.  no-console
+304:13  Warning: Unexpected console statement.  no-console
+314:13  Warning: Unexpected console statement.  no-console
+323:9  Warning: Unexpected console statement.  no-console
+376:7  Warning: Unexpected console statement.  no-console
+399:31  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+409:55  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+425:9  Warning: Unexpected console statement.  no-console
+439:17  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/services/hashService.ts
+24:7  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/init.ts
+21:7  Warning: Unexpected console statement.  no-console
+26:7  Warning: Unexpected console statement.  no-console
+30:9  Warning: Unexpected console statement.  no-console
+34:9  Warning: Unexpected console statement.  no-console
+39:7  Warning: Unexpected console statement.  no-console
+78:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/locationService.ts
+51:7  Warning: Unexpected console statement.  no-console
+59:5  Warning: Unexpected console statement.  no-console
+77:7  Warning: Unexpected console statement.  no-console
+98:5  Warning: Unexpected console statement.  no-console
+149:5  Warning: Unexpected console statement.  no-console
+162:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/speakerDetectionService.ts
+31:5  Warning: Unexpected console statement.  no-console
+41:5  Warning: Unexpected console statement.  no-console
+52:5  Warning: Unexpected console statement.  no-console
+78:5  Warning: Unexpected console statement.  no-console
+86:5  Warning: Unexpected console statement.  no-console
+100:7  Warning: Unexpected console statement.  no-console
+103:7  Warning: Unexpected console statement.  no-console
+117:5  Warning: Unexpected console statement.  no-console
+121:9  Warning: Unexpected console statement.  no-console
+124:7  Warning: Unexpected console statement.  no-console
+130:5  Warning: Unexpected console statement.  no-console
+145:3  Warning: Unexpected console statement.  no-console
+164:3  Warning: Unexpected console statement.  no-console
+182:97  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+212:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/services/storage/StorageService.ts
+86:58  Warning: 'directory' is assigned a value but never used. Allowed unused args must match /^_/u.  @typescript-eslint/no-unused-vars
+146:23  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+./src/lib/transcription.ts
+104:7  Warning: Unexpected console statement.  no-console
+117:9  Warning: 'stdoutOutput' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+134:9  Warning: Unexpected console statement.  no-console
+147:9  Warning: Unexpected console statement.  no-console
+156:11  Warning: Unexpected console statement.  no-console
+190:7  Warning: Unexpected console statement.  no-console
+247:14  Warning: '_error' is defined but never used.  @typescript-eslint/no-unused-vars
+416:11  Warning: Unexpected console statement.  no-console
+452:7  Warning: Unexpected console statement.  no-console
+456:5  Warning: Unexpected console statement.  no-console
+481:7  Warning: Unexpected console statement.  no-console
+512:5  Warning: Unexpected console statement.  no-console
+
+./src/lib/transcriptionWorker.ts
+3:14  Warning: 'and' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+3:19  Warning: 'or' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+3:23  Warning: 'sql' is defined but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+55:9  Warning: Unexpected console statement.  no-console
+70:18  Warning: 'e' is defined but never used.  @typescript-eslint/no-unused-vars
+71:11  Warning: Unexpected console statement.  no-console
+72:11  Warning: Unexpected console statement.  no-console
+78:9  Warning: Unexpected console statement.  no-console
+85:9  Warning: Unexpected console statement.  no-console
+114:11  Warning: Unexpected console statement.  no-console
+117:11  Warning: Unexpected console statement.  no-console
+140:9  Warning: Unexpected console statement.  no-console
+152:11  Warning: Unexpected console statement.  no-console
+171:19  Warning: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+172:5  Warning: Unexpected console statement.  no-console
+
+./src/test/database/MigrationRunner.test.ts
+10:7  Warning: 'databaseInitializer' is assigned a value but never used. Allowed unused vars must match /^_/u.  @typescript-eslint/no-unused-vars
+30:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+112:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

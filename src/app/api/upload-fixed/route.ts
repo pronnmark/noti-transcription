@@ -1,25 +1,33 @@
 import { NextRequest } from 'next/server';
 import { createApiHandler, ApiServices } from '../../../lib/api/ApiHandler';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // Configure route to handle large file uploads
 export const runtime = 'nodejs';
 export const maxDuration = 300; // 5 minutes timeout
 
 export const POST = createApiHandler(async (request: NextRequest) => {
-  console.log('Upload-fixed handler started');
+  debugLog('Upload-fixed handler started');
 
   // Parse form data
   let formData;
   try {
     formData = await request.formData();
-    console.log('FormData parsed successfully');
+    debugLog('FormData parsed successfully');
   } catch (e) {
     console.error('Failed to parse formData:', e);
     throw e;
   }
 
   const file = formData.get('audio') as File;
-  console.log('File extracted:', { hasFile: !!file, name: file?.name, size: file?.size });
+  debugLog('File extracted:', { hasFile: !!file, name: file?.name, size: file?.size });
 
   if (!file) {
     throw new Error('No file provided');
@@ -34,7 +42,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
   const allowDuplicates = allowDuplicatesParam === 'true';
   const isDraft = isDraftParam === 'true';
 
-  console.log('Upload fixed - file info:', {
+  debugLog('Upload fixed - file info:', {
     name: file.name,
     size: file.size,
     type: file.type,
@@ -47,7 +55,7 @@ export const POST = createApiHandler(async (request: NextRequest) => {
     isDraft,
   });
 
-  console.log('Upload fixed - result:', result);
+  debugLog('Upload fixed - result:', result);
 
   return {
     success: true,

@@ -1,7 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from '@/lib/db';
+import { getDb } from '@/lib/database/client';
+import { eq, and, inArray } from 'drizzle-orm';
 import * as schema from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
+
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -25,6 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get data points with template information
+    const db = getDb();
     const dataPointsResult = await db.query.dataPoints?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       orderBy: (dataPoints: any, { desc }: any) => [desc(dataPoints.createdAt)],
@@ -54,7 +64,7 @@ export async function GET(request: NextRequest) {
       templates: templates,
     });
   } catch (error) {
-    console.error('Error fetching data points:', error);
+    debugLog('Error fetching data points:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -83,6 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists
+    const db = getDb();
     const file = await db.query.audioFiles.findFirst({
       where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
     });
@@ -121,7 +132,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating data point:', error);
+    debugLog('Error creating data point:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,9 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useEffect, useState, useCallback } from 'react';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Mic, Square, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -20,7 +32,9 @@ export default function RecordPage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
+    null,
+  );
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [recordingSupported, setRecordingSupported] = useState(true);
   const [deviceInfo, setDeviceInfo] = useState<string>('');
@@ -33,13 +47,145 @@ export default function RecordPage() {
 
   // Location tracking state
   const [locationData, setLocationData] = useState<LocationData | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [_locationError, setLocationError] = useState<string | null>(null);
   const [isLocationTracking, setIsLocationTracking] = useState(false);
+
+  const checkRecordingSupport = useCallback(async () => {
+    try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.log('MediaDevices API not available');
+        setRecordingSupported(false);
+        return;
+      }
+
+      // Check if audio devices are available first
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioInputs = devices.filter(
+        device => device.kind === 'audioinput',
+      );
+
+      const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
+      setDeviceInfo(deviceDebug);
+      console.log(deviceDebug);
+
+      if (audioInputs.length === 0) {
+        console.log('No audio input devices found');
+        setRecordingSupported(false);
+        return;
+      }
+
+      // Test with mobile-optimized constraints
+      const mobileConstraints = {
+        audio: isMobile
+          ? {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+            sampleRate: 16000, // Lower sample rate for mobile
+            channelCount: 1, // Mono for mobile
+          }
+          : {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false,
+          },
+      };
+
+      const stream =
+        await navigator.mediaDevices.getUserMedia(mobileConstraints);
+
+      // Clean up test stream
+      stream.getTracks().forEach(track => track.stop());
+      setRecordingSupported(true);
+    } catch (error) {
+      console.error('Recording not supported:', error);
+      if (error instanceof Error) {
+        if (error.name === 'NotFoundError') {
+          console.log('No microphone device found');
+        } else if (error.name === 'NotAllowedError') {
+          console.log('Microphone permission denied');
+        } else if (error.name === 'NotReadableError') {
+          console.log('Microphone is already in use');
+        }
+      }
+      setRecordingSupported(false);
+    }
+  }, [isMobile]);
+
+  const performAutoSave = useCallback(async () => {
+    if (!mediaRecorder || !audioChunks.length) return;
+
+    try {
+      console.log('Performing auto-save...');
+
+      // Request current data from MediaRecorder
+      mediaRecorder.requestData();
+
+      // Wait a bit for the data to be available
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (audioChunks.length > 0) {
+        // Create blob from current chunks
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const autoSaveCount = autoSaveCounter + 1;
+
+        // Choose appropriate file extension
+        let extension = '.webm';
+        if (mimeType.includes('mp4')) {
+          extension = '.mp4';
+        } else if (mimeType.includes('wav')) {
+          extension = '.wav';
+        }
+
+        const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
+
+        const formData = new FormData();
+        formData.append('audio', autoSaveBlob, filename);
+        formData.append('speakerCount', speakerCount.toString());
+        formData.append('isDraft', 'true'); // Mark as draft to skip transcription
+
+        // Include location data if available
+        if (locationData) {
+          formData.append('latitude', locationData.latitude.toString());
+          formData.append('longitude', locationData.longitude.toString());
+          formData.append('locationAccuracy', locationData.accuracy.toString());
+          formData.append(
+            'locationTimestamp',
+            locationData.timestamp.toString(),
+          );
+          formData.append('locationProvider', locationData.provider);
+        }
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          setLastAutoSave(new Date());
+          setAutoSaveCounter(autoSaveCount);
+          toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
+            duration: 2000,
+          });
+          console.log('Auto-save successful:', filename);
+        } else {
+          console.error('Auto-save failed:', response.status);
+          toast.error('Auto-save failed', { duration: 2000 });
+        }
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      toast.error('Auto-save failed', { duration: 2000 });
+    }
+  }, [mediaRecorder, audioChunks, autoSaveCounter, speakerCount, locationData]);
 
   useEffect(() => {
     checkRecordingSupport();
     detectMobile();
-  }, []);
+  }, [checkRecordingSupport]);
 
   // Clean up wake lock on unmount
   useEffect(() => {
@@ -64,7 +210,8 @@ export default function RecordPage() {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () =>
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [isRecording, isMobile]);
 
   // Timer effect for recording
@@ -82,23 +229,32 @@ export default function RecordPage() {
   useEffect(() => {
     let autoSaveInterval: NodeJS.Timeout;
     if (isRecording && !isPaused && mediaRecorder) {
-      autoSaveInterval = setInterval(() => {
-        performAutoSave();
-      }, 10 * 60 * 1000); // 10 minutes
+      autoSaveInterval = setInterval(
+        () => {
+          performAutoSave();
+        },
+        10 * 60 * 1000,
+      ); // 10 minutes
     }
     return () => clearInterval(autoSaveInterval);
-  }, [isRecording, isPaused, mediaRecorder]);
+  }, [isRecording, isPaused, mediaRecorder, performAutoSave]);
 
   function detectMobile() {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    const userAgent =
+      navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isMobileDevice =
+      /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
+        userAgent,
+      );
     setIsMobile(isMobileDevice);
   }
 
   async function requestWakeLock() {
     try {
       if ('wakeLock' in navigator && isMobile) {
-        const wakeLockInstance = await (navigator as any).wakeLock.request('screen');
+        const wakeLockInstance = await (navigator as any).wakeLock.request(
+          'screen',
+        );
         setWakeLock(wakeLockInstance);
         console.log('Wake lock acquired');
       }
@@ -117,13 +273,15 @@ export default function RecordPage() {
 
   async function startLocationTracking() {
     if (!locationService.isSupported()) {
-      console.log('Geolocation not supported - recording will continue without location data');
+      console.log(
+        'Geolocation not supported - recording will continue without location data',
+      );
       return;
     }
 
     try {
       console.log('🗺️ Starting location tracking for recording session...');
-      
+
       await locationService.startTracking(
         (location: LocationData) => {
           setLocationData(location);
@@ -145,10 +303,11 @@ export default function RecordPage() {
 
       setIsLocationTracking(true);
       console.log('✅ Location tracking active');
-      
     } catch (error) {
       console.warn('⚠️ Failed to start location tracking:', error);
-      setLocationError(error instanceof Error ? error.message : 'Location tracking failed');
+      setLocationError(
+        error instanceof Error ? error.message : 'Location tracking failed',
+      );
       // Recording continues without location
     }
   }
@@ -158,64 +317,6 @@ export default function RecordPage() {
       locationService.stopTracking();
       setIsLocationTracking(false);
       console.log('🛑 Location tracking stopped');
-    }
-  }
-
-  async function checkRecordingSupport() {
-    try {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        console.log('MediaDevices API not available');
-        setRecordingSupported(false);
-        return;
-      }
-
-      // Check if audio devices are available first
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices.filter(device => device.kind === 'audioinput');
-
-      const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
-      setDeviceInfo(deviceDebug);
-      console.log(deviceDebug);
-
-      if (audioInputs.length === 0) {
-        console.log('No audio input devices found');
-        setRecordingSupported(false);
-        return;
-      }
-
-      // Test with mobile-optimized constraints
-      const mobileConstraints = {
-        audio: isMobile ? {
-          echoCancellation: true,
-          noiseSuppression: true,
-          autoGainControl: true,
-          sampleRate: 16000, // Lower sample rate for mobile
-          channelCount: 1,     // Mono for mobile
-        } : {
-          echoCancellation: false,
-          noiseSuppression: false,
-          autoGainControl: false,
-        },
-      };
-
-      const stream = await navigator.mediaDevices.getUserMedia(mobileConstraints);
-
-      // Clean up test stream
-      stream.getTracks().forEach(track => track.stop());
-      setRecordingSupported(true);
-
-    } catch (error) {
-      console.error('Recording not supported:', error);
-      if (error instanceof Error) {
-        if (error.name === 'NotFoundError') {
-          console.log('No microphone device found');
-        } else if (error.name === 'NotAllowedError') {
-          console.log('Microphone permission denied');
-        } else if (error.name === 'NotReadableError') {
-          console.log('Microphone is already in use');
-        }
-      }
-      setRecordingSupported(false);
     }
   }
 
@@ -252,7 +353,10 @@ export default function RecordPage() {
           });
         }
       } catch (error) {
-        console.log('Optimized settings failed, trying basic constraints:', error);
+        console.log(
+          'Optimized settings failed, trying basic constraints:',
+          error,
+        );
         // Fallback to basic constraints
         stream = await navigator.mediaDevices.getUserMedia({
           audio: true,
@@ -298,7 +402,7 @@ export default function RecordPage() {
 
       const chunks: Blob[] = [];
 
-      recorder.ondataavailable = (event) => {
+      recorder.ondataavailable = event => {
         if (event.data.size > 0) {
           chunks.push(event.data);
           console.log('Audio data chunk received:', event.data.size, 'bytes');
@@ -309,11 +413,20 @@ export default function RecordPage() {
         stream.getTracks().forEach(track => track.stop());
 
         console.log('Recording stopped, chunks collected:', chunks.length);
-        console.log('Total chunks size:', chunks.reduce((total, chunk) => total + chunk.size, 0), 'bytes');
+        console.log(
+          'Total chunks size:',
+          chunks.reduce((total, chunk) => total + chunk.size, 0),
+          'bytes',
+        );
 
         if (chunks.length > 0) {
           const audioBlob = new Blob(chunks, { type: mimeType });
-          console.log('Created audio blob:', audioBlob.size, 'bytes, type:', audioBlob.type);
+          console.log(
+            'Created audio blob:',
+            audioBlob.size,
+            'bytes, type:',
+            audioBlob.type,
+          );
           await uploadRecording(audioBlob);
         } else {
           console.error('No audio chunks collected');
@@ -323,7 +436,7 @@ export default function RecordPage() {
         setAudioChunks([]);
       };
 
-      recorder.onerror = (event) => {
+      recorder.onerror = event => {
         console.error('MediaRecorder error:', event);
         toast.error('Recording error occurred');
         setIsRecording(false);
@@ -348,25 +461,36 @@ export default function RecordPage() {
           toast.success('Recording started');
         }
       }, 100);
-
     } catch (error) {
       console.error('Error starting recording:', error);
 
       let errorMessage = 'Failed to start recording. ';
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
-          errorMessage += isMobile ? 'No microphone found. Try using headphones with mic.' : 'No microphone found.';
+          errorMessage += isMobile
+            ? 'No microphone found. Try using headphones with mic.'
+            : 'No microphone found.';
         } else if (error.name === 'NotAllowedError') {
-          errorMessage += isMobile ? 'Microphone permission denied. Check browser settings and try again.' : 'Microphone permission denied.';
+          errorMessage += isMobile
+            ? 'Microphone permission denied. Check browser settings and try again.'
+            : 'Microphone permission denied.';
         } else if (error.name === 'NotReadableError') {
-          errorMessage += isMobile ? 'Microphone is already in use. Close other apps and try again.' : 'Microphone is already in use.';
+          errorMessage += isMobile
+            ? 'Microphone is already in use. Close other apps and try again.'
+            : 'Microphone is already in use.';
         } else if (error.name === 'OverconstrainedError') {
-          errorMessage += isMobile ? 'Microphone settings not supported. Try a different browser.' : 'Microphone constraints not supported.';
+          errorMessage += isMobile
+            ? 'Microphone settings not supported. Try a different browser.'
+            : 'Microphone constraints not supported.';
         } else {
-          errorMessage += isMobile ? 'Please check microphone permissions in browser settings.' : 'Please check microphone permissions and device.';
+          errorMessage += isMobile
+            ? 'Please check microphone permissions in browser settings.'
+            : 'Please check microphone permissions and device.';
         }
       } else {
-        errorMessage += isMobile ? 'Please check microphone permissions in browser settings.' : 'Please check microphone permissions and device.';
+        errorMessage += isMobile
+          ? 'Please check microphone permissions in browser settings.'
+          : 'Please check microphone permissions and device.';
       }
 
       toast.error(errorMessage);
@@ -390,7 +514,10 @@ export default function RecordPage() {
   }
 
   function stopRecording() {
-    if (mediaRecorder && (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')) {
+    if (
+      mediaRecorder &&
+      (mediaRecorder.state === 'recording' || mediaRecorder.state === 'paused')
+    ) {
       console.log('Stopping recording, current state:', mediaRecorder.state);
 
       // Request final data before stopping
@@ -417,73 +544,6 @@ export default function RecordPage() {
     }
   }
 
-  async function performAutoSave() {
-    if (!mediaRecorder || !audioChunks.length) return;
-
-    try {
-      console.log('Performing auto-save...');
-
-      // Request current data from MediaRecorder
-      mediaRecorder.requestData();
-
-      // Wait a bit for the data to be available
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (audioChunks.length > 0) {
-        // Create blob from current chunks
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const autoSaveCount = autoSaveCounter + 1;
-
-        // Choose appropriate file extension
-        let extension = '.webm';
-        if (mimeType.includes('mp4')) {
-          extension = '.mp4';
-        } else if (mimeType.includes('wav')) {
-          extension = '.wav';
-        }
-
-        const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
-
-        const formData = new FormData();
-        formData.append('audio', autoSaveBlob, filename);
-        formData.append('speakerCount', speakerCount.toString());
-        formData.append('isDraft', 'true'); // Mark as draft to skip transcription
-
-        // Include location data if available
-        if (locationData) {
-          formData.append('latitude', locationData.latitude.toString());
-          formData.append('longitude', locationData.longitude.toString());
-          formData.append('locationAccuracy', locationData.accuracy.toString());
-          formData.append('locationTimestamp', locationData.timestamp.toString());
-          formData.append('locationProvider', locationData.provider);
-        }
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          setLastAutoSave(new Date());
-          setAutoSaveCounter(autoSaveCount);
-          toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
-            duration: 2000,
-          });
-          console.log('Auto-save successful:', filename);
-        } else {
-          console.error('Auto-save failed:', response.status);
-          toast.error('Auto-save failed', { duration: 2000 });
-        }
-      }
-    } catch (error) {
-      console.error('Auto-save error:', error);
-      toast.error('Auto-save failed', { duration: 2000 });
-    }
-  }
-
   async function uploadRecording(audioBlob: Blob, isDraft: boolean = false) {
     setIsUploading(true);
     try {
@@ -501,7 +561,11 @@ export default function RecordPage() {
 
       // Check if blob is too small (less than 1KB might indicate an issue)
       if (audioBlob.size < 1024) {
-        console.warn('Warning: Recording is very small:', audioBlob.size, 'bytes');
+        console.warn(
+          'Warning: Recording is very small:',
+          audioBlob.size,
+          'bytes',
+        );
       }
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
@@ -546,12 +610,18 @@ export default function RecordPage() {
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-        throw new Error(`Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`);
+        const errorData = await response
+          .json()
+          .catch(() => ({ error: 'Unknown error' }));
+        throw new Error(
+          `Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`,
+        );
       }
 
       const result = await response.json();
-      toast.success(isDraft ? 'Draft recording saved!' : 'Recording uploaded successfully!');
+      toast.success(
+        isDraft ? 'Draft recording saved!' : 'Recording uploaded successfully!',
+      );
 
       // Only redirect for final recordings, not drafts
       if (!isDraft) {
@@ -560,7 +630,8 @@ export default function RecordPage() {
         }, 1500);
       }
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Failed to upload recording: ${errorMessage}`);
       console.error('Upload error:', error);
     } finally {
@@ -575,16 +646,18 @@ export default function RecordPage() {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full flex-col">
       {/* Header */}
       <div className="border-b p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold">Record Audio</h1>
-        <p className="text-muted-foreground mt-1">Record and transcribe audio directly from your device</p>
+        <h1 className="text-2xl font-bold sm:text-3xl">Record Audio</h1>
+        <p className="mt-1 text-muted-foreground">
+          Record and transcribe audio directly from your device
+        </p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4 sm:p-6 overflow-auto">
-        <div className="max-w-2xl mx-auto space-y-6">
+      <div className="flex-1 overflow-auto p-4 sm:p-6">
+        <div className="mx-auto max-w-2xl space-y-6">
           <Card>
             <CardHeader className="text-center">
               <CardTitle className="flex items-center justify-center gap-2 text-lg sm:text-xl">
@@ -594,8 +667,7 @@ export default function RecordPage() {
               <CardDescription>
                 {recordingSupported
                   ? 'Record audio directly from your device'
-                  : 'Recording not supported on this device'
-                }
+                  : 'Recording not supported on this device'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -603,11 +675,19 @@ export default function RecordPage() {
                 <>
                   {/* Speaker Count Selection */}
                   {!isRecording && (
-                    <div className="flex items-center justify-center gap-2 mb-4">
-                      <label htmlFor="speakerCount" className="text-sm font-medium">
+                    <div className="mb-4 flex items-center justify-center gap-2">
+                      <label
+                        htmlFor="speakerCount"
+                        className="text-sm font-medium"
+                      >
                         Expected speakers:
                       </label>
-                      <Select value={speakerCount.toString()} onValueChange={(value) => setSpeakerCount(parseInt(value))}>
+                      <Select
+                        value={speakerCount.toString()}
+                        onValueChange={value =>
+                          setSpeakerCount(parseInt(value))
+                        }
+                      >
                         <SelectTrigger className="w-20">
                           <SelectValue />
                         </SelectTrigger>
@@ -629,29 +709,34 @@ export default function RecordPage() {
 
                   {/* Recording Status */}
                   <div className="text-center">
-                    <div className="text-4xl sm:text-6xl font-mono font-bold mb-2">
+                    <div className="mb-2 font-mono text-4xl font-bold sm:text-6xl">
                       {formatRecordingTime(recordingTime)}
                     </div>
                     {isRecording && (
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                        <div className={cn(
-                          'w-2 h-2 rounded-full',
-                          isPaused ? 'bg-yellow-500' : 'bg-red-500 animate-pulse',
-                        )} />
+                        <div
+                          className={cn(
+                            'h-2 w-2 rounded-full',
+                            isPaused
+                              ? 'bg-yellow-500'
+                              : 'animate-pulse bg-red-500',
+                          )}
+                        />
                         {isPaused ? 'Paused' : 'Recording'}
                         {isMobile && wakeLock && (
-                          <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
+                          <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">
                             🔒 Screen locked
                           </span>
                         )}
                       </div>
                     )}
                     {isRecording && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Expecting {speakerCount} speaker{speakerCount > 1 ? 's' : ''}
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        Expecting {speakerCount} speaker
+                        {speakerCount > 1 ? 's' : ''}
                         {lastAutoSave && (
                           <ClientOnly>
-                            <div className="text-xs text-green-600 mt-1">
+                            <div className="mt-1 text-xs text-green-600">
                               ✓ Auto-saved: {lastAutoSave.toLocaleTimeString()}
                             </div>
                           </ClientOnly>
@@ -662,26 +747,27 @@ export default function RecordPage() {
 
                   {/* Mobile warning */}
                   {isMobile && isRecording && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-center">
-                      <div className="text-sm text-amber-700 font-medium">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
+                      <div className="text-sm font-medium text-amber-700">
                         📱 Keep this tab active during recording
                       </div>
-                      <div className="text-xs text-amber-600 mt-1">
-                        Background recording may be interrupted on mobile devices
+                      <div className="mt-1 text-xs text-amber-600">
+                        Background recording may be interrupted on mobile
+                        devices
                       </div>
                     </div>
                   )}
 
                   {/* Recording Controls */}
-                  <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4">
+                  <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
                     {!isRecording ? (
                       <Button
                         onClick={startRecording}
-                        className="bg-red-600 hover:bg-red-700 text-white w-full sm:w-auto"
+                        className="w-full bg-red-600 text-white hover:bg-red-700 sm:w-auto"
                         size="lg"
                         disabled={isUploading}
                       >
-                        <Mic className="h-5 w-5 mr-2" />
+                        <Mic className="mr-2 h-5 w-5" />
                         Start Recording
                       </Button>
                     ) : (
@@ -693,7 +779,7 @@ export default function RecordPage() {
                             size="lg"
                             className="w-full sm:w-auto"
                           >
-                            <Pause className="h-5 w-5 mr-2" />
+                            <Pause className="mr-2 h-5 w-5" />
                             Pause
                           </Button>
                         ) : (
@@ -703,7 +789,7 @@ export default function RecordPage() {
                             size="lg"
                             className="w-full sm:w-auto"
                           >
-                            <Play className="h-5 w-5 mr-2" />
+                            <Play className="mr-2 h-5 w-5" />
                             Resume
                           </Button>
                         )}
@@ -715,35 +801,35 @@ export default function RecordPage() {
                           disabled={isUploading}
                         >
                           {isUploading ? (
-                            <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                           ) : (
-                            <Square className="h-5 w-5 mr-2" />
+                            <Square className="mr-2 h-5 w-5" />
                           )}
                           {isUploading ? 'Uploading...' : 'Stop & Save'}
                         </Button>
                       </>
                     )}
                   </div>
-
                 </>
               ) : (
-                <div className="text-center py-8">
-                  <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <div className="text-muted-foreground mb-4">
+                <div className="py-8 text-center">
+                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <div className="mb-4 text-muted-foreground">
                     Recording is not supported on this device or browser.
                   </div>
-                  <div className="text-sm text-muted-foreground mb-4">
-                    Try using HTTPS or a modern browser like Chrome, Safari, or Firefox.
+                  <div className="mb-4 text-sm text-muted-foreground">
+                    Try using HTTPS or a modern browser like Chrome, Safari, or
+                    Firefox.
                   </div>
                   {deviceInfo && (
-                    <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded">
+                    <div className="rounded bg-muted/30 p-3 text-xs text-muted-foreground">
                       🔍 Debug: {deviceInfo}
                     </div>
                   )}
                   <div className="mt-4">
                     <Button
                       variant="outline"
-                      onClick={() => window.location.href = '/files'}
+                      onClick={() => (window.location.href = '/files')}
                     >
                       Upload Files Instead
                     </Button>
@@ -754,18 +840,28 @@ export default function RecordPage() {
           </Card>
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => window.location.href = '/files'}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Card
+              className="cursor-pointer transition-shadow hover:shadow-md"
+              onClick={() => (window.location.href = '/files')}
+            >
               <CardContent className="p-4 text-center">
                 <div className="text-lg font-medium">Upload Files</div>
-                <div className="text-sm text-muted-foreground">Choose audio files from your device</div>
+                <div className="text-sm text-muted-foreground">
+                  Choose audio files from your device
+                </div>
               </CardContent>
             </Card>
 
-            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => window.location.href = '/transcripts'}>
+            <Card
+              className="cursor-pointer transition-shadow hover:shadow-md"
+              onClick={() => (window.location.href = '/transcripts')}
+            >
               <CardContent className="p-4 text-center">
                 <div className="text-lg font-medium">View Transcripts</div>
-                <div className="text-sm text-muted-foreground">See your completed transcriptions</div>
+                <div className="text-sm text-muted-foreground">
+                  See your completed transcriptions
+                </div>
               </CardContent>
             </Card>
           </div>

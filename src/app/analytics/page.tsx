@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,6 +13,14 @@ import { MoodTrendChart } from '@/components/charts/MoodTrendChart';
 import { EnergyBarChart } from '@/components/charts/EnergyBarChart';
 import { EmotionalRadarChart } from '@/components/charts/EmotionalRadarChart';
 import { format, subDays } from 'date-fns';
+
+// Client-side debug logging (can be disabled in production)
+const DEBUG_CLIENT = process.env.NODE_ENV === 'development';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_CLIENT) {
+    console.log(...args);
+  }
+};
 
 interface PsychologicalMetric {
   id: string;
@@ -46,11 +54,7 @@ export default function AnalyticsPage() {
   const [selectedEvaluation, setSelectedEvaluation] = useState<PsychologicalEvaluation | null>(null);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  useEffect(() => {
-    loadData();
-  }, [selectedPeriod]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Calculate date range based on selected period
@@ -81,12 +85,16 @@ export default function AnalyticsPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to load analytics data:', error);
+      debugLog('Failed to load analytics data:', error);
       toast.error('Failed to load analytics data');
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   function getOverallStats() {
     if (metrics.length === 0) return null;

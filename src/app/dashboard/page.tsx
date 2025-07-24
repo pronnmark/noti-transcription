@@ -63,22 +63,22 @@ export default function DashboardPage() {
 
         // Dashboard data loaded successfully
 
-        // Calculate stats
-        const totalFiles = files.length;
-        const totalDuration = files.reduce((sum, file) => sum + (file.duration || 0), 0);
-        const completedTranscriptions = files.filter(file => file.transcriptionStatus === 'completed').length;
+        // Calculate stats (currently unused but available for future dashboard widgets)
+        const _totalFiles = files.length;
+        const _totalDuration = files.reduce((sum, file) => sum + (file.duration || 0), 0);
+        const _completedTranscriptions = files.filter(file => file.transcriptionStatus === 'completed').length;
 
         // Files from this month
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
-        const thisMonthFiles = files.filter(file => {
+        const _thisMonthFiles = files.filter(file => {
           const fileDate = new Date(file.recordedAt || file.createdAt);
           return fileDate.getMonth() === currentMonth && fileDate.getFullYear() === currentYear;
         }).length;
 
-        // Dashboard stats calculated
+        // Dashboard stats calculated (reserved for future dashboard widgets)
 
-        // State will be updated with calculated stats
+        // State will be updated with calculated stats (reserved for future use)
 
         // Extract unique recording dates and count files per date
         const dateSet = new Set<string>();
@@ -99,7 +99,7 @@ export default function DashboardPage() {
       } else {
         toast.error('Failed to load dashboard data');
       }
-    } catch (error) {
+    } catch (_error) {
       // Dashboard load error - already shown via toast
       toast.error('Failed to load dashboard data');
     } finally {
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         toast.error('Failed to load files for selected date');
         setSelectedDateFiles([]);
       }
-    } catch (error) {
+    } catch (_error) {
       // Date files load error - already shown via toast
       toast.error('Failed to load files for selected date');
       setSelectedDateFiles([]);

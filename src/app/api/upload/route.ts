@@ -9,6 +9,14 @@ import { extractAudioMetadata } from '../../../lib/services/audioMetadata';
 
 export const runtime = 'nodejs';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // Whisper-supported audio formats (from OpenAI Whisper API documentation)
 const SUPPORTED_FORMATS = ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm'];
 const SUPPORTED_MIME_TYPES = [
@@ -42,7 +50,7 @@ function validateAudioFormat(file: File): { valid: boolean; error?: string } {
 
   // If MIME type is provided, validate it too
   if (mimeType && !SUPPORTED_MIME_TYPES.includes(mimeType)) {
-    console.warn(`Unknown MIME type: ${mimeType} for extension: ${extension} - proceeding based on extension`);
+    debugLog(`Unknown MIME type: ${mimeType} for extension: ${extension} - proceeding based on extension`);
   }
 
   return { valid: true };
@@ -84,18 +92,18 @@ export async function POST(request: NextRequest) {
         }, { status: 400 });
       }
       speakerCount = parsedCount;
-      console.log(`User specified ${speakerCount} speakers for diarization`);
+      debugLog(`User specified ${speakerCount} speakers for diarization`);
     }
 
     // Extract location data (optional)
-    let locationData: {
+    const locationData: {
       latitude?: number;
       longitude?: number;
       accuracy?: number;
       timestamp?: number;
       provider?: string;
     } = {};
-    
+
     const latitudeField = formData.get('latitude');
     const longitudeField = formData.get('longitude');
     const accuracyField = formData.get('locationAccuracy');
@@ -105,35 +113,35 @@ export async function POST(request: NextRequest) {
     if (latitudeField && longitudeField) {
       const latitude = parseFloat(latitudeField.toString());
       const longitude = parseFloat(longitudeField.toString());
-      
+
       // Basic validation for geographic coordinates
-      if (isNaN(latitude) || isNaN(longitude) || 
-          latitude < -90 || latitude > 90 || 
+      if (isNaN(latitude) || isNaN(longitude) ||
+          latitude < -90 || latitude > 90 ||
           longitude < -180 || longitude > 180) {
-        console.warn('Invalid location coordinates provided:', { latitude, longitude });
+        debugLog('Invalid location coordinates provided:', { latitude, longitude });
       } else {
         locationData.latitude = latitude;
         locationData.longitude = longitude;
-        
+
         if (accuracyField) {
           const accuracy = parseInt(accuracyField.toString());
           if (!isNaN(accuracy) && accuracy > 0) {
             locationData.accuracy = accuracy;
           }
         }
-        
+
         if (timestampField) {
           const timestamp = parseInt(timestampField.toString());
           if (!isNaN(timestamp) && timestamp > 0) {
             locationData.timestamp = timestamp;
           }
         }
-        
+
         if (providerField && ['gps', 'network', 'passive'].includes(providerField.toString())) {
           locationData.provider = providerField.toString();
         }
-        
-        console.log('📍 Location data received:', locationData);
+
+        debugLog('📍 Location data received:', locationData);
       }
     }
 
@@ -154,9 +162,9 @@ export async function POST(request: NextRequest) {
       const metadata = await extractAudioMetadata(filePath);
       recordedAt = metadata.recordedAt || null;
       duration = metadata.duration || 0;
-      console.log(`Extracted metadata - Duration: ${duration}s, Recording date: ${recordedAt ? recordedAt.toISOString() : 'none'}`);
+      debugLog(`Extracted metadata - Duration: ${duration}s, Recording date: ${recordedAt ? recordedAt.toISOString() : 'none'}`);
     } catch (error) {
-      console.warn('Failed to extract audio metadata:', error);
+      debugLog('Failed to extract audio metadata:', error);
       // Continue with defaults - not a critical error
     }
 
@@ -192,9 +200,9 @@ export async function POST(request: NextRequest) {
     // This runs in the background without blocking the upload response
     setImmediate(async () => {
       try {
-        console.log('Starting transcription worker for newly uploaded file...');
+        debugLog('Starting transcription worker for newly uploaded file...');
         const result = await processTranscriptionJobs();
-        console.log('Transcription worker completed:', result);
+        debugLog('Transcription worker completed:', result);
       } catch (error) {
         console.error('Error in transcription worker:', error);
       }

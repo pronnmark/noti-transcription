@@ -4,6 +4,14 @@ import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
 import { eq } from 'drizzle-orm';
 import { detectAndApplySpeakerNames } from '../../../../lib/services/speakerDetectionService';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // GET /api/test-speaker-detection/[fileId] - Test speaker detection on existing transcript
 export async function GET(
   request: NextRequest,
@@ -34,7 +42,7 @@ export async function GET(
 
     const transcript = transcriptionJob[0].transcript;
 
-    console.log(`🧪 Testing speaker detection for file ${fileId} with ${transcript.length} segments`);
+    debugLog(`🧪 Testing speaker detection for file ${fileId} with ${transcript.length} segments`);
 
     // Run speaker detection
     const result = await detectAndApplySpeakerNames(transcript);
@@ -102,7 +110,7 @@ export async function POST(
 
     const originalTranscript = transcriptionJob[0].transcript;
 
-    console.log(`🔄 Applying speaker detection for file ${fileId}...`);
+    debugLog(`🔄 Applying speaker detection for file ${fileId}...`);
 
     // Run speaker detection
     const result = await detectAndApplySpeakerNames(originalTranscript);
@@ -114,7 +122,7 @@ export async function POST(
         .set({ transcript: result.updatedTranscript })
         .where(eq(transcriptionJobs.id, transcriptionJob[0].id));
 
-      console.log(`✅ Updated transcript for file ${fileId} with speaker names`);
+      debugLog(`✅ Updated transcript for file ${fileId} with speaker names`);
 
       return NextResponse.json({
         success: true,

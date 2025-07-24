@@ -82,7 +82,7 @@ export async function PATCH(
     const db = getDb();
 
     // Update the file name in database
-    const updateResult = await db
+    await db
       .update(audioFiles)
       .set({
         originalFileName: originalName,

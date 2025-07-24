@@ -5,7 +5,7 @@ import { processTranscriptionJobs } from '../../../../lib/transcriptionWorker';
 // In production, this would be a proper background job queue
 // NOTE: This endpoint bypasses auth for testing purposes
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const result = await processTranscriptionJobs();
     return NextResponse.json(result);

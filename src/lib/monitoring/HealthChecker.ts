@@ -4,6 +4,7 @@ import {
   SystemHealth,
   IHealthChecker,
 } from './types';
+import { totalmem } from 'os';
 
 export abstract class BaseHealthChecker implements IHealthChecker {
   constructor(
@@ -237,7 +238,7 @@ export class MemoryHealthChecker extends BaseHealthChecker {
     metadata?: Record<string, any>;
   }> {
     const memUsage = process.memoryUsage();
-    const totalMemory = require('os').totalmem();
+    const totalMemory = totalmem();
     const usedPercentage = (memUsage.rss / totalMemory) * 100;
 
     const metadata = {

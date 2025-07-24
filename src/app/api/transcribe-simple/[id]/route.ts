@@ -8,11 +8,19 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Check auth
@@ -22,7 +30,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const fileId = parseInt(params.id);
+    const resolvedParams = await params;
+    const fileId = parseInt(resolvedParams.id);
     const db = getDb();
 
     // Get file
@@ -63,7 +72,7 @@ export async function POST(
 
     // Path to audio file
     const audioPath = join(process.cwd(), 'data', 'audio_files', file.file_name);
-    console.log('Audio path:', audioPath);
+    debugLog('Audio path:', audioPath);
 
     // Simple transcription using whisper CLI (if available)
     try {
@@ -71,7 +80,7 @@ export async function POST(
       await execAsync('which whisper');
 
       // Run whisper
-      console.log('Running whisper transcription...');
+      debugLog('Running whisper transcription...');
       const { stdout, stderr } = await execAsync(
         `whisper "${audioPath}" --model base --language en --output_format json --output_dir /tmp`,
         { maxBuffer: 10 * 1024 * 1024 },
@@ -106,7 +115,7 @@ export async function POST(
       });
 
     } catch (whisperError) {
-      console.log('Whisper not available, using fallback...');
+      debugLog('Whisper not available, using fallback...');
 
       // Fallback: Create a dummy transcription
       const dummyTranscript = [{

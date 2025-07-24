@@ -289,30 +289,22 @@
       "indexes": {
         "audio_files_file_hash_unique": {
           "name": "audio_files_file_hash_unique",
-          "columns": [
-            "file_hash"
-          ],
+          "columns": ["file_hash"],
           "isUnique": true
         },
         "transcription_status_idx": {
           "name": "transcription_status_idx",
-          "columns": [
-            "transcription_status"
-          ],
+          "columns": ["transcription_status"],
           "isUnique": false
         },
         "uploaded_at_idx": {
           "name": "uploaded_at_idx",
-          "columns": [
-            "uploaded_at"
-          ],
+          "columns": ["uploaded_at"],
           "isUnique": false
         },
         "summary_status_idx": {
           "name": "summary_status_idx",
-          "columns": [
-            "summary_status"
-          ],
+          "columns": ["summary_status"],
           "isUnique": false
         }
       },
@@ -361,12 +353,8 @@
           "name": "speaker_labels_file_id_audio_files_id_fk",
           "tableFrom": "speaker_labels",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -432,16 +420,12 @@
       "indexes": {
         "file_id_idx": {
           "name": "file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "created_at_idx": {
           "name": "created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -450,12 +434,8 @@
           "name": "ai_extracts_file_id_audio_files_id_fk",
           "tableFrom": "ai_extracts",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -463,12 +443,8 @@
           "name": "ai_extracts_template_id_summarization_templates_id_fk",
           "tableFrom": "ai_extracts",
           "tableTo": "summarization_templates",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -596,12 +572,8 @@
           "name": "ai_notes_file_id_audio_files_id_fk",
           "tableFrom": "ai_notes",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -692,16 +664,12 @@
       "indexes": {
         "extraction_templates_active_idx": {
           "name": "extraction_templates_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         },
         "extraction_templates_default_idx": {
           "name": "extraction_templates_default_idx",
-          "columns": [
-            "is_default"
-          ],
+          "columns": ["is_default"],
           "isUnique": false
         }
       },
@@ -754,9 +722,7 @@
       "indexes": {
         "title_idx": {
           "name": "title_idx",
-          "columns": [
-            "title"
-          ],
+          "columns": ["title"],
           "isUnique": false
         }
       },
@@ -873,16 +839,12 @@
       "indexes": {
         "psych_file_id_idx": {
           "name": "psych_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "psych_created_at_idx": {
           "name": "psych_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -891,12 +853,8 @@
           "name": "psychological_evaluations_file_id_audio_files_id_fk",
           "tableFrom": "psychological_evaluations",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -993,17 +951,12 @@
       "indexes": {
         "user_date_idx": {
           "name": "user_date_idx",
-          "columns": [
-            "user_id",
-            "date"
-          ],
+          "columns": ["user_id", "date"],
           "isUnique": false
         },
         "metrics_date_idx": {
           "name": "metrics_date_idx",
-          "columns": [
-            "date"
-          ],
+          "columns": ["date"],
           "isUnique": false
         }
       },
@@ -1120,23 +1073,17 @@
       "indexes": {
         "ai_sessions_file_id_idx": {
           "name": "ai_sessions_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "ai_sessions_status_idx": {
           "name": "ai_sessions_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "ai_sessions_created_at_idx": {
           "name": "ai_sessions_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -1145,12 +1092,8 @@
           "name": "ai_processing_sessions_file_id_audio_files_id_fk",
           "tableFrom": "ai_processing_sessions",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1158,12 +1101,8 @@
           "name": "ai_processing_sessions_summarization_prompt_id_summarization_prompts_id_fk",
           "tableFrom": "ai_processing_sessions",
           "tableTo": "summarization_prompts",
-          "columnsFrom": [
-            "summarization_prompt_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["summarization_prompt_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1254,16 +1193,12 @@
       "indexes": {
         "data_point_templates_active_idx": {
           "name": "data_point_templates_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         },
         "data_point_templates_default_idx": {
           "name": "data_point_templates_default_idx",
-          "columns": [
-            "is_default"
-          ],
+          "columns": ["is_default"],
           "isUnique": false
         }
       },
@@ -1330,16 +1265,12 @@
       "indexes": {
         "data_points_file_id_idx": {
           "name": "data_points_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "data_points_template_id_idx": {
           "name": "data_points_template_id_idx",
-          "columns": [
-            "template_id"
-          ],
+          "columns": ["template_id"],
           "isUnique": false
         }
       },
@@ -1348,12 +1279,8 @@
           "name": "data_points_file_id_audio_files_id_fk",
           "tableFrom": "data_points",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1361,12 +1288,8 @@
           "name": "data_points_template_id_data_point_templates_id_fk",
           "tableFrom": "data_points",
           "tableTo": "data_point_templates",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1472,37 +1395,27 @@
       "indexes": {
         "extraction_definitions_json_key_unique": {
           "name": "extraction_definitions_json_key_unique",
-          "columns": [
-            "json_key"
-          ],
+          "columns": ["json_key"],
           "isUnique": true
         },
         "extr_def_name_idx": {
           "name": "extr_def_name_idx",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": false
         },
         "extr_def_json_key_idx": {
           "name": "extr_def_json_key_idx",
-          "columns": [
-            "json_key"
-          ],
+          "columns": ["json_key"],
           "isUnique": false
         },
         "extr_def_category_idx": {
           "name": "extr_def_category_idx",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "extr_def_active_idx": {
           "name": "extr_def_active_idx",
-          "columns": [
-            "is_active"
-          ],
+          "columns": ["is_active"],
           "isUnique": false
         }
       },
@@ -1591,30 +1504,22 @@
       "indexes": {
         "extr_results_file_id_idx": {
           "name": "extr_results_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "extr_results_def_id_idx": {
           "name": "extr_results_def_id_idx",
-          "columns": [
-            "definition_id"
-          ],
+          "columns": ["definition_id"],
           "isUnique": false
         },
         "extr_results_type_idx": {
           "name": "extr_results_type_idx",
-          "columns": [
-            "extraction_type"
-          ],
+          "columns": ["extraction_type"],
           "isUnique": false
         },
         "extr_results_created_at_idx": {
           "name": "extr_results_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -1623,12 +1528,8 @@
           "name": "extraction_results_file_id_audio_files_id_fk",
           "tableFrom": "extraction_results",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1636,12 +1537,8 @@
           "name": "extraction_results_definition_id_extraction_definitions_id_fk",
           "tableFrom": "extraction_results",
           "tableTo": "extraction_definitions",
-          "columnsFrom": [
-            "definition_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["definition_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1752,23 +1649,17 @@
       "indexes": {
         "extractions_file_id_idx": {
           "name": "extractions_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "extractions_template_id_idx": {
           "name": "extractions_template_id_idx",
-          "columns": [
-            "template_id"
-          ],
+          "columns": ["template_id"],
           "isUnique": false
         },
         "extractions_status_idx": {
           "name": "extractions_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         }
       },
@@ -1777,12 +1668,8 @@
           "name": "extractions_file_id_audio_files_id_fk",
           "tableFrom": "extractions",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1790,12 +1677,8 @@
           "name": "extractions_template_id_extraction_templates_id_fk",
           "tableFrom": "extractions",
           "tableTo": "extraction_templates",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1871,16 +1754,12 @@
       "indexes": {
         "summ_prompts_name_idx": {
           "name": "summ_prompts_name_idx",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": false
         },
         "summ_prompts_default_idx": {
           "name": "summ_prompts_default_idx",
-          "columns": [
-            "is_default"
-          ],
+          "columns": ["is_default"],
           "isUnique": false
         }
       },
@@ -1954,16 +1833,12 @@
       "indexes": {
         "summarizations_file_id_idx": {
           "name": "summarizations_file_id_idx",
-          "columns": [
-            "file_id"
-          ],
+          "columns": ["file_id"],
           "isUnique": false
         },
         "summarizations_template_id_idx": {
           "name": "summarizations_template_id_idx",
-          "columns": [
-            "template_id"
-          ],
+          "columns": ["template_id"],
           "isUnique": false
         }
       },
@@ -1972,12 +1847,8 @@
           "name": "summarizations_file_id_audio_files_id_fk",
           "tableFrom": "summarizations",
           "tableTo": "audio_files",
-          "columnsFrom": [
-            "file_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["file_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1985,12 +1856,8 @@
           "name": "summarizations_template_id_summarization_templates_id_fk",
           "tableFrom": "summarizations",
           "tableTo": "summarization_templates",
-          "columnsFrom": [
-            "template_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["template_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }

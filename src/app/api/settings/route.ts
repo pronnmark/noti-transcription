@@ -3,6 +3,14 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { settingsService } from '@/lib/db';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
 
@@ -52,7 +60,7 @@ async function loadSettings(): Promise<Settings> {
 
 async function saveSettings(settings: Settings): Promise<void> {
   // Save AI settings to database
-  console.log('Attempting to save AI settings to database...');
+  debugLog('Attempting to save AI settings to database...');
   try {
     const aiSettingsData = {
       customAiBaseUrl: settings.ai.customAiBaseUrl,
@@ -63,10 +71,10 @@ async function saveSettings(settings: Settings): Promise<void> {
       aiExtractEnabled: settings.ai.aiExtractEnabled,
       aiExtractModel: settings.ai.aiExtractModel,
     };
-    console.log('AI settings data to save:', JSON.stringify(aiSettingsData, null, 2));
+    debugLog('AI settings data to save:', JSON.stringify(aiSettingsData, null, 2));
 
     await settingsService.update(aiSettingsData);
-    console.log('Successfully saved AI settings to database');
+    debugLog('Successfully saved AI settings to database');
   } catch (error) {
     console.error('Error saving AI settings to database:', error);
     console.error('Error details:', error instanceof Error ? error.message : String(error));
@@ -74,7 +82,7 @@ async function saveSettings(settings: Settings): Promise<void> {
   }
 
   // Save other settings to JSON file (for backward compatibility)
-  console.log('Saving other settings to JSON file...');
+  debugLog('Saving other settings to JSON file...');
   try {
     const fileSettings = {
       transcription: settings.transcription,
@@ -84,7 +92,7 @@ async function saveSettings(settings: Settings): Promise<void> {
     };
 
     writeFileSync(SETTINGS_FILE, JSON.stringify(fileSettings, null, 2));
-    console.log('Successfully saved other settings to JSON file');
+    debugLog('Successfully saved other settings to JSON file');
   } catch (error) {
     console.error('Error saving settings to JSON file:', error);
     throw error;
@@ -177,7 +185,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const settings: Settings = await request.json();
-    console.log('Received settings to save:', JSON.stringify(settings.ai, null, 2));
+    debugLog('Received settings to save:', JSON.stringify(settings.ai, null, 2));
 
     // Save settings (AI to database, others to file)
     await saveSettings(settings);

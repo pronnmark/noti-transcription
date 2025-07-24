@@ -4,6 +4,14 @@ import { validateSession } from '../../../lib/auth';
 import '../../../lib/logging/init'; // Initialize logger
 import { SimpleFileUploadService } from '../../../lib/services/core/SimpleFileUploadService';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // Direct upload using SimpleFileUploadService
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -41,7 +49,7 @@ export async function POST(request: NextRequest) {
       isDraft: isDraftParam === 'true',
     };
 
-    console.log('Upload v2 request:', {
+    debugLog('Upload v2 request:', {
       fileName: file.name,
       fileSize: file.size,
       options,

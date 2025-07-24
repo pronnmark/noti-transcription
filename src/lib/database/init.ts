@@ -1,7 +1,7 @@
 import { getDb } from './client';
 import { MigrationRunner } from './migrations/migration-runner';
 import { audioFiles } from './schema/audio';
-import { existsSync } from 'fs';
+import { existsSync, unlinkSync, statSync } from 'fs';
 import { join } from 'path';
 import { sql } from 'drizzle-orm';
 
@@ -146,8 +146,7 @@ export class DatabaseInitializer {
       try {
         const dbPath = 'sqlite.db';
         if (existsSync(dbPath)) {
-          const fs = require('fs');
-          const stats = fs.statSync(dbPath);
+          const stats = statSync(dbPath);
           databaseSize = stats.size;
         }
       } catch {

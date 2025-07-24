@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq } from '@/lib/db';
+import { db, summarizationPrompts, audioFiles, transcriptionJobs, aiProcessingSessions } from '@/lib/db';
 import { dynamicPromptGenerator } from '@/lib/services/dynamicPromptGenerator';
 import { customAIService } from '@/lib/services/customAI';
 import { requireAuth } from '@/lib/auth';
-import * as schema from '@/lib/db';
+import { and, eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
+
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
 
 export async function POST(
   request: NextRequest,
@@ -23,16 +31,19 @@ export async function POST(
 
     // Validate summarization template ID exists in database before processing
     if (summarizationPromptId) {
-      const { summarizationPrompts } = await import('@/lib/database/schema/system');
-      const validTemplate = await db.query.summarizationPrompts.findFirst({
-        where: (prompts: any, { eq, and }: any) => and(
-          eq(prompts.id, summarizationPromptId),
-          eq(prompts.isActive, true),
-        ),
-      });
+      const validTemplate = await db()
+        .select()
+        .from(summarizationPrompts)
+        .where(
+          and(
+            eq(summarizationPrompts.id, summarizationPromptId),
+            eq(summarizationPrompts.isActive, true),
+          ),
+        )
+        .limit(1);
 
-      if (!validTemplate) {
-        console.error(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
+      if (!validTemplate || validTemplate.length === 0) {
+        debugLog(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
         return NextResponse.json({
           error: 'Invalid summarization template ID provided',
           invalidTemplateId: summarizationPromptId,
@@ -41,37 +52,45 @@ export async function POST(
     }
 
     // Get file
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, fileIdInt),
-    });
+    const file = await db()
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileIdInt))
+      .limit(1);
 
-    if (!file) {
+    if (!file || file.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
-    // Get transcript from transcription jobs
-    const transcriptionJob = await db.query.transcriptionJobs.findFirst({
-      where: (transcriptionJobs: any, { eq }: any) => eq(transcriptionJobs.fileId, fileIdInt),
-    });
+    const fileRecord = file[0];
 
-    if (!transcriptionJob || !transcriptionJob.transcript) {
+    // Get transcript from transcription jobs
+    const transcriptionJob = await db()
+      .select()
+      .from(transcriptionJobs)
+      .where(eq(transcriptionJobs.fileId, fileIdInt))
+      .limit(1);
+
+    if (!transcriptionJob || transcriptionJob.length === 0 || !transcriptionJob[0].transcript) {
       return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
     }
 
-    console.log(`🤖 Starting dynamic AI processing for file ${fileIdInt}`);
-    console.log(`📝 Summarization prompt: ${summarizationPromptId || 'default'}`);
-    console.log(`🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`);
+    const transcriptRecord = transcriptionJob[0];
+
+    debugLog(`🤖 Starting dynamic AI processing for file ${fileIdInt}`);
+    debugLog(`📝 Summarization prompt: ${summarizationPromptId || 'default'}`);
+    debugLog(`🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`);
 
     // Create processing session
     const sessionId = createId();
     const startTime = Date.now();
 
     // Update file timestamp
-    await db.update(schema.audioFiles)
+    await db().update(audioFiles)
       .set({
         updatedAt: new Date(),
       })
-      .where(eq(schema.audioFiles.id, fileIdInt));
+      .where(eq(audioFiles.id, fileIdInt));
 
     // Get the configured AI model outside try block for error handling access
     const configuredModel = await customAIService.getDefaultModel();
@@ -87,14 +106,14 @@ export async function POST(
 
       extractionMap = generatedExtractionMap;
 
-      console.log(`📋 Generated system prompt (${systemPrompt.length} chars)`);
-      console.log(`🔧 Extraction map:`, Object.keys(extractionMap));
+      debugLog(`📋 Generated system prompt (${systemPrompt.length} chars)`);
+      debugLog(`🔧 Extraction map:`, Object.keys(extractionMap));
 
       // Format transcript for AI
-      const transcriptText = formatTranscriptForAI(transcriptionJob.transcript);
+      const transcriptText = formatTranscriptForAI(transcriptRecord.transcript || []);
 
       // Create AI processing session record
-      await db.insert(schema.aiProcessingSessions).values({
+      await db().insert(aiProcessingSessions).values({
         id: sessionId,
         fileId: fileIdInt,
         summarizationPromptId: summarizationPromptId || null,
@@ -117,18 +136,18 @@ export async function POST(
         },
       );
 
-      console.log(`🤖 AI response received (${aiResponse.length} chars)`);
-      console.log(`📊 Sample response:`, aiResponse.substring(0, 200) + '...');
+      debugLog(`🤖 AI response received (${aiResponse.length} chars)`);
+      debugLog(`📊 Sample response:`, aiResponse.substring(0, 200) + '...');
 
       // Update session with AI response
-      await db.update(schema.aiProcessingSessions)
+      await db().update(aiProcessingSessions)
         .set({
           aiResponse,
           status: 'completed',
           processingTime: Date.now() - startTime,
           completedAt: new Date(),
         })
-        .where(eq(schema.aiProcessingSessions.id, sessionId));
+        .where(eq(aiProcessingSessions.id, sessionId));
 
       // Parse and store results
       const { success, extractionResults, error } = await dynamicPromptGenerator.parseAndStoreResults(
@@ -145,14 +164,14 @@ export async function POST(
       }
 
       // Update file timestamp
-      await db.update(schema.audioFiles)
+      await db().update(audioFiles)
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(schema.audioFiles.id, fileIdInt));
+        .where(eq(audioFiles.id, fileIdInt));
 
-      console.log(`✅ Dynamic AI processing completed for file ${fileIdInt}`);
-      console.log(`📊 Extracted ${extractionResults.length} result groups`);
+      debugLog(`✅ Dynamic AI processing completed for file ${fileIdInt}`);
+      debugLog(`📊 Extracted ${extractionResults.length} result groups`);
 
       return NextResponse.json({
         success: true,
@@ -163,7 +182,7 @@ export async function POST(
       });
 
     } catch (aiError) {
-      console.error('Dynamic AI processing error:', aiError);
+      debugLog('Dynamic AI processing error:', aiError);
 
       // Create graceful fallback with empty results
       try {
@@ -177,7 +196,7 @@ export async function POST(
         );
 
         // Update session with partial success
-        await db.update(schema.aiProcessingSessions)
+        await db().update(aiProcessingSessions)
           .set({
             status: 'completed',
             error: `AI processing failed, fallback applied: ${String(aiError)}`,
@@ -185,14 +204,14 @@ export async function POST(
             completedAt: new Date(),
             aiResponse: 'Fallback response due to AI processing failure',
           })
-          .where(eq(schema.aiProcessingSessions.id, sessionId));
+          .where(eq(aiProcessingSessions.id, sessionId));
 
         // Update file timestamp
-        await db.update(schema.audioFiles)
+        await db().update(audioFiles)
           .set({
             updatedAt: new Date(),
           })
-          .where(eq(schema.audioFiles.id, fileIdInt));
+          .where(eq(audioFiles.id, fileIdInt));
 
         return NextResponse.json({
           success: true,
@@ -204,24 +223,24 @@ export async function POST(
         });
 
       } catch (fallbackError) {
-        console.error('Fallback processing also failed:', fallbackError);
+        debugLog('Fallback processing also failed:', fallbackError);
 
         // Update session with error
-        await db.update(schema.aiProcessingSessions)
+        await db().update(aiProcessingSessions)
           .set({
             status: 'failed',
             error: String(aiError),
             processingTime: Date.now() - startTime,
             completedAt: new Date(),
           })
-          .where(eq(schema.aiProcessingSessions.id, sessionId));
+          .where(eq(aiProcessingSessions.id, sessionId));
 
         // Update file timestamp
-        await db.update(schema.audioFiles)
+        await db().update(audioFiles)
           .set({
             updatedAt: new Date(),
           })
-          .where(eq(schema.audioFiles.id, fileIdInt));
+          .where(eq(audioFiles.id, fileIdInt));
 
         return NextResponse.json({
           error: 'Failed to process with AI and fallback failed',
@@ -232,7 +251,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Error in dynamic AI processing:', error);
+    debugLog('Error in dynamic AI processing:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -276,19 +295,21 @@ export async function GET(
     const extractionResults = await dynamicPromptGenerator.getExtractionResults(fileIdInt);
 
     // Get file info
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, fileIdInt),
-    });
+    const fileInfo = await db()
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileIdInt))
+      .limit(1);
 
     return NextResponse.json({
       fileId: fileIdInt,
-      fileName: file?.fileName || 'Unknown',
+      fileName: fileInfo?.[0]?.fileName || 'Unknown',
       summarization: null, // Summarization would be fetched from summarizations table
       extractionResults,
     });
 
   } catch (error) {
-    console.error('Error fetching extraction results:', error);
+    debugLog('Error fetching extraction results:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Loader2, BarChart3, Settings, TrendingUp, Activity } from 'lucide-react';
+import { toast } from 'sonner';
 import TemplateManager from '@/components/templates/TemplateManager';
 
 interface DataPointTemplate {
@@ -64,7 +65,7 @@ export default function DataPointsPage() {
       const dataPointsResponse = await fetch('/api/data-points');
       const dataPointsData = await dataPointsResponse.json();
       setDataPoints(dataPointsData.dataPoints || []);
-    } catch (error) {
+    } catch (_error) {
       // Error already shown via toast
     } finally {
       setLoading(false);
@@ -133,7 +134,7 @@ export default function DataPointsPage() {
         const dataPointsData = await dataPointsResponse.json();
         setDataPoints(dataPointsData.dataPoints || []);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to run analysis');
     } finally {
       setIsProcessing(false);

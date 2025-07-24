@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     // Validate JSON schema
     try {
       JSON.parse(typeof jsonSchema === 'string' ? jsonSchema : JSON.stringify(jsonSchema));
-    } catch (error) {
+    } catch (_error) {
       return NextResponse.json({
         error: 'Invalid JSON schema format',
       }, { status: 400 });
@@ -86,7 +86,7 @@ export async function PUT(request: NextRequest) {
     if (updates.jsonSchema) {
       try {
         JSON.parse(typeof updates.jsonSchema === 'string' ? updates.jsonSchema : JSON.stringify(updates.jsonSchema));
-      } catch (error) {
+      } catch (_error) {
         return NextResponse.json({
           error: 'Invalid JSON schema format',
         }, { status: 400 });

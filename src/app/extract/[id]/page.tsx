@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,13 +29,7 @@ export default function ExtractPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (params.id) {
-      loadFileAndExtract();
-    }
-  }, [params.id]);
-
-  async function loadFileAndExtract() {
+  const loadFileAndExtract = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -65,7 +59,13 @@ export default function ExtractPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [params.id]);
+
+  useEffect(() => {
+    if (params.id) {
+      loadFileAndExtract();
+    }
+  }, [params.id, loadFileAndExtract]);
 
   function formatDate(dateString?: string) {
     if (!dateString) return 'Unknown';

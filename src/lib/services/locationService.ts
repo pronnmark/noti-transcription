@@ -94,7 +94,7 @@ export class LocationService {
     this.isTracking = false;
     this.onLocationUpdate = null;
     this.onError = null;
-    
+
     console.log('🛑 Location tracking stopped');
   }
 
@@ -139,9 +139,9 @@ export class LocationService {
    */
   private handleLocationSuccess(position: GeolocationPosition): void {
     const locationData = this.processPosition(position);
-    
+
     this.lastLocation = locationData;
-    
+
     if (this.onLocationUpdate) {
       this.onLocationUpdate(locationData);
     }
