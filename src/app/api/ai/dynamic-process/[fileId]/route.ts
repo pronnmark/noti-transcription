@@ -31,7 +31,7 @@ export async function POST(
 
     // Validate summarization template ID exists in database before processing
     if (summarizationPromptId) {
-      const { summarizationPrompts } = await import('@/lib/database/schema/system');
+      const { summarizationPrompts: _summarizationPrompts } = await import('@/lib/database/schema/system');
       const validTemplate = await db.query.summarizationPrompts.findFirst({
         where: (prompts: any, { eq, and }: any) => and(
           eq(prompts.id, summarizationPromptId),
@@ -40,7 +40,7 @@ export async function POST(
       });
 
       if (!validTemplate) {
-        console.error(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
+        debugLog(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
         return NextResponse.json({
           error: 'Invalid summarization template ID provided',
           invalidTemplateId: summarizationPromptId,
@@ -171,7 +171,7 @@ export async function POST(
       });
 
     } catch (aiError) {
-      console.error('Dynamic AI processing error:', aiError);
+      debugLog('Dynamic AI processing error:', aiError);
 
       // Create graceful fallback with empty results
       try {
@@ -212,7 +212,7 @@ export async function POST(
         });
 
       } catch (fallbackError) {
-        console.error('Fallback processing also failed:', fallbackError);
+        debugLog('Fallback processing also failed:', fallbackError);
 
         // Update session with error
         await db.update(schema.aiProcessingSessions)
@@ -240,7 +240,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Error in dynamic AI processing:', error);
+    debugLog('Error in dynamic AI processing:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -296,7 +296,7 @@ export async function GET(
     });
 
   } catch (error) {
-    console.error('Error fetching extraction results:', error);
+    debugLog('Error fetching extraction results:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

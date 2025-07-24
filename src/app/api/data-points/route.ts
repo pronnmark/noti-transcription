@@ -3,6 +3,14 @@ import { db, eq, and, inArray } from '@/lib/db';
 import * as schema from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 export async function GET(request: NextRequest) {
   try {
     // Check authentication
@@ -54,7 +62,7 @@ export async function GET(request: NextRequest) {
       templates: templates,
     });
   } catch (error) {
-    console.error('Error fetching data points:', error);
+    debugLog('Error fetching data points:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -121,7 +129,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Error creating data point:', error);
+    debugLog('Error creating data point:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 export async function POST(request: NextRequest) {
   try {
     const { password } = await request.json();
@@ -23,7 +31,7 @@ export async function POST(request: NextRequest) {
       }, { status: 401 });
     }
   } catch (error) {
-    console.error('Auth error:', error);
+    debugLog('Auth error:', error);
     return NextResponse.json({
       success: false,
       message: 'Authentication failed',

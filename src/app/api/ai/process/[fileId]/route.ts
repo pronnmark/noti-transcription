@@ -46,7 +46,7 @@ export async function POST(
       const invalidTemplateIds = templateIds.filter((id: string) => !validTemplateIds.has(id));
 
       if (invalidTemplateIds.length > 0) {
-        console.error(`❌ Invalid template IDs provided: ${invalidTemplateIds.join(', ')}`);
+        debugLog(`❌ Invalid template IDs provided: ${invalidTemplateIds.join(', ')}`);
         return NextResponse.json({
           error: 'Invalid template IDs provided',
           invalidTemplateIds,
@@ -200,7 +200,7 @@ export async function POST(
       });
 
     } catch (aiError) {
-      console.error('AI processing error:', aiError);
+      debugLog('AI processing error:', aiError);
 
       // Update file timestamp
       await db.update(schema.audioFiles)
@@ -216,7 +216,7 @@ export async function POST(
     }
 
   } catch (error) {
-    console.error('Error in AI processing:', error);
+    debugLog('Error in AI processing:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
