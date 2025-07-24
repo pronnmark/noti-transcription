@@ -20,7 +20,7 @@ const navigation = [
     href: '/record',
   },
   {
-    name: 'AI',
+    name: 'Summaries',
     href: '/ai/summarization',
   },
   {

@@ -33,7 +33,7 @@ export function BottomNav({ className }: BottomNavProps) {
     },
     {
       href: '/ai/summarization',
-      label: 'AI',
+      label: 'Summaries',
       icon: Sparkles,
       isActive: pathname.startsWith('/ai/'),
     },
