@@ -104,7 +104,7 @@ export async function GET(request: NextRequest) {
       labels: (() => {
         try {
           return typeof file.labels === 'string' ? JSON.parse(file.labels) : (Array.isArray(file.labels) ? file.labels : []);
-        } catch (e) {
+        } catch (_e) {
           return [];
         }
       })(),
