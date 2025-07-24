@@ -47,8 +47,8 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     // Step 4: Create simple hash (simplified version)
-    const crypto = require('crypto');
-    const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
+    const { createHash } = await import('crypto');
+    const fileHash = createHash('sha256').update(buffer).digest('hex');
     debugLog('File hash:', fileHash);
 
     // Step 5: Save file

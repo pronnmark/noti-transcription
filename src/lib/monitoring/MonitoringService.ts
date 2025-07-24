@@ -8,6 +8,7 @@ import {
   MetricExporter,
   IHealthChecker,
 } from './types';
+import { totalmem } from 'os';
 import { BaseService } from '../services/core/BaseService';
 import {
   SystemMetricsCollector,
@@ -270,7 +271,7 @@ export class MonitoringService extends BaseService implements IMonitoringService
 
     const now = new Date();
     const memUsage = process.memoryUsage();
-    const totalMemory = require('os').totalmem();
+    const totalMemory = totalmem();
 
     return {
       requestCount: 0, // Would be calculated from http_requests_total

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq } from '@/lib/db';
+import { db } from '@/lib/db';
 import { dynamicPromptGenerator } from '@/lib/services/dynamicPromptGenerator';
 import { customAIService } from '@/lib/services/customAI';
 import { requireAuth } from '@/lib/auth';
 import * as schema from '@/lib/db';
+import { and, eq } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
 // Debug logging (can be disabled by setting DEBUG_API=false)
@@ -31,15 +32,19 @@ export async function POST(
 
     // Validate summarization template ID exists in database before processing
     if (summarizationPromptId) {
-      const { summarizationPrompts: _summarizationPrompts } = await import('@/lib/database/schema/system');
-      const validTemplate = await db.query.summarizationPrompts.findFirst({
-        where: (prompts: any, { eq, and }: any) => and(
-          eq(prompts.id, summarizationPromptId),
-          eq(prompts.isActive, true),
-        ),
-      });
+      const { summarizationPrompts } = await import('@/lib/database/schema/system');
+      const validTemplate = await db
+        .select()
+        .from(summarizationPrompts)
+        .where(
+          and(
+            eq(summarizationPrompts.id, summarizationPromptId),
+            eq(summarizationPrompts.isActive, true),
+          ),
+        )
+        .limit(1);
 
-      if (!validTemplate) {
+      if (!validTemplate || validTemplate.length === 0) {
         debugLog(`❌ Invalid summarization template ID: ${summarizationPromptId}`);
         return NextResponse.json({
           error: 'Invalid summarization template ID provided',

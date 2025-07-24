@@ -8,6 +8,12 @@ export * from './AIServiceError';
 export * from './ErrorHandler';
 export * from './ErrorReporter';
 
+// Import the classes for use in factory functions
+import { AppError } from './AppError';
+import { ValidationError } from './ValidationError';
+import { DatabaseError } from './DatabaseError';
+import { AIServiceError } from './AIServiceError';
+
 // Re-export commonly used items
 export { errorHandler } from './ErrorHandler';
 
@@ -31,42 +37,34 @@ export function isAIServiceError(error: unknown): error is import('./AIServiceEr
 // Error factory functions for common scenarios
 export const createError = {
   validation: (message: string, field?: string, value?: any) => {
-    const { ValidationError } = require('./ValidationError');
     return new ValidationError(message, field, value);
   },
 
   notFound: (resource: string, id?: string | number) => {
-    const { AppError } = require('./AppError');
     return AppError.notFound(resource, id);
   },
 
   unauthorized: (message?: string) => {
-    const { AppError } = require('./AppError');
     return AppError.unauthorized(message);
   },
 
   forbidden: (message?: string) => {
-    const { AppError } = require('./AppError');
     return AppError.forbidden(message);
   },
 
   conflict: (message: string) => {
-    const { AppError } = require('./AppError');
     return AppError.conflict(message);
   },
 
   internal: (message: string, cause?: Error) => {
-    const { AppError } = require('./AppError');
     return AppError.internal(message, cause);
   },
 
   database: (message: string, cause?: Error) => {
-    const { DatabaseError } = require('./DatabaseError');
     return new DatabaseError(message, undefined, cause);
   },
 
   aiService: (message: string, provider?: string, cause?: Error) => {
-    const { AIServiceError } = require('./AIServiceError');
     return new AIServiceError(message, undefined, undefined, cause, { provider });
   },
 };

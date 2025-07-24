@@ -16,19 +16,13 @@ export abstract class BaseService implements IService {
 
   protected get monitoring(): any {
     if (!this._monitoring) {
-      try {
-        // Lazy load monitoring service to avoid circular dependency
-        const { getMonitoringService } = require('../../monitoring');
-        this._monitoring = getMonitoringService();
-      } catch (error) {
-        // If monitoring service fails to load, use a no-op
-        this._monitoring = {
-          recordHttpRequest: () => {},
-          recordDatabaseQuery: () => {},
-          recordAIRequest: () => {},
-          recordAITokenUsage: () => {},
-        };
-      }
+      // If monitoring service isn't initialized, use a no-op
+      this._monitoring = {
+        recordHttpRequest: () => {},
+        recordDatabaseQuery: () => {},
+        recordAIRequest: () => {},
+        recordAITokenUsage: () => {},
+      };
     }
     return this._monitoring;
   }

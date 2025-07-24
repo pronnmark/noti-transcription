@@ -10,7 +10,7 @@ export * from './transports';
 
 // Logger factory and configuration
 export * from './LoggerFactory';
-import { LoggerFactory } from './LoggerFactory';
+import { LoggerFactory, createDefaultConfig } from './LoggerFactory';
 
 // Re-export commonly used items
 export {
@@ -31,7 +31,6 @@ export function createServiceLogger(serviceName: string, context?: Record<string
     factory = LoggerFactory.getInstance();
   } catch (error) {
     // Initialize with default config if not already initialized
-    const { createDefaultConfig } = require('./LoggerFactory');
     factory = LoggerFactory.initialize(createDefaultConfig());
   }
   return factory.createChildLogger(serviceName, context || {});
@@ -42,7 +41,6 @@ export function withRequestId(requestId: string) {
   try {
     factory = LoggerFactory.getInstance();
   } catch (error) {
-    const { createDefaultConfig } = require('./LoggerFactory');
     factory = LoggerFactory.initialize(createDefaultConfig());
   }
   const logger = factory.getLogger();
@@ -54,7 +52,6 @@ export function withUserId(userId: string) {
   try {
     factory = LoggerFactory.getInstance();
   } catch (error) {
-    const { createDefaultConfig } = require('./LoggerFactory');
     factory = LoggerFactory.initialize(createDefaultConfig());
   }
   const logger = factory.getLogger();
@@ -66,7 +63,6 @@ export function withContext(context: Record<string, any>) {
   try {
     factory = LoggerFactory.getInstance();
   } catch (error) {
-    const { createDefaultConfig } = require('./LoggerFactory');
     factory = LoggerFactory.initialize(createDefaultConfig());
   }
   const logger = factory.getLogger();

@@ -619,7 +619,7 @@ export default function SettingsPage() {
                 <Label htmlFor="customAiApiKey">API Key</Label>
                 <div className="flex gap-2 min-w-0">
                   <Input
-                    className="flex-1 min-w-0"
+                    className={`flex-1 min-w-0 ${validationErrors.customAiApiKey ? 'border-red-500' : ''}`}
                     id="customAiApiKey"
                     type={showTokens.customAiApiKey ? 'text' : 'password'}
                     value={aiSettings.customAiApiKey}
@@ -631,7 +631,6 @@ export default function SettingsPage() {
                       }
                     }}
                     placeholder="sk-... (OpenAI) or claude-... (Anthropic)"
-                    className={validationErrors.customAiApiKey ? 'border-red-500' : ''}
                   />
                   <Button
                     variant="outline"

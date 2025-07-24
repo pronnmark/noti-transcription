@@ -24,6 +24,10 @@ const withPWA = require('next-pwa')({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Don't fail build on ESLint warnings in production
+  eslint: {
+    ignoreDuringBuilds: false, // Keep linting but don't fail on warnings
+  },
   // Configure allowed dev origins for Next.js development
   allowedDevOrigins: ['noti.se', '*.noti.se', 'localhost:5173'],
   

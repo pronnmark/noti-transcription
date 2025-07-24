@@ -21,7 +21,7 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     // Check auth
@@ -31,7 +31,8 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const fileId = parseInt(params.id);
+    const resolvedParams = await params;
+    const fileId = parseInt(resolvedParams.id);
     if (isNaN(fileId)) {
       return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
     }

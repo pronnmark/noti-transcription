@@ -6,6 +6,7 @@ import {
   IMetricsCollector,
   MetricCollector,
 } from './types';
+import { totalmem } from 'os';
 
 export class BaseMetricsCollector implements IMetricsCollector {
   protected metrics: Map<string, Metric> = new Map();
@@ -123,7 +124,7 @@ export class SystemMetricsCollector extends BaseMetricsCollector implements Metr
     this.setGauge('heap_total_bytes', memUsage.heapTotal);
 
     // Calculate memory usage percentage (rough estimate)
-    const totalMemory = require('os').totalmem();
+    const totalMemory = totalmem();
     const memoryPercentage = (memUsage.rss / totalMemory) * 100;
     this.setGauge('memory_usage_percentage', memoryPercentage);
   }
