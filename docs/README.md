@@ -8,6 +8,8 @@ This directory contains technical documentation for the Noti audio transcription
 
 - **[telegram-integration-2025-01-24.md](./telegram-integration-2025-01-24.md)** - Complete
   technical documentation for Telegram summary sharing integration
+- **[code-quality-2025-01-24.md](./code-quality-2025-01-24.md)** - Comprehensive
+  code quality improvements, linting standards, and debug logging patterns
 
 ## Documentation Standards
 
