@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from '@/lib/db';
+import { getDb } from '@/lib/database/client';
+import { eq, and, inArray } from 'drizzle-orm';
 import { extractions, extractionTemplates, audioFiles } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get extractions with template information
+    const db = getDb();
     const extractionsResult = await db.query.extractions?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       orderBy: (extractions: any, { desc }: any) => [desc(extractions.createdAt)],
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists
+    const db = getDb();
     const file = await db.query.audioFiles.findFirst({
       where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
     });

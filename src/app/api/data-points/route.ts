@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and, inArray } from '@/lib/db';
+import { getDb } from '@/lib/database/client';
+import { eq, and, inArray } from 'drizzle-orm';
 import * as schema from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
@@ -33,6 +34,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get data points with template information
+    const db = getDb();
     const dataPointsResult = await db.query.dataPoints?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       orderBy: (dataPoints: any, { desc }: any) => [desc(dataPoints.createdAt)],
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists
+    const db = getDb();
     const file = await db.query.audioFiles.findFirst({
       where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
     });

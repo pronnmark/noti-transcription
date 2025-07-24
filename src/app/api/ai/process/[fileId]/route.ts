@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq } from '@/lib/db';
+import { getDb } from '@/lib/database/client';
+import { eq } from 'drizzle-orm';
+import { summarizationPrompts, audioFiles, transcriptionJobs } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
-import * as schema from '@/lib/db';
 
 // Debug logging (can be disabled by setting DEBUG_API=false)
 const DEBUG_API = process.env.DEBUG_API !== 'false';
@@ -37,7 +38,7 @@ export async function POST(
 
     // Validate template IDs exist in database before processing
     if (templateIds.length > 0) {
-      const { summarizationPrompts } = await import('@/lib/database/schema/system');
+      const db = getDb();
       const validTemplates = await db.select({ id: summarizationPrompts.id })
         .from(summarizationPrompts)
         .where(eq(summarizationPrompts.isActive, true));
@@ -56,18 +57,25 @@ export async function POST(
     }
 
     // Get file
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, fileIdInt),
-    });
+    const db = getDb();
+    const fileResults = await db.select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileIdInt))
+      .limit(1);
+
+    const file = fileResults.length > 0 ? fileResults[0] : null;
 
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     // Get transcript from transcription jobs
-    const transcriptionJob = await db.query.transcriptionJobs.findFirst({
-      where: (transcriptionJobs: any, { eq }: any) => eq(transcriptionJobs.fileId, fileIdInt),
-    });
+    const transcriptionJobResults = await db.select()
+      .from(transcriptionJobs)
+      .where(eq(transcriptionJobs.fileId, fileIdInt))
+      .limit(1);
+
+    const transcriptionJob = transcriptionJobResults.length > 0 ? transcriptionJobResults[0] : null;
 
     if (!transcriptionJob || !transcriptionJob.transcript) {
       return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
@@ -81,11 +89,11 @@ export async function POST(
       switch (processType) {
         case 'summarization':
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           results.summarization = await adaptiveAIService.generateSummarization(
             fileIdInt,
@@ -98,11 +106,11 @@ export async function POST(
           );
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           break;
 
@@ -112,11 +120,11 @@ export async function POST(
           }
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           results.extractions = await adaptiveAIService.processExtractions(
             fileIdInt,
@@ -126,11 +134,11 @@ export async function POST(
           );
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           break;
 
@@ -140,11 +148,11 @@ export async function POST(
           }
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           results.dataPoints = await adaptiveAIService.processDataPoints(
             fileIdInt,
@@ -154,21 +162,21 @@ export async function POST(
           );
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           break;
 
         case 'all':
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           // Process with default templates
           results = await adaptiveAIService.processFileWithDefaults(
@@ -178,11 +186,11 @@ export async function POST(
           );
 
           // Update file timestamp
-          await db.update(schema.audioFiles)
+          await db.update(audioFiles)
             .set({
               updatedAt: new Date(),
             })
-            .where(eq(schema.audioFiles.id, fileIdInt));
+            .where(eq(audioFiles.id, fileIdInt));
 
           break;
 
@@ -203,11 +211,11 @@ export async function POST(
       debugLog('AI processing error:', aiError);
 
       // Update file timestamp
-      await db.update(schema.audioFiles)
+      await db().update(audioFiles)
         .set({
           updatedAt: new Date(),
         })
-        .where(eq(schema.audioFiles.id, fileIdInt));
+        .where(eq(audioFiles.id, fileIdInt));
 
       return NextResponse.json({
         error: 'Failed to process with AI',

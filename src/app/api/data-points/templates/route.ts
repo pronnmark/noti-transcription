@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, eq, and } from '@/lib/db';
+import { getDb } from '@/lib/database/client';
+import { eq, and } from 'drizzle-orm';
 import { dataPointTemplates, dataPoints as _dataPoints } from '@/lib/db';
 import { requireAuth } from '@/lib/auth';
 
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(dataPointTemplates.isDefault, true));
     }
 
+    const db = getDb();
     const templates = await db.query.dataPointTemplates?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       orderBy: (templates: any, { desc, asc }: any) => [
@@ -76,6 +78,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
+    const db = getDb();
     const [template] = await db.insert(dataPointTemplates).values({
       name: name,
       description: description || null,
@@ -127,6 +130,7 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if template exists
+    const db = getDb();
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
@@ -186,6 +190,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if template exists
+    const db = getDb();
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });

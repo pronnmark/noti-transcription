@@ -12,7 +12,7 @@ const debugLog = (...args: unknown[]) => {
 export async function GET() {
   try {
     const modelDetails = getAvailableModels();
-    const models = modelDetails.map(model => model.id);
+    const models = modelDetails.map((model: any) => model.id);
 
     return NextResponse.json({
       models,
