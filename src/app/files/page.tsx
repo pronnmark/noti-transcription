@@ -27,6 +27,41 @@ interface AudioFile {
   hasSpeakers?: boolean;
 }
 
+interface SummaryStatusProps {
+  hasAiExtract: boolean;
+  extractCount: number;
+}
+
+function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
+  if (!hasAiExtract || extractCount === 0) {
+    // Hollow circle for no summaries
+    return (
+      <div className="flex items-center gap-1">
+        <div 
+          className="w-2 h-2 rounded-full border border-gray-400 bg-transparent" 
+          title="No summaries generated"
+        />
+      </div>
+    );
+  }
+
+  // Filled circles for summaries - one per summary
+  return (
+    <div className="flex items-center gap-1">
+      {Array.from({ length: Math.min(extractCount, 5) }, (_, i) => (
+        <div 
+          key={i}
+          className="w-2 h-2 rounded-full bg-gray-800" 
+          title={`${extractCount} ${extractCount === 1 ? 'summary' : 'summaries'} generated`}
+        />
+      ))}
+      {extractCount > 5 && (
+        <span className="text-xs text-gray-600 ml-1">+{extractCount - 5}</span>
+      )}
+    </div>
+  );
+}
+
 export default function FilesPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -253,9 +288,15 @@ export default function FilesPage() {
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
-                                {file.originalName}
-                              </p>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                  {file.originalName}
+                                </p>
+                                <SummaryStatus 
+                                  hasAiExtract={file.hasAiExtract || false}
+                                  extractCount={file.extractCount || 0}
+                                />
+                              </div>
                               <div className="flex items-center gap-3 mt-1">
                                 <span className="text-xs text-gray-500">
                                   {formatDate(file.recordedAt || file.createdAt)}

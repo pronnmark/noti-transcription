@@ -9,7 +9,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { Save, RefreshCw, Eye, EyeOff, Plus, Edit2, Trash2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 
 interface TranscriptionSettings {
   modelSize: string;
@@ -31,6 +40,17 @@ interface AISettings {
   openaiApiKey: string;
   aiExtractEnabled: boolean;
   aiExtractModel: string;
+}
+
+interface SummarizationTemplate {
+  id: string;
+  name: string;
+  description: string;
+  prompt: string;
+  isDefault: boolean;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const MODEL_SIZES = [
@@ -90,8 +110,19 @@ export default function SettingsPage() {
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
+  const [templates, setTemplates] = useState<SummarizationTemplate[]>([]);
+  const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
+  const [editingTemplate, setEditingTemplate] = useState<SummarizationTemplate | null>(null);
+  const [templateForm, setTemplateForm] = useState({
+    name: '',
+    description: '',
+    prompt: '',
+    isDefault: false,
+  });
+
   useEffect(() => {
     loadSettings();
+    loadTemplates();
   }, []);
 
   async function loadSettings() {
@@ -202,6 +233,96 @@ export default function SettingsPage() {
     return Object.keys(errors).length === 0;
   }
 
+  async function loadTemplates() {
+    try {
+      const response = await fetch('/api/summarization-prompts');
+      if (response.ok) {
+        const data = await response.json();
+        setTemplates(data.prompts || []);
+      }
+    } catch (error) {
+      console.error('Failed to load templates:', error);
+    }
+  }
+
+  function openTemplateDialog(template?: SummarizationTemplate) {
+    if (template) {
+      setEditingTemplate(template);
+      setTemplateForm({
+        name: template.name,
+        description: template.description,
+        prompt: template.prompt,
+        isDefault: template.isDefault,
+      });
+    } else {
+      setEditingTemplate(null);
+      setTemplateForm({
+        name: '',
+        description: '',
+        prompt: '',
+        isDefault: false,
+      });
+    }
+    setIsTemplateDialogOpen(true);
+  }
+
+  async function saveTemplate() {
+    if (!templateForm.name.trim() || !templateForm.prompt.trim()) {
+      toast.error('Name and prompt are required');
+      return;
+    }
+
+    try {
+      const url = editingTemplate 
+        ? '/api/summarization-prompts'
+        : '/api/summarization-prompts';
+      
+      const method = editingTemplate ? 'PUT' : 'POST';
+      const body = editingTemplate 
+        ? { id: editingTemplate.id, ...templateForm }
+        : templateForm;
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (response.ok) {
+        toast.success(`Template ${editingTemplate ? 'updated' : 'created'} successfully`);
+        setIsTemplateDialogOpen(false);
+        loadTemplates();
+      } else {
+        throw new Error('Failed to save template');
+      }
+    } catch (error) {
+      toast.error('Failed to save template');
+      console.error('Save template error:', error);
+    }
+  }
+
+  async function deleteTemplate(id: string) {
+    if (!confirm('Are you sure you want to delete this template?')) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/summarization-prompts?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        toast.success('Template deleted successfully');
+        loadTemplates();
+      } else {
+        throw new Error('Failed to delete template');
+      }
+    } catch (error) {
+      toast.error('Failed to delete template');
+      console.error('Delete template error:', error);
+    }
+  }
+
   return (
     <div className="standard-page-bg min-h-screen overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header - Now part of scrollable content */}
@@ -213,6 +334,7 @@ export default function SettingsPage() {
         <TabsList>
           <TabsTrigger value="essential">Essential</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
+          <TabsTrigger value="templates">Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="essential" className="space-y-4 sm:space-y-6">
@@ -423,6 +545,73 @@ export default function SettingsPage() {
 
         </TabsContent>
 
+        <TabsContent value="templates" className="space-y-4 sm:space-y-6">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <div>
+                <CardTitle>Summary Templates</CardTitle>
+                <CardDescription>Create and manage custom templates for AI summarization</CardDescription>
+              </div>
+              <Button onClick={() => openTemplateDialog()} className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                New Template
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {templates.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No templates created yet.</p>
+                  <p className="text-sm">Create your first template to get started.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {templates.map((template) => (
+                    <div key={template.id} className="border rounded-lg p-4 space-y-2">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="font-medium">{template.name}</h4>
+                            {template.isDefault && (
+                              <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded">
+                                Default
+                              </span>
+                            )}
+                          </div>
+                          {template.description && (
+                            <p className="text-sm text-muted-foreground mt-1">
+                              {template.description}
+                            </p>
+                          )}
+                          <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                            <p className="line-clamp-2">{template.prompt}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => openTemplateDialog(template)}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => deleteTemplate(template.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="advanced" className="space-y-4 sm:space-y-6">
           <Card>
             <CardHeader>
@@ -583,6 +772,81 @@ export default function SettingsPage() {
           {isSaving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
+
+      {/* Template Creation/Edit Dialog */}
+      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>
+              {editingTemplate ? 'Edit Template' : 'Create New Template'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingTemplate 
+                ? 'Update your summary template settings' 
+                : 'Create a custom template for AI summarization'
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="templateName">Template Name</Label>
+              <Input
+                id="templateName"
+                value={templateForm.name}
+                onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="e.g., Meeting Summary, Interview Notes"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="templateDescription">Description (Optional)</Label>
+              <Input
+                id="templateDescription"
+                value={templateForm.description}
+                onChange={(e) => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Brief description of when to use this template"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="templatePrompt">Template Prompt</Label>
+              <Textarea
+                id="templatePrompt"
+                value={templateForm.prompt}
+                onChange={(e) => setTemplateForm(prev => ({ ...prev, prompt: e.target.value }))}
+                placeholder="Enter your custom prompt for summarization..."
+                rows={8}
+                className="min-h-32"
+              />
+              <p className="text-xs text-muted-foreground">
+                This prompt will be used to instruct the AI on how to summarize transcriptions. 
+                Be specific about the format and content you want.
+              </p>
+            </div>
+            
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="templateDefault"
+                checked={templateForm.isDefault}
+                onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, isDefault: checked }))}
+              />
+              <Label htmlFor="templateDefault">Set as default template</Label>
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-6">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsTemplateDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button onClick={saveTemplate}>
+              {editingTemplate ? 'Update Template' : 'Create Template'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

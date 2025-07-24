@@ -7,13 +7,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Loader2, FileText, Clock, CheckCircle, AlertCircle, Eye, Copy, RefreshCw, Calendar, Clock3, MoreHorizontal, Settings, Trash2 } from 'lucide-react';
+import { Loader2, FileText, Clock, Calendar, Clock3, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import TemplateManagementModal from '@/components/TemplateManagementModal';
-import { LabelBadge } from '@/components/ui/label-badge';
-import { TemplateSelector, Template } from '@/components/ui/template-selector';
 import { cn } from '@/lib/utils';
 
 interface AudioFile {
@@ -69,17 +65,39 @@ interface SummaryContent {
   totalSummaries: number;
 }
 
+interface DateGroupSummaryDotsProps {
+  files: AudioFile[];
+}
+
+function DateGroupSummaryDots({ files }: DateGroupSummaryDotsProps) {
+  return (
+    <div className="flex items-center gap-1 ml-2">
+      {files.map((file) => (
+        <div
+          key={file.id}
+          className={cn(
+            "w-2 h-2 rounded-full",
+            file.hasAiExtract && file.extractCount > 0
+              ? "bg-gray-800"
+              : "border border-gray-400 bg-transparent"
+          )}
+          title={`${file.originalName}: ${
+            file.hasAiExtract && file.extractCount > 0
+              ? `${file.extractCount} ${file.extractCount === 1 ? 'summary' : 'summaries'}`
+              : 'No summaries'
+          }`}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function SummarizationPage() {
   const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 767px)');
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [groupedFiles, setGroupedFiles] = useState<DateGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [processingFileId, setProcessingFileId] = useState<string | null>(null);
-  const [regeneratingSummary, setRegeneratingSummary] = useState(false);
-  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
   const [fileSummaries, setFileSummaries] = useState<Record<string, any[]>>({});
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'name' | 'speakers' | 'status' | 'labels'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
@@ -200,12 +218,6 @@ export default function SummarizationPage() {
     }
   }, [sortBy, sortOrder, files]);
 
-  // Function to refresh page after template changes
-  const handleTemplatesUpdated = () => {
-    // Trigger a page refresh to reload files and update the template selector
-    window.location.reload();
-  };
-
   // Utility functions for formatting dates and times
   function formatRecordingDate(dateString?: string) {
     if (!dateString) return null;
@@ -234,100 +246,7 @@ export default function SummarizationPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
 
-  const getTranscriptionStatusIcon = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'processing':
-        return <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />;
-      case 'failed':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-gray-500" />;
-    }
-  };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-green-100 text-green-800';
-      case 'processing':
-        return 'bg-blue-100 text-blue-800';
-      case 'failed':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const handleGenerateSummary = async (fileId: string, template?: Template) => {
-    if (!template && !selectedTemplate) {
-      toast.error('Please select a template first');
-      return;
-    }
-
-    const templateToUse = template || selectedTemplate;
-    setIsProcessing(true);
-    setProcessingFileId(fileId);
-
-    try {
-      const response = await fetch(`/api/ai/dynamic-process/${fileId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          summarizationPromptId: templateToUse?.id,
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Summary generated successfully');
-
-        // Update only the specific file's hasAiExtract status
-        const updatedFiles = files.map(file =>
-          file.id === fileId
-            ? { ...file, hasAiExtract: true, extractCount: (file.extractCount || 0) + 1 }
-            : file,
-        );
-        setFiles(updatedFiles);
-
-        // Update grouped files with the same change
-        const updatedGroupedFiles = groupedFiles.map(group => ({
-          ...group,
-          files: group.files.map(file =>
-            file.id === fileId
-              ? { ...file, hasAiExtract: true, extractCount: (file.extractCount || 0) + 1 }
-              : file,
-          ),
-        }));
-        setGroupedFiles(updatedGroupedFiles);
-
-        // Load summary only for this specific file
-        try {
-          const summaryResponse = await fetch(`/api/summarization/${fileId}`);
-          if (summaryResponse.ok) {
-            const summaryData = await summaryResponse.json();
-            setFileSummaries(prev => ({
-              ...prev,
-              [fileId]: summaryData.summarizations || [],
-            }));
-          }
-        } catch (summaryError) {
-          // Error loading new summary - will retry on next load
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to generate summary');
-      }
-    } catch (error) {
-      // Error generating summary - already shown via toast
-      toast.error('Failed to generate summary');
-    } finally {
-      setIsProcessing(false);
-      setProcessingFileId(null);
-    }
-  };
 
   // Load summaries for all files that have them upfront
   const loadAllSummaries = async (files: AudioFile[]) => {
@@ -368,49 +287,6 @@ export default function SummarizationPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
-  const handleRegenerateSummary = async (fileId: string) => {
-    setRegeneratingSummary(true);
-    setProcessingFileId(fileId);
-
-    try {
-      const response = await fetch(`/api/ai/dynamic-process/${fileId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          templateId: 'prompt-general', // Use default template
-        }),
-      });
-
-      if (response.ok) {
-        toast.success('Summary regenerated successfully');
-
-        // Load summary only for this specific file
-        try {
-          const summaryResponse = await fetch(`/api/summarization/${fileId}`);
-          if (summaryResponse.ok) {
-            const summaryData = await summaryResponse.json();
-            setFileSummaries(prev => ({
-              ...prev,
-              [fileId]: summaryData.summarizations || [],
-            }));
-          }
-        } catch (summaryError) {
-          // Error loading regenerated summary - will retry on next load
-        }
-      } else {
-        const errorData = await response.json();
-        toast.error(errorData.error || 'Failed to regenerate summary');
-      }
-    } catch (error) {
-      // Error regenerating summary - already shown via toast
-      toast.error('Failed to regenerate summary');
-    } finally {
-      setRegeneratingSummary(false);
-      setProcessingFileId(null);
-    }
-  };
 
   const handleDeleteSummary = async (summaryId: string, fileId: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this summary? This action cannot be undone.');
@@ -472,18 +348,9 @@ export default function SummarizationPage() {
         <div className="border-b p-4 sm:p-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="ios-title1 text-foreground">AI Summaries</h1>
-              <p className="text-muted-foreground text-sm mt-2 font-light">Generate summaries from your recordings</p>
+              <h1 className="ios-title1 text-foreground">Summaries</h1>
+              <p className="text-muted-foreground text-sm mt-2 font-light">View summaries from your recordings</p>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsTemplateModalOpen(true)}
-              className="flex items-center gap-2 font-medium"
-            >
-              <Settings className="w-4 h-4" />
-              Templates
-            </Button>
           </div>
         </div>
       )}
@@ -571,6 +438,7 @@ export default function SummarizationPage() {
                       {group.hasTimeData && (
                         <Clock3 className="h-3 w-3 text-blue-500" aria-label="Contains recordings with specific times" />
                       )}
+                      <DateGroupSummaryDots files={group.files} />
                     </div>
                     <Badge variant="secondary" className="ml-auto">
                       {group.count} file{group.count !== 1 ? 's' : ''}
@@ -582,87 +450,38 @@ export default function SummarizationPage() {
                     {group.files.map((file) => (
                       <Card
                         key={file.id}
-                        className={`transition-all duration-200 touch-manipulation ${
-                          processingFileId === file.id
-                            ? 'shadow-md bg-gray-50 border-gray-200'
-                            : 'hover:shadow-sm border-gray-100 bg-white'
-                        }`}
+                        className="transition-all duration-200 touch-manipulation hover:shadow-sm border-gray-100 bg-white"
                       >
                         <CardContent className="p-4 sm:p-5">
                           {/* File Header */}
                           <div className="mb-3">
                             <div className="flex items-center gap-2 mb-2">
                               <h3 className="font-medium text-sm text-gray-900">{file.originalName}</h3>
-                              {processingFileId === file.id && (
-                                <div className="flex items-center gap-1 px-2 py-1 bg-gray-100 text-gray-600 rounded text-xs font-medium">
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                  Processing
-                                </div>
-                              )}
                             </div>
 
-                            {/* File Metadata Row */}
+                            {/* Simplified File Info */}
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                {/* Duration - Prominent */}
-                                <div className="flex items-center gap-1 text-sm font-medium text-gray-700">
+                                {/* Duration */}
+                                <div className="flex items-center gap-1 text-sm text-gray-600">
                                   <Clock className="h-3 w-3" />
                                   {formatDuration(file.duration)}
                                 </div>
 
-                                {/* Speaker Count */}
-                                {file.transcriptionStatus === 'completed' && (
-                                  <div className="flex items-center gap-1 text-sm">
-                                    {file.hasSpeakers && file.speakerCount > 0 ? (
-                                      <span className="text-green-600">
-                                        👥 {file.speakerCount} speaker{file.speakerCount !== 1 ? 's' : ''}
-                                      </span>
-                                    ) : file.diarizationStatus === 'failed' ? (
-                                      <span className="text-orange-600 text-xs">
-                                        👥 No speakers detected
-                                      </span>
-                                    ) : (
-                                      <span className="text-gray-500 text-xs">
-                                        👥 Single speaker
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-
-                                {/* Recording Time */}
-                                {file.recordedAt && (
-                                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                                    <Clock3 className="h-3 w-3" />
-                                    {formatRecordingTime(file.recordedAt)}
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Status Badge */}
-                              <div className="flex items-center gap-2">
-                                {getTranscriptionStatusIcon(file.transcriptionStatus)}
-                                <Badge
-                                  variant="secondary"
-                                  className={getStatusColor(file.transcriptionStatus)}
-                                >
-                                  {file.transcriptionStatus}
-                                </Badge>
+                                {/* Creation Date */}
+                                <div className="text-xs text-gray-500">
+                                  {formatRelativeDate(file.recordedAt || file.createdAt)}
+                                </div>
                               </div>
                             </div>
                           </div>
 
-                          {/* Labels */}
-                          {file.labels && file.labels.length > 0 && (
-                            <div className="mt-2">
-                              <LabelBadge labels={file.labels} maxVisible={3} size="sm" />
-                            </div>
-                          )}
 
-                          {/* AI Summaries - Clean Clickable Cards */}
+                          {/* Summaries - Clean Clickable Cards */}
                           {file.hasAiExtract && fileSummaries[file.id] && fileSummaries[file.id].length > 0 && (
                             <div className="mt-4 space-y-3">
                               <h4 className="text-sm font-medium text-gray-900 mb-3">
-                                AI Summaries ({fileSummaries[file.id].length})
+                                Summaries ({fileSummaries[file.id].length})
                               </h4>
 
                               {fileSummaries[file.id].map((summary: any, index: number) => (
@@ -671,26 +490,8 @@ export default function SummarizationPage() {
                                   onClick={() => router.push(`/summary/${summary.id}`)}
                                   className="group relative p-4 bg-white border border-gray-100 rounded-lg cursor-pointer transition-all duration-200 hover:shadow-sm hover:border-gray-200"
                                 >
-                                  {/* Header with metadata */}
-                                  <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs text-gray-500 font-medium">
-                                        {formatRelativeDate(summary.createdAt)}
-                                      </span>
-
-                                      {summary.template && (
-                                        <span className="text-xs text-gray-400 bg-gray-50 px-2 py-0.5 rounded">
-                                          {summary.template.name}
-                                        </span>
-                                      )}
-
-                                      {index === 0 && (
-                                        <span className="text-xs text-gray-600 bg-gray-100 px-2 py-0.5 rounded font-medium">
-                                          Latest
-                                        </span>
-                                      )}
-                                    </div>
-
+                                  {/* Simple header with delete action */}
+                                  <div className="flex items-center justify-end mb-2">
                                     {/* Delete action - only visible on hover */}
                                     <button
                                       onClick={(e) => {
@@ -724,68 +525,20 @@ export default function SummarizationPage() {
                             </div>
                           )}
 
-                          {/* Action Buttons */}
-                          <div className="mt-5 pt-4 border-t border-gray-100">
-                            {file.transcriptionStatus === 'completed' && (
-                              <div className="space-y-3">
-                                {/* Template Selection */}
-                                <div className="space-y-2">
-                                  <TemplateSelector
-                                    templateType="summarization"
-                                    selectedTemplateId={selectedTemplate?.id}
-                                    onTemplateSelect={setSelectedTemplate}
-                                    placeholder={file.hasAiExtract ? 'Choose template for new summary...' : 'Choose template for summary...'}
-                                    size="sm"
-                                    showManagement={true}
-                                    onManagementClick={() => setIsTemplateModalOpen(true)}
-                                    className="w-full"
-                                  />
-
-                                  {/* Generate Button */}
-                                  <Button
-                                    onClick={() => handleGenerateSummary(file.id)}
-                                    disabled={processingFileId === file.id || !selectedTemplate}
-                                    size="sm"
-                                    className="w-full bg-gray-900 hover:bg-gray-800 text-white border-0"
-                                  >
-                                    {processingFileId === file.id ? (
-                                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                                    ) : (
-                                      <FileText className="w-4 h-4 mr-2" />
-                                    )}
-                                    {processingFileId === file.id ?
-                                      'Generating...' :
-                                      (file.hasAiExtract ? 'Generate New Summary' : 'Generate Summary')
-                                    }
-                                  </Button>
-                                </div>
-
-                                {/* Multi-summary indicator */}
-                                {file.hasAiExtract && (
-                                  <p className="text-xs text-gray-400 text-center font-medium">
-                                    Multiple summaries supported with different templates
-                                  </p>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Secondary Actions - Simplified */}
-                            {file.hasTranscript && (
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => window.location.href = `/transcript/${file.id}`}>
-                                    <FileText className="h-4 w-4 mr-2" />
-                                    View Transcript
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            )}
-                          </div>
+                          {/* Simple Actions */}
+                          {file.hasTranscript && (
+                            <div className="mt-4 pt-3 border-t border-gray-100">
+                              <Button
+                                size="sm" 
+                                variant="outline"
+                                onClick={() => window.location.href = `/transcript/${file.id}`}
+                                className="w-full"
+                              >
+                                <FileText className="h-4 w-4 mr-2" />
+                                View Transcript
+                              </Button>
+                            </div>
+                          )}
 
                         </CardContent>
                       </Card>
@@ -799,12 +552,6 @@ export default function SummarizationPage() {
         </div>
       </div>
 
-      {/* Template Management Modal */}
-      <TemplateManagementModal
-        isOpen={isTemplateModalOpen}
-        onOpenChange={setIsTemplateModalOpen}
-        onTemplatesUpdated={handleTemplatesUpdated}
-      />
     </div>
   );
 }
