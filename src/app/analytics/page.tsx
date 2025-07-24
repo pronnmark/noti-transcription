@@ -14,6 +14,14 @@ import { EnergyBarChart } from '@/components/charts/EnergyBarChart';
 import { EmotionalRadarChart } from '@/components/charts/EmotionalRadarChart';
 import { format, subDays } from 'date-fns';
 
+// Client-side debug logging (can be disabled in production)
+const DEBUG_CLIENT = process.env.NODE_ENV === 'development';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_CLIENT) {
+    console.log(...args);
+  }
+};
+
 interface PsychologicalMetric {
   id: string;
   date: string;
@@ -77,7 +85,7 @@ export default function AnalyticsPage() {
         }
       }
     } catch (error) {
-      console.error('Failed to load analytics data:', error);
+      debugLog('Failed to load analytics data:', error);
       toast.error('Failed to load analytics data');
     } finally {
       setIsLoading(false);

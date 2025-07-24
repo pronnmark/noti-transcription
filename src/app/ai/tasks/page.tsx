@@ -10,6 +10,14 @@ import { toast } from 'sonner';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { TaskItem } from '@/components/tasks/task-item';
 
+// Client-side debug logging (can be disabled in production)
+const DEBUG_CLIENT = process.env.NODE_ENV === 'development';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_CLIENT) {
+    console.log(...args);
+  }
+};
+
 interface TaskWithFile {
   id: string;
   fileId: number;
@@ -69,7 +77,7 @@ export default function GlobalTasksPage() {
         setTasks(data.tasks);
       }
     } catch (error) {
-      console.error('Failed to load tasks:', error);
+      debugLog('Failed to load tasks:', error);
       toast.error('Failed to load tasks');
     } finally {
       setIsLoading(false);
@@ -84,7 +92,7 @@ export default function GlobalTasksPage() {
         setStats(data.stats);
       }
     } catch (error) {
-      console.error('Failed to load stats:', error);
+      debugLog('Failed to load stats:', error);
     }
   }
 
@@ -117,7 +125,7 @@ export default function GlobalTasksPage() {
       toast.success(completed ? 'Task completed' : 'Task reopened');
     } catch (error) {
       toast.error('Failed to update task status');
-      console.error('Update task error:', error);
+      debugLog('Update task error:', error);
     }
   }
 
@@ -141,10 +149,9 @@ export default function GlobalTasksPage() {
       toast.success('Comment updated');
     } catch (error) {
       toast.error('Failed to update comment');
-      console.error('Update comment error:', error);
+      debugLog('Update comment error:', error);
     }
   }
-
 
   function getFilteredTasks() {
     switch (activeTab) {
