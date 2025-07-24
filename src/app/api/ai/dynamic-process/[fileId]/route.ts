@@ -6,6 +6,14 @@ import { requireAuth } from '@/lib/auth';
 import * as schema from '@/lib/db';
 import { createId } from '@paralleldrive/cuid2';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> },
@@ -58,9 +66,9 @@ export async function POST(
       return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
     }
 
-    console.log(`🤖 Starting dynamic AI processing for file ${fileIdInt}`);
-    console.log(`📝 Summarization prompt: ${summarizationPromptId || 'default'}`);
-    console.log(`🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`);
+    debugLog(`🤖 Starting dynamic AI processing for file ${fileIdInt}`);
+    debugLog(`📝 Summarization prompt: ${summarizationPromptId || 'default'}`);
+    debugLog(`🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`);
 
     // Create processing session
     const sessionId = createId();
@@ -87,8 +95,8 @@ export async function POST(
 
       extractionMap = generatedExtractionMap;
 
-      console.log(`📋 Generated system prompt (${systemPrompt.length} chars)`);
-      console.log(`🔧 Extraction map:`, Object.keys(extractionMap));
+      debugLog(`📋 Generated system prompt (${systemPrompt.length} chars)`);
+      debugLog(`🔧 Extraction map:`, Object.keys(extractionMap));
 
       // Format transcript for AI
       const transcriptText = formatTranscriptForAI(transcriptionJob.transcript);
@@ -117,8 +125,8 @@ export async function POST(
         },
       );
 
-      console.log(`🤖 AI response received (${aiResponse.length} chars)`);
-      console.log(`📊 Sample response:`, aiResponse.substring(0, 200) + '...');
+      debugLog(`🤖 AI response received (${aiResponse.length} chars)`);
+      debugLog(`📊 Sample response:`, aiResponse.substring(0, 200) + '...');
 
       // Update session with AI response
       await db.update(schema.aiProcessingSessions)
@@ -151,8 +159,8 @@ export async function POST(
         })
         .where(eq(schema.audioFiles.id, fileIdInt));
 
-      console.log(`✅ Dynamic AI processing completed for file ${fileIdInt}`);
-      console.log(`📊 Extracted ${extractionResults.length} result groups`);
+      debugLog(`✅ Dynamic AI processing completed for file ${fileIdInt}`);
+      debugLog(`📊 Extracted ${extractionResults.length} result groups`);
 
       return NextResponse.json({
         success: true,

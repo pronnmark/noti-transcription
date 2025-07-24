@@ -8,7 +8,15 @@ import { getDb } from './database/client';
 import { transcriptionJobs } from './database/schema/transcripts';
 import { eq, desc } from 'drizzle-orm';
 
-const audioService = new AudioService();
+const _audioService = new AudioService();
+
+// Debug logging (can be disabled by setting DEBUG_TRANSCRIPTION=false)
+const DEBUG_TRANSCRIPTION = process.env.DEBUG_TRANSCRIPTION !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_TRANSCRIPTION) {
+    debugLog(...args);
+  }
+};
 
 // Transcription settings - matching SvelteKit version
 const HUGGINGFACE_TOKEN = process.env.HUGGINGFACE_TOKEN;
@@ -80,15 +88,15 @@ async function tryTranscription(
       : {}),
   };
 
-  console.log(`Trying transcription with ${device.toUpperCase()}:`, args);
-  console.log(`Environment variables for ${device.toUpperCase()}:`);
-  console.log(
+  debugLog(`Trying transcription with ${device.toUpperCase()}:`, args);
+  debugLog(`Environment variables for ${device.toUpperCase()}:`);
+  debugLog(
     `  HUGGINGFACE_TOKEN: ${envVars.HUGGINGFACE_TOKEN ? 'SET' : 'NOT SET'}`,
   );
-  console.log(`  PYTHONPATH: ${envVars.PYTHONPATH}`);
+  debugLog(`  PYTHONPATH: ${envVars.PYTHONPATH}`);
   if (device === 'cuda') {
-    console.log(`  CUDA_VISIBLE_DEVICES: ${envVars.CUDA_VISIBLE_DEVICES}`);
-    console.log(`  LD_LIBRARY_PATH: ${envVars.LD_LIBRARY_PATH}`);
+    debugLog(`  CUDA_VISIBLE_DEVICES: ${envVars.CUDA_VISIBLE_DEVICES}`);
+    debugLog(`  LD_LIBRARY_PATH: ${envVars.LD_LIBRARY_PATH}`);
   }
 
   return new Promise((resolve) => {
@@ -111,7 +119,7 @@ async function tryTranscription(
     pythonProcess.stdout.on('data', (data) => {
       const output = data.toString();
       stdoutOutput += output;
-      console.log(`${device.toUpperCase()} stdout:`, output.trim());
+      debugLog(`${device.toUpperCase()} stdout:`, output.trim());
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -131,7 +139,7 @@ async function tryTranscription(
       clearTimeout(timeout);
 
       if (code === 0) {
-        console.log(
+        debugLog(
           `✅ ${device.toUpperCase()} transcription completed successfully!`,
         );
         resolve(true);
@@ -170,7 +178,7 @@ async function tryTranscription(
             code === null); // Process killed
 
         if (isCudaError) {
-          console.log('🔄 CUDA error detected, will try CPU fallback');
+          debugLog('🔄 CUDA error detected, will try CPU fallback');
         }
 
         resolve(false);
@@ -193,11 +201,11 @@ export async function startTranscription(
   const db = getDb();
 
   try {
-    console.log(
+    debugLog(
       `🚀 Starting transcription for file ${fileId} with ${MODEL_SIZE} model...`,
     );
-    console.log(`Audio path: ${audioPath}`);
-    console.log(
+    debugLog(`Audio path: ${audioPath}`);
+    debugLog(
       `Speaker diarization: ${ENABLE_DIARIZATION ? 'enabled' : 'disabled'}`,
     );
     // Note: Speaker count will be read from database job or fallback to parameter
@@ -218,9 +226,9 @@ export async function startTranscription(
     // Use speaker count from database (user-specified) or fallback to parameter
     const finalSpeakerCount = job.speakerCount || speakerCount;
     if (finalSpeakerCount) {
-      console.log(`Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`);
+      debugLog(`Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`);
     } else {
-      console.log('No speaker count specified - will auto-detect');
+      debugLog('No speaker count specified - will auto-detect');
     }
 
     // Update job to processing status
@@ -236,7 +244,7 @@ export async function startTranscription(
     // Validate audio file exists
     try {
       await readFile(audioPath);
-    } catch (error) {
+    } catch (_error) {
       await db.update(transcriptionJobs)
         .set({
           status: 'failed',
@@ -253,14 +261,14 @@ export async function startTranscription(
       'transcripts',
       `${fileId}.json`,
     );
-    console.log(`Output path: ${outputPath}`);
+    debugLog(`Output path: ${outputPath}`);
 
     // Ensure transcripts directory exists
     const transcriptsDir = join(process.cwd(), 'data', 'transcripts');
     const { existsSync, mkdirSync } = await import('fs');
     if (!existsSync(transcriptsDir)) {
       mkdirSync(transcriptsDir, { recursive: true });
-      console.log(`Created transcripts directory: ${transcriptsDir}`);
+      debugLog(`Created transcripts directory: ${transcriptsDir}`);
     }
 
     // Update progress
@@ -271,7 +279,7 @@ export async function startTranscription(
     // Try GPU first, then fallback to CPU
     let success = false;
 
-    console.log(`🚀 Starting GPU transcription with ${MODEL_SIZE} model...`);
+    debugLog(`🚀 Starting GPU transcription with ${MODEL_SIZE} model...`);
     success = await tryTranscription(
       audioPath,
       outputPath,
@@ -280,7 +288,7 @@ export async function startTranscription(
     );
 
     if (!success) {
-      console.log('🔄 GPU transcription failed, falling back to CPU...');
+      debugLog('🔄 GPU transcription failed, falling back to CPU...');
       // Update progress
       await db.update(transcriptionJobs)
         .set({ progress: 50 })
@@ -325,7 +333,7 @@ export async function startTranscription(
         throw new Error(errorMsg);
       }
 
-      console.log(
+      debugLog(
         `✅ Transcription completed with ${result.segments.length} segments`,
       );
 
@@ -338,22 +346,22 @@ export async function startTranscription(
         const metadataData = await readFile(metadataPath, 'utf-8');
         const metadata = JSON.parse(metadataData);
 
-        console.log('Transcription metadata:', metadata);
+        debugLog('Transcription metadata:', metadata);
 
         // Log format conversion information
         if (metadata.format_conversion_attempted) {
           if (metadata.format_conversion_success) {
-            console.log(`🔄 Audio format converted successfully for diarization compatibility`);
+            debugLog(`🔄 Audio format converted successfully for diarization compatibility`);
           } else if (metadata.format_conversion_error) {
-            console.log(`⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`);
-            console.log(`📝 Continuing with original file format...`);
+            debugLog(`⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`);
+            debugLog(`📝 Continuing with original file format...`);
           }
         }
 
         if (metadata.diarization_attempted) {
           if (metadata.diarization_success) {
             diarizationStatus = 'success';
-            console.log(`✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`);
+            debugLog(`✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`);
           } else if (metadata.diarization_error) {
             diarizationStatus = 'failed';
             diarizationError = metadata.diarization_error;
@@ -361,16 +369,16 @@ export async function startTranscription(
             // Enhanced error message if format conversion was attempted but failed
             if (metadata.format_conversion_attempted && !metadata.format_conversion_success) {
               diarizationError = `Format conversion failed (${metadata.format_conversion_error}), then diarization failed: ${metadata.diarization_error}`;
-              console.log(`⚠️ Both format conversion and diarization failed: ${diarizationError}`);
+              debugLog(`⚠️ Both format conversion and diarization failed: ${diarizationError}`);
             } else {
-              console.log(`⚠️ Speaker diarization failed: ${diarizationError}`);
+              debugLog(`⚠️ Speaker diarization failed: ${diarizationError}`);
             }
           }
         }
       } catch (metadataError) {
-        console.log('Could not read diarization metadata, falling back to segment analysis');
+        debugLog('Could not read diarization metadata, falling back to segment analysis');
         if (metadataError instanceof Error) {
-          console.log('Metadata error details:', metadataError.message);
+          debugLog('Metadata error details:', metadataError.message);
         }
 
         // Fallback: Check if speaker diarization worked by analyzing segments
@@ -380,12 +388,12 @@ export async function startTranscription(
           const uniqueSpeakers = new Set(
             result.segments.map((s) => s.speaker).filter(Boolean),
           );
-          console.log(
+          debugLog(
             `✅ Speaker diarization successful! Found ${uniqueSpeakers.size} speakers`,
           );
           diarizationStatus = 'success';
         } else {
-          console.log('⚠️ No speaker information found in transcript');
+          debugLog('⚠️ No speaker information found in transcript');
           // If no metadata file and no speakers, assume diarization wasn't attempted
           diarizationStatus = 'no_speakers_detected';
         }
@@ -395,21 +403,21 @@ export async function startTranscription(
       let finalSegments = result.segments;
       if (diarizationStatus === 'success') {
         try {
-          console.log(`🎯 Starting speaker name detection for file ${fileId}...`);
+          debugLog(`🎯 Starting speaker name detection for file ${fileId}...`);
           const speakerResult = await detectAndApplySpeakerNames(result.segments);
 
           if (speakerResult.success && speakerResult.updatedTranscript) {
             finalSegments = speakerResult.updatedTranscript;
-            console.log(`✅ Speaker detection completed for file ${fileId}:`, speakerResult.stats);
+            debugLog(`✅ Speaker detection completed for file ${fileId}:`, speakerResult.stats);
           } else {
-            console.log(`ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`);
+            debugLog(`ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`);
           }
         } catch (speakerError) {
           console.error(`⚠️ Speaker detection failed for file ${fileId}:`, speakerError);
           // Continue with original segments - don't fail transcription
         }
       } else {
-        console.log(`ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`);
+        debugLog(`ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`);
       }
 
       // Update job as completed with the transcript (potentially with updated speaker names)
@@ -424,11 +432,11 @@ export async function startTranscription(
         })
         .where(eq(transcriptionJobs.id, job.id));
 
-      console.log(
+      debugLog(
         `✅ File ${fileId} transcription process completed successfully`,
       );
 
-      console.log(`✅ Transcription completed successfully for file ${fileId}`);
+      debugLog(`✅ Transcription completed successfully for file ${fileId}`);
       // Note: Auto-extraction system has been removed for simplicity
     } else {
       await db.update(transcriptionJobs)
@@ -492,7 +500,7 @@ export async function getTranscript(
       .limit(1);
 
     if (!transcriptionJob.length || !transcriptionJob[0].transcript) {
-      console.log(`No transcript found for file ${fileId}`);
+      debugLog(`No transcript found for file ${fileId}`);
       return null;
     }
 

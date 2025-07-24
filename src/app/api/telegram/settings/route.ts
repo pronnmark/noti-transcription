@@ -22,13 +22,13 @@ export async function GET() {
         chatConfigurations: config?.chatConfigurations || [],
         defaultChatId: config?.defaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
         isEnabled: config?.isEnabled ?? true,
-      }
+      },
     });
   } catch (error) {
     console.error('Error fetching Telegram settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch settings' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -67,14 +67,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       settings: result[0],
-      message: 'Telegram settings updated successfully'
+      message: 'Telegram settings updated successfully',
     });
 
   } catch (error) {
     console.error('Error updating Telegram settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update settings' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -87,7 +87,7 @@ export async function PUT(request: NextRequest) {
     if (!testChatId) {
       return NextResponse.json(
         { success: false, error: 'Test chat ID is required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -99,7 +99,7 @@ export async function PUT(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { success: false, error: 'No bot token configured' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -120,21 +120,21 @@ except Exception as e:
 "`;
 
     const { stdout, stderr } = await execAsync(command);
-    
+
     if (stderr && !stdout.includes('SUCCESS')) {
       throw new Error(stderr);
     }
 
     return NextResponse.json({
       success: true,
-      message: 'Test message sent successfully!'
+      message: 'Test message sent successfully!',
     });
 
   } catch (error) {
     console.error('Telegram connection test error:', error);
     return NextResponse.json(
       { success: false, error: `Connection test failed: ${error}` },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

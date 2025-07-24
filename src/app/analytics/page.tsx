@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -46,11 +46,7 @@ export default function AnalyticsPage() {
   const [selectedEvaluation, setSelectedEvaluation] = useState<PsychologicalEvaluation | null>(null);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
-  useEffect(() => {
-    loadData();
-  }, [selectedPeriod]);
-
-  async function loadData() {
+  const loadData = useCallback(async () => {
     setIsLoading(true);
     try {
       // Calculate date range based on selected period
@@ -86,7 +82,11 @@ export default function AnalyticsPage() {
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [selectedPeriod]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   function getOverallStats() {
     if (metrics.length === 0) return null;

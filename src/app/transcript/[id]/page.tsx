@@ -167,7 +167,7 @@ export default function TranscriptPage() {
 
   async function handleCreateSummary() {
     if (!selectedTemplate || !fileInfo) return;
-    
+
     setIsCreatingSummary(true);
     try {
       const response = await fetch(`/api/summarization/${id}`, {
@@ -175,7 +175,7 @@ export default function TranscriptPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ templateId: selectedTemplate }),
       });
-      
+
       if (response.ok) {
         toast.success('Summary created successfully');
         await loadSummaries();
@@ -198,7 +198,7 @@ export default function TranscriptPage() {
       const response = await fetch(`/api/summary/${summaryId}`, {
         method: 'DELETE',
       });
-      
+
       if (response.ok) {
         toast.success('Summary deleted');
         setSummaries(summaries.filter(s => s.id !== summaryId));
@@ -674,61 +674,61 @@ export default function TranscriptPage() {
               {/* Create Summary Dialog - Mobile */}
               <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                 <DialogContent className="max-w-[95vw]">
-                      <DialogHeader>
-                        <DialogTitle>Create Summary</DialogTitle>
-                        <DialogDescription>
+                  <DialogHeader>
+                    <DialogTitle>Create Summary</DialogTitle>
+                    <DialogDescription>
                           Select a template to generate a summary
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 mt-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="template-mobile">Template</Label>
-                          <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                            <SelectTrigger id="template-mobile">
-                              <SelectValue placeholder="Select a template" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {templates.map((template) => (
-                                <SelectItem key={template.id} value={template.id}>
-                                  {template.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        {selectedTemplate && (
-                          <div className="space-y-2">
-                            <Label>Description</Label>
-                            <p className="text-sm text-muted-foreground">
-                              {templates.find(t => t.id === selectedTemplate)?.description}
-                            </p>
-                          </div>
-                        )}
-                        <div className="flex justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => setShowCreateDialog(false)}
-                            disabled={isCreatingSummary}
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            onClick={handleCreateSummary}
-                            disabled={!selectedTemplate || isCreatingSummary}
-                          >
-                            {isCreatingSummary ? (
-                              <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                Generating...
-                              </>
-                            ) : (
-                              'Generate'
-                            )}
-                          </Button>
-                        </div>
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="template-mobile">Template</Label>
+                      <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
+                        <SelectTrigger id="template-mobile">
+                          <SelectValue placeholder="Select a template" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {templates.map((template) => (
+                            <SelectItem key={template.id} value={template.id}>
+                              {template.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {selectedTemplate && (
+                      <div className="space-y-2">
+                        <Label>Description</Label>
+                        <p className="text-sm text-muted-foreground">
+                          {templates.find(t => t.id === selectedTemplate)?.description}
+                        </p>
                       </div>
-                    </DialogContent>
-                  </Dialog>
+                    )}
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowCreateDialog(false)}
+                        disabled={isCreatingSummary}
+                      >
+                            Cancel
+                      </Button>
+                      <Button
+                        onClick={handleCreateSummary}
+                        disabled={!selectedTemplate || isCreatingSummary}
+                      >
+                        {isCreatingSummary ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Generating...
+                          </>
+                        ) : (
+                          'Generate'
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
 
               {/* Transcript Section */}
               <Card className="standard-card">
@@ -969,7 +969,7 @@ export default function TranscriptPage() {
                         ))}
                       </div>
                     )}
-                    
+
                     {/* Create Summary Dialog */}
                     <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
                       <DialogTrigger asChild>

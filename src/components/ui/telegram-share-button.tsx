@@ -38,7 +38,7 @@ export function TelegramShareButton({
   summarizationId,
   className,
   variant = 'outline',
-  size = 'sm'
+  size = 'sm',
 }: TelegramShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [telegramSettings, setTelegramSettings] = useState<TelegramSettings | null>(null);
@@ -55,7 +55,7 @@ export function TelegramShareButton({
       if (response.ok) {
         const data = await response.json();
         setTelegramSettings(data.settings);
-        
+
         // Set default chat if available
         if (data.settings.defaultChatId) {
           setSelectedChatId(data.settings.defaultChatId);
@@ -190,7 +190,7 @@ export function TelegramShareButton({
           ))}
         </SelectContent>
       </Select>
-      
+
       <Button
         variant={variant}
         size={size}
@@ -204,7 +204,7 @@ export function TelegramShareButton({
         )}
         {isSharing ? 'Sharing...' : 'Share'}
       </Button>
-      
+
       <Button
         variant="ghost"
         size="sm"

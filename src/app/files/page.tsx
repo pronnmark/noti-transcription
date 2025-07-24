@@ -37,8 +37,8 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
     // Hollow circle for no summaries
     return (
       <div className="flex items-center gap-1">
-        <div 
-          className="w-2 h-2 rounded-full border border-gray-400 bg-transparent" 
+        <div
+          className="w-2 h-2 rounded-full border border-gray-400 bg-transparent"
           title="No summaries generated"
         />
       </div>
@@ -49,9 +49,9 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
   return (
     <div className="flex items-center gap-1">
       {Array.from({ length: Math.min(extractCount, 5) }, (_, i) => (
-        <div 
+        <div
           key={i}
-          className="w-2 h-2 rounded-full bg-gray-800" 
+          className="w-2 h-2 rounded-full bg-gray-800"
           title={`${extractCount} ${extractCount === 1 ? 'summary' : 'summaries'} generated`}
         />
       ))}
@@ -67,7 +67,7 @@ export default function FilesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  const isMobile = useMediaQuery('(max-width: 767px)');
+  const _isMobile = useMediaQuery('(max-width: 767px)');
 
   useEffect(() => {
     loadFiles();
@@ -85,8 +85,8 @@ export default function FilesPage() {
         toast.error('Failed to load files');
         setFiles([]);
       }
-    } catch (error) {
-      console.error('Failed to load files:', error);
+    } catch (_error) {
+      console.error('Failed to load files:', _error);
       toast.error('Failed to load files');
       setFiles([]);
     } finally {
@@ -153,8 +153,6 @@ export default function FilesPage() {
       setDeletingId(null);
     }
   }
-
-
 
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '';
@@ -225,8 +223,6 @@ export default function FilesPage() {
     return new Date(b).getTime() - new Date(a).getTime();
   });
 
-
-
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
@@ -266,7 +262,7 @@ export default function FilesPage() {
                     <h2 className="text-sm font-medium text-gray-600">{dateGroup}</h2>
                     <div className="flex-1 ml-3 border-t border-gray-200" />
                   </div>
-                  
+
                   {/* Files for this date */}
                   <div className="space-y-2">
                     {groupedFiles[dateGroup]
@@ -292,7 +288,7 @@ export default function FilesPage() {
                                 <p className="text-sm font-medium text-gray-900 truncate">
                                   {file.originalName}
                                 </p>
-                                <SummaryStatus 
+                                <SummaryStatus
                                   hasAiExtract={file.hasAiExtract || false}
                                   extractCount={file.extractCount || 0}
                                 />

@@ -5,6 +5,14 @@ import { promises as fs } from 'fs';
 import { join } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // KISS: Simple upload that just saves the file
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -41,7 +49,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Step 3: Validate file
-    console.log('File received:', {
+    debugLog('File received:', {
       name: file.name,
       size: file.size,
       type: file.type,
@@ -63,7 +71,7 @@ export async function POST(request: NextRequest) {
     let buffer;
     try {
       buffer = Buffer.from(await file.arrayBuffer());
-      console.log('File buffer read successfully, size:', buffer.length);
+      debugLog('File buffer read successfully, size:', buffer.length);
     } catch (e) {
       console.error('Failed to read file buffer:', e);
       return NextResponse.json({
@@ -76,7 +84,7 @@ export async function POST(request: NextRequest) {
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
     try {
       await fs.mkdir(uploadDir, { recursive: true });
-      console.log('Upload directory ensured:', uploadDir);
+      debugLog('Upload directory ensured:', uploadDir);
     } catch (e) {
       console.error('Failed to create upload directory:', e);
       return NextResponse.json({
@@ -91,7 +99,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await fs.writeFile(filePath, buffer);
-      console.log('File saved successfully:', filePath);
+      debugLog('File saved successfully:', filePath);
     } catch (e) {
       console.error('Failed to save file:', e);
       return NextResponse.json({

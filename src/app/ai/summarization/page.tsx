@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -41,14 +41,19 @@ interface DateGroup {
   hasTimeData?: boolean;
 }
 
-interface SummaryContent {
-  file: {
-    id: number;
-    fileName: string;
-    originalFileName: string;
-    summarizationStatus: string;
-    summarizationContent: string | null;
-  };
+interface SummaryItem {
+  id: string;
+  content: string;
+  createdAt: string;
+  // Add other summary properties as needed
+}
+
+interface _SummaryFile {
+  id: number;
+  fileName: string;
+  originalFileName: string;
+  summarizationStatus: string;
+  summarizationContent: string | null;
   summarizations: Array<{
     id: string;
     content: string;
@@ -77,10 +82,10 @@ function DateGroupSummaryDots({ files }: DateGroupSummaryDotsProps) {
         <div
           key={file.id}
           className={cn(
-            "w-2 h-2 rounded-full",
+            'w-2 h-2 rounded-full',
             file.hasAiExtract && file.extractCount > 0
-              ? "bg-gray-800"
-              : "border border-gray-400 bg-transparent"
+              ? 'bg-gray-800'
+              : 'border border-gray-400 bg-transparent',
           )}
           title={`${file.originalName}: ${
             file.hasAiExtract && file.extractCount > 0
@@ -99,13 +104,13 @@ export default function SummarizationPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [groupedFiles, setGroupedFiles] = useState<DateGroup[]>([]);
   const [loading, setLoading] = useState(true);
-  const [fileSummaries, setFileSummaries] = useState<Record<string, any[]>>({});
+  const [fileSummaries, setFileSummaries] = useState<Record<string, SummaryItem[]>>({});
   const [sortBy, setSortBy] = useState<'date' | 'duration' | 'name' | 'speakers' | 'status' | 'labels'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [deletingSummary, setDeletingSummary] = useState<string | null>(null);
 
   // Sorting logic
-  const sortFiles = (files: AudioFile[]) => {
+  const sortFiles = useCallback((files: AudioFile[]) => {
     return [...files].sort((a, b) => {
       let comparison = 0;
 
@@ -140,14 +145,14 @@ export default function SummarizationPage() {
 
       return sortOrder === 'desc' ? -comparison : comparison;
     });
-  };
+  }, [sortBy, sortOrder]);
 
-  const applySortingToGroups = (groups: DateGroup[]) => {
+  const applySortingToGroups = useCallback((groups: DateGroup[]) => {
     return groups.map(group => ({
       ...group,
       files: sortFiles(group.files),
     }));
-  };
+  }, [sortFiles]);
 
   // Load files with summarization data
   useEffect(() => {
@@ -164,7 +169,7 @@ export default function SummarizationPage() {
 
         // Load summaries for all files that have them
         await loadAllSummaries(filesData);
-      } catch (error) {
+      } catch (_error) {
         // Error loading files - already shown via toast
       } finally {
         setLoading(false);
@@ -172,7 +177,7 @@ export default function SummarizationPage() {
     };
 
     loadFiles();
-  }, []);
+  }, [applySortingToGroups]);  // Added missing dependency
 
   // Re-sort files when sort options change
   useEffect(() => {
@@ -217,28 +222,11 @@ export default function SummarizationPage() {
       const sortedGroups = applySortingToGroups(groupsArray);
       setGroupedFiles(sortedGroups);
     }
-  }, [sortBy, sortOrder, files]);
+  }, [sortBy, sortOrder, files, applySortingToGroups]);  // Added missing dependency
 
   // Utility functions for formatting dates and times
-  function formatRecordingDate(dateString?: string) {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  }
-
-  function formatRecordingTime(dateString?: string) {
-    if (!dateString) return null;
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
-  }
+  // Note: formatRecordingDate and formatRecordingTime functions removed as they are unused
+  // They can be restored if needed for future functionality
 
   function formatDuration(seconds?: number) {
     if (!seconds) return '--:--';
@@ -246,8 +234,6 @@ export default function SummarizationPage() {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   }
-
-
 
   // Load summaries for all files that have them upfront
   const loadAllSummaries = async (files: AudioFile[]) => {
@@ -269,10 +255,10 @@ export default function SummarizationPage() {
       const summariesMap = results.reduce((acc, result) => {
         acc[result.fileId] = result.summaries;
         return acc;
-      }, {} as Record<string, any[]>);
+      }, {} as Record<string, SummaryItem[]>);
 
       setFileSummaries(summariesMap);
-    } catch (error) {
+    } catch (_error) {
       // Error loading summaries - already shown via toast
     }
   };
@@ -287,7 +273,6 @@ export default function SummarizationPage() {
     if (diffHours < 48) return 'Yesterday';
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
-
 
   const handleDeleteSummary = async (summaryId: string, fileId: string) => {
     const confirmed = window.confirm('Are you sure you want to delete this summary? This action cannot be undone.');
@@ -322,7 +307,7 @@ export default function SummarizationPage() {
         const errorData = await response.json();
         toast.error(errorData.error || 'Failed to delete summary');
       }
-    } catch (error) {
+    } catch (_error) {
       // Error deleting summary - already shown via toast
       toast.error('Failed to delete summary');
     } finally {
@@ -367,7 +352,7 @@ export default function SummarizationPage() {
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-4">
                 <h3 className="text-sm font-medium text-gray-700">Sort by:</h3>
-                <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+                <Select value={sortBy} onValueChange={(value: typeof sortBy) => setSortBy(value)}>
                   <SelectTrigger className="w-40">
                     <SelectValue />
                   </SelectTrigger>
@@ -381,7 +366,7 @@ export default function SummarizationPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={sortOrder} onValueChange={(value: any) => setSortOrder(value)}>
+                <Select value={sortOrder} onValueChange={(value: typeof sortOrder) => setSortOrder(value)}>
                   <SelectTrigger className="w-32">
                     <SelectValue />
                   </SelectTrigger>
@@ -477,7 +462,6 @@ export default function SummarizationPage() {
                             </div>
                           </div>
 
-
                           {/* Summaries - Clean Clickable Cards */}
                           {file.hasAiExtract && fileSummaries[file.id] && fileSummaries[file.id].length > 0 && (
                             <div className="mt-4 space-y-3">
@@ -485,7 +469,7 @@ export default function SummarizationPage() {
                                 Summaries ({fileSummaries[file.id].length})
                               </h4>
 
-                              {fileSummaries[file.id].map((summary: any, index: number) => (
+                              {fileSummaries[file.id].map((summary: SummaryItem, _index: number) => (
                                 <div
                                   key={summary.id}
                                   onClick={() => router.push(`/summary/${summary.id}`)}
@@ -506,7 +490,7 @@ export default function SummarizationPage() {
                                         />
                                       </div>
                                     </div>
-                                    
+
                                     <div className="flex items-center gap-1">
                                       {/* Delete action - only visible on hover */}
                                       <button
@@ -546,7 +530,7 @@ export default function SummarizationPage() {
                           {file.hasTranscript && (
                             <div className="mt-4 pt-3 border-t border-gray-100">
                               <Button
-                                size="sm" 
+                                size="sm"
                                 variant="outline"
                                 onClick={() => window.location.href = `/transcript/${file.id}`}
                                 className="w-full"

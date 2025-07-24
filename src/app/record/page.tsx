@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -33,135 +33,10 @@ export default function RecordPage() {
 
   // Location tracking state
   const [locationData, setLocationData] = useState<LocationData | null>(null);
-  const [locationError, setLocationError] = useState<string | null>(null);
+  const [_locationError, setLocationError] = useState<string | null>(null);
   const [isLocationTracking, setIsLocationTracking] = useState(false);
 
-  useEffect(() => {
-    checkRecordingSupport();
-    detectMobile();
-  }, []);
-
-  // Clean up wake lock on unmount
-  useEffect(() => {
-    return () => {
-      if (wakeLock) {
-        wakeLock.release();
-      }
-      // Clean up location tracking on unmount
-      if (isLocationTracking) {
-        locationService.stopTracking();
-      }
-    };
-  }, [wakeLock, isLocationTracking]);
-
-  // Handle page visibility changes (mobile tab switching)
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && isRecording && isMobile) {
-        console.log('Page became hidden during recording');
-        toast.warning('Recording may be interrupted in background');
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [isRecording, isMobile]);
-
-  // Timer effect for recording
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording && !isPaused) {
-      interval = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [isRecording, isPaused]);
-
-  // Auto-save effect - every 10 minutes (600 seconds)
-  useEffect(() => {
-    let autoSaveInterval: NodeJS.Timeout;
-    if (isRecording && !isPaused && mediaRecorder) {
-      autoSaveInterval = setInterval(() => {
-        performAutoSave();
-      }, 10 * 60 * 1000); // 10 minutes
-    }
-    return () => clearInterval(autoSaveInterval);
-  }, [isRecording, isPaused, mediaRecorder]);
-
-  function detectMobile() {
-    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
-    setIsMobile(isMobileDevice);
-  }
-
-  async function requestWakeLock() {
-    try {
-      if ('wakeLock' in navigator && isMobile) {
-        const wakeLockInstance = await (navigator as any).wakeLock.request('screen');
-        setWakeLock(wakeLockInstance);
-        console.log('Wake lock acquired');
-      }
-    } catch (error) {
-      console.log('Wake lock not supported or failed:', error);
-    }
-  }
-
-  function releaseWakeLock() {
-    if (wakeLock) {
-      wakeLock.release();
-      setWakeLock(null);
-      console.log('Wake lock released');
-    }
-  }
-
-  async function startLocationTracking() {
-    if (!locationService.isSupported()) {
-      console.log('Geolocation not supported - recording will continue without location data');
-      return;
-    }
-
-    try {
-      console.log('🗺️ Starting location tracking for recording session...');
-      
-      await locationService.startTracking(
-        (location: LocationData) => {
-          setLocationData(location);
-          setLocationError(null);
-          console.log('📍 Location updated during recording:', location);
-        },
-        (error: string) => {
-          setLocationError(error);
-          console.warn('⚠️ Location error during recording:', error);
-          // Don't show toast - recording should continue without location
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 30000,
-          updateInterval: 30000, // Update every 30 seconds during recording
-        },
-      );
-
-      setIsLocationTracking(true);
-      console.log('✅ Location tracking active');
-      
-    } catch (error) {
-      console.warn('⚠️ Failed to start location tracking:', error);
-      setLocationError(error instanceof Error ? error.message : 'Location tracking failed');
-      // Recording continues without location
-    }
-  }
-
-  function stopLocationTracking() {
-    if (isLocationTracking) {
-      locationService.stopTracking();
-      setIsLocationTracking(false);
-      console.log('🛑 Location tracking stopped');
-    }
-  }
-
-  async function checkRecordingSupport() {
+  const checkRecordingSupport = useCallback(async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log('MediaDevices API not available');
@@ -217,7 +92,200 @@ export default function RecordPage() {
       }
       setRecordingSupported(false);
     }
+  }, [isMobile]);
+
+  const performAutoSave = useCallback(async () => {
+    if (!mediaRecorder || !audioChunks.length) return;
+
+    try {
+      console.log('Performing auto-save...');
+
+      // Request current data from MediaRecorder
+      mediaRecorder.requestData();
+
+      // Wait a bit for the data to be available
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      if (audioChunks.length > 0) {
+        // Create blob from current chunks
+        const mimeType = mediaRecorder.mimeType || 'audio/webm';
+        const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
+
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const autoSaveCount = autoSaveCounter + 1;
+
+        // Choose appropriate file extension
+        let extension = '.webm';
+        if (mimeType.includes('mp4')) {
+          extension = '.mp4';
+        } else if (mimeType.includes('wav')) {
+          extension = '.wav';
+        }
+
+        const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
+
+        const formData = new FormData();
+        formData.append('audio', autoSaveBlob, filename);
+        formData.append('speakerCount', speakerCount.toString());
+        formData.append('isDraft', 'true'); // Mark as draft to skip transcription
+
+        // Include location data if available
+        if (locationData) {
+          formData.append('latitude', locationData.latitude.toString());
+          formData.append('longitude', locationData.longitude.toString());
+          formData.append('locationAccuracy', locationData.accuracy.toString());
+          formData.append('locationTimestamp', locationData.timestamp.toString());
+          formData.append('locationProvider', locationData.provider);
+        }
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (response.ok) {
+          setLastAutoSave(new Date());
+          setAutoSaveCounter(autoSaveCount);
+          toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
+            duration: 2000,
+          });
+          console.log('Auto-save successful:', filename);
+        } else {
+          console.error('Auto-save failed:', response.status);
+          toast.error('Auto-save failed', { duration: 2000 });
+        }
+      }
+    } catch (error) {
+      console.error('Auto-save error:', error);
+      toast.error('Auto-save failed', { duration: 2000 });
+    }
+  }, [mediaRecorder, audioChunks, autoSaveCounter, speakerCount, locationData]);
+
+  useEffect(() => {
+    checkRecordingSupport();
+    detectMobile();
+  }, [checkRecordingSupport]);
+
+  // Clean up wake lock on unmount
+  useEffect(() => {
+    return () => {
+      if (wakeLock) {
+        wakeLock.release();
+      }
+      // Clean up location tracking on unmount
+      if (isLocationTracking) {
+        locationService.stopTracking();
+      }
+    };
+  }, [wakeLock, isLocationTracking]);
+
+  // Handle page visibility changes (mobile tab switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && isRecording && isMobile) {
+        console.log('Page became hidden during recording');
+        toast.warning('Recording may be interrupted in background');
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [isRecording, isMobile]);
+
+  // Timer effect for recording
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording && !isPaused) {
+      interval = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording, isPaused]);
+
+  // Auto-save effect - every 10 minutes (600 seconds)
+  useEffect(() => {
+    let autoSaveInterval: NodeJS.Timeout;
+    if (isRecording && !isPaused && mediaRecorder) {
+      autoSaveInterval = setInterval(() => {
+        performAutoSave();
+      }, 10 * 60 * 1000); // 10 minutes
+    }
+    return () => clearInterval(autoSaveInterval);
+  }, [isRecording, isPaused, mediaRecorder, performAutoSave]);
+
+  function detectMobile() {
+    const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
+    const isMobileDevice = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+    setIsMobile(isMobileDevice);
   }
+
+  async function requestWakeLock() {
+    try {
+      if ('wakeLock' in navigator && isMobile) {
+        const wakeLockInstance = await (navigator as any).wakeLock.request('screen');
+        setWakeLock(wakeLockInstance);
+        console.log('Wake lock acquired');
+      }
+    } catch (error) {
+      console.log('Wake lock not supported or failed:', error);
+    }
+  }
+
+  function releaseWakeLock() {
+    if (wakeLock) {
+      wakeLock.release();
+      setWakeLock(null);
+      console.log('Wake lock released');
+    }
+  }
+
+  async function startLocationTracking() {
+    if (!locationService.isSupported()) {
+      console.log('Geolocation not supported - recording will continue without location data');
+      return;
+    }
+
+    try {
+      console.log('🗺️ Starting location tracking for recording session...');
+
+      await locationService.startTracking(
+        (location: LocationData) => {
+          setLocationData(location);
+          setLocationError(null);
+          console.log('📍 Location updated during recording:', location);
+        },
+        (error: string) => {
+          setLocationError(error);
+          console.warn('⚠️ Location error during recording:', error);
+          // Don't show toast - recording should continue without location
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 30000,
+          updateInterval: 30000, // Update every 30 seconds during recording
+        },
+      );
+
+      setIsLocationTracking(true);
+      console.log('✅ Location tracking active');
+
+    } catch (error) {
+      console.warn('⚠️ Failed to start location tracking:', error);
+      setLocationError(error instanceof Error ? error.message : 'Location tracking failed');
+      // Recording continues without location
+    }
+  }
+
+  function stopLocationTracking() {
+    if (isLocationTracking) {
+      locationService.stopTracking();
+      setIsLocationTracking(false);
+      console.log('🛑 Location tracking stopped');
+    }
+  }
+
 
   async function startRecording() {
     try {
@@ -417,72 +485,6 @@ export default function RecordPage() {
     }
   }
 
-  async function performAutoSave() {
-    if (!mediaRecorder || !audioChunks.length) return;
-
-    try {
-      console.log('Performing auto-save...');
-
-      // Request current data from MediaRecorder
-      mediaRecorder.requestData();
-
-      // Wait a bit for the data to be available
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      if (audioChunks.length > 0) {
-        // Create blob from current chunks
-        const mimeType = mediaRecorder.mimeType || 'audio/webm';
-        const autoSaveBlob = new Blob([...audioChunks], { type: mimeType });
-
-        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-        const autoSaveCount = autoSaveCounter + 1;
-
-        // Choose appropriate file extension
-        let extension = '.webm';
-        if (mimeType.includes('mp4')) {
-          extension = '.mp4';
-        } else if (mimeType.includes('wav')) {
-          extension = '.wav';
-        }
-
-        const filename = `recording-autosave-${timestamp}-part${autoSaveCount}${extension}`;
-
-        const formData = new FormData();
-        formData.append('audio', autoSaveBlob, filename);
-        formData.append('speakerCount', speakerCount.toString());
-        formData.append('isDraft', 'true'); // Mark as draft to skip transcription
-
-        // Include location data if available
-        if (locationData) {
-          formData.append('latitude', locationData.latitude.toString());
-          formData.append('longitude', locationData.longitude.toString());
-          formData.append('locationAccuracy', locationData.accuracy.toString());
-          formData.append('locationTimestamp', locationData.timestamp.toString());
-          formData.append('locationProvider', locationData.provider);
-        }
-
-        const response = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
-        });
-
-        if (response.ok) {
-          setLastAutoSave(new Date());
-          setAutoSaveCounter(autoSaveCount);
-          toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
-            duration: 2000,
-          });
-          console.log('Auto-save successful:', filename);
-        } else {
-          console.error('Auto-save failed:', response.status);
-          toast.error('Auto-save failed', { duration: 2000 });
-        }
-      }
-    } catch (error) {
-      console.error('Auto-save error:', error);
-      toast.error('Auto-save failed', { duration: 2000 });
-    }
-  }
 
   async function uploadRecording(audioBlob: Blob, isDraft: boolean = false) {
     setIsUploading(true);

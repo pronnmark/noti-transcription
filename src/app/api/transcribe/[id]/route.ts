@@ -9,6 +9,14 @@ import { promisify } from 'util';
 import { promises as fs } from 'fs';
 import { join } from 'path';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 const execAsync = promisify(exec);
 
 export async function POST(
@@ -96,7 +104,7 @@ async function transcribeInBackground(file: any, jobId: number) {
     // Convert to WAV if needed (Whisper works better with WAV)
     const wavPath = audioPath.replace(/\.[^/.]+$/, '.wav');
     if (!audioPath.endsWith('.wav')) {
-      console.log('Converting to WAV...');
+      debugLog('Converting to WAV...');
       await execAsync(`ffmpeg -i "${audioPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`);
     }
 
@@ -107,7 +115,7 @@ async function transcribeInBackground(file: any, jobId: number) {
 
     // Run Whisper transcription using Python script
     const pythonScript = join(process.cwd(), 'scripts', 'transcribe.py');
-    console.log('Running transcription...');
+    debugLog('Running transcription...');
 
     const { stdout, stderr } = await execAsync(
       `python3 "${pythonScript}" "${wavPath}" --model base --language en`,
@@ -115,7 +123,7 @@ async function transcribeInBackground(file: any, jobId: number) {
     );
 
     if (stderr) {
-      console.warn('Transcription warnings:', stderr);
+      debugLog('Transcription warnings:', stderr);
     }
 
     // Parse transcription result (assuming JSON output)
@@ -137,7 +145,7 @@ async function transcribeInBackground(file: any, jobId: number) {
       })
       .where(eq(transcriptionJobs.id, jobId));
 
-    console.log('Transcription completed for job:', jobId);
+    debugLog('Transcription completed for job:', jobId);
 
     // Clean up WAV file if we created it
     if (!audioPath.endsWith('.wav')) {

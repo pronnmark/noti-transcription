@@ -5,10 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, CheckCircle, Clock, Archive, ListTodo, FileText, BarChart3, User } from 'lucide-react';
+import { Loader2, CheckCircle, Clock, ListTodo, FileText, BarChart3, User } from 'lucide-react';
 import { toast } from 'sonner';
-import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { TaskItem } from '@/components/tasks/task-item';
 
@@ -147,16 +145,6 @@ export default function GlobalTasksPage() {
     }
   }
 
-  function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  }
 
   function getFilteredTasks() {
     switch (activeTab) {

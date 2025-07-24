@@ -4,6 +4,14 @@ import { requireAuth } from '@/lib/auth';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
 import * as schema from '@/lib/db';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> },
@@ -65,7 +73,7 @@ export async function POST(
       return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
     }
 
-    console.log(`🤖 Starting AI processing for file ${fileIdInt}, type: ${processType}`);
+    debugLog(`🤖 Starting AI processing for file ${fileIdInt}, type: ${processType}`);
 
     let results: any = {};
 
@@ -182,7 +190,7 @@ export async function POST(
           return NextResponse.json({ error: 'Invalid process type' }, { status: 400 });
       }
 
-      console.log(`✅ AI processing completed for file ${fileIdInt}`);
+      debugLog(`✅ AI processing completed for file ${fileIdInt}`);
 
       return NextResponse.json({
         success: true,

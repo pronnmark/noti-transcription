@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Loader2, Settings, FileText, Filter } from 'lucide-react';
+import { toast } from 'sonner';
 import TemplateManager from '@/components/templates/TemplateManager';
 
 interface ExtractionTemplate {
@@ -69,7 +70,7 @@ export default function ExtractionsPage() {
       const extractionsResponse = await fetch('/api/extractions');
       const extractionsData = await extractionsResponse.json();
       setExtractions(extractionsData.extractions || []);
-    } catch (error) {
+    } catch (_error) {
       // Error already shown via toast
     } finally {
       setLoading(false);
@@ -138,7 +139,7 @@ export default function ExtractionsPage() {
         const extractionsData = await extractionsResponse.json();
         setExtractions(extractionsData.extractions || []);
       }
-    } catch (error) {
+    } catch (_error) {
       toast.error('Failed to run extraction');
     } finally {
       setIsProcessing(false);

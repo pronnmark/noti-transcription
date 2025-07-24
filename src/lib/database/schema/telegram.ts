@@ -21,7 +21,7 @@ export const telegramSettings = sqliteTable('telegram_settings', {
   enabledIdx: index('telegram_settings_enabled_idx').on(table.isEnabled),
 }));
 
-// Telegram share history table  
+// Telegram share history table
 export const telegramShares = sqliteTable('telegram_shares', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fileId: integer('file_id').notNull(), // Reference to audioFiles.id

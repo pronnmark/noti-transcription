@@ -10,7 +10,7 @@ export interface AudioMetadata {
   channels?: number;
   fileSize?: number;
   creationTime?: Date;
-  
+
   // Location metadata (from recording session)
   latitude?: number;
   longitude?: number;

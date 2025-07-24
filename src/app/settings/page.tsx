@@ -308,12 +308,12 @@ export default function SettingsPage() {
     }
 
     try {
-      const url = editingTemplate 
+      const url = editingTemplate
         ? '/api/summarization-prompts'
         : '/api/summarization-prompts';
-      
+
       const method = editingTemplate ? 'PUT' : 'POST';
-      const body = editingTemplate 
+      const body = editingTemplate
         ? { id: editingTemplate.id, ...templateForm }
         : templateForm;
 
@@ -799,14 +799,14 @@ export default function SettingsPage() {
                       />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Leave empty to use TELEGRAM_BOT_TOKEN from environment. 
+                      Leave empty to use TELEGRAM_BOT_TOKEN from environment.
                       Override here to use a different bot for this instance.
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <h4 className="font-medium">Chat Configurations</h4>
-                    
+
                     {telegramSettings.chatConfigurations.length === 0 ? (
                       <div className="text-center py-4 text-muted-foreground border rounded-lg">
                         <p>No chat configurations added yet.</p>
@@ -871,7 +871,7 @@ export default function SettingsPage() {
                           <Label htmlFor="newChatType">Type</Label>
                           <Select
                             value={telegramForm.newChatType}
-                            onValueChange={(value: 'user' | 'group' | 'channel') => 
+                            onValueChange={(value: 'user' | 'group' | 'channel') =>
                               setTelegramForm(prev => ({ ...prev, newChatType: value }))
                             }
                           >
@@ -901,8 +901,8 @@ export default function SettingsPage() {
                           placeholder="Enter chat ID to test (e.g., -123456789)"
                           className="flex-1"
                         />
-                        <Button 
-                          onClick={testTelegramConnection} 
+                        <Button
+                          onClick={testTelegramConnection}
                           disabled={isTesting}
                           variant="outline"
                         >
@@ -1015,7 +1015,6 @@ export default function SettingsPage() {
                 </p>
               </div>
 
-
               <div className="space-y-2">
                 <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
                 <div className="flex gap-2 min-w-0">
@@ -1095,8 +1094,8 @@ export default function SettingsPage() {
               {editingTemplate ? 'Edit Template' : 'Create New Template'}
             </DialogTitle>
             <DialogDescription>
-              {editingTemplate 
-                ? 'Update your summary template settings' 
+              {editingTemplate
+                ? 'Update your summary template settings'
                 : 'Create a custom template for AI summarization'
               }
             </DialogDescription>
@@ -1111,7 +1110,7 @@ export default function SettingsPage() {
                 placeholder="e.g., Meeting Summary, Interview Notes"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="templateDescription">Description (Optional)</Label>
               <Input
@@ -1121,7 +1120,7 @@ export default function SettingsPage() {
                 placeholder="Brief description of when to use this template"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="templatePrompt">Template Prompt</Label>
               <Textarea
@@ -1133,11 +1132,11 @@ export default function SettingsPage() {
                 className="min-h-32"
               />
               <p className="text-xs text-muted-foreground">
-                This prompt will be used to instruct the AI on how to summarize transcriptions. 
+                This prompt will be used to instruct the AI on how to summarize transcriptions.
                 Be specific about the format and content you want.
               </p>
             </div>
-            
+
             <div className="flex items-center space-x-2">
               <Switch
                 id="templateDefault"
@@ -1147,10 +1146,10 @@ export default function SettingsPage() {
               <Label htmlFor="templateDefault">Set as default template</Label>
             </div>
           </div>
-          
+
           <div className="flex justify-end gap-2 mt-6">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setIsTemplateDialogOpen(false)}
             >
               Cancel

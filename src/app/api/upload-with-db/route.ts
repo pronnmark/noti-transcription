@@ -7,6 +7,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDb } from '../../../lib/database/client';
 import { audioFiles } from '../../../lib/database/schema/audio';
 
+// Debug logging (can be disabled by setting DEBUG_API=false)
+const DEBUG_API = process.env.DEBUG_API !== 'false';
+const debugLog = (...args: unknown[]) => {
+  if (DEBUG_API) {
+    console.log(...args);
+  }
+};
+
 // Test upload with database operations
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -33,7 +41,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('Processing file:', file.name, file.size, file.type);
+    debugLog('Processing file:', file.name, file.size, file.type);
 
     // Step 3: Read file buffer
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -41,7 +49,7 @@ export async function POST(request: NextRequest) {
     // Step 4: Create simple hash (simplified version)
     const crypto = require('crypto');
     const fileHash = crypto.createHash('sha256').update(buffer).digest('hex');
-    console.log('File hash:', fileHash);
+    debugLog('File hash:', fileHash);
 
     // Step 5: Save file
     const uploadDir = join(process.cwd(), 'data', 'audio_files');
@@ -50,13 +58,13 @@ export async function POST(request: NextRequest) {
     const fileName = `${uuidv4()}_${file.name}`;
     const filePath = join(uploadDir, fileName);
     await fs.writeFile(filePath, buffer);
-    console.log('File saved:', filePath);
+    debugLog('File saved:', filePath);
 
     // Step 6: Test database insert
     let dbResult;
     try {
       const db = getDb();
-      console.log('Got database instance');
+      debugLog('Got database instance');
 
       // Insert into audio_files table
       const insertData = {
@@ -68,11 +76,11 @@ export async function POST(request: NextRequest) {
         duration: 0, // We'll set this to 0 for now
       };
 
-      console.log('Inserting into database:', insertData);
+      debugLog('Inserting into database:', insertData);
 
       dbResult = await db.insert(audioFiles).values(insertData).returning();
 
-      console.log('Database insert successful:', dbResult);
+      debugLog('Database insert successful:', dbResult);
     } catch (dbError) {
       console.error('Database error:', dbError);
       // Clean up file if database insert fails
