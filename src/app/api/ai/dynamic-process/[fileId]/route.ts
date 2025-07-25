@@ -94,7 +94,7 @@ export const POST = withErrorHandler(async (
 
   // Get the configured AI model outside try block for error handling access
   const configuredModel = await customAIService.getDefaultModel();
-  let extractionMap: Record<string, any> = {};
+  let extractionMap: Record<string, unknown> = {};
 
   try {
     // Generate dynamic prompt
@@ -241,7 +241,7 @@ export const POST = withErrorHandler(async (
 /**
  * Format transcript for AI processing
  */
-function formatTranscriptForAI(transcript: string | any[]): string {
+function formatTranscriptForAI(transcript: string | Array<{speaker?: string, start?: number, text: string}>): string {
   if (typeof transcript === 'string') {
     return transcript;
   }

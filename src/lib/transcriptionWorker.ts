@@ -1,6 +1,6 @@
 import { getDb } from './database/client';
 import { audioFiles, transcriptionJobs } from './database/schema';
-import { eq, and, or, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { startTranscription } from './transcription';
@@ -48,7 +48,7 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
       };
     }
 
-    const results = [];
+    const results: { jobId: number; fileId: number; fileName: string; status: 'completed' | 'failed'; error?: string }[] = [];
 
     for (const { job, file } of jobs) {
       try {
@@ -67,7 +67,7 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
         const audioPath = join(process.cwd(), 'data', 'audio_files', file.fileName);
         try {
           await fs.access(audioPath);
-        } catch (e) {
+        } catch (_e) {
           console.log('File not found at:', audioPath);
           console.log('File object:', file);
           throw new Error(`Audio file not found: ${file.fileName}`);
@@ -168,8 +168,8 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
       results,
     };
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Worker error:', error);
-    throw new Error(error.message || 'Worker failed');
+    throw new Error((error as Error).message || 'Worker failed');
   }
 }

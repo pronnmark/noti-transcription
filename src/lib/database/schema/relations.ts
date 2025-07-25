@@ -11,6 +11,8 @@ import {
   extractionDefinitions,
   extractionResults,
   aiProcessingSessions,
+  realTimeSessions,
+  realTimeThoughts,
 } from './system';
 import { psychologicalEvaluations } from './psychology';
 
@@ -154,5 +156,21 @@ export const psychologicalEvaluationsRelations = relations(psychologicalEvaluati
   audioFile: one(audioFiles, {
     fields: [psychologicalEvaluations.fileId],
     references: [audioFiles.id],
+  }),
+}));
+
+// Real-time thoughts relations
+export const realTimeSessionsRelations = relations(realTimeSessions, ({ one, many }) => ({
+  audioFile: one(audioFiles, {
+    fields: [realTimeSessions.fileId],
+    references: [audioFiles.id],
+  }),
+  thoughts: many(realTimeThoughts),
+}));
+
+export const realTimeThoughtsRelations = relations(realTimeThoughts, ({ one }) => ({
+  session: one(realTimeSessions, {
+    fields: [realTimeThoughts.sessionId],
+    references: [realTimeSessions.id],
   }),
 }));

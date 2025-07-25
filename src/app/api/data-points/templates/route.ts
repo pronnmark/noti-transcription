@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, dataPointTemplates, eq, and, desc, asc } from '@/lib/database';
+import { db, dataPointTemplates, dataPoints, eq, and, desc, asc } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 // Debug logging (can be disabled by setting DEBUG_API=false)
@@ -30,17 +30,13 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(dataPointTemplates.isDefault, true));
     }
 
-    let query = db.select().from(dataPointTemplates);
-
-    if (whereConditions.length > 0) {
-      query = query.where(and(...whereConditions));
-    }
-
-    const templates = await query.orderBy(
-      desc(dataPointTemplates.isDefault),
-      desc(dataPointTemplates.isActive),
-      asc(dataPointTemplates.name),
-    );
+    const templates = await db.select().from(dataPointTemplates)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(
+        desc(dataPointTemplates.isDefault),
+        desc(dataPointTemplates.isActive),
+        asc(dataPointTemplates.name),
+      );
 
     return NextResponse.json({
       templates: templates,
@@ -129,16 +125,14 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if template exists
-    const existingTemplate = await db.query.dataPointTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const existingTemplate = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
 
-    if (!existingTemplate) {
+    if (!existingTemplate || existingTemplate.length === 0) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     // Update template
-    const updateData: any = {
+    const updateData: Record<string, unknown> = {
       updatedAt: new Date(),
     };
 
@@ -155,9 +149,7 @@ export async function PUT(request: NextRequest) {
       .where(eq(dataPointTemplates.id, id));
 
     // Get the updated template
-    const template = await db.query.dataPointTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const template = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
 
     return NextResponse.json({
       success: true,
@@ -188,18 +180,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if template exists
-    const existingTemplate = await db.query.dataPointTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const existingTemplate = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
 
-    if (!existingTemplate) {
+    if (!existingTemplate || existingTemplate.length === 0) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     // Check if template is in use
-    const dataPointsCount = await db.query.dataPoints?.findMany({
-      where: (dataPoints: any, { eq }: any) => eq(dataPoints.templateId, id),
-    });
+    const dataPointsCount = await db.select().from(dataPoints).where(eq(dataPoints.templateId, id));
 
     if (dataPointsCount && dataPointsCount.length > 0) {
       return NextResponse.json({

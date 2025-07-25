@@ -57,7 +57,7 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
       }
       this._logger.info('AI provider initialized successfully');
     } catch (error) {
-      this._logger.warn(`${this.name} provider check failed`, error);
+      this._logger.warn(`${this.name} provider check failed`, error instanceof Error ? error : new Error(String(error)));
       // Don't throw error - service is initialized but not available
     }
   }
@@ -85,20 +85,20 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     // Validate temperature
     if (validated.temperature !== undefined) {
       if (typeof validated.temperature !== 'number' || isNaN(validated.temperature)) {
-        throw ValidationError.single('temperature', 'must be a valid number');
+        throw ValidationError.custom('temperature', 'must be a valid number', validated.temperature);
       }
       if (validated.temperature < 0 || validated.temperature > 2) {
-        throw ValidationError.single('temperature', 'must be between 0 and 2');
+        throw ValidationError.outOfRange('temperature', 0, 2, validated.temperature);
       }
     }
 
     // Validate maxTokens
     if (validated.maxTokens !== undefined) {
       if (typeof validated.maxTokens !== 'number' || isNaN(validated.maxTokens)) {
-        throw ValidationError.single('maxTokens', 'must be a valid number');
+        throw ValidationError.custom('maxTokens', 'must be a valid number', validated.maxTokens);
       }
       if (validated.maxTokens <= 0) {
-        throw ValidationError.single('maxTokens', 'must be positive');
+        throw ValidationError.outOfRange('maxTokens', 1, undefined, validated.maxTokens);
       }
     }
 

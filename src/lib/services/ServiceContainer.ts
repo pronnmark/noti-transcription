@@ -172,8 +172,8 @@ export class ServiceContainer {
     return serviceRegistry.resolve<PromptEngine>('promptEngine');
   }
 
-  get fileUploadService(): FileUploadService {
-    return serviceRegistry.resolve<FileUploadService>('fileUploadService');
+  get fileUploadService(): SimpleFileUploadService {
+    return serviceRegistry.resolve<SimpleFileUploadService>('fileUploadService');
   }
 
   // Health check for all services

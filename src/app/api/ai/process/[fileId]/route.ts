@@ -83,7 +83,7 @@ export const POST = withErrorHandler(async (
 
   debugLog(`🤖 Starting AI processing for file ${fileIdInt}, type: ${processType}`);
 
-  let results: any = {};
+  let results: Record<string, unknown> = {};
 
   try {
     switch (processType) {

@@ -36,7 +36,7 @@ export class SimpleFileUploadService extends BaseService {
       await fs.mkdir(this.UPLOAD_DIR, { recursive: true });
       this._logger.info('Upload directory ready', { dir: this.UPLOAD_DIR });
     } catch (error) {
-      this._logger.error('Failed to create upload directory', error);
+      this._logger.error('Failed to create upload directory', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -107,13 +107,13 @@ export class SimpleFileUploadService extends BaseService {
         message: options.isDraft
           ? 'Draft saved successfully'
           : 'File uploaded successfully',
-        duration,
+        duration: duration || undefined,
         isDraft: !!options.isDraft,
         transcriptionStarted: !options.isDraft,
       };
 
     } catch (error) {
-      this._logger.error('Upload failed', error);
+      this._logger.error('Upload failed', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }
@@ -168,7 +168,7 @@ export class SimpleFileUploadService extends BaseService {
 
       throw new Error('Cannot read file - no arrayBuffer or stream method');
     } catch (error) {
-      this._logger.error('Failed to read file buffer', error);
+      this._logger.error('Failed to read file buffer', error instanceof Error ? error : new Error(String(error)));
       throw createError.internal('Failed to read file data');
     }
   }
@@ -192,7 +192,7 @@ export class SimpleFileUploadService extends BaseService {
       this._logger.debug('File saved', { filePath });
       return { fileName, filePath };
     } catch (error) {
-      this._logger.error('Failed to save file', error);
+      this._logger.error('Failed to save file', error instanceof Error ? error : new Error(String(error)));
       throw createError.internal('Failed to save file to disk');
     }
   }
@@ -211,7 +211,7 @@ export class SimpleFileUploadService extends BaseService {
         return Math.round(duration);
       }
     } catch (error) {
-      this._logger.warn('Could not extract duration', error);
+      this._logger.warn('Could not extract duration', error instanceof Error ? error : new Error(String(error)));
     }
 
     return null;
@@ -236,11 +236,7 @@ export class SimpleFileUploadService extends BaseService {
       this._logger.debug('Database record created:', { id: result.id });
       return result;
     } catch (error) {
-      this._logger.error('Failed to create database record', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
-        data,
-      });
+      this._logger.error('Failed to create database record', error instanceof Error ? error : new Error(String(error)));
       throw createError.internal('Failed to save file information to database: ' + (error instanceof Error ? error.message : String(error)));
     }
   }
@@ -260,7 +256,7 @@ export class SimpleFileUploadService extends BaseService {
       // await db.insert(transcripts).values({ fileId, status: 'pending' });
 
     } catch (error) {
-      this._logger.error('Failed to start transcription', error);
+      this._logger.error('Failed to start transcription', error instanceof Error ? error : new Error(String(error)));
       // Don't throw - this is optional
     }
   }

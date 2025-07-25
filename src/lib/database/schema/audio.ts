@@ -51,7 +51,7 @@ export const speakerLabels = sqliteTable('speaker_labels', {
 export const fileLabels = sqliteTable('file_labels', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   fileId: integer('file_id').notNull().references(() => audioFiles.id, { onDelete: 'cascade' }),
-  labels: text('labels', { mode: 'json' }).$type<string[]>().notNull().default('[]'),
+  labels: text('labels', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => ({

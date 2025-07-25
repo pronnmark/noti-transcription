@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const dateFilter = searchParams.get('date'); // YYYY-MM-DD format
 
     // Build the base query
-    let filesQueryBuilder = db
+    const filesQueryBuilder = db
       .select({
         id: audioFiles.id,
         filename: audioFiles.fileName,
@@ -42,43 +42,32 @@ export async function GET(request: NextRequest) {
       .leftJoin(fileLabels, eq(audioFiles.id, fileLabels.fileId));
 
     // Add date filtering if specified
+    let whereClause = undefined;
     if (dateFilter) {
       const startOfDay = Math.floor(new Date(dateFilter + 'T00:00:00.000Z').getTime() / 1000);
       const endOfDay = Math.floor(new Date(dateFilter + 'T23:59:59.999Z').getTime() / 1000);
 
-      filesQueryBuilder = filesQueryBuilder.where(
-        sql`(
-          (${audioFiles.recordedAt} IS NOT NULL AND ${audioFiles.recordedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-          OR 
-          (${audioFiles.recordedAt} IS NULL AND ${audioFiles.uploadedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-        )`,
-      );
+      whereClause = sql`(
+        (${audioFiles.recordedAt} IS NOT NULL AND ${audioFiles.recordedAt} BETWEEN ${startOfDay} AND ${endOfDay})
+        OR 
+        (${audioFiles.recordedAt} IS NULL AND ${audioFiles.uploadedAt} BETWEEN ${startOfDay} AND ${endOfDay})
+      )`;
     }
 
     // Execute the query
-    const filesQuery = await filesQueryBuilder
+    const query = whereClause ? filesQueryBuilder.where(whereClause) : filesQueryBuilder;
+    const filesQuery = await query
       .groupBy(audioFiles.id, transcriptionJobs.status, transcriptionJobs.speakerCount, transcriptionJobs.diarizationStatus, fileLabels.labels)
       .orderBy(desc(audioFiles.recordedAt), desc(audioFiles.id))
       .limit(limit)
       .offset(offset);
 
     // Get total count (with same date filtering)
-    let countQuery = db
+    const baseCountQuery = db
       .select({ count: sql<number>`COUNT(*)` })
       .from(audioFiles);
 
-    if (dateFilter) {
-      const startOfDay = Math.floor(new Date(dateFilter + 'T00:00:00.000Z').getTime() / 1000);
-      const endOfDay = Math.floor(new Date(dateFilter + 'T23:59:59.999Z').getTime() / 1000);
-
-      countQuery = countQuery.where(
-        sql`(
-          (${audioFiles.recordedAt} IS NOT NULL AND ${audioFiles.recordedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-          OR 
-          (${audioFiles.recordedAt} IS NULL AND ${audioFiles.uploadedAt} BETWEEN ${startOfDay} AND ${endOfDay})
-        )`,
-      );
-    }
+    const countQuery = whereClause ? baseCountQuery.where(whereClause) : baseCountQuery;
 
     const countResult = await countQuery;
     const total = countResult[0]?.count || 0;

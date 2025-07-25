@@ -1,7 +1,5 @@
 import '../logging/init'; // Ensure logger is initialized
 import { customAIService } from './customAI';
-import { db, eq, and } from '@/lib/db';
-import * as schema from '@/lib/db';
 
 export interface TranscriptSegment {
   start: number;
@@ -52,6 +50,7 @@ export interface SummarizationResult {
 export class AdaptiveAIService {
   private defaultTemperature = 0.3;
   private defaultMaxTokens = 4000;
+  private defaultModel = 'anthropic/claude-sonnet-4';
 
   /**
    * Process transcript for summarization using a template or custom prompt
@@ -71,12 +70,20 @@ export class AdaptiveAIService {
     let template = null;
     let validatedTemplateId = null;
     if (templateId) {
-      template = await db.query.summarizationPrompts?.findFirst({
-        where: (prompts: any, { eq, and }: any) => and(
-          eq(prompts.id, templateId),
-          eq(prompts.isActive, true),
-        ),
-      });
+      const { getDb } = await import('@/lib/database/client');
+      const { summarizationPrompts } = await import('@/lib/database/schema');
+      const { eq, and } = await import('drizzle-orm');
+      
+      const result = await getDb()
+        .select()
+        .from(summarizationPrompts)
+        .where(and(
+          eq(summarizationPrompts.id, templateId),
+          eq(summarizationPrompts.isActive, true)
+        ))
+        .limit(1);
+      
+      template = result[0] || null;
 
       if (!template) {
         console.warn(`⚠️ Invalid template ID provided: ${templateId}. Falling back to default summarization.`);
@@ -116,7 +123,10 @@ export class AdaptiveAIService {
     });
 
     // Store in database using validated template ID
-    const [summarization] = await db.insert(schema.summarizations).values({
+    const { summarizations } = await import('@/lib/database/schema');
+    const db = await import('@/lib/database/client').then(m => m.getDb());
+    
+    const [summarization] = await db.insert(summarizations).values({
       fileId: fileId,
       templateId: validatedTemplateId,
       model: model,
@@ -126,7 +136,7 @@ export class AdaptiveAIService {
 
     return {
       id: summarization.id,
-      templateId: validatedTemplateId,
+      templateId: validatedTemplateId || undefined,
       content: summary,
       model,
       prompt: finalPrompt,
@@ -145,9 +155,14 @@ export class AdaptiveAIService {
     const { model = this.defaultModel, temperature = this.defaultTemperature } = options;
 
     // Get templates
-    const templates = await db.query.extractionTemplates?.findMany({
-      where: (templates: any, { inArray }: any) => inArray(templates.id, templateIds),
-    }) || [];
+    const { extractionTemplates } = await import('@/lib/database/schema');
+    const { inArray } = await import('drizzle-orm');
+    const db = await import('@/lib/database/client').then(m => m.getDb());
+    
+    const templates = await db
+      .select()
+      .from(extractionTemplates)
+      .where(inArray(extractionTemplates.id, templateIds));
 
     if (templates.length === 0) {
       throw new Error('No valid templates found for extraction');
@@ -177,7 +192,8 @@ export class AdaptiveAIService {
 
         // Store each extracted item in the database
         for (const item of parsedResults) {
-          const [extraction] = await db.insert(schema.extractions).values({
+          const { extractions } = await import('@/lib/database/schema');
+          const [extraction] = await db.insert(extractions).values({
             fileId: fileId,
             templateId: template.id,
             content: item.content,
@@ -226,9 +242,14 @@ export class AdaptiveAIService {
     const { model = this.defaultModel, temperature = 0.1 } = options; // Lower temperature for consistent analysis
 
     // Get templates
-    const templates = await db.query.dataPointTemplates?.findMany({
-      where: (templates: any, { inArray }: any) => inArray(templates.id, templateIds),
-    }) || [];
+    const { dataPointTemplates } = await import('@/lib/database/schema');
+    const { inArray } = await import('drizzle-orm');
+    const db = await import('@/lib/database/client').then(m => m.getDb());
+    
+    const templates = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(inArray(dataPointTemplates.id, templateIds));
 
     if (templates.length === 0) {
       throw new Error('No valid templates found for data point analysis');
@@ -257,7 +278,8 @@ export class AdaptiveAIService {
         const analysisResults = this.parseDataPointResults(analysisContent, template);
 
         // Store in database
-        const [dataPoint] = await db.insert(schema.dataPoints).values({
+        const { dataPoints } = await import('@/lib/database/schema');
+        const [dataPoint] = await db.insert(dataPoints).values({
           fileId: fileId,
           templateId: template.id,
           analysisResults: JSON.stringify(analysisResults),
@@ -296,13 +318,21 @@ export class AdaptiveAIService {
     dataPoints: DataPointResult[];
   }> {
     // Get default templates
-    const defaultExtractionTemplates = await db.query.extractionTemplates?.findMany({
-      where: (templates: any, { eq }: any) => eq(templates.isDefault, true),
-    }) || [];
+    const { extractionTemplates } = await import('@/lib/database/schema');
+    const { eq } = await import('drizzle-orm');
+    const db = await import('@/lib/database/client').then(m => m.getDb());
+    
+    const defaultExtractionTemplates = await db
+      .select()
+      .from(extractionTemplates)
+      .where(eq(extractionTemplates.isDefault, true));
 
-    const defaultDataPointTemplates = await db.query.dataPointTemplates?.findMany({
-      where: (templates: any, { eq }: any) => eq(templates.isDefault, true),
-    }) || [];
+    const { dataPointTemplates } = await import('@/lib/database/schema');
+    
+    const defaultDataPointTemplates = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(eq(dataPointTemplates.isDefault, true));
 
     const results = {
       extractions: [] as ExtractionResult[],

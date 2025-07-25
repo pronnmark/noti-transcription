@@ -54,11 +54,10 @@ export async function PUT(
     }
 
     // Clean and deduplicate labels
-    const cleanLabels = [...new Set(
-      labels
-        .map(label => label.trim())
-        .filter(label => label.length > 0 && label.length <= 50),
-    )];
+    const processedLabels = labels
+      .map(label => label.trim())
+      .filter(label => label.length > 0 && label.length <= 50);
+    const cleanLabels = Array.from(new Set(processedLabels));
 
     // Check if labels record exists
     const existingRecord = await db

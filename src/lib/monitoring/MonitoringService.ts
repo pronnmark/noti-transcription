@@ -205,7 +205,7 @@ export class MonitoringService extends BaseService implements IMonitoringService
     }
 
     // AI provider health checks
-    this.addHealthCheck(new AIProviderHealthChecker('gemini', this.config.healthChecks.timeout));
+    this.addHealthCheck(new AIProviderHealthChecker('custom', this.config.healthChecks.timeout));
   }
 
   private startMetricsCollection(): void {

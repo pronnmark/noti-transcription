@@ -124,7 +124,7 @@ export class CustomAIService extends AIProvider {
       const settings = await this.getCustomSettings();
       return settings.model;
     } catch (error) {
-      this._logger.warn('Failed to get configured model, using fallback', error);
+      this._logger.warn('Failed to get configured model, using fallback', error instanceof Error ? error : new Error(String(error)));
       return this.defaultModel || 'gpt-3.5-turbo';
     }
   }
@@ -141,8 +141,9 @@ export class CustomAIService extends AIProvider {
       if (error instanceof Error && error.message.includes('HTTP 422')) {
         const settings = await this.getCustomSettings().catch(() => ({}));
         if (this.isDDwrappy(settings)) {
+          const modelName = 'model' in settings ? settings.model : 'unknown';
           throw new Error(`DDwrappy rejected the request (HTTP 422). This often indicates:
-            - Invalid model name (current: ${settings.model || 'unknown'})
+            - Invalid model name (current: ${modelName})
             - Malformed JSON schema in request
             - DDwrappy service not running or misconfigured
             
@@ -311,7 +312,7 @@ export class CustomAIService extends AIProvider {
           request.response_format = {
             type: 'json_object',
             // Potential DDwrappy-specific options (if supported)
-            ...(settings.strictJson && { strict: true }),
+            ...('strictJson' in settings && settings.strictJson ? { strict: true } : {}),
           };
         } else {
           request.response_format = { type: 'json_object' };
@@ -455,10 +456,7 @@ async function initializeCustomAIService(): Promise<void> {
     console.log('🚀 Initializing CustomAI service...');
 
     // Create service with proper configuration
-    _customAIService = new CustomAIService({
-      temperature: 0.7,
-      maxTokens: 4000,
-    });
+    _customAIService = new CustomAIService({});
 
     // Initialize the service
     await _customAIService.initialize();

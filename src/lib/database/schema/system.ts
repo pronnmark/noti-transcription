@@ -150,6 +150,44 @@ export const aiProcessingSessions = sqliteTable('ai_processing_sessions', {
   createdAtIdx: index('ai_sessions_created_at_idx').on(table.createdAt),
 }));
 
+// Real-time recording sessions - track active recording sessions with real-time analysis
+export const realTimeSessions = sqliteTable('real_time_sessions', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  fileId: integer('file_id').references(() => audioFiles.id, { onDelete: 'cascade' }), // null while recording, set when saved
+  startedAt: integer('started_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  endedAt: integer('ended_at', { mode: 'timestamp' }),
+  totalChunks: integer('total_chunks').default(0),
+  status: text('status', { enum: ['active', 'completed', 'failed'] }).default('active'),
+  chunkIntervalMs: integer('chunk_interval_ms').notNull(), // Interval in milliseconds
+  aiInstruction: text('ai_instruction').notNull(), // AI instruction for this session
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => ({
+  fileIdIdx: index('rt_sessions_file_id_idx').on(table.fileId),
+  statusIdx: index('rt_sessions_status_idx').on(table.status),
+  startedAtIdx: index('rt_sessions_started_at_idx').on(table.startedAt),
+}));
+
+// Real-time thoughts - AI analysis results for each audio chunk
+export const realTimeThoughts = sqliteTable('real_time_thoughts', {
+  id: text('id').primaryKey().$defaultFn(() => createId()),
+  sessionId: text('session_id').notNull().references(() => realTimeSessions.id, { onDelete: 'cascade' }),
+  chunkNumber: integer('chunk_number').notNull(), // Sequential chunk number (1, 2, 3...)
+  chunkStartTime: integer('chunk_start_time').notNull(), // Start time in seconds from recording start
+  chunkEndTime: integer('chunk_end_time').notNull(), // End time in seconds from recording start
+  transcriptText: text('transcript_text'), // Transcription of this chunk
+  aiThought: text('ai_thought'), // AI analysis of this chunk
+  processingTimeMs: integer('processing_time_ms'), // Time taken to process in ms
+  status: text('status', { enum: ['pending', 'transcribing', 'analyzing', 'completed', 'failed'] }).default('pending'),
+  error: text('error'), // Error message if processing failed
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),
+  completedAt: integer('completed_at', { mode: 'timestamp' }),
+}, (table) => ({
+  sessionIdIdx: index('rt_thoughts_session_id_idx').on(table.sessionId),
+  chunkNumberIdx: index('rt_thoughts_chunk_number_idx').on(table.chunkNumber),
+  statusIdx: index('rt_thoughts_status_idx').on(table.status),
+  createdAtIdx: index('rt_thoughts_created_at_idx').on(table.createdAt),
+}));
+
 // Type exports
 
 export type DataPointTemplate = typeof dataPointTemplates.$inferSelect;
@@ -168,3 +206,7 @@ export type ExtractionResult = typeof extractionResults.$inferSelect;
 export type NewExtractionResult = typeof extractionResults.$inferInsert;
 export type AIProcessingSession = typeof aiProcessingSessions.$inferSelect;
 export type NewAIProcessingSession = typeof aiProcessingSessions.$inferInsert;
+export type RealTimeSession = typeof realTimeSessions.$inferSelect;
+export type NewRealTimeSession = typeof realTimeSessions.$inferInsert;
+export type RealTimeThought = typeof realTimeThoughts.$inferSelect;
+export type NewRealTimeThought = typeof realTimeThoughts.$inferInsert;

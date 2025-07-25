@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, extractions, extractionTemplates, eq, and, inArray } from '@/lib/database';
+import { db, extractions, extractionTemplates, audioFiles, eq, and, inArray, desc } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -28,23 +28,21 @@ export async function GET(request: NextRequest) {
     }
 
     // Get extractions with template information
-    const extractionsResult = await db.query.extractions?.findMany({
-      where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (extractions: any, { desc }: any) => [desc(extractions.createdAt)],
-    }) || [];
+    const extractionsResult = await db.select().from(extractions)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(desc(extractions.createdAt));
 
     // Get template names for display
-    const templateIds = Array.from(new Set(extractionsResult.map((e: any) => e.templateId))) as string[];
-    const templates = await db.query.extractionTemplates?.findMany({
-      where: inArray(extractionTemplates.id, templateIds),
-    }) || [];
+    const templateIds = Array.from(new Set(extractionsResult.map((e: typeof extractions.$inferSelect) => e.templateId))) as string[];
+    const templates = await db.select().from(extractionTemplates)
+      .where(inArray(extractionTemplates.id, templateIds));
 
     const templateMap = Object.fromEntries(
-      templates.map((t: any) => [t.id, t]),
+      templates.map((t: typeof extractionTemplates.$inferSelect) => [t.id, t]),
     );
 
     // Enrich extractions with template information
-    const enrichedExtractions = extractionsResult.map((extraction: any) => ({
+    const enrichedExtractions = extractionsResult.map((extraction: typeof extractions.$inferSelect) => ({
       ...extraction,
       template: templateMap[extraction.templateId] || null,
     }));
@@ -88,20 +86,16 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
-    });
+    const file = await db.select().from(audioFiles).where(eq(audioFiles.id, parseInt(fileId))).limit(1);
 
-    if (!file) {
+    if (!file || file.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     // Verify template exists
-    const template = await db.query.extractionTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, templateId),
-    });
+    const template = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, templateId)).limit(1);
 
-    if (!template) {
+    if (!template || template.length === 0) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 

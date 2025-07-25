@@ -136,10 +136,7 @@ export class ServiceConfigManager extends BaseService {
       const dbSettings = await settingsService.get();
 
       if (dbSettings) {
-        // Update AI configurations with database values
-        if (dbSettings.geminiApiKey) {
-          this.config.ai.gemini.apiKey = dbSettings.geminiApiKey;
-        }
+        // Update AI configurations with database values - placeholder for future implementation
 
         // OpenRouter removed - using only Gemini
 
@@ -172,7 +169,7 @@ export class ServiceConfigManager extends BaseService {
         return this.config.summarization;
 
       case 'customAIService':
-        return this.config.ai.custom;
+        return this.config.ai.gemini;
 
         // OpenRouter and Gemini services removed - using customAI
 
@@ -208,7 +205,7 @@ export class ServiceConfigManager extends BaseService {
         this.config.summarization = { ...this.config.summarization, ...config };
         break;
       case 'customAIService':
-        this.config.ai.custom = { ...this.config.ai.custom, ...config };
+        this.config.ai.gemini = { ...this.config.ai.gemini, ...config };
         break;
       // OpenRouter and Gemini services removed - using customAI
       case 'storageService':

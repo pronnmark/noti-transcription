@@ -10,7 +10,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
 
   async findByFileId(fileId: number): Promise<TranscriptionJob[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.fileId, fileId))
@@ -23,7 +23,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
 
   async findLatestByFileId(fileId: number): Promise<TranscriptionJob | null> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.fileId, fileId))
@@ -37,7 +37,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
 
   async findByStatus(status: string): Promise<TranscriptionJob[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.status, status))
@@ -63,7 +63,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
         updateData.lastError = error;
       }
 
-      const [result] = await db
+      const [result] = await getDb()
         .update(this.table)
         .set(updateData)
         .where(eq(this.table.id, id))
@@ -81,7 +81,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
 
   async updateProgress(id: number, progress: number): Promise<TranscriptionJob> {
     try {
-      const [result] = await db
+      const [result] = await getDb()
         .update(this.table)
         .set({
           progress,
@@ -105,7 +105,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
     transcript: TranscriptSegment[],
   ): Promise<TranscriptionJob> {
     try {
-      const [result] = await db
+      const [result] = await getDb()
         .update(this.table)
         .set({
           transcript,

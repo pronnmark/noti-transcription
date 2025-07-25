@@ -17,7 +17,7 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
 
   async findActive(): Promise<ExtractionTemplate[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.isActive, true))
@@ -30,7 +30,7 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
 
   async findDefault(): Promise<ExtractionTemplate[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.isDefault, true))
@@ -43,7 +43,7 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
 
   async findByName(name: string): Promise<ExtractionTemplate | null> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.name, name))
@@ -57,13 +57,13 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
   async setDefault(id: string): Promise<ExtractionTemplate> {
     try {
       // First, unset all other defaults
-      await db
+      await getDb()
         .update(this.table)
         .set({ isDefault: false })
         .where(eq(this.table.isDefault, true));
 
       // Then set this one as default
-      const [result] = await db
+      const [result] = await getDb()
         .update(this.table)
         .set({
           isDefault: true,
@@ -90,7 +90,7 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
         throw new Error(`Extraction template with id ${id} not found`);
       }
 
-      const [result] = await db
+      const [result] = await getDb()
         .update(this.table)
         .set({
           isActive: !current.isActive,
@@ -113,7 +113,7 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
 
   async findByTitle(title: string): Promise<SummarizationTemplate | null> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.title, title))
@@ -126,7 +126,7 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
 
   async findRecent(limit: number = 10): Promise<SummarizationTemplate[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .orderBy(desc(this.table.createdAt))

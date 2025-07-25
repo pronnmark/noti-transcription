@@ -12,7 +12,7 @@ export type ChatConfiguration = {
 export const telegramSettings = sqliteTable('telegram_settings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   botToken: text('bot_token'), // Optional - falls back to env var if null
-  chatConfigurations: text('chat_configurations', { mode: 'json' }).$type<ChatConfiguration[]>().default('[]'),
+  chatConfigurations: text('chat_configurations', { mode: 'json' }).$type<ChatConfiguration[]>().default(sql`'[]'`),
   defaultChatId: text('default_chat_id'), // Default chat for quick sharing
   isEnabled: integer('is_enabled', { mode: 'boolean' }).default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull().default(sql`CURRENT_TIMESTAMP`),

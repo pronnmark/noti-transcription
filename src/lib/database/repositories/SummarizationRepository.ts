@@ -10,7 +10,7 @@ export class SummarizationRepository extends BaseRepository<Summarization, NewSu
 
   async findByFileId(fileId: number): Promise<Summarization[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.fileId, fileId))
@@ -23,7 +23,7 @@ export class SummarizationRepository extends BaseRepository<Summarization, NewSu
 
   async findLatestByFileId(fileId: number): Promise<Summarization | null> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.fileId, fileId))
@@ -37,7 +37,7 @@ export class SummarizationRepository extends BaseRepository<Summarization, NewSu
 
   async findByTemplateId(templateId: string): Promise<Summarization[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.templateId, templateId))
@@ -50,7 +50,7 @@ export class SummarizationRepository extends BaseRepository<Summarization, NewSu
 
   async findByModel(model: string): Promise<Summarization[]> {
     try {
-      const result = await db
+      const result = await getDb()
         .select()
         .from(this.table)
         .where(eq(this.table.model, model))

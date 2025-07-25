@@ -28,7 +28,7 @@ interface TaskWithFile {
   timestamp?: number;
   priority: 'high' | 'medium' | 'low';
   status: 'active' | 'completed' | 'archived';
-  metadata?: any;
+  metadata?: Record<string, unknown>;
   comments?: string;
   completedAt?: string;
   createdAt: string;

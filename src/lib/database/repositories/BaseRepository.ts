@@ -80,7 +80,7 @@ implements IRepository<T, CreateT> {
   async create(data: CreateT): Promise<T> {
     try {
       const db = getDb();
-      const [result] = await db.insert(this.table).values(data as any).returning();
+      const [result] = await getDb().insert(this.table).values(data as any).returning();
       return result as T;
     } catch (error) {
       throw new Error(`Failed to create record: ${error}`);
@@ -90,7 +90,7 @@ implements IRepository<T, CreateT> {
   async createMany(data: CreateT[]): Promise<T[]> {
     try {
       const db = getDb();
-      const result = await db.insert(this.table).values(data).returning();
+      const result = await getDb().insert(this.table).values(data).returning();
       return result as T[];
     } catch (error) {
       throw new Error(`Failed to create records: ${error}`);

@@ -38,17 +38,17 @@ export async function GET(request: NextRequest) {
       .orderBy(dataPoints.createdAt);
 
     // Get template names for display
-    const templateIds = Array.from(new Set(dataPointsResult.map((dp: any) => dp.templateId))) as string[];
-    const templates = templateIds.length > 0 
+    const templateIds = Array.from(new Set(dataPointsResult.map((dp: typeof dataPoints.$inferSelect) => dp.templateId))) as string[];
+    const templates = templateIds.length > 0
       ? await db.select().from(dataPointTemplates).where(inArray(dataPointTemplates.id, templateIds))
       : [];
 
     const templateMap = Object.fromEntries(
-      templates.map((t: any) => [t.id, t]),
+      templates.map((t: typeof dataPointTemplates.$inferSelect) => [t.id, t]),
     );
 
     // Enrich data points with template information
-    const enrichedDataPoints = dataPointsResult.map((dataPoint: any) => ({
+    const enrichedDataPoints = dataPointsResult.map((dataPoint: typeof dataPoints.$inferSelect) => ({
       ...dataPoint,
       template: templateMap[dataPoint.templateId] || null,
       analysis_results: typeof dataPoint.analysisResults === 'string'

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, extractionTemplates, extractions, eq, and } from '@/lib/database';
+import { db, extractionTemplates, extractions, eq, and, desc, asc } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -22,14 +22,13 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(extractionTemplates.isDefault, true));
     }
 
-    const templates = await db.query.extractionTemplates?.findMany({
-      where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (templates: any, { desc, asc }: any) => [
-        desc(templates.isDefault),
-        desc(templates.isActive),
-        asc(templates.name),
-      ],
-    }) || [];
+    const templates = await db.select().from(extractionTemplates)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(
+        desc(extractionTemplates.isDefault),
+        desc(extractionTemplates.isActive),
+        asc(extractionTemplates.name),
+      );
 
     return NextResponse.json({
       templates: templates,
@@ -118,11 +117,9 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if template exists
-    const existingTemplate = await db.query.extractionTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const existingTemplate = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
 
-    if (!existingTemplate) {
+    if (!existingTemplate || existingTemplate.length === 0) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
@@ -144,9 +141,7 @@ export async function PUT(request: NextRequest) {
       .where(eq(extractionTemplates.id, id));
 
     // Get the updated template
-    const template = await db.query.extractionTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const template = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
 
     return NextResponse.json({
       success: true,
@@ -177,18 +172,14 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if template exists
-    const existingTemplate = await db.query.extractionTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, id),
-    });
+    const existingTemplate = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
 
-    if (!existingTemplate) {
+    if (!existingTemplate || existingTemplate.length === 0) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     // Check if template is in use
-    const extractionsCount = await db.query.extractions?.findMany({
-      where: (extractions: any, { eq }: any) => eq(extractions.templateId, id),
-    });
+    const extractionsCount = await db.select().from(extractions).where(eq(extractions.templateId, id));
 
     if (extractionsCount && extractionsCount.length > 0) {
       return NextResponse.json({

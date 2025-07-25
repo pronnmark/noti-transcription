@@ -51,6 +51,11 @@ export const systemSettings = sqliteTable('system_settings', {
     questions?: boolean;
     followups?: boolean;
   }>(),
+
+  // Real-time thoughts settings
+  realTimeEnabled: integer('real_time_enabled', { mode: 'boolean' }).default(false),
+  realTimeChunkInterval: integer('real_time_chunk_interval').default(120), // Interval in seconds (default 2 minutes)
+  realTimeAiInstruction: text('real_time_ai_instruction').default('Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.'),
 });
 
 export type SystemSettings = typeof systemSettings.$inferSelect;

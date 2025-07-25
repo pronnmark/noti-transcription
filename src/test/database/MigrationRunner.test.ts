@@ -7,7 +7,7 @@ import { join } from 'path';
 
 describe('MigrationRunner', () => {
   let migrationRunner: MigrationRunner;
-  let databaseInitializer: DatabaseInitializer;
+  let _databaseInitializer: DatabaseInitializer;
   const testDbPath = join(process.cwd(), 'test-migration.db');
 
   beforeEach(() => {
@@ -27,7 +27,7 @@ describe('MigrationRunner', () => {
     // Clean up test database
     try {
       closeDatabase();
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors when closing database
     }
 
@@ -109,7 +109,7 @@ describe('DatabaseInitializer', () => {
   afterEach(() => {
     try {
       closeDatabase();
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors
     }
 

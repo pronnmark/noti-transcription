@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import * as schema from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, inArray, asc, desc } from 'drizzle-orm';
 
 export interface DynamicPromptConfig {
   summarizationPromptId?: string;
@@ -38,22 +38,26 @@ export class DynamicPromptGenerator {
     if (useCustomSummarizationPrompt) {
       summarizationPrompt = useCustomSummarizationPrompt;
     } else if (summarizationPromptId) {
-      const summPrompt = await db.query.summarizationPrompts.findFirst({
-        where: eq(schema.summarizationPrompts.id, summarizationPromptId),
-      });
+      const summPrompt = await db.select()
+        .from(schema.summarizationPrompts)
+        .where(eq(schema.summarizationPrompts.id, summarizationPromptId))
+        .limit(1)
+        .then(results => results[0] || null);
       summarizationPrompt = summPrompt?.prompt || 'Provide a comprehensive summary of the transcript.';
     } else {
       // Get default summarization prompt
-      const defaultPrompt = await db.query.summarizationPrompts.findFirst({
-        where: eq(schema.summarizationPrompts.isDefault, true),
-      });
+      const defaultPrompt = await db.select()
+        .from(schema.summarizationPrompts)
+        .where(eq(schema.summarizationPrompts.isDefault, true))
+        .limit(1)
+        .then(results => results[0] || null);
       summarizationPrompt = defaultPrompt?.prompt || 'Provide a comprehensive summary of the transcript.';
     }
 
     // Get extraction definitions
-    const extractionDefinitions = await db.query.extractionDefinitions.findMany({
-      where: (definitions, { inArray }) => inArray(definitions.id, extractionDefinitionIds),
-    });
+    const extractionDefinitions = await db.select()
+      .from(schema.extractionDefinitions)
+      .where(inArray(schema.extractionDefinitions.id, extractionDefinitionIds));
 
     // Build extraction map for result processing
     const extractionMap: Record<string, any> = {};
@@ -237,20 +241,20 @@ Follow the template instructions exactly as specified. Use the natural format re
    * Get active extraction definitions for UI display
    */
   async getActiveExtractionDefinitions(): Promise<schema.ExtractionDefinition[]> {
-    return await db.query.extractionDefinitions.findMany({
-      where: eq(schema.extractionDefinitions.isActive, true),
-      orderBy: (definitions, { asc }) => [asc(definitions.sortOrder), asc(definitions.name)],
-    });
+    return await db.select()
+      .from(schema.extractionDefinitions)
+      .where(eq(schema.extractionDefinitions.isActive, true))
+      .orderBy(asc(schema.extractionDefinitions.sortOrder), asc(schema.extractionDefinitions.name));
   }
 
   /**
    * Get active summarization prompts for UI display
    */
   async getActiveSummarizationPrompts(): Promise<schema.SummarizationPrompt[]> {
-    return await db.query.summarizationPrompts.findMany({
-      where: eq(schema.summarizationPrompts.isActive, true),
-      orderBy: (prompts, { desc, asc }) => [desc(prompts.isDefault), asc(prompts.name)],
-    });
+    return await db.select()
+      .from(schema.summarizationPrompts)
+      .where(eq(schema.summarizationPrompts.isActive, true))
+      .orderBy(desc(schema.summarizationPrompts.isDefault), asc(schema.summarizationPrompts.name));
   }
 
   /**
@@ -398,13 +402,30 @@ Follow the template instructions exactly as specified. Use the natural format re
   async getExtractionResults(fileId: number): Promise<{
     [extractionType: string]: any[];
   }> {
-    const results = await db.query.extractionResults.findMany({
-      where: eq(schema.extractionResults.fileId, fileId),
-      with: {
-        definition: true,
-      },
-      orderBy: (results, { asc }) => [asc(results.createdAt)],
-    });
+    const results = await db.select({
+      id: schema.extractionResults.id,
+      fileId: schema.extractionResults.fileId,
+      definitionId: schema.extractionResults.definitionId,
+      extractionType: schema.extractionResults.extractionType,
+      content: schema.extractionResults.content,
+      createdAt: schema.extractionResults.createdAt,
+      definition: {
+        id: schema.extractionDefinitions.id,
+        name: schema.extractionDefinitions.name,
+        description: schema.extractionDefinitions.description,
+        jsonKey: schema.extractionDefinitions.jsonKey,
+        aiInstructions: schema.extractionDefinitions.aiInstructions,
+        outputType: schema.extractionDefinitions.outputType,
+        category: schema.extractionDefinitions.category,
+        createdAt: schema.extractionDefinitions.createdAt,
+        updatedAt: schema.extractionDefinitions.updatedAt,
+        isActive: schema.extractionDefinitions.isActive,
+      }
+    })
+    .from(schema.extractionResults)
+    .leftJoin(schema.extractionDefinitions, eq(schema.extractionResults.definitionId, schema.extractionDefinitions.id))
+    .where(eq(schema.extractionResults.fileId, fileId))
+    .orderBy(asc(schema.extractionResults.createdAt));
 
     const groupedResults: { [extractionType: string]: any[] } = {};
 

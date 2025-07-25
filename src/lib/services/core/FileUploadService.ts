@@ -2,7 +2,7 @@
 // Handles all file upload logic in one place (DRY principle)
 
 import { BaseService, ValidationRules } from './BaseService';
-import { createError } from '../../errors';
+import { createError, ValidationError } from '../../errors';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
@@ -90,7 +90,7 @@ export class FileUploadService extends BaseService {
           throw new Error('Unable to read file data - no arrayBuffer or stream method available');
         }
       } catch (error) {
-        this._logger.error('Failed to read file buffer', error);
+        this._logger.error('Failed to read file buffer', error instanceof Error ? error : new Error(String(error)));
         throw createError.internal('Failed to read file data');
       }
 
@@ -190,8 +190,7 @@ export class FileUploadService extends BaseService {
     });
 
     if (duplicateCheck.isDuplicate) {
-      const error = createError.validation('Duplicate file detected');
-      error.metadata = {
+      const metadata = {
         duplicateType: duplicateCheck.duplicateType,
         message: duplicateCheck.message,
         existingFile: duplicateCheck.existingFile ? {
@@ -201,7 +200,14 @@ export class FileUploadService extends BaseService {
           duration: duplicateCheck.existingFile.duration,
         } : null,
       };
-      error.statusCode = 409; // Conflict
+      
+      const error = new ValidationError(
+        'Duplicate file detected',
+        'file',
+        undefined,
+        [],
+        metadata
+      );
       throw error;
     }
   }
