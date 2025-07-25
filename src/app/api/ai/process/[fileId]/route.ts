@@ -1,230 +1,189 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
-import { eq } from 'drizzle-orm';
-import { summarizationPrompts, audioFiles, transcriptionJobs } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import { db, summarizationPrompts, audioFiles, transcriptionJobs, eq } from '@/lib/db';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
+import {
+  createDebugLogger,
+  handleAuthCheck,
+  parseFileParams,
+  updateFileTimestamp,
+  createErrorResponse,
+  createSuccessResponse,
+  validateQueryResult,
+  withErrorHandler,
+} from '@/lib/api-utils';
 
-// Debug logging (can be disabled by setting DEBUG_API=false)
-const DEBUG_API = process.env.DEBUG_API !== 'false';
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_API) {
-    console.log(...args);
-  }
-};
+const debugLog = createDebugLogger('ai-process');
 
-export async function POST(
+export const POST = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ fileId: string }> },
-) {
-  try {
-    // Check authentication
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+) => {
+  // Check authentication
+  const authError = await handleAuthCheck(request);
+  if (authError) return authError;
 
-    const { fileId } = await params;
-    const fileIdInt = parseInt(fileId);
-    const body = await request.json();
+  const fileIdInt = await parseFileParams(params);
+  const body = await request.json();
 
-    const {
-      processType, // 'summarization', 'extractions', 'datapoints', 'all'
-      templateIds = [],
-      customPrompt,
-      model = 'anthropic/claude-sonnet-4',
-      temperature = 0.3,
-    } = body;
+  const {
+    processType, // 'summarization', 'extractions', 'datapoints', 'all'
+    templateIds = [],
+    customPrompt,
+    model = 'anthropic/claude-sonnet-4',
+    temperature = 0.3,
+  } = body;
 
-    // Validate template IDs exist in database before processing
-    if (templateIds.length > 0) {
-      const db = getDb();
-      const validTemplates = await db.select({ id: summarizationPrompts.id })
-        .from(summarizationPrompts)
-        .where(eq(summarizationPrompts.isActive, true));
+  // Validate template IDs exist in database before processing
+  if (templateIds.length > 0) {
+    const validTemplates = await db.select({ id: summarizationPrompts.id })
+      .from(summarizationPrompts)
+      .where(eq(summarizationPrompts.isActive, true));
 
-      const validTemplateIds = new Set(validTemplates.map((t: { id: string }) => t.id));
-      const invalidTemplateIds = templateIds.filter((id: string) => !validTemplateIds.has(id));
+    const validTemplateIds = new Set(validTemplates.map((t: { id: string }) => t.id));
+    const invalidTemplateIds = templateIds.filter((id: string) => !validTemplateIds.has(id));
 
-      if (invalidTemplateIds.length > 0) {
-        debugLog(`❌ Invalid template IDs provided: ${invalidTemplateIds.join(', ')}`);
-        return NextResponse.json({
-          error: 'Invalid template IDs provided',
+    if (invalidTemplateIds.length > 0) {
+      debugLog(`❌ Invalid template IDs provided: ${invalidTemplateIds.join(', ')}`);
+      return createErrorResponse(
+        'Invalid template IDs provided',
+        400,
+        {
           invalidTemplateIds,
           validTemplateIds: Array.from(validTemplateIds),
-        }, { status: 400 });
-      }
+        },
+      );
     }
-
-    // Get file
-    const db = getDb();
-    const fileResults = await db.select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileIdInt))
-      .limit(1);
-
-    const file = fileResults.length > 0 ? fileResults[0] : null;
-
-    if (!file) {
-      return NextResponse.json({ error: 'File not found' }, { status: 404 });
-    }
-
-    // Get transcript from transcription jobs
-    const transcriptionJobResults = await db.select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileIdInt))
-      .limit(1);
-
-    const transcriptionJob = transcriptionJobResults.length > 0 ? transcriptionJobResults[0] : null;
-
-    if (!transcriptionJob || !transcriptionJob.transcript) {
-      return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
-    }
-
-    debugLog(`🤖 Starting AI processing for file ${fileIdInt}, type: ${processType}`);
-
-    let results: any = {};
-
-    try {
-      switch (processType) {
-        case 'summarization':
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          results.summarization = await adaptiveAIService.generateSummarization(
-            fileIdInt,
-            transcriptionJob.transcript,
-            {
-              templateId: templateIds[0],
-              customPrompt,
-              model,
-            },
-          );
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          break;
-
-        case 'extractions':
-          if (templateIds.length === 0) {
-            return NextResponse.json({ error: 'Template IDs required for extractions' }, { status: 400 });
-          }
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          results.extractions = await adaptiveAIService.processExtractions(
-            fileIdInt,
-            transcriptionJob.transcript,
-            templateIds,
-            { model, temperature },
-          );
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          break;
-
-        case 'datapoints':
-          if (templateIds.length === 0) {
-            return NextResponse.json({ error: 'Template IDs required for data points' }, { status: 400 });
-          }
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          results.dataPoints = await adaptiveAIService.processDataPoints(
-            fileIdInt,
-            transcriptionJob.transcript,
-            templateIds,
-            { model, temperature },
-          );
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          break;
-
-        case 'all':
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          // Process with default templates
-          results = await adaptiveAIService.processFileWithDefaults(
-            fileIdInt,
-            transcriptionJob.transcript,
-            { model, temperature },
-          );
-
-          // Update file timestamp
-          await db.update(audioFiles)
-            .set({
-              updatedAt: new Date(),
-            })
-            .where(eq(audioFiles.id, fileIdInt));
-
-          break;
-
-        default:
-          return NextResponse.json({ error: 'Invalid process type' }, { status: 400 });
-      }
-
-      debugLog(`✅ AI processing completed for file ${fileIdInt}`);
-
-      return NextResponse.json({
-        success: true,
-        processType,
-        results,
-        fileId: fileIdInt,
-      });
-
-    } catch (aiError) {
-      debugLog('AI processing error:', aiError);
-
-      // Update file timestamp
-      await db().update(audioFiles)
-        .set({
-          updatedAt: new Date(),
-        })
-        .where(eq(audioFiles.id, fileIdInt));
-
-      return NextResponse.json({
-        error: 'Failed to process with AI',
-        details: String(aiError),
-      }, { status: 500 });
-    }
-
-  } catch (error) {
-    debugLog('Error in AI processing:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
-}
+
+  // Get file
+  const fileResults = await db.select()
+    .from(audioFiles)
+    .where(eq(audioFiles.id, fileIdInt))
+    .limit(1);
+
+  const file = validateQueryResult(fileResults, 'File');
+  if (file instanceof NextResponse) {
+    return file;
+  }
+
+  // Get transcript from transcription jobs
+  const transcriptionJobResults = await db.select()
+    .from(transcriptionJobs)
+    .where(eq(transcriptionJobs.fileId, fileIdInt))
+    .limit(1);
+
+  const transcriptionJob = validateQueryResult(transcriptionJobResults, 'Transcription job');
+  if (transcriptionJob instanceof NextResponse) {
+    return transcriptionJob;
+  }
+
+  if (!transcriptionJob.transcript) {
+    return createErrorResponse('File not transcribed yet', 400);
+  }
+
+  debugLog(`🤖 Starting AI processing for file ${fileIdInt}, type: ${processType}`);
+
+  let results: any = {};
+
+  try {
+    switch (processType) {
+      case 'summarization':
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        results.summarization = await adaptiveAIService.generateSummarization(
+          fileIdInt,
+          transcriptionJob.transcript,
+          {
+            templateId: templateIds[0],
+            customPrompt,
+            model,
+          },
+        );
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        break;
+
+      case 'extractions':
+        if (templateIds.length === 0) {
+          return createErrorResponse('Template IDs required for extractions', 400);
+        }
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        results.extractions = await adaptiveAIService.processExtractions(
+          fileIdInt,
+          transcriptionJob.transcript,
+          templateIds,
+          { model, temperature },
+        );
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        break;
+
+      case 'datapoints':
+        if (templateIds.length === 0) {
+          return createErrorResponse('Template IDs required for data points', 400);
+        }
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        results.dataPoints = await adaptiveAIService.processDataPoints(
+          fileIdInt,
+          transcriptionJob.transcript,
+          templateIds,
+          { model, temperature },
+        );
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        break;
+
+      case 'all':
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        // Process with default templates
+        results = await adaptiveAIService.processFileWithDefaults(
+          fileIdInt,
+          transcriptionJob.transcript,
+          { model, temperature },
+        );
+
+        // Update file timestamp
+        await updateFileTimestamp(fileIdInt);
+
+        break;
+
+      default:
+        return createErrorResponse('Invalid process type', 400);
+    }
+
+    debugLog(`✅ AI processing completed for file ${fileIdInt}`);
+
+    return createSuccessResponse({
+      processType,
+      results,
+      fileId: fileIdInt,
+    });
+
+  } catch (aiError) {
+    debugLog('AI processing error:', aiError);
+
+    // Update file timestamp
+    await updateFileTimestamp(fileIdInt);
+
+    return createErrorResponse(
+      'Failed to process with AI',
+      500,
+      String(aiError),
+    );
+  }
+});

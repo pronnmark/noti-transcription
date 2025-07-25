@@ -1,8 +1,9 @@
 // Database client and utilities
 export { getDb, getSqlite, healthCheck, closeDatabase, ensureConnection } from './client';
 
-// Direct exports for better ESM compatibility
-export { getDb as db } from './client';
+// Direct exports for better ESM compatibility - create singleton instance
+import { getDb } from './client';
+export const db = getDb();
 
 export { getSqlite as sqlite } from './client';
 

@@ -85,6 +85,7 @@ export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
 
   async getTotalSize(): Promise<number> {
     try {
+      const db = getDb();
       const result = await db
         .select({ totalSize: sum(this.table.fileSize) })
         .from(this.table);
@@ -101,6 +102,7 @@ export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
     averageDuration: number;
   }> {
     try {
+      const db = getDb();
       const result = await db
         .select({
           totalFiles: count(),

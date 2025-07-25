@@ -169,7 +169,7 @@ export default function SummarizationPage() {
 
         // Load summaries for all files that have them
         await loadAllSummaries(filesData);
-      } catch (_error) {
+      } catch {
         // Error loading files - already shown via toast
       } finally {
         setLoading(false);

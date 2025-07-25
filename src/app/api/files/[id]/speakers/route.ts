@@ -15,12 +15,12 @@ export async function GET(
     }
 
     // Get speaker labels for this file
-    const result = await db().select()
+    const result = await db.select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileId))
       .limit(1);
 
-    const labels = result[0]?.labels ? JSON.parse(result[0].labels) : {};
+    const labels = result[0]?.labels || {};
 
     return NextResponse.json({
       fileId,
@@ -66,28 +66,27 @@ export async function PUT(
     }
 
     const now = new Date();
-    const labelsJson = JSON.stringify(labels);
 
     // Check if labels already exist for this file
-    const existing = await db().select()
+    const existing = await db.select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileId))
       .limit(1);
 
     if (existing.length > 0) {
       // Update existing labels
-      await db().update(speakerLabels)
+      await db.update(speakerLabels)
         .set({
-          labels: labelsJson,
+          labels: labels,
           updatedAt: now,
         })
         .where(eq(speakerLabels.fileId, fileId));
     } else {
       // Insert new labels
-      await db().insert(speakerLabels)
+      await db.insert(speakerLabels)
         .values({
           fileId,
-          labels: labelsJson,
+          labels: labels,
           createdAt: now,
           updatedAt: now,
         });
@@ -122,7 +121,7 @@ export async function DELETE(
     }
 
     // Delete speaker labels for this file
-    await db().delete(speakerLabels)
+    await db.delete(speakerLabels)
       .where(eq(speakerLabels.fileId, fileId));
 
     return NextResponse.json({

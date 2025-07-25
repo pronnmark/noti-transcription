@@ -49,7 +49,7 @@ export default function SummaryPage() {
   const [scrollEvents, setScrollEvents] = useState<string[]>([]);
 
   // Debugging functions
-  const measureContainer = (ref: React.RefObject<HTMLDivElement>, name: string) => {
+  const measureContainer = (ref: React.RefObject<HTMLDivElement | null>, name: string) => {
     if (ref.current) {
       const elem = ref.current;
       return {

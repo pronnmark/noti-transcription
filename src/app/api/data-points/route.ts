@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
-import { eq, and, inArray } from 'drizzle-orm';
-import * as schema from '@/lib/db';
+import { db, dataPoints, dataPointTemplates, audioFiles, eq, and, inArray } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 // Debug logging (can be disabled by setting DEBUG_API=false)
@@ -27,24 +25,23 @@ export async function GET(request: NextRequest) {
     // Build query conditions
     const whereConditions = [];
     if (fileId) {
-      whereConditions.push(eq(schema.dataPoints.fileId, parseInt(fileId)));
+      whereConditions.push(eq(dataPoints.fileId, parseInt(fileId)));
     }
     if (templateId) {
-      whereConditions.push(eq(schema.dataPoints.templateId, templateId));
+      whereConditions.push(eq(dataPoints.templateId, templateId));
     }
 
     // Get data points with template information
-    const db = getDb();
-    const dataPointsResult = await db.query.dataPoints?.findMany({
-      where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (dataPoints: any, { desc }: any) => [desc(dataPoints.createdAt)],
-    }) || [];
+    const dataPointsResult = await db.select()
+      .from(dataPoints)
+      .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
+      .orderBy(dataPoints.createdAt);
 
     // Get template names for display
     const templateIds = Array.from(new Set(dataPointsResult.map((dp: any) => dp.templateId))) as string[];
-    const templates = await db.query.dataPointTemplates?.findMany({
-      where: templateIds.length > 0 ? inArray(schema.dataPointTemplates.id, templateIds) : undefined,
-    }) || [];
+    const templates = templateIds.length > 0 
+      ? await db.select().from(dataPointTemplates).where(inArray(dataPointTemplates.id, templateIds))
+      : [];
 
     const templateMap = Object.fromEntries(
       templates.map((t: any) => [t.id, t]),
@@ -93,26 +90,23 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify file exists
-    const db = getDb();
-    const file = await db.query.audioFiles.findFirst({
-      where: (audioFiles: any, { eq }: any) => eq(audioFiles.id, parseInt(fileId)),
-    });
+    const fileResult = await db.select().from(audioFiles).where(eq(audioFiles.id, parseInt(fileId))).limit(1);
+    const file = fileResult[0];
 
     if (!file) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     // Verify template exists
-    const template = await db.query.dataPointTemplates?.findFirst({
-      where: (templates: any, { eq }: any) => eq(templates.id, templateId),
-    });
+    const templateResult = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, templateId)).limit(1);
+    const template = templateResult[0];
 
     if (!template) {
       return NextResponse.json({ error: 'Template not found' }, { status: 404 });
     }
 
     // Create data point
-    const [dataPoint] = await db.insert(schema.dataPoints).values({
+    const [dataPoint] = await db.insert(dataPoints).values({
       fileId: parseInt(fileId),
       templateId: templateId,
       analysisResults: JSON.stringify(analysisResults),

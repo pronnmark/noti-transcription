@@ -1,66 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { notesService } from '@/lib/db';
-import { requireAuth } from '@/lib/auth';
+import {
+  createDebugLogger,
+  handleAuthCheck,
+  createErrorResponse,
+  createSuccessResponse,
+  withErrorHandler,
+} from '@/lib/api-utils';
+
+const debugLog = createDebugLogger('notes');
 
 // DELETE /api/notes/:id
-export async function DELETE(
+export const DELETE = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    // Check authentication - temporarily relaxed for development
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      console.warn('⚠️ Authentication bypassed for development - please login for production use');
-      // Continue anyway for now
-    }
-
-    const { id } = await params;
-
-    const success = await notesService.delete(id);
-    if (!success) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true });
-
-  } catch (error) {
-    console.error('Delete note API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete note' },
-      { status: 500 },
-    );
+) => {
+  // Note: Authentication temporarily relaxed for development
+  const authError = await handleAuthCheck(request);
+  if (authError) {
+    debugLog('⚠️ Authentication bypassed for development - please login for production use');
+    // Continue anyway for development
   }
-}
+
+  const { id } = await params;
+
+  const success = await notesService.delete(id);
+  if (!success) {
+    return createErrorResponse('Note not found', 404);
+  }
+
+  return createSuccessResponse();
+});
 
 // PATCH /api/notes/:id
-export async function PATCH(
+export const PATCH = withErrorHandler(async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
-  try {
-    // Check authentication - temporarily relaxed for development
-    const isAuthenticated = await requireAuth(request);
-    if (!isAuthenticated) {
-      console.warn('⚠️ Authentication bypassed for development - please login for production use');
-      // Continue anyway for now
-    }
-
-    const { id } = await params;
-    const updates = await request.json();
-
-    const updated = await notesService.update(id, updates);
-    if (!updated) {
-      return NextResponse.json({ error: 'Note not found' }, { status: 404 });
-    }
-
-    return NextResponse.json({ success: true, note: updated });
-
-  } catch (error) {
-    console.error('Update note API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to update note' },
-      { status: 500 },
-    );
+) => {
+  // Note: Authentication temporarily relaxed for development
+  const authError = await handleAuthCheck(request);
+  if (authError) {
+    debugLog('⚠️ Authentication bypassed for development - please login for production use');
+    // Continue anyway for development
   }
-}
+
+  const { id } = await params;
+  const updates = await request.json();
+
+  const updated = await notesService.update(id, updates);
+  if (!updated) {
+    return createErrorResponse('Note not found', 404);
+  }
+
+  return createSuccessResponse({ note: updated });
+});

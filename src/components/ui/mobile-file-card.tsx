@@ -51,6 +51,7 @@ interface MobileFileCardProps {
   onLabelsUpdate?: (fileId: string, labels: string[]) => void;
   isExtracting?: boolean;
   isDeleting?: boolean;
+  showActions?: boolean;
 }
 
 /**

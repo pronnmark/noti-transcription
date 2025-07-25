@@ -65,7 +65,7 @@ export default function DataPointsPage() {
       const dataPointsResponse = await fetch('/api/data-points');
       const dataPointsData = await dataPointsResponse.json();
       setDataPoints(dataPointsData.dataPoints || []);
-    } catch (_error) {
+    } catch {
       // Error already shown via toast
     } finally {
       setLoading(false);
@@ -134,7 +134,7 @@ export default function DataPointsPage() {
         const dataPointsData = await dataPointsResponse.json();
         setDataPoints(dataPointsData.dataPoints || []);
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to run analysis');
     } finally {
       setIsProcessing(false);

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
-import { eq, and } from 'drizzle-orm';
-import { dataPointTemplates, dataPoints as _dataPoints } from '@/lib/db';
+import { db, dataPointTemplates, eq, and, desc, asc } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 // Debug logging (can be disabled by setting DEBUG_API=false)
@@ -32,15 +30,17 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(dataPointTemplates.isDefault, true));
     }
 
-    const db = getDb();
-    const templates = await db.query.dataPointTemplates?.findMany({
-      where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
-      orderBy: (templates: any, { desc, asc }: any) => [
-        desc(templates.isDefault),
-        desc(templates.isActive),
-        asc(templates.name),
-      ],
-    }) || [];
+    let query = db.select().from(dataPointTemplates);
+
+    if (whereConditions.length > 0) {
+      query = query.where(and(...whereConditions));
+    }
+
+    const templates = await query.orderBy(
+      desc(dataPointTemplates.isDefault),
+      desc(dataPointTemplates.isActive),
+      asc(dataPointTemplates.name),
+    );
 
     return NextResponse.json({
       templates: templates,
@@ -78,7 +78,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
-    const db = getDb();
     const [template] = await db.insert(dataPointTemplates).values({
       name: name,
       description: description || null,
@@ -130,7 +129,6 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if template exists
-    const db = getDb();
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
@@ -190,7 +188,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if template exists
-    const db = getDb();
     const existingTemplate = await db.query.dataPointTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });

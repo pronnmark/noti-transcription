@@ -70,7 +70,7 @@ export default function ExtractionsPage() {
       const extractionsResponse = await fetch('/api/extractions');
       const extractionsData = await extractionsResponse.json();
       setExtractions(extractionsData.extractions || []);
-    } catch (_error) {
+    } catch {
       // Error already shown via toast
     } finally {
       setLoading(false);
@@ -139,7 +139,7 @@ export default function ExtractionsPage() {
         const extractionsData = await extractionsResponse.json();
         setExtractions(extractionsData.extractions || []);
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to run extraction');
     } finally {
       setIsProcessing(false);

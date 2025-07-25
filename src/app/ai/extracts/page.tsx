@@ -84,7 +84,7 @@ export default function AIExtractsPage() {
                 extracts: extractsWithFilename,
               });
             }
-          } catch (_error) {
+          } catch {
             // Failed to load extracts for file - already handled by empty array
             // Add file with empty extracts array if extraction fails
             fileGroups.push({
@@ -103,7 +103,7 @@ export default function AIExtractsPage() {
 
         setFileGroups(fileGroups);
       }
-    } catch (_error) {
+    } catch {
       toast.error('Failed to load extracts');
     } finally {
       setIsLoading(false);
@@ -128,7 +128,7 @@ export default function AIExtractsPage() {
 
       toast.success(`Extract deleted successfully`);
       await loadExtracts();
-    } catch (_error) {
+    } catch {
       toast.error(`Failed to delete extract`);
       // Delete error already shown via toast
     } finally {

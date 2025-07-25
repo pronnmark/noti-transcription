@@ -20,13 +20,12 @@ export async function GET(
     }
 
     // Get speaker labels for this file
-    const speakerLabelResult = await db().select()
+    const speakerLabelResult = await db.select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileIdInt))
       .limit(1);
 
-    const customSpeakerNames = speakerLabelResult[0]?.labels ?
-      JSON.parse(speakerLabelResult[0].labels) : {};
+    const customSpeakerNames = speakerLabelResult[0]?.labels || {};
 
     // Enhance segments with display names
     const enhancedSegments = transcript.segments?.map((segment: any) => ({

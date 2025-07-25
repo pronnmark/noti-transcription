@@ -71,7 +71,7 @@ export async function POST(
     }
 
     // Path to audio file
-    const audioPath = join(process.cwd(), 'data', 'audio_files', file.file_name);
+    const audioPath = join(process.cwd(), 'data', 'audio_files', file.fileName);
     debugLog('Audio path:', audioPath);
 
     // Simple transcription using whisper CLI (if available)
@@ -87,7 +87,7 @@ export async function POST(
       );
 
       // Read the JSON output
-      const jsonPath = `/tmp/${file.file_name.replace(/\.[^/.]+$/, '')}.json`;
+      const jsonPath = `/tmp/${file.fileName.replace(/\.[^/.]+$/, '')}.json`;
       const { stdout: jsonContent } = await execAsync(`cat "${jsonPath}"`);
       const result = JSON.parse(jsonContent);
 
@@ -121,7 +121,7 @@ export async function POST(
       const dummyTranscript = [{
         start: 0,
         end: file.duration || 10,
-        text: `[Transcription pending for ${file.original_file_name}. Audio duration: ${file.duration || 0} seconds]`,
+        text: `[Transcription pending for ${file.originalFileName}. Audio duration: ${file.duration || 0} seconds]`,
       }];
 
       await db.update(transcriptionJobs)

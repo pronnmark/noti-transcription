@@ -86,7 +86,7 @@ export async function PATCH(
       .update(audioFiles)
       .set({
         originalFileName: originalName,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(audioFiles.id, parseInt(id)));
 

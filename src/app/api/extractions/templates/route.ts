@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
-import { eq, and } from 'drizzle-orm';
-import { extractionTemplates, extractions } from '@/lib/db';
+import { db, extractionTemplates, extractions, eq, and } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -24,7 +22,6 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(extractionTemplates.isDefault, true));
     }
 
-    const db = getDb();
     const templates = await db.query.extractionTemplates?.findMany({
       where: whereConditions.length > 0 ? and(...whereConditions) : undefined,
       orderBy: (templates: any, { desc, asc }: any) => [
@@ -70,7 +67,6 @@ export async function POST(request: NextRequest) {
     }
 
     // Create template
-    const db = getDb();
     const [template] = await db.insert(extractionTemplates).values({
       name: name,
       description: description || null,
@@ -122,7 +118,6 @@ export async function PUT(request: NextRequest) {
     }
 
     // Check if template exists
-    const db = getDb();
     const existingTemplate = await db.query.extractionTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });
@@ -182,7 +177,6 @@ export async function DELETE(request: NextRequest) {
     }
 
     // Check if template exists
-    const db = getDb();
     const existingTemplate = await db.query.extractionTemplates?.findFirst({
       where: (templates: any, { eq }: any) => eq(templates.id, id),
     });

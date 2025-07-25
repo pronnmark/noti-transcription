@@ -10,6 +10,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async findByFileId(fileId: number): Promise<Extraction[]> {
     try {
+      const db = getDb();
       const result = await db
         .select()
         .from(this.table)
@@ -23,6 +24,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async findByTemplateId(templateId: string): Promise<Extraction[]> {
     try {
+      const db = getDb();
       const result = await db
         .select()
         .from(this.table)
@@ -36,6 +38,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async findByStatus(status: string): Promise<Extraction[]> {
     try {
+      const db = getDb();
       const result = await db
         .select()
         .from(this.table)
@@ -49,6 +52,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async findByPriority(priority: string): Promise<Extraction[]> {
     try {
+      const db = getDb();
       const result = await db
         .select()
         .from(this.table)
@@ -62,6 +66,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async findByFileAndTemplate(fileId: number, templateId: string): Promise<Extraction[]> {
     try {
+      const db = getDb();
       const result = await db
         .select()
         .from(this.table)
@@ -78,6 +83,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async updateStatus(id: string, status: string): Promise<Extraction> {
     try {
+      const db = getDb();
       const [result] = await db
         .update(this.table)
         .set({
@@ -99,6 +105,7 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
 
   async addComment(id: string, comment: string): Promise<Extraction> {
     try {
+      const db = getDb();
       const [result] = await db
         .update(this.table)
         .set({
