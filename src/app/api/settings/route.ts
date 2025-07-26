@@ -18,7 +18,7 @@ const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
 async function loadSettings(): Promise<Settings> {
   const defaults = getDefaultSettings();
 
-  // Load AI settings from database with environment variable fallback
+  // Load AI and real-time settings from database with environment variable fallback
   try {
     const dbSettings = await settingsService.get();
     if (dbSettings) {
@@ -29,9 +29,14 @@ async function loadSettings(): Promise<Settings> {
       defaults.ai.openaiApiKey = dbSettings.openaiApiKey || '';
       defaults.ai.aiExtractEnabled = dbSettings.aiExtractEnabled || false;
       defaults.ai.aiExtractModel = dbSettings.aiExtractModel || '';
+      
+      // Load real-time settings
+      defaults.realTime.realTimeEnabled = dbSettings.realTimeEnabled || false;
+      defaults.realTime.realTimeChunkInterval = dbSettings.realTimeChunkInterval || 120;
+      defaults.realTime.realTimeAiInstruction = dbSettings.realTimeAiInstruction || 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.';
     }
   } catch (error) {
-    console.error('Error loading AI settings from database:', error);
+    console.error('Error loading settings from database:', error);
     // Fallback to environment variables
     defaults.ai.customAiBaseUrl = process.env.CUSTOM_AI_BASE_URL || '';
     defaults.ai.customAiApiKey = process.env.CUSTOM_AI_API_KEY || '';
@@ -49,6 +54,7 @@ async function loadSettings(): Promise<Settings> {
       return {
         ...fileSettings,
         ai: defaults.ai, // AI settings come from database
+        realTime: defaults.realTime, // Real-time settings come from database
       };
     } catch (error) {
       console.error('Error loading file settings:', error);
@@ -59,10 +65,10 @@ async function loadSettings(): Promise<Settings> {
 }
 
 async function saveSettings(settings: Settings): Promise<void> {
-  // Save AI settings to database
-  debugLog('Attempting to save AI settings to database...');
+  // Save AI and real-time settings to database
+  debugLog('Attempting to save AI and real-time settings to database...');
   try {
-    const aiSettingsData = {
+    const dbSettingsData = {
       customAiBaseUrl: settings.ai.customAiBaseUrl,
       customAiApiKey: settings.ai.customAiApiKey,
       customAiModel: settings.ai.customAiModel,
@@ -70,13 +76,17 @@ async function saveSettings(settings: Settings): Promise<void> {
       openaiApiKey: settings.ai.openaiApiKey,
       aiExtractEnabled: settings.ai.aiExtractEnabled,
       aiExtractModel: settings.ai.aiExtractModel,
+      // Real-time settings
+      realTimeEnabled: settings.realTime.realTimeEnabled,
+      realTimeChunkInterval: settings.realTime.realTimeChunkInterval,
+      realTimeAiInstruction: settings.realTime.realTimeAiInstruction,
     };
-    debugLog('AI settings data to save:', JSON.stringify(aiSettingsData, null, 2));
+    debugLog('Settings data to save:', JSON.stringify(dbSettingsData, null, 2));
 
-    await settingsService.update(aiSettingsData);
-    debugLog('Successfully saved AI settings to database');
+    await settingsService.update(dbSettingsData);
+    debugLog('Successfully saved settings to database');
   } catch (error) {
-    console.error('Error saving AI settings to database:', error);
+    console.error('Error saving settings to database:', error);
     console.error('Error details:', error instanceof Error ? error.message : String(error));
     throw error;
   }
@@ -88,7 +98,7 @@ async function saveSettings(settings: Settings): Promise<void> {
       transcription: settings.transcription,
       storage: settings.storage,
       notes: settings.notes,
-      // Don't save AI settings to file anymore
+      // Don't save AI or real-time settings to file anymore
     };
 
     writeFileSync(SETTINGS_FILE, JSON.stringify(fileSettings, null, 2));
@@ -118,6 +128,11 @@ interface Settings {
     openaiApiKey: string;
     aiExtractEnabled: boolean;
     aiExtractModel: string;
+  };
+  realTime: {
+    realTimeEnabled: boolean;
+    realTimeChunkInterval: number;
+    realTimeAiInstruction: string;
   };
   storage: {
     obsidianEnabled: boolean;
@@ -153,6 +168,11 @@ function getDefaultSettings(): Settings {
       openaiApiKey: '',
       aiExtractEnabled: false,
       aiExtractModel: '',
+    },
+    realTime: {
+      realTimeEnabled: false,
+      realTimeChunkInterval: 120, // 2 minutes default
+      realTimeAiInstruction: 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
     },
     storage: {
       obsidianEnabled: false,

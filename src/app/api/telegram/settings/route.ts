@@ -13,15 +13,54 @@ export async function GET() {
     const settings = await db.select().from(telegramSettings).limit(1);
     const config = settings[0];
 
+    const hasBotToken = !!(config?.botToken || process.env.TELEGRAM_BOT_TOKEN);
+    let botInfo = null;
+
+    // If bot token exists, try to get bot info via MCP
+    if (hasBotToken) {
+      try {
+        const command = `docker exec telegram-mcp-server python -c "
+import json
+import asyncio
+from main import get_me
+
+async def get_bot_info():
+    try:
+        result = await get_me()
+        print(json.dumps(result))
+    except Exception as e:
+        print(json.dumps({'error': str(e)}))
+
+asyncio.run(get_bot_info())
+"`;
+
+        const { stdout } = await execAsync(command);
+        const result = JSON.parse(stdout.trim());
+        
+        if (!result.error) {
+          botInfo = {
+            id: result.id,
+            name: result.first_name,
+            username: result.username,
+            canJoinGroups: result.can_join_groups,
+            canReadAllGroupMessages: result.can_read_all_group_messages,
+          };
+        }
+      } catch (error) {
+        console.error('Failed to get bot info:', error);
+      }
+    }
+
     return NextResponse.json({
       success: true,
       settings: {
         id: config?.id || null,
-        hasBotToken: !!(config?.botToken || process.env.TELEGRAM_BOT_TOKEN),
+        hasBotToken,
         botTokenSource: config?.botToken ? 'database' : 'environment',
         chatConfigurations: config?.chatConfigurations || [],
         defaultChatId: config?.defaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
         isEnabled: config?.isEnabled ?? true,
+        botInfo,
       },
     });
   } catch (error) {
@@ -103,32 +142,69 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Test message
-    const testMessage = '🤖 Telegram connection test from Noti - configuration is working!';
-    const escapedMessage = testMessage.replace(/'/g, "\\'");
+    // Enhanced test message with better formatting
+    const testMessage = `🤖 **Telegram Connection Test**
 
-    const command = `docker exec telegram-mcp-container python -c "
-import sys
-sys.path.append('/app')
-from main import send_message
-try:
-    result = send_message(${testChatId}, '''${escapedMessage}''')
-    print('SUCCESS')
-except Exception as e:
-    print(f'ERROR: {str(e)}')
-    sys.exit(1)
+✅ Configuration is working!
+🎙️ Bot is ready to share audio summaries
+
+_Sent from Noti Audio Transcription_`;
+
+    try {
+      const escapedMessage = testMessage
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/`/g, '\\`')
+        .replace(/\$/g, '\\$')
+        .replace(/\n/g, '\\n');
+
+      const command = `docker exec telegram-mcp-server python -c "
+import json
+import asyncio
+from telethon import TelegramClient
+from main import client, get_me
+
+async def test_connection():
+    try:
+        # Get bot info first
+        bot_info = await get_me()
+        
+        # Connect and send message
+        await client.connect()
+        result = await client.send_message(${testChatId}, '''${escapedMessage}''', parse_mode='Markdown')
+        
+        print(json.dumps({
+            'success': True,
+            'message_id': result.id,
+            'bot_info': {
+                'name': bot_info.get('first_name'),
+                'username': bot_info.get('username')
+            }
+        }))
+    except Exception as e:
+        print(json.dumps({
+            'success': False,
+            'error': str(e)
+        }))
+
+asyncio.run(test_connection())
 "`;
 
-    const { stdout, stderr } = await execAsync(command);
+      const { stdout, stderr } = await execAsync(command);
+      const response = JSON.parse(stdout.trim());
 
-    if (stderr && !stdout.includes('SUCCESS')) {
-      throw new Error(stderr);
+      if (!response.success) {
+        throw new Error(response.error || 'Failed to send test message');
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: 'Test message sent successfully!',
+        botInfo: response.bot_info,
+      });
+    } catch (error) {
+      throw error;
     }
-
-    return NextResponse.json({
-      success: true,
-      message: 'Test message sent successfully!',
-    });
 
   } catch (error) {
     console.error('Telegram connection test error:', error);

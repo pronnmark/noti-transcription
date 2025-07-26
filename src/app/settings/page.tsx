@@ -60,12 +60,25 @@ interface TelegramSettings {
   chatConfigurations: ChatConfiguration[];
   defaultChatId: string | null;
   isEnabled: boolean;
+  botInfo?: {
+    id: number;
+    name: string;
+    username: string;
+    canJoinGroups: boolean;
+    canReadAllGroupMessages: boolean;
+  } | null;
 }
 
 interface ChatConfiguration {
   name: string;
   chatId: string;
   type: 'user' | 'group' | 'channel';
+}
+
+interface RealTimeSettings {
+  realTimeEnabled: boolean;
+  realTimeChunkInterval: number; // in seconds
+  realTimeAiInstruction: string;
 }
 
 const MODEL_SIZES = [
@@ -152,6 +165,12 @@ export default function SettingsPage() {
     testChatId: '',
   });
 
+  const [realTimeSettings, setRealTimeSettings] = useState<RealTimeSettings>({
+    realTimeEnabled: false,
+    realTimeChunkInterval: 120, // 2 minutes default
+    realTimeAiInstruction: 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
+  });
+
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
@@ -171,6 +190,9 @@ export default function SettingsPage() {
         }
         if (data.ai) {
           setAISettings(prev => ({ ...prev, ...data.ai }));
+        }
+        if (data.realTime) {
+          setRealTimeSettings(prev => ({ ...prev, ...data.realTime }));
         }
       }
 
@@ -198,6 +220,7 @@ export default function SettingsPage() {
         body: JSON.stringify({
           transcription: transcriptionSettings,
           ai: aiSettings,
+          realTime: realTimeSettings,
         }),
       });
 
@@ -472,6 +495,7 @@ export default function SettingsPage() {
           <TabsTrigger value="essential">Essential</TabsTrigger>
           <TabsTrigger value="advanced">Advanced</TabsTrigger>
           <TabsTrigger value="templates">Templates</TabsTrigger>
+          <TabsTrigger value="realtime">Real-time</TabsTrigger>
           <TabsTrigger value="telegram">Telegram</TabsTrigger>
         </TabsList>
 
@@ -779,7 +803,26 @@ export default function SettingsPage() {
                       {telegramSettings.botTokenSource === 'environment' && ' (from .env file)'}
                     </p>
                     {telegramSettings.hasBotToken ? (
-                      <p className="text-sm text-green-600">✓ Bot token is configured</p>
+                      <>
+                        <p className="text-sm text-green-600 mb-2">✓ Bot token is configured</p>
+                        {telegramSettings.botInfo && (
+                          <div className="mt-3 p-3 bg-background rounded-lg space-y-1">
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Bot Name:</span> {' '}
+                              <strong>{telegramSettings.botInfo.name}</strong>
+                            </p>
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Username:</span> {' '}
+                              <strong>@{telegramSettings.botInfo.username}</strong>
+                            </p>
+                            <p className="text-sm">
+                              <span className="text-muted-foreground">Features:</span> {' '}
+                              {telegramSettings.botInfo.canJoinGroups && '✓ Groups'} {' '}
+                              {telegramSettings.botInfo.canReadAllGroupMessages && '✓ All Messages'}
+                            </p>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <p className="text-sm text-yellow-600">⚠ No bot token found in environment or database</p>
                     )}
@@ -918,6 +961,83 @@ export default function SettingsPage() {
                       <Save className="h-4 w-4 mr-2" />
                       Save Telegram Settings
                     </Button>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="realtime" className="space-y-4 sm:space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Real-time Thoughts</CardTitle>
+              <CardDescription>Configure AI analysis during recording with chunked processing</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="realTimeEnabled">Enable Real-time Thoughts</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Process audio chunks during recording and generate AI insights
+                  </p>
+                </div>
+                <Switch
+                  id="realTimeEnabled"
+                  checked={realTimeSettings.realTimeEnabled}
+                  onCheckedChange={(checked) => setRealTimeSettings(prev => ({ ...prev, realTimeEnabled: checked }))}
+                />
+              </div>
+
+              {realTimeSettings.realTimeEnabled && (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="chunkInterval">Chunk Processing Interval</Label>
+                    <Select
+                      value={realTimeSettings.realTimeChunkInterval.toString()}
+                      onValueChange={(value) => setRealTimeSettings(prev => ({ ...prev, realTimeChunkInterval: parseInt(value) }))}
+                    >
+                      <SelectTrigger id="chunkInterval">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="60">1 minute</SelectItem>
+                        <SelectItem value="120">2 minutes</SelectItem>
+                        <SelectItem value="180">3 minutes</SelectItem>
+                        <SelectItem value="240">4 minutes</SelectItem>
+                        <SelectItem value="300">5 minutes</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-sm text-muted-foreground">
+                      How often to process audio chunks and generate thoughts during recording
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="aiInstruction">AI Analysis Instruction</Label>
+                    <Textarea
+                      id="aiInstruction"
+                      value={realTimeSettings.realTimeAiInstruction}
+                      onChange={(e) => setRealTimeSettings(prev => ({ ...prev, realTimeAiInstruction: e.target.value }))}
+                      placeholder="Enter instructions for how the AI should analyze each audio chunk..."
+                      rows={4}
+                      className="min-h-24"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                      This instruction will be sent to the AI with each transcribed chunk. 
+                      Be specific about what insights, decisions, or actionable items you want extracted.
+                    </p>
+                  </div>
+
+                  <div className="standard-card p-4 bg-muted/20">
+                    <h4 className="font-medium mb-2">How Real-time Thoughts Work</h4>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                      <li>• Recording continues uninterrupted while chunks are processed in the background</li>
+                      <li>• Each chunk is transcribed and sent to AI with your custom instruction</li>
+                      <li>• Thoughts appear in real-time on the recording page "Thoughts" tab</li>
+                      <li>• All thoughts are saved to database and linked to the recording session</li>
+                      <li>• Uses the same AI configuration from Essential settings</li>
+                    </ul>
                   </div>
                 </>
               )}
