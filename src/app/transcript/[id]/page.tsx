@@ -103,6 +103,7 @@ export default function TranscriptPage() {
   const [telegramGroupName, setTelegramGroupName] = useState('devdash');
   const [includeTimestamps, setIncludeTimestamps] = useState(false);
   const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+  const [sharingSummaryId, setSharingSummaryId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTranscript();
@@ -506,6 +507,38 @@ export default function TranscriptPage() {
     }
   }
 
+  function handleSummaryClick(summaryId: string) {
+    router.push(`/summary/${summaryId}`);
+  }
+
+  async function handleSummaryTelegramShare(summary: Summary) {
+    setSharingSummaryId(summary.id);
+    try {
+      const response = await fetch('/api/telegram/share-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          fileId: id, 
+          extractId: summary.id,
+          groupName: 'devdash' // Use the same default as transcript sharing
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success('Summary shared to Telegram!');
+      } else {
+        toast.error(data.error || 'Failed to share summary to Telegram');
+      }
+    } catch (error) {
+      console.error('Failed to share summary to Telegram:', error);
+      toast.error('Failed to share summary to Telegram');
+    } finally {
+      setSharingSummaryId(null);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -755,7 +788,7 @@ export default function TranscriptPage() {
                   ) : (
                     <div className="space-y-2">
                       {summaries.map((summary) => (
-                        <div key={summary.id} className="border rounded-md p-2">
+                        <div key={summary.id} className="border rounded-md p-2 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleSummaryClick(summary.id)}>
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
@@ -770,7 +803,7 @@ export default function TranscriptPage() {
                             <div className="flex gap-1 ml-2">
                               <Dialog>
                                 <DialogTrigger asChild>
-                                  <Button size="icon" variant="ghost" className="h-6 w-6">
+                                  <Button size="icon" variant="ghost" className="h-6 w-6" onClick={(e) => e.stopPropagation()}>
                                     <FileText className="h-3 w-3" />
                                   </Button>
                                 </DialogTrigger>
@@ -790,7 +823,26 @@ export default function TranscriptPage() {
                                 size="icon"
                                 variant="ghost"
                                 className="h-6 w-6"
-                                onClick={() => handleDeleteSummary(summary.id)}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleSummaryTelegramShare(summary);
+                                }}
+                                disabled={sharingSummaryId === summary.id}
+                              >
+                                {sharingSummaryId === summary.id ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Send className="h-3 w-3" />
+                                )}
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-6 w-6"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteSummary(summary.id);
+                                }}
                                 disabled={deletingSummaryId === summary.id}
                               >
                                 {deletingSummaryId === summary.id ? (
@@ -1153,7 +1205,7 @@ export default function TranscriptPage() {
                     ) : (
                       <div className="space-y-3">
                         {summaries.map((summary) => (
-                          <div key={summary.id} className="border rounded-lg p-3 space-y-2">
+                          <div key={summary.id} className="border rounded-lg p-3 space-y-2 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleSummaryClick(summary.id)}>
                             <div className="flex items-start justify-between">
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
@@ -1171,7 +1223,7 @@ export default function TranscriptPage() {
                               <div className="flex items-center gap-1 ml-2">
                                 <Dialog>
                                   <DialogTrigger asChild>
-                                    <Button size="sm" variant="ghost">
+                                    <Button size="sm" variant="ghost" onClick={(e) => e.stopPropagation()}>
                                       <FileText className="h-3 w-3" />
                                     </Button>
                                   </DialogTrigger>
@@ -1190,7 +1242,25 @@ export default function TranscriptPage() {
                                 <Button
                                   size="sm"
                                   variant="ghost"
-                                  onClick={() => handleDeleteSummary(summary.id)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSummaryTelegramShare(summary);
+                                  }}
+                                  disabled={sharingSummaryId === summary.id}
+                                >
+                                  {sharingSummaryId === summary.id ? (
+                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                  ) : (
+                                    <Send className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteSummary(summary.id);
+                                  }}
                                   disabled={deletingSummaryId === summary.id}
                                 >
                                   {deletingSummaryId === summary.id ? (

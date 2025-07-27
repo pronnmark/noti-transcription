@@ -6,6 +6,7 @@ import { FileAudio, Plus, Loader2, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
+import { MultiFileUpload } from '@/components/ui/multi-file-upload';
 
 interface AudioFile {
   id: string;
@@ -243,6 +244,19 @@ export default function FilesPage() {
 
         {/* Content */}
         <div className="px-4 py-6">
+          {/* Multi-file Upload Component */}
+          <div className="mb-6">
+            <MultiFileUpload
+              onUploadComplete={(results) => {
+                // Reload files after successful uploads
+                const successCount = results.filter(r => r.success).length;
+                if (successCount > 0) {
+                  loadFiles();
+                }
+              }}
+            />
+          </div>
+
           {files.length === 0 ? (
             /* Empty State */
             <div className="text-center py-20">

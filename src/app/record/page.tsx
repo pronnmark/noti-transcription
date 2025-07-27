@@ -38,6 +38,7 @@ export default function RecordPage() {
   const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
   const [recordingSupported, setRecordingSupported] = useState(true);
   const [deviceInfo, setDeviceInfo] = useState<string>('');
+  const [supportError, setSupportError] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
@@ -54,6 +55,7 @@ export default function RecordPage() {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log('MediaDevices API not available');
+        setSupportError('Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.');
         setRecordingSupported(false);
         return;
       }
@@ -70,6 +72,7 @@ export default function RecordPage() {
 
       if (audioInputs.length === 0) {
         console.log('No audio input devices found');
+        setSupportError('No microphone detected. Please connect a microphone and refresh the page.');
         setRecordingSupported(false);
         return;
       }
@@ -97,17 +100,26 @@ export default function RecordPage() {
       // Clean up test stream
       stream.getTracks().forEach(track => track.stop());
       setRecordingSupported(true);
+      setSupportError(''); // Clear any previous errors
     } catch (error) {
       console.error('Recording not supported:', error);
+      let errorMessage = 'Recording setup failed. ';
+      
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
-          console.log('No microphone device found');
+          errorMessage = 'No microphone found. Please connect a microphone and refresh the page.';
         } else if (error.name === 'NotAllowedError') {
-          console.log('Microphone permission denied');
+          errorMessage = 'Microphone access denied. Please click the microphone icon in your browser\'s address bar and allow access, then refresh the page.';
         } else if (error.name === 'NotReadableError') {
-          console.log('Microphone is already in use');
+          errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
+        } else if (error.name === 'OverconstrainedError') {
+          errorMessage = 'Your microphone doesn\'t support the required settings. Try using a different microphone or browser.';
+        } else {
+          errorMessage = `Recording error: ${error.message}. Please check your microphone permissions and try again.`;
         }
       }
+      
+      setSupportError(errorMessage);
       setRecordingSupported(false);
     }
   }, [isMobile]);
@@ -813,27 +825,17 @@ export default function RecordPage() {
                 </>
               ) : (
                 <div className="py-8 text-center">
-                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                  <div className="mb-4 text-muted-foreground">
-                    Recording is not supported on this device or browser.
+                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
+                  <div className="mb-4 text-lg font-semibold text-red-600">
+                    Recording Not Available
                   </div>
-                  <div className="mb-4 text-sm text-muted-foreground">
-                    Try using HTTPS or a modern browser like Chrome, Safari, or
-                    Firefox.
-                  </div>
-                  {deviceInfo && (
-                    <div className="rounded bg-muted/30 p-3 text-xs text-muted-foreground">
-                      🔍 Debug: {deviceInfo}
+                  {supportError && (
+                    <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+                      <div className="text-sm text-red-700">
+                        {supportError}
+                      </div>
                     </div>
                   )}
-                  <div className="mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => (window.location.href = '/files')}
-                    >
-                      Upload Files Instead
-                    </Button>
-                  </div>
                 </div>
               )}
             </CardContent>

@@ -60,27 +60,44 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
 
-    // Try both common field names
-    const file = formData.get('file') || formData.get('audio');
+    // Get all files from formData (support both single and multiple files)
+    const files: File[] = [];
+    
+    // Check for multiple files (files[] format)
+    const multipleFiles = formData.getAll('files');
+    if (multipleFiles.length > 0) {
+      multipleFiles.forEach(item => {
+        if (item instanceof File) {
+          files.push(item);
+        }
+      });
+    }
+    
+    // Check for single file (backward compatibility)
+    if (files.length === 0) {
+      const singleFile = formData.get('file') || formData.get('audio');
+      if (singleFile instanceof File) {
+        files.push(singleFile);
+      }
+    }
 
-    if (!file || !(file instanceof File)) {
+    if (files.length === 0) {
       return NextResponse.json({
-        error: 'No file provided',
+        error: 'No files provided',
         receivedFields: Array.from(formData.keys()),
-        hint: 'Expected field name: file or audio',
+        hint: 'Expected field name: files[] for multiple files or file/audio for single file',
       }, { status: 400 });
     }
 
-    // Validate audio format
-    const formatValidation = validateAudioFormat(file);
-    if (!formatValidation.valid) {
-      return NextResponse.json({
-        error: formatValidation.error,
-        supportedFormats: SUPPORTED_FORMATS,
-      }, { status: 400 });
-    }
+    // Validate all files first
+    const results: Array<{
+      success: boolean;
+      fileId?: number;
+      fileName?: string;
+      error?: string;
+    }> = [];
 
-    // Extract and validate speaker count (optional)
+    // Extract and validate speaker count (optional, applies to all files)
     let speakerCount: number | undefined;
     const speakerCountField = formData.get('speakerCount');
     if (speakerCountField) {
@@ -95,7 +112,7 @@ export async function POST(request: NextRequest) {
       debugLog(`User specified ${speakerCount} speakers for diarization`);
     }
 
-    // Extract location data (optional)
+    // Extract location data (optional, applies to all files)
     const locationData: {
       latitude?: number;
       longitude?: number;
@@ -145,74 +162,113 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create upload directory
-    const uploadDir = join(process.cwd(), 'data', 'audio_files');
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Process each file
+    for (const file of files) {
+      try {
+        // Validate audio format
+        const formatValidation = validateAudioFormat(file);
+        if (!formatValidation.valid) {
+          results.push({
+            success: false,
+            fileName: file.name,
+            error: formatValidation.error,
+          });
+          continue;
+        }
 
-    // Save file with simple timestamp name
-    const fileName = `${Date.now()}_${file.name}`;
-    const buffer = Buffer.from(await file.arrayBuffer());
-    const filePath = join(uploadDir, fileName);
-    await fs.writeFile(filePath, buffer);
+        // Create upload directory
+        const uploadDir = join(process.cwd(), 'data', 'audio_files');
+        await fs.mkdir(uploadDir, { recursive: true });
 
-    // Extract complete audio metadata (duration, recording date, etc.)
-    let recordedAt: Date | null = null;
-    let duration: number = 0;
-    try {
-      const metadata = await extractAudioMetadata(filePath);
-      recordedAt = metadata.recordedAt || null;
-      duration = metadata.duration || 0;
-      debugLog(`Extracted metadata - Duration: ${duration}s, Recording date: ${recordedAt ? recordedAt.toISOString() : 'none'}`);
-    } catch (error) {
-      debugLog('Failed to extract audio metadata:', error);
-      // Continue with defaults - not a critical error
+        // Save file with simple timestamp name
+        const fileName = `${Date.now()}_${file.name}`;
+        const buffer = Buffer.from(await file.arrayBuffer());
+        const filePath = join(uploadDir, fileName);
+        await fs.writeFile(filePath, buffer);
+
+        // Extract complete audio metadata (duration, recording date, etc.)
+        let recordedAt: Date | null = null;
+        let duration: number = 0;
+        try {
+          const metadata = await extractAudioMetadata(filePath);
+          recordedAt = metadata.recordedAt || null;
+          duration = metadata.duration || 0;
+          debugLog(`Extracted metadata - Duration: ${duration}s, Recording date: ${recordedAt ? recordedAt.toISOString() : 'none'}`);
+        } catch (error) {
+          debugLog('Failed to extract audio metadata:', error);
+          // Continue with defaults - not a critical error
+        }
+
+        // Save to database
+        const db = getDb();
+        const [record] = await db.insert(audioFiles).values({
+          fileName,
+          originalFileName: file.name,
+          originalFileType: file.type || 'audio/mpeg',
+          fileSize: file.size,
+          fileHash: null,
+          duration: duration,
+          recordedAt: recordedAt,
+          // Include location data if available
+          latitude: locationData.latitude || null,
+          longitude: locationData.longitude || null,
+          locationAccuracy: locationData.accuracy || null,
+          locationTimestamp: locationData.timestamp ? new Date(locationData.timestamp) : null,
+          locationProvider: locationData.provider || null,
+        }).returning();
+
+        // Create transcription job
+        await db.insert(transcriptionJobs).values({
+          fileId: record.id,
+          status: 'pending',
+          modelSize: 'large-v3',
+          diarization: true,
+          speakerCount: speakerCount,
+          progress: 0,
+        });
+
+        results.push({
+          success: true,
+          fileId: record.id,
+          fileName: record.fileName,
+        });
+
+        debugLog(`✅ Successfully processed file: ${file.name} (ID: ${record.id})`);
+
+      } catch (error) {
+        console.error(`❌ Failed to process file ${file.name}:`, error);
+        results.push({
+          success: false,
+          fileName: file.name,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
     }
 
-    // Save to database
-    const db = getDb();
-    const [record] = await db.insert(audioFiles).values({
-      fileName,
-      originalFileName: file.name,
-      originalFileType: file.type || 'audio/mpeg',
-      fileSize: file.size,
-      fileHash: null,
-      duration: duration,
-      recordedAt: recordedAt,
-      // Include location data if available
-      latitude: locationData.latitude || null,
-      longitude: locationData.longitude || null,
-      locationAccuracy: locationData.accuracy || null,
-      locationTimestamp: locationData.timestamp ? new Date(locationData.timestamp) : null,
-      locationProvider: locationData.provider || null,
-    }).returning();
+    // Auto-trigger transcription worker for all successfully uploaded files (non-blocking)
+    const successfulUploads = results.filter(r => r.success).length;
+    if (successfulUploads > 0) {
+      setImmediate(async () => {
+        try {
+          debugLog(`Starting transcription worker for ${successfulUploads} newly uploaded files...`);
+          const result = await processTranscriptionJobs();
+          debugLog('Transcription worker completed:', result);
+        } catch (error) {
+          console.error('Error in transcription worker:', error);
+        }
+      });
+    }
 
-    // Create transcription job
-    await db.insert(transcriptionJobs).values({
-      fileId: record.id,
-      status: 'pending',
-      modelSize: 'large-v3',
-      diarization: true,
-      speakerCount: speakerCount,
-      progress: 0,
-    });
-
-    // Auto-trigger transcription worker (non-blocking)
-    // This runs in the background without blocking the upload response
-    setImmediate(async () => {
-      try {
-        debugLog('Starting transcription worker for newly uploaded file...');
-        const result = await processTranscriptionJobs();
-        debugLog('Transcription worker completed:', result);
-      } catch (error) {
-        console.error('Error in transcription worker:', error);
-      }
-    });
+    // Return results summary
+    const successCount = results.filter(r => r.success).length;
+    const failureCount = results.filter(r => !r.success).length;
 
     return NextResponse.json({
-      success: true,
-      fileId: record.id,
-      fileName: record.fileName,
-      transcriptionStatus: 'pending',
+      success: successCount > 0,
+      totalFiles: files.length,
+      successCount,
+      failureCount,
+      results,
       speakerCount: speakerCount || null,
       speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
       locationCaptured: !!(locationData.latitude && locationData.longitude),

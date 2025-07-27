@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { telegramShares, audioFiles, transcriptionJobs } from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { telegramShares, audioFiles, aiExtracts, summarizationTemplates, extractionTemplates } from '@/lib/database/schema';
+import { eq, desc } from 'drizzle-orm';
 import { telegramMCP } from '@/lib/telegram-mcp-client';
 import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
 
@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
     if (!sessionToken) {
       return unauthorizedResponse();
     }
-    const { fileId, chatId, username, groupName, includeTimestamps = false } = await request.json();
+    
+    const { fileId, extractId, chatId, username, groupName, summaryType = 'latest' } = await request.json();
 
     if (!fileId) {
       return NextResponse.json(
@@ -21,7 +22,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get file and transcript information
+    // Get file information
     const fileData = await db.select().from(audioFiles).where(eq(audioFiles.id, fileId)).limit(1);
     if (!fileData.length) {
       return NextResponse.json(
@@ -30,94 +31,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const transcriptData = await db.select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileId))
-      .limit(1);
+    // Get AI extract - either specific one or latest
+    let extractQuery = db.select({
+      id: aiExtracts.id,
+      content: aiExtracts.content,
+      model: aiExtracts.model,
+      prompt: aiExtracts.prompt,
+      createdAt: aiExtracts.createdAt,
+      templateName: extractionTemplates.name,
+      templateDescription: extractionTemplates.description,
+    })
+    .from(aiExtracts)
+    .leftJoin(extractionTemplates, eq(aiExtracts.templateId, extractionTemplates.id))
+    .where(eq(aiExtracts.fileId, fileId));
 
-    if (!transcriptData.length || !transcriptData[0].transcript) {
+    if (extractId) {
+      extractQuery = extractQuery.where(eq(aiExtracts.id, extractId));
+    } else {
+      extractQuery = extractQuery.orderBy(desc(aiExtracts.createdAt));
+    }
+
+    const extractData = await extractQuery.limit(1);
+
+    if (!extractData.length) {
       return NextResponse.json(
-        { success: false, error: 'No transcript available for this file' },
+        { success: false, error: 'No AI summary found for this file' },
         { status: 404 },
       );
     }
 
+    const extract = extractData[0];
     const file = fileData[0];
-    const transcript = transcriptData[0].transcript as any;
-    // Transcript is stored as an array directly, not as {segments: [...]}
-    const segments = Array.isArray(transcript) ? transcript : (transcript.segments || []);
 
-    // Format transcript for Telegram
-    let transcriptText = '';
-    
     // Function to escape markdown characters for Telegram
     const escapeMarkdown = (text: string): string => {
       return text
         .replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')
-        .replace(/\n/g, '\\n');
+        .replace(/\n/g, '\n');
     };
+
+    // Format the summary content
+    let summaryContent = extract.content || '';
     
-    // Group segments by speaker if available
-    const hasSpeakers = segments.some((s: any) => s.speaker);
-    
-    if (hasSpeakers && !includeTimestamps) {
-      // Group consecutive segments by speaker
-      let currentSpeaker = '';
-      let currentText = '';
-      
-      segments.forEach((segment: any) => {
-        const speaker = segment.displayName || segment.speaker || 'Unknown';
-        const cleanText = escapeMarkdown(segment.text || '');
-        
-        if (speaker !== currentSpeaker) {
-          if (currentText) {
-            transcriptText += `*${escapeMarkdown(currentSpeaker)}:* ${currentText.trim()}\n\n`;
+    // Try to parse JSON content for better formatting
+    try {
+      const parsedContent = JSON.parse(summaryContent);
+      if (typeof parsedContent === 'object') {
+        // Format structured content
+        summaryContent = '';
+        for (const [key, value] of Object.entries(parsedContent)) {
+          if (typeof value === 'string' && value.trim()) {
+            const formattedKey = key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
+            summaryContent += `*${escapeMarkdown(formattedKey)}:*\n${escapeMarkdown(value.trim())}\n\n`;
           }
-          currentSpeaker = speaker;
-          currentText = cleanText + ' ';
-        } else {
-          currentText += cleanText + ' ';
         }
-      });
-      
-      // Add the last speaker's text
-      if (currentText) {
-        transcriptText += `*${escapeMarkdown(currentSpeaker)}:* ${currentText.trim()}\n\n`;
       }
-    } else {
-      // Include timestamps or no speaker info
-      segments.forEach((segment: any) => {
-        const cleanText = escapeMarkdown(segment.text || '');
-        
-        if (includeTimestamps) {
-          const timestamp = formatTime(segment.start);
-          if (segment.speaker) {
-            const speaker = segment.displayName || segment.speaker;
-            transcriptText += `\\[${timestamp}\\] *${escapeMarkdown(speaker)}:* ${cleanText}\n\n`;
-          } else {
-            transcriptText += `\\[${timestamp}\\] ${cleanText}\n\n`;
-          }
-        } else {
-          transcriptText += `${cleanText}\n\n`;
-        }
-      });
+    } catch {
+      // Content is not JSON, use as-is but escape it
+      summaryContent = escapeMarkdown(summaryContent);
     }
 
     // Truncate if too long (Telegram limit is 4096 characters)
-    const maxLength = 3800; // Leave room for header/footer
-    if (transcriptText.length > maxLength) {
-      transcriptText = transcriptText.substring(0, maxLength) + '\n\n... (truncated)';
+    const maxLength = 3500; // Leave room for header/footer
+    if (summaryContent.length > maxLength) {
+      summaryContent = summaryContent.substring(0, maxLength) + '\n\n... _(truncated)_';
     }
 
     // Format the complete message
     const fileName = file.originalFileName || file.fileName;
     const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
+    const templateInfo = extract.templateName ? ` (${extract.templateName})` : '';
+    const createdDate = new Date(extract.createdAt).toLocaleDateString();
     
-    const message = telegramMCP.formatMessage(transcriptText, {
-      title: 'Audio Transcript',
+    const message = telegramMCP.formatMessage(summaryContent, {
+      title: `AI Summary${templateInfo}`,
       fileName: `${fileName} (${duration})`,
-      footer: '_Generated by Noti Audio Transcription_',
-      emoji: '🎙️',
+      footer: `_Generated ${createdDate} • Noti AI Transcription_`,
+      emoji: '🤖',
     });
 
     // Send message based on provided target
@@ -134,8 +124,8 @@ export async function POST(request: NextRequest) {
       result = await telegramMCP.sendMessageToGroup(groupName, message, sessionToken);
       targetIdentifier = groupName;
     } else {
-      // Default to group chat if no target specified (so both users can see it)
-      const defaultChatId = process.env.TELEGRAM_DEFAULT_CHAT_ID || '-4924104491'; // Group chat
+      // Default to group chat if no target specified
+      const defaultChatId = process.env.TELEGRAM_DEFAULT_CHAT_ID || '-4924104491';
       result = await telegramMCP.sendMessage(defaultChatId, message, sessionToken);
       targetIdentifier = defaultChatId;
     }
@@ -145,7 +135,7 @@ export async function POST(request: NextRequest) {
       let errorMessage = result.error || 'Failed to send message';
       
       if (errorMessage.includes('chat not found')) {
-        const botUsername = 'devdashbotBot'; // Get from bot info if needed
+        const botUsername = 'devdashbotBot';
         errorMessage += `\n\nTo fix this:\n1. Send /start to @${botUsername} in Telegram\n2. Or add the bot to your group\n3. Or use the Telegram setup page to configure chats`;
       }
       
@@ -175,8 +165,14 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: 'Transcript shared to Telegram successfully',
+      message: 'AI summary shared to Telegram successfully',
       telegramMessageId: telegramMessage?.message_id,
+      summaryInfo: {
+        id: extract.id,
+        templateName: extract.templateName,
+        model: extract.model,
+        createdAt: extract.createdAt,
+      },
       chat: {
         id: telegramMessage?.chat?.id,
         title: telegramMessage?.chat?.title,
@@ -185,23 +181,12 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Telegram transcript share error:', error);
+    console.error('Telegram summary share error:', error);
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 },
     );
   }
-}
-
-function formatTime(seconds: number): string {
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
 function formatDuration(seconds: number): string {
