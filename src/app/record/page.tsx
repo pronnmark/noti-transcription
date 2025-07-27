@@ -219,8 +219,7 @@ export default function RecordPage() {
         });
 
         if (response.ok) {
-          setLastAutoSave(new Date());
-          setAutoSaveCounter(autoSaveCount);
+          setAutoSaveData(new Date(), autoSaveCount);
           toast.success(`Auto-saved recording (part ${autoSaveCount})`, {
             duration: 2000,
           });
@@ -362,7 +361,7 @@ export default function RecordPage() {
         },
       );
 
-      setIsLocationTracking(true);
+      setLocationTracking(true);
       console.log('✅ Location tracking active');
     } catch (error) {
       console.warn('⚠️ Failed to start location tracking:', error);
@@ -376,7 +375,7 @@ export default function RecordPage() {
   function stopLocationTracking() {
     if (isLocationTracking) {
       locationService.stopTracking();
-      setIsLocationTracking(false);
+      setLocationTracking(false);
       console.log('🛑 Location tracking stopped');
     }
   }
@@ -565,8 +564,8 @@ export default function RecordPage() {
       recorder.onerror = event => {
         console.error('MediaRecorder error:', event);
         toast.error('Recording error occurred');
-        setIsRecording(false);
-        setIsPaused(false);
+        setRecordingState(false);
+        setRecordingState(isRecording, false);
         stopLocationTracking();
         stopAudioLevelMonitoring();
         if (isMobile) {
@@ -576,8 +575,8 @@ export default function RecordPage() {
 
       setAudioChunks(chunks);
       setMediaRecorder(recorder);
-      setIsRecording(true);
-      setIsPaused(false);
+      setRecordingState(true);
+      setRecordingState(isRecording, false);
       setRecordingTime(0);
 
       // Start recording with a small delay for mobile compatibility
@@ -627,7 +626,7 @@ export default function RecordPage() {
   function pauseRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.pause();
-      setIsPaused(true);
+      setRecordingState(isRecording, true);
       toast.success('Recording paused');
     }
   }
@@ -635,7 +634,7 @@ export default function RecordPage() {
   function resumeRecording() {
     if (mediaRecorder && mediaRecorder.state === 'paused') {
       mediaRecorder.resume();
-      setIsPaused(false);
+      setRecordingState(isRecording, false);
       toast.success('Recording resumed');
     }
   }
@@ -653,13 +652,11 @@ export default function RecordPage() {
       }
 
       mediaRecorder.stop();
-      setIsRecording(false);
-      setIsPaused(false);
+      setRecordingState(false, false);
       setRecordingTime(0);
 
       // Reset auto-save state
-      setLastAutoSave(null);
-      setAutoSaveCounter(0);
+      setAutoSaveData(null, 0);
 
       // Stop location tracking, audio monitoring, and release wake lock when recording stops
       stopLocationTracking();
