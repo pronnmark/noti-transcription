@@ -443,8 +443,10 @@ export default function RecordPage() {
   }
 
   async function startRecording() {
+    console.log('🎙️ startRecording called, recordingSupported:', recordingSupported);
     try {
       if (!recordingSupported) {
+        console.error('❌ Recording not supported on this device');
         toast.error('Recording not supported on this device');
         return;
       }
@@ -564,8 +566,7 @@ export default function RecordPage() {
       recorder.onerror = event => {
         console.error('MediaRecorder error:', event);
         toast.error('Recording error occurred');
-        setRecordingState(false);
-        setRecordingState(isRecording, false);
+        setRecordingState(false, false);
         stopLocationTracking();
         stopAudioLevelMonitoring();
         if (isMobile) {
@@ -575,9 +576,9 @@ export default function RecordPage() {
 
       setAudioChunks(chunks);
       setMediaRecorder(recorder);
-      setRecordingState(true);
-      setRecordingState(isRecording, false);
+      setRecordingState(true, false);
       setRecordingTime(0);
+      console.log('✅ Recording state set: isRecording=true, isPaused=false');
 
       // Start recording with a small delay for mobile compatibility
       setTimeout(() => {
@@ -624,17 +625,21 @@ export default function RecordPage() {
   }
 
   function pauseRecording() {
+    console.log('⏸️ pauseRecording called');
     if (mediaRecorder && mediaRecorder.state === 'recording') {
       mediaRecorder.pause();
-      setRecordingState(isRecording, true);
+      setRecordingState(true, true);
+      console.log('✅ Recording state set: isRecording=true, isPaused=true');
       toast.success('Recording paused');
     }
   }
 
   function resumeRecording() {
+    console.log('▶️ resumeRecording called');
     if (mediaRecorder && mediaRecorder.state === 'paused') {
       mediaRecorder.resume();
-      setRecordingState(isRecording, false);
+      setRecordingState(true, false);
+      console.log('✅ Recording state set: isRecording=true, isPaused=false');
       toast.success('Recording resumed');
     }
   }
