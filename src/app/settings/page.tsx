@@ -181,7 +181,14 @@ export default function SettingsPage() {
 
   async function loadSettings() {
     try {
-      const response = await fetch('/api/settings');
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
+      const response = await fetch('/api/settings', {
+        headers: {
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
 
@@ -212,10 +219,14 @@ export default function SettingsPage() {
     }
 
     try {
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
         },
         body: JSON.stringify({
           transcription: transcriptionSettings,
@@ -293,7 +304,14 @@ export default function SettingsPage() {
 
   async function loadTemplates() {
     try {
-      const response = await fetch('/api/summarization-prompts');
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
+      const response = await fetch('/api/summarization-prompts', {
+        headers: {
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setTemplates(data.prompts || []);
@@ -365,8 +383,14 @@ export default function SettingsPage() {
     }
 
     try {
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
       const response = await fetch(`/api/summarization-prompts?id=${id}`, {
         method: 'DELETE',
+        headers: {
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
       });
 
       if (response.ok) {
@@ -384,7 +408,14 @@ export default function SettingsPage() {
   // Telegram settings functions
   async function loadTelegramSettings() {
     try {
-      const response = await fetch('/api/telegram/settings');
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
+      const response = await fetch('/api/telegram/settings', {
+        headers: {
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
+      });
       if (response.ok) {
         const data = await response.json();
         setTelegramSettings(data.settings);
@@ -396,9 +427,15 @@ export default function SettingsPage() {
 
   async function saveTelegramSettings() {
     try {
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
       const response = await fetch('/api/telegram/settings', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
         body: JSON.stringify({
           botToken: telegramForm.botToken || null,
           chatConfigurations: telegramSettings.chatConfigurations,
@@ -461,9 +498,15 @@ export default function SettingsPage() {
 
     setIsTesting(true);
     try {
+      const { getSession } = await import('@/lib/auth-client');
+      const session = await getSession();
+      
       const response = await fetch('/api/telegram/settings', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+        },
         body: JSON.stringify({
           testChatId: telegramForm.testChatId.trim(),
         }),
