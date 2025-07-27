@@ -23,6 +23,9 @@ import { ClientOnly } from '@/components/client-only';
 import { locationService } from '@/lib/services/locationService';
 import type { LocationData } from '@/lib/services/locationService';
 import { AudioLevelMeter } from '@/components/ui/audio-level-meter';
+import { WorkflowStatus } from '@/components/ui/workflow-status';
+import { TranscriptViewer } from '@/components/ui/transcript-viewer';
+import { useRecordingStore } from '@/stores/recordingStore';
 
 // Wake Lock API types (if not already defined)
 interface WakeLockSentinel {
@@ -30,39 +33,75 @@ interface WakeLockSentinel {
 }
 
 export default function RecordPage() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(
-    null,
-  );
-  const [audioChunks, setAudioChunks] = useState<Blob[]>([]);
-  const [recordingSupported, setRecordingSupported] = useState(true);
-  const [deviceInfo, setDeviceInfo] = useState<string>('');
-  const [supportError, setSupportError] = useState<string>('');
+  // Zustand store
+  const {
+    // Recording states
+    isRecording,
+    isPaused,
+    recordingTime,
+    mediaRecorder,
+    audioChunks,
+    recordingSupported,
+    deviceInfo,
+    supportError,
+    isMobile,
+    wakeLock,
+    speakerCount,
+    lastAutoSave,
+    autoSaveCounter,
+    
+    // Audio level monitoring
+    audioLevel,
+    audioAnalyser,
+    levelAnimationFrame,
+    
+    // Location tracking
+    locationData,
+    isLocationTracking,
+    
+    // Workflow states
+    workflowPhase,
+    uploadProgress,
+    transcriptionProgress,
+    fileId,
+    transcript,
+    error: workflowError,
+    
+    // Actions
+    setRecordingState,
+    setRecordingTime,
+    setMediaRecorder,
+    setAudioChunks,
+    setAudioLevel,
+    setAudioAnalyser,
+    setLevelAnimationFrame,
+    setRecordingSupport,
+    setIsMobile,
+    setWakeLock,
+    setSpeakerCount,
+    setAutoSaveData,
+    setLocationData,
+    setLocationTracking,
+    setWorkflowPhase,
+    setUploadProgress,
+    setFileId,
+    setError,
+    resetWorkflow,
+    startTranscriptionPolling,
+    stopTranscriptionPolling,
+  } = useRecordingStore();
+
+  // Local state for upload status
   const [isUploading, setIsUploading] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
-  const [wakeLock, setWakeLock] = useState<WakeLockSentinel | null>(null);
-  const [speakerCount, setSpeakerCount] = useState<number>(2);
-  const [lastAutoSave, setLastAutoSave] = useState<Date | null>(null);
-  const [autoSaveCounter, setAutoSaveCounter] = useState(0);
-
-  // Location tracking state
-  const [locationData, setLocationData] = useState<LocationData | null>(null);
+  
+  // Location error state (local since it's just for logging)
   const [_locationError, setLocationError] = useState<string | null>(null);
-  const [isLocationTracking, setIsLocationTracking] = useState(false);
-
-  // Audio level monitoring state
-  const [audioLevel, setAudioLevel] = useState<number>(0);
-  const [audioAnalyser, setAudioAnalyser] = useState<AnalyserNode | null>(null);
-  const [levelAnimationFrame, setLevelAnimationFrame] = useState<number | null>(null);
 
   const checkRecordingSupport = useCallback(async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log('MediaDevices API not available');
-        setSupportError('Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.');
-        setRecordingSupported(false);
+        setRecordingSupport(false, 'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.');
         return;
       }
 
@@ -73,13 +112,12 @@ export default function RecordPage() {
       );
 
       const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
-      setDeviceInfo(deviceDebug);
+      setRecordingSupport(true, '', deviceDebug);
       console.log(deviceDebug);
 
       if (audioInputs.length === 0) {
         console.log('No audio input devices found');
-        setSupportError('No microphone detected. Please connect a microphone and refresh the page.');
-        setRecordingSupported(false);
+        setRecordingSupport(false, 'No microphone detected. Please connect a microphone and refresh the page.');
         return;
       }
 
@@ -105,8 +143,7 @@ export default function RecordPage() {
 
       // Clean up test stream
       stream.getTracks().forEach(track => track.stop());
-      setRecordingSupported(true);
-      setSupportError(''); // Clear any previous errors
+      setRecordingSupport(true, ''); // Clear any previous errors
     } catch (error) {
       console.error('Recording not supported:', error);
       let errorMessage = 'Recording setup failed. ';
@@ -125,8 +162,7 @@ export default function RecordPage() {
         }
       }
       
-      setSupportError(errorMessage);
-      setRecordingSupported(false);
+      setRecordingSupport(false, errorMessage);
     }
   }, [isMobile]);
 
@@ -244,11 +280,11 @@ export default function RecordPage() {
     let interval: NodeJS.Timeout;
     if (isRecording && !isPaused) {
       interval = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
+        setRecordingTime(recordingTime + 1);
       }, 1000);
     }
     return () => clearInterval(interval);
-  }, [isRecording, isPaused]);
+  }, [isRecording, isPaused, recordingTime, setRecordingTime]);
 
   // Auto-save effect - every 10 minutes (600 seconds)
   useEffect(() => {
@@ -638,6 +674,9 @@ export default function RecordPage() {
 
   async function uploadRecording(audioBlob: Blob, isDraft: boolean = false) {
     setIsUploading(true);
+    setWorkflowPhase('uploading');
+    setUploadProgress(0);
+    
     try {
       console.log('Starting upload:', {
         size: audioBlob.size,
@@ -711,21 +750,54 @@ export default function RecordPage() {
       }
 
       const result = await response.json();
-      toast.success(
-        isDraft ? 'Draft recording saved!' : 'Recording uploaded successfully!',
-      );
-
-      // Only redirect for final recordings, not drafts
-      if (!isDraft) {
-        setTimeout(() => {
-          window.location.href = '/files';
-        }, 1500);
+      console.log('Upload result:', result);
+      
+      setUploadProgress(100);
+      
+      if (isDraft) {
+        toast.success('Draft recording saved!');
+        setWorkflowPhase('idle'); // Return to idle for drafts
+      } else {
+        toast.success('Recording uploaded successfully!');
+        setFileId(result.fileId || result.id);
+        
+        // Start transcription workflow
+        if (result.fileId || result.id) {
+          setWorkflowPhase('transcribing');
+          setUploadProgress(100);
+          
+          // Auto-trigger transcription worker
+          try {
+            const workerResponse = await fetch('/api/worker/transcribe', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileId: result.fileId || result.id }),
+            });
+            
+            if (workerResponse.ok) {
+              console.log('Transcription worker triggered');
+              // Start polling for transcription status
+              startTranscriptionPolling(result.fileId || result.id);
+            } else {
+              throw new Error('Failed to start transcription');
+            }
+          } catch (transcriptionError) {
+            console.error('Transcription trigger error:', transcriptionError);
+            setError('Failed to start transcription');
+            setWorkflowPhase('error');
+          }
+        } else {
+          setError('Upload succeeded but no file ID returned');
+          setWorkflowPhase('error');
+        }
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       toast.error(`Failed to upload recording: ${errorMessage}`);
       console.error('Upload error:', error);
+      setError(errorMessage);
+      setWorkflowPhase('error');
     } finally {
       setIsUploading(false);
     }
@@ -931,6 +1003,32 @@ export default function RecordPage() {
               )}
             </CardContent>
           </Card>
+
+          {/* Workflow Status */}
+          {(workflowPhase === 'uploading' || workflowPhase === 'transcribing' || workflowPhase === 'completed' || workflowPhase === 'error') && (
+            <WorkflowStatus
+              phase={workflowPhase}
+              uploadProgress={uploadProgress}
+              transcriptionProgress={transcriptionProgress}
+              error={workflowError}
+              className="mt-6"
+            />
+          )}
+
+          {/* Transcript Viewer */}
+          {workflowPhase === 'completed' && transcript && (
+            <TranscriptViewer
+              transcript={transcript}
+              fileName={`Recording-${new Date().toLocaleDateString()}`}
+              speakerCount={speakerCount}
+              fileId={fileId}
+              onStartNewRecording={() => {
+                resetWorkflow();
+                toast.info('Ready for new recording!');
+              }}
+              className="mt-6"
+            />
+          )}
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

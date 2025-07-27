@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Microphone Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 10px 0; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        #audioLevel { width: 100%; height: 20px; background: #e9ecef; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        #audioBar { height: 100%; background: linear-gradient(to right, red, yellow, green); width: 0%; transition: width 0.1s; }
+    </style>
+</head>
+<body>
+    <h1>Microphone Test & Permission Fix</h1>
+    
+    <div id="status" class="status info">
+        Click "Test Microphone" to check if your microphone is working.
+    </div>
+    
+    <button id="testBtn" onclick="testMicrophone()">Test Microphone</button>
+    <button id="stopBtn" onclick="stopTest()" disabled>Stop Test</button>
+    
+    <div id="audioLevel" style="display: none;">
+        <div id="audioBar"></div>
+    </div>
+    
+    <div id="levelText" style="display: none; margin: 10px 0; font-family: monospace;"></div>
+    
+    <h2>Troubleshooting Steps:</h2>
+    <ol>
+        <li><strong>Allow Microphone Permission:</strong> When prompted, click "Allow" to grant microphone access</li>
+        <li><strong>Check Browser URL Bar:</strong> Look for a microphone icon in the address bar and ensure it's not blocked</li>
+        <li><strong>Reset Permissions:</strong> Go to browser settings and reset site permissions for localhost</li>
+        <li><strong>Try Different Browser:</strong> Test with Chrome, Firefox, or Edge</li>
+        <li><strong>Check System Audio:</strong> Ensure your microphone is not muted in system settings</li>
+    </ol>
+    
+    <h3>Browser Permission Reset Instructions:</h3>
+    <p><strong>Chrome:</strong></p>
+    <ul>
+        <li>Click the lock/microphone icon in the address bar</li>
+        <li>Set microphone to "Allow"</li>
+        <li>Or go to chrome://settings/content/microphone and manage permissions</li>
+    </ul>
+    
+    <script>
+        let mediaStream = null;
+        let audioContext = null;
+        let analyser = null;
+        let animationFrame = null;
+        
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+        }
+        
+        async function testMicrophone() {
+            try {
+                updateStatus('Requesting microphone access...', 'info');
+                
+                // Request microphone access
+                mediaStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    } 
+                });
+                
+                updateStatus('✅ Microphone access granted! Starting audio level monitoring...', 'success');
+                
+                // Set up audio level monitoring
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioContext.createMediaStreamSource(mediaStream);
+                analyser = audioContext.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.8;
+                source.connect(analyser);
+                
+                // Enable controls
+                document.getElementById('testBtn').disabled = true;
+                document.getElementById('stopBtn').disabled = false;
+                document.getElementById('audioLevel').style.display = 'block';
+                document.getElementById('levelText').style.display = 'block';
+                
+                // Start monitoring
+                monitorAudioLevel();
+                
+            } catch (error) {
+                let errorMessage = 'Microphone test failed: ';
+                
+                if (error.name === 'NotFoundError') {
+                    errorMessage += 'No microphone found. Please connect a microphone and try again.';
+                } else if (error.name === 'NotAllowedError') {
+                    errorMessage += 'Microphone permission denied. Please click "Allow" when prompted, or check browser permissions.';
+                } else if (error.name === 'NotReadableError') {
+                    errorMessage += 'Microphone is already in use by another application.';
+                } else if (error.name === 'OverconstrainedError') {
+                    errorMessage += 'Microphone settings not supported by your device.';
+                } else {
+                    errorMessage += error.message;
+                }
+                
+                updateStatus('❌ ' + errorMessage, 'error');
+                console.error('Microphone error:', error);
+            }
+        }
+        
+        function monitorAudioLevel() {
+            if (!analyser) return;
+            
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(dataArray);
+            
+            // Calculate RMS level
+            let sum = 0;
+            for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i] * dataArray[i];
+            }
+            const rms = Math.sqrt(sum / dataArray.length);
+            const level = (rms / 255) * 100;
+            
+            // Update visual meter
+            document.getElementById('audioBar').style.width = level + '%';
+            document.getElementById('levelText').textContent = 
+                `Audio Level: ${level.toFixed(1)}% ${level < 5 ? '(No Signal)' : level < 25 ? '(Low)' : '(Good)'}`;
+            
+            // Continue monitoring
+            animationFrame = requestAnimationFrame(monitorAudioLevel);
+        }
+        
+        function stopTest() {
+            // Clean up
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+                animationFrame = null;
+            }
+            
+            if (analyser) {
+                analyser.disconnect();
+                analyser = null;
+            }
+            
+            if (audioContext) {
+                audioContext.close();
+                audioContext = null;
+            }
+            
+            if (mediaStream) {
+                mediaStream.getTracks().forEach(track => track.stop());
+                mediaStream = null;
+            }
+            
+            // Reset UI
+            document.getElementById('testBtn').disabled = false;
+            document.getElementById('stopBtn').disabled = true;
+            document.getElementById('audioLevel').style.display = 'none';
+            document.getElementById('levelText').style.display = 'none';
+            
+            updateStatus('Microphone test stopped.', 'info');
+        }
+        
+        // Check for basic support
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            updateStatus('❌ Your browser does not support microphone access. Please use Chrome, Firefox, or Safari with HTTPS.', 'error');
+            document.getElementById('testBtn').disabled = true;
+        }
+    </script>
+</body>
+</html>

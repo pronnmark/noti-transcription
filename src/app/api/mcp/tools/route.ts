@@ -131,7 +131,11 @@ export async function POST(request: NextRequest) {
           // If we couldn't resolve via getChat, try direct message sending
           if (!chatId) {
             let lastError = '';
-            for (const username of usernames) {
+            const usernameVariants = [args.username];
+            if (!args.username.startsWith('@')) {
+              usernameVariants.push(`@${args.username}`);
+            }
+            for (const singleUsername of usernameVariants) {
               try {
                 const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
                   method: 'POST',
@@ -139,7 +143,7 @@ export async function POST(request: NextRequest) {
                     'Content-Type': 'application/json',
                   },
                   body: JSON.stringify({
-                    chat_id: username,
+                    chat_id: singleUsername,
                     text: args.message,
                     parse_mode: 'Markdown'
                   }),
