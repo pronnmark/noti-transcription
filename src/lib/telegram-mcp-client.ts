@@ -1,4 +1,4 @@
-import { getSession } from '@/lib/auth-client';
+import { getSessionToken } from '@/lib/auth-client';
 
 // Telegram MCP tool names
 const TELEGRAM_TOOLS = {
@@ -49,8 +49,8 @@ interface TelegramMessage {
 class TelegramMCPClient {
   private async callMCPTool<T = any>(toolName: string, args: Record<string, any> = {}): Promise<MCPToolResponse<T>> {
     try {
-      const session = await getSession();
-      if (!session) {
+      const sessionToken = getSessionToken();
+      if (!sessionToken) {
         return { success: false, error: 'Not authenticated' };
       }
 
@@ -58,7 +58,7 @@ class TelegramMCPClient {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-session-token': session.sessionToken,
+          'x-session-token': sessionToken,
         },
         body: JSON.stringify({
           toolName,

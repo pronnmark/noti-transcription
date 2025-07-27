@@ -181,12 +181,12 @@ export default function SettingsPage() {
 
   async function loadSettings() {
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/settings', {
         headers: {
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
       });
       if (response.ok) {
@@ -219,14 +219,14 @@ export default function SettingsPage() {
     }
 
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
         body: JSON.stringify({
           transcription: transcriptionSettings,
@@ -304,12 +304,12 @@ export default function SettingsPage() {
 
   async function loadTemplates() {
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/summarization-prompts', {
         headers: {
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
       });
       if (response.ok) {
@@ -383,13 +383,13 @@ export default function SettingsPage() {
     }
 
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch(`/api/summarization-prompts?id=${id}`, {
         method: 'DELETE',
         headers: {
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
       });
 
@@ -408,12 +408,12 @@ export default function SettingsPage() {
   // Telegram settings functions
   async function loadTelegramSettings() {
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/telegram/settings', {
         headers: {
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
       });
       if (response.ok) {
@@ -427,14 +427,14 @@ export default function SettingsPage() {
 
   async function saveTelegramSettings() {
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/telegram/settings', {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
         body: JSON.stringify({
           botToken: telegramForm.botToken || null,
@@ -498,14 +498,14 @@ export default function SettingsPage() {
 
     setIsTesting(true);
     try {
-      const { getSession } = await import('@/lib/auth-client');
-      const session = await getSession();
+      const { getSessionToken } = await import('@/lib/auth-client');
+      const sessionToken = getSessionToken();
       
       const response = await fetch('/api/telegram/settings', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          ...(session?.sessionToken && { 'x-session-token': session.sessionToken }),
+          ...(sessionToken && { 'x-session-token': sessionToken }),
         },
         body: JSON.stringify({
           testChatId: telegramForm.testChatId.trim(),
