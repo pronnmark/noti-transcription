@@ -1,4 +1,4 @@
-import { getSessionToken } from '@/lib/auth-client';
+// Removed client-side import to support both server and client usage
 
 // Telegram MCP tool names
 const TELEGRAM_TOOLS = {
@@ -47,14 +47,28 @@ interface TelegramMessage {
 }
 
 class TelegramMCPClient {
-  private async callMCPTool<T = any>(toolName: string, args: Record<string, any> = {}): Promise<MCPToolResponse<T>> {
+  private async callMCPTool<T = any>(
+    toolName: string, 
+    args: Record<string, any> = {}, 
+    sessionToken?: string | null
+  ): Promise<MCPToolResponse<T>> {
     try {
-      const sessionToken = getSessionToken();
+      // For client-side usage, try to get token from localStorage if not provided
+      if (!sessionToken && typeof window !== 'undefined') {
+        sessionToken = localStorage.getItem('noti-session');
+      }
+      
       if (!sessionToken) {
         return { success: false, error: 'Not authenticated' };
       }
 
-      const response = await fetch('/api/mcp/tools', {
+      // Construct absolute URL for server-side usage
+      const baseUrl = typeof window === 'undefined' 
+        ? (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5173')
+        : '';
+      const apiUrl = `${baseUrl}/api/mcp/tools`;
+
+      const response = await fetch(apiUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,11 +109,11 @@ class TelegramMCPClient {
     }
   }
 
-  async getBotInfo(): Promise<MCPToolResponse<TelegramBotInfo>> {
-    return this.callMCPTool<TelegramBotInfo>(TELEGRAM_TOOLS.GET_ME);
+  async getBotInfo(sessionToken?: string | null): Promise<MCPToolResponse<TelegramBotInfo>> {
+    return this.callMCPTool<TelegramBotInfo>(TELEGRAM_TOOLS.GET_ME, {}, sessionToken);
   }
 
-  async sendMessage(chatId: number | string, message: string): Promise<MCPToolResponse<TelegramMessage>> {
+  async sendMessage(chatId: number | string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
     // Convert string chatId to number if needed
     const numericChatId = typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
     
@@ -110,24 +124,24 @@ class TelegramMCPClient {
     return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE, {
       chat_id: numericChatId,
       message,
-    });
+    }, sessionToken);
   }
 
-  async sendMessageToUser(username: string, message: string): Promise<MCPToolResponse<TelegramMessage>> {
+  async sendMessageToUser(username: string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
     return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE_TO_USER, {
       username,
       message,
-    });
+    }, sessionToken);
   }
 
-  async sendMessageToGroup(groupName: string, message: string): Promise<MCPToolResponse<TelegramMessage>> {
+  async sendMessageToGroup(groupName: string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
     return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE_TO_GROUP, {
       group_name: groupName,
       message,
-    });
+    }, sessionToken);
   }
 
-  async getChat(chatId: number | string): Promise<MCPToolResponse<TelegramChat>> {
+  async getChat(chatId: number | string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramChat>> {
     const numericChatId = typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
     
     if (isNaN(numericChatId)) {
@@ -136,39 +150,39 @@ class TelegramMCPClient {
 
     return this.callMCPTool<TelegramChat>(TELEGRAM_TOOLS.GET_CHAT, {
       chat_id: numericChatId,
-    });
+    }, sessionToken);
   }
 
-  async resolveUsername(username: string): Promise<MCPToolResponse<{ id: number; type: string }>> {
+  async resolveUsername(username: string, sessionToken?: string | null): Promise<MCPToolResponse<{ id: number; type: string }>> {
     return this.callMCPTool<{ id: number; type: string }>(TELEGRAM_TOOLS.RESOLVE_USERNAME, {
       username,
-    });
+    }, sessionToken);
   }
 
-  async getUserStatus(userId: number): Promise<MCPToolResponse<{ status: string; was_online?: number }>> {
+  async getUserStatus(userId: number, sessionToken?: string | null): Promise<MCPToolResponse<{ status: string; was_online?: number }>> {
     return this.callMCPTool<{ status: string; was_online?: number }>(TELEGRAM_TOOLS.GET_USER_STATUS, {
       user_id: userId,
-    });
+    }, sessionToken);
   }
 
-  async getUserPhotos(userId: number, limit: number = 10): Promise<MCPToolResponse<any[]>> {
+  async getUserPhotos(userId: number, limit: number = 10, sessionToken?: string | null): Promise<MCPToolResponse<any[]>> {
     return this.callMCPTool<any[]>(TELEGRAM_TOOLS.GET_USER_PHOTOS, {
       user_id: userId,
       limit,
-    });
+    }, sessionToken);
   }
 
-  async getBotInfoByUsername(botUsername: string): Promise<MCPToolResponse<TelegramBotInfo>> {
+  async getBotInfoByUsername(botUsername: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramBotInfo>> {
     return this.callMCPTool<TelegramBotInfo>(TELEGRAM_TOOLS.GET_BOT_INFO, {
       bot_username: botUsername,
-    });
+    }, sessionToken);
   }
 
-  async setBotCommands(botUsername: string, commands: Array<{ command: string; description: string }>): Promise<MCPToolResponse<boolean>> {
+  async setBotCommands(botUsername: string, commands: Array<{ command: string; description: string }>, sessionToken?: string | null): Promise<MCPToolResponse<boolean>> {
     return this.callMCPTool<boolean>(TELEGRAM_TOOLS.SET_BOT_COMMANDS, {
       bot_username: botUsername,
       commands,
-    });
+    }, sessionToken);
   }
 
   // Helper method to format messages with Markdown

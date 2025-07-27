@@ -11,10 +11,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Loader2, ArrowLeft, Edit2, Save, X, Users, Clock, FileText, Trash2, Download, RefreshCw, Copy, Sparkles, Plus } from 'lucide-react';
+import { Loader2, ArrowLeft, Edit2, Save, X, Users, Clock, FileText, Trash2, Download, RefreshCw, Copy, Sparkles, Plus, Send } from 'lucide-react';
 import { toast } from 'sonner';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface TranscriptSegment {
   start: number;
@@ -96,6 +97,12 @@ export default function TranscriptPage() {
   const [isCreatingSummary, setIsCreatingSummary] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deletingSummaryId, setDeletingSummaryId] = useState<string | null>(null);
+  const [showTelegramDialog, setShowTelegramDialog] = useState(false);
+  const [telegramTarget, setTelegramTarget] = useState<'group' | 'user'>('group');
+  const [telegramUsername, setTelegramUsername] = useState('');
+  const [telegramGroupName, setTelegramGroupName] = useState('devdash');
+  const [includeTimestamps, setIncludeTimestamps] = useState(false);
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
 
   useEffect(() => {
     loadTranscript();
@@ -463,6 +470,42 @@ export default function TranscriptPage() {
     }
   }
 
+  async function handleSendToTelegram() {
+    setIsSendingTelegram(true);
+    try {
+      const body: any = {
+        fileId: id,
+        includeTimestamps,
+      };
+
+      if (telegramTarget === 'user') {
+        body.username = telegramUsername;
+      } else {
+        body.groupName = telegramGroupName;
+      }
+
+      const response = await fetch('/api/telegram/share-transcript', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        toast.success('Transcript sent to Telegram!');
+        setShowTelegramDialog(false);
+      } else {
+        toast.error(data.error || 'Failed to send to Telegram');
+      }
+    } catch (error) {
+      console.error('Failed to send to Telegram:', error);
+      toast.error('Failed to send transcript to Telegram');
+    } finally {
+      setIsSendingTelegram(false);
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -519,6 +562,100 @@ export default function TranscriptPage() {
                 <Copy className="mr-2 h-4 w-4" />
                 Copy
               </Button>
+              <Dialog open={showTelegramDialog} onOpenChange={setShowTelegramDialog}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">
+                    <Send className="mr-2 h-4 w-4" />
+                    Telegram
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Send Transcript to Telegram</DialogTitle>
+                    <DialogDescription>
+                      Choose where to send this transcript
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Send to</Label>
+                      <Select value={telegramTarget} onValueChange={(value: 'group' | 'user') => setTelegramTarget(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="group">Group</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {telegramTarget === 'user' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="telegram-username">Username</Label>
+                        <Select value={telegramUsername} onValueChange={setTelegramUsername}>
+                          <SelectTrigger id="telegram-username">
+                            <SelectValue placeholder="Select a user" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="philip">Philip (ddphilip)</SelectItem>
+                            <SelectItem value="oskar">Oskar (ddoskar)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="telegram-group">Group</Label>
+                        <Select value={telegramGroupName} onValueChange={setTelegramGroupName}>
+                          <SelectTrigger id="telegram-group">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="devdash">DevDash</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-timestamps" 
+                        checked={includeTimestamps}
+                        onCheckedChange={(checked) => setIncludeTimestamps(checked as boolean)}
+                      />
+                      <Label htmlFor="include-timestamps" className="text-sm">
+                        Include timestamps
+                      </Label>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowTelegramDialog(false)}
+                        disabled={isSendingTelegram}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSendToTelegram}
+                        disabled={isSendingTelegram || (telegramTarget === 'user' && !telegramUsername)}
+                      >
+                        {isSendingTelegram ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
               <Button
                 variant="outline"
                 onClick={handleDeleteFile}
@@ -730,6 +867,96 @@ export default function TranscriptPage() {
                 </DialogContent>
               </Dialog>
 
+              {/* Telegram Dialog - Mobile */}
+              <Dialog open={showTelegramDialog} onOpenChange={setShowTelegramDialog}>
+                <DialogContent className="max-w-[95vw]">
+                  <DialogHeader>
+                    <DialogTitle>Send to Telegram</DialogTitle>
+                    <DialogDescription>
+                      Choose where to send this transcript
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label>Send to</Label>
+                      <Select value={telegramTarget} onValueChange={(value: 'group' | 'user') => setTelegramTarget(value)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="group">Group</SelectItem>
+                          <SelectItem value="user">User</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {telegramTarget === 'user' ? (
+                      <div className="space-y-2">
+                        <Label htmlFor="telegram-username-mobile">Username</Label>
+                        <Select value={telegramUsername} onValueChange={setTelegramUsername}>
+                          <SelectTrigger id="telegram-username-mobile">
+                            <SelectValue placeholder="Select a user" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="philip">Philip (ddphilip)</SelectItem>
+                            <SelectItem value="oskar">Oskar (ddoskar)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <Label htmlFor="telegram-group-mobile">Group</Label>
+                        <Select value={telegramGroupName} onValueChange={setTelegramGroupName}>
+                          <SelectTrigger id="telegram-group-mobile">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="devdash">DevDash</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    <div className="flex items-center space-x-2">
+                      <Checkbox 
+                        id="include-timestamps-mobile" 
+                        checked={includeTimestamps}
+                        onCheckedChange={(checked) => setIncludeTimestamps(checked as boolean)}
+                      />
+                      <Label htmlFor="include-timestamps-mobile" className="text-sm">
+                        Include timestamps
+                      </Label>
+                    </div>
+                    
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setShowTelegramDialog(false)}
+                        disabled={isSendingTelegram}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        onClick={handleSendToTelegram}
+                        disabled={isSendingTelegram || (telegramTarget === 'user' && !telegramUsername)}
+                      >
+                        {isSendingTelegram ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : (
+                          <>
+                            <Send className="h-4 w-4 mr-2" />
+                            Send
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               {/* Transcript Section */}
               <Card className="standard-card">
                 <CardHeader>
@@ -740,14 +967,23 @@ export default function TranscriptPage() {
                         {fileInfo?.originalFileName}
                       </CardDescription>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="touch-target-44"
-                      onClick={handleCopy}
-                    >
-                      <Copy className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="touch-target-44"
+                        onClick={handleCopy}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Dialog open={showTelegramDialog} onOpenChange={setShowTelegramDialog}>
+                        <DialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="touch-target-44">
+                            <Send className="h-4 w-4" />
+                          </Button>
+                        </DialogTrigger>
+                      </Dialog>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

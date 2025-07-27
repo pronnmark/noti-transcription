@@ -14,7 +14,7 @@ const _audioService = new AudioService();
 const DEBUG_TRANSCRIPTION = process.env.DEBUG_TRANSCRIPTION !== 'false';
 const debugLog = (...args: unknown[]) => {
   if (DEBUG_TRANSCRIPTION) {
-    debugLog(...args);
+    console.log(...args);
   }
 };
 
@@ -420,6 +420,19 @@ export async function startTranscription(
         debugLog(`ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`);
       }
 
+      // Calculate duration from transcript segments
+      let calculatedDuration = 0;
+      if (finalSegments && finalSegments.length > 0) {
+        // Find the segment with the latest end time
+        const lastSegment = finalSegments.reduce((latest, segment) => {
+          const segmentEnd = segment.end || 0;
+          const latestEnd = latest.end || 0;
+          return segmentEnd > latestEnd ? segment : latest;
+        });
+        calculatedDuration = lastSegment.end || 0;
+        debugLog(`📏 Calculated duration from transcript: ${calculatedDuration} seconds`);
+      }
+
       // Update job as completed with the transcript (potentially with updated speaker names)
       await db.update(transcriptionJobs)
         .set({
@@ -431,6 +444,23 @@ export async function startTranscription(
           completedAt: new Date(),
         })
         .where(eq(transcriptionJobs.id, job.id));
+
+      // Update audioFiles table with calculated duration
+      if (calculatedDuration > 0) {
+        try {
+          const { audioFiles } = await import('./database/schema/audio');
+          await db.update(audioFiles)
+            .set({
+              duration: calculatedDuration,
+              updatedAt: new Date(),
+            })
+            .where(eq(audioFiles.id, fileId));
+          debugLog(`📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`);
+        } catch (durationError) {
+          console.error(`⚠️ Failed to update duration for file ${fileId}:`, durationError);
+          // Don't fail the transcription for duration update issues
+        }
+      }
 
       debugLog(
         `✅ File ${fileId} transcription process completed successfully`,
