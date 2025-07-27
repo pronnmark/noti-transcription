@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
 import { locationService } from '@/lib/services/locationService';
 import type { LocationData } from '@/lib/services/locationService';
+import { AudioLevelMeter } from '@/components/ui/audio-level-meter';
 
 // Wake Lock API types (if not already defined)
 interface WakeLockSentinel {
@@ -50,6 +51,11 @@ export default function RecordPage() {
   const [locationData, setLocationData] = useState<LocationData | null>(null);
   const [_locationError, setLocationError] = useState<string | null>(null);
   const [isLocationTracking, setIsLocationTracking] = useState(false);
+
+  // Audio level monitoring state
+  const [audioLevel, setAudioLevel] = useState<number>(0);
+  const [audioAnalyser, setAudioAnalyser] = useState<AnalyserNode | null>(null);
+  const [levelAnimationFrame, setLevelAnimationFrame] = useState<number | null>(null);
 
   const checkRecordingSupport = useCallback(async () => {
     try {
@@ -199,7 +205,7 @@ export default function RecordPage() {
     detectMobile();
   }, [checkRecordingSupport]);
 
-  // Clean up wake lock on unmount
+  // Clean up wake lock and audio monitoring on unmount
   useEffect(() => {
     return () => {
       if (wakeLock) {
@@ -209,8 +215,15 @@ export default function RecordPage() {
       if (isLocationTracking) {
         locationService.stopTracking();
       }
+      // Clean up audio level monitoring
+      if (levelAnimationFrame) {
+        cancelAnimationFrame(levelAnimationFrame);
+      }
+      if (audioAnalyser) {
+        audioAnalyser.disconnect();
+      }
     };
-  }, [wakeLock, isLocationTracking]);
+  }, [wakeLock, isLocationTracking, levelAnimationFrame, audioAnalyser]);
 
   // Handle page visibility changes (mobile tab switching)
   useEffect(() => {
@@ -332,6 +345,68 @@ export default function RecordPage() {
     }
   }
 
+  // Audio level monitoring functions
+  function startAudioLevelMonitoring(stream: MediaStream) {
+    try {
+      // Create Web Audio API context
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      
+      // Configure analyser
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.8;
+      
+      // Connect nodes
+      source.connect(analyser);
+      
+      setAudioAnalyser(analyser);
+      
+      // Start monitoring loop
+      const monitorAudioLevel = () => {
+        if (!analyser) return;
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        analyser.getByteFrequencyData(dataArray);
+        
+        // Calculate RMS level
+        let sum = 0;
+        for (let i = 0; i < dataArray.length; i++) {
+          sum += dataArray[i] * dataArray[i];
+        }
+        const rms = Math.sqrt(sum / dataArray.length);
+        const level = (rms / 255) * 100; // Convert to 0-100 scale
+        
+        setAudioLevel(level);
+        
+        // Continue monitoring
+        const frameId = requestAnimationFrame(monitorAudioLevel);
+        setLevelAnimationFrame(frameId);
+      };
+      
+      monitorAudioLevel();
+      console.log('🎵 Audio level monitoring started');
+    } catch (error) {
+      console.warn('Failed to start audio level monitoring:', error);
+      // Recording continues without level monitoring
+    }
+  }
+
+  function stopAudioLevelMonitoring() {
+    if (levelAnimationFrame) {
+      cancelAnimationFrame(levelAnimationFrame);
+      setLevelAnimationFrame(null);
+    }
+    
+    if (audioAnalyser) {
+      audioAnalyser.disconnect();
+      setAudioAnalyser(null);
+    }
+    
+    setAudioLevel(0);
+    console.log('🔇 Audio level monitoring stopped');
+  }
+
   async function startRecording() {
     try {
       if (!recordingSupported) {
@@ -412,6 +487,9 @@ export default function RecordPage() {
       // Start location tracking (non-blocking - recording continues regardless)
       await startLocationTracking();
 
+      // Start audio level monitoring (non-blocking - recording continues regardless)
+      startAudioLevelMonitoring(stream);
+
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = event => {
@@ -454,6 +532,7 @@ export default function RecordPage() {
         setIsRecording(false);
         setIsPaused(false);
         stopLocationTracking();
+        stopAudioLevelMonitoring();
         if (isMobile) {
           releaseWakeLock();
         }
@@ -546,8 +625,9 @@ export default function RecordPage() {
       setLastAutoSave(null);
       setAutoSaveCounter(0);
 
-      // Stop location tracking and release wake lock when recording stops
+      // Stop location tracking, audio monitoring, and release wake lock when recording stops
       stopLocationTracking();
+      stopAudioLevelMonitoring();
       if (isMobile) {
         releaseWakeLock();
       }
@@ -740,6 +820,17 @@ export default function RecordPage() {
                             🔒 Screen locked
                           </span>
                         )}
+                      </div>
+                    )}
+                    
+                    {/* Audio Level Meter */}
+                    {isRecording && !isPaused && (
+                      <div className="mt-4">
+                        <AudioLevelMeter
+                          audioLevel={audioLevel}
+                          isActive={isRecording && !isPaused}
+                          className="max-w-sm mx-auto"
+                        />
                       </div>
                     )}
                     {isRecording && (
