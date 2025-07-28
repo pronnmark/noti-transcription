@@ -16,10 +16,17 @@ export type WorkflowPhase =
 export interface TranscriptionStatus {
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
-  transcript?: string;
+  transcript?: string | TranscriptSegment[];
   error?: string;
   speakerCount?: number;
   diarizationStatus?: string;
+}
+
+interface TranscriptSegment {
+  speaker?: string;
+  text: string;
+  start?: number;
+  end?: number;
 }
 
 interface RecordingState {
@@ -265,9 +272,14 @@ export const useRecordingStore = create<RecordingState>()(
             break;
             
           case 'completed':
+            // Convert transcript array to JSON string for the viewer component
+            const transcriptString = status.transcript 
+              ? (Array.isArray(status.transcript) ? JSON.stringify(status.transcript) : status.transcript)
+              : null;
+            
             set({ 
               workflowPhase: 'completed',
-              transcript: status.transcript || null,
+              transcript: transcriptString,
               transcriptionProgress: 100
             });
             toast.success('Transcription completed!');

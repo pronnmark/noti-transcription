@@ -3,6 +3,7 @@ const withPWA = require('next-pwa')({
   register: true,
   skipWaiting: true,
   reloadOnOnline: true,
+  disable: process.env.NODE_ENV === 'development', // Disable PWA in development to prevent multiple generation warnings
   fallbacks: {
     image: '/static/images/fallback.png',
     document: '/offline',
@@ -13,9 +14,16 @@ const withPWA = require('next-pwa')({
       handler: 'NetworkFirst',
       options: {
         cacheName: 'offlineCache',
+        networkTimeoutSeconds: 10, // Add network timeout for better performance
         expiration: {
           maxEntries: 200,
           maxAgeSeconds: 24 * 60 * 60, // 24 hours
+        },
+        cacheableResponse: {
+          statuses: [0, 200],
+        },
+        matchOptions: {
+          ignoreVary: true, // Fix for Vary header warning
         },
       },
     },

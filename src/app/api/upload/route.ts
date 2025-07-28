@@ -9,6 +9,18 @@ import { extractAudioMetadata } from '../../../lib/services/audioMetadata';
 
 export const runtime = 'nodejs';
 
+// Configure API route for large file uploads
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '100mb',
+    },
+  },
+};
+
+// For App Router, we also need to set maxDuration if needed
+export const maxDuration = 60; // 60 seconds
+
 // Debug logging (can be disabled by setting DEBUG_API=false)
 const DEBUG_API = process.env.DEBUG_API !== 'false';
 const debugLog = (...args: unknown[]) => {
@@ -58,7 +70,44 @@ function validateAudioFormat(file: File): { valid: boolean; error?: string } {
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
+    // Debug logging
+    debugLog('Upload request received');
+    debugLog('Content-Type:', request.headers.get('content-type'));
+    debugLog('Content-Length:', request.headers.get('content-length'));
+    
+    // Check body size
+    const contentLength = request.headers.get('content-length');
+    if (contentLength) {
+      const sizeInMB = parseInt(contentLength) / (1024 * 1024);
+      debugLog(`Body size: ${sizeInMB.toFixed(2)} MB`);
+    }
+    
+    let formData;
+    try {
+      formData = await request.formData();
+      debugLog('FormData parsed successfully');
+    } catch (parseError) {
+      debugLog('FormData parsing failed:', parseError);
+      
+      // Try to get more info about the error
+      const errorInfo = {
+        message: parseError instanceof Error ? parseError.message : String(parseError),
+        name: parseError instanceof Error ? parseError.name : 'Unknown',
+        contentType: request.headers.get('content-type'),
+        contentLength: request.headers.get('content-length'),
+        hasBody: !!request.body
+      };
+      
+      debugLog('Error details:', errorInfo);
+      
+      return NextResponse.json(
+        { 
+          error: `Failed to parse form data: ${errorInfo.message}`,
+          details: errorInfo
+        },
+        { status: 400 }
+      );
+    }
 
     // Get all files from formData (support both single and multiple files)
     const files: File[] = [];

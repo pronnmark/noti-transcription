@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   Card,
   CardContent,
@@ -30,6 +30,13 @@ import { useRecordingStore } from '@/stores/recordingStore';
 // Wake Lock API types (if not already defined)
 interface WakeLockSentinel {
   release: () => void;
+}
+
+// Extend Window interface for custom properties
+declare global {
+  interface Window {
+    lastAudioLevelLog?: number;
+  }
 }
 
 export default function RecordPage() {
@@ -96,6 +103,12 @@ export default function RecordPage() {
   
   // Location error state (local since it's just for logging)
   const [_locationError, setLocationError] = useState<string | null>(null);
+  
+  // Ref to store the cloned audio stream for the analyser
+  const analyserStreamRef = useRef<MediaStream | null>(null);
+  
+  // Ref to store the last known location to ensure it persists through upload
+  const lastLocationRef = useRef<LocationData | null>(null);
 
   const checkRecordingSupport = useCallback(async () => {
     try {
@@ -112,12 +125,11 @@ export default function RecordPage() {
       );
 
       const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
-      setRecordingSupport(true, '', deviceDebug);
       console.log(deviceDebug);
 
       if (audioInputs.length === 0) {
         console.log('No audio input devices found');
-        setRecordingSupport(false, 'No microphone detected. Please connect a microphone and refresh the page.');
+        setRecordingSupport(false, 'No microphone detected. Please connect a microphone and refresh the page.', deviceDebug);
         return;
       }
 
@@ -143,7 +155,7 @@ export default function RecordPage() {
 
       // Clean up test stream
       stream.getTracks().forEach(track => track.stop());
-      setRecordingSupport(true, ''); // Clear any previous errors
+      setRecordingSupport(true, '', deviceDebug); // Success with device info
     } catch (error) {
       console.error('Recording not supported:', error);
       let errorMessage = 'Recording setup failed. ';
@@ -213,9 +225,11 @@ export default function RecordPage() {
           formData.append('locationProvider', locationData.provider);
         }
 
+        console.log('📤 Sending auto-save upload request...');
         const response = await fetch('/api/upload', {
           method: 'POST',
           body: formData,
+          // Don't set Content-Type - let browser set it automatically for FormData
         });
 
         if (response.ok) {
@@ -247,8 +261,9 @@ export default function RecordPage() {
         wakeLock.release();
       }
       // Clean up location tracking on unmount
-      if (isLocationTracking) {
+      if (isLocationTracking && locationService.isCurrentlyTracking()) {
         locationService.stopTracking();
+        setLocationTracking(false);
       }
       // Clean up audio level monitoring
       if (levelAnimationFrame) {
@@ -345,6 +360,7 @@ export default function RecordPage() {
       await locationService.startTracking(
         (location: LocationData) => {
           setLocationData(location);
+          lastLocationRef.current = location; // Store in ref to ensure persistence
           setLocationError(null);
           console.log('📍 Location updated during recording:', location);
         },
@@ -373,7 +389,7 @@ export default function RecordPage() {
   }
 
   function stopLocationTracking() {
-    if (isLocationTracking) {
+    if (isLocationTracking && locationService.isCurrentlyTracking()) {
       locationService.stopTracking();
       setLocationTracking(false);
       console.log('🛑 Location tracking stopped');
@@ -381,38 +397,70 @@ export default function RecordPage() {
   }
 
   // Audio level monitoring functions
-  function startAudioLevelMonitoring(stream: MediaStream) {
+  async function startAudioLevelMonitoring(stream: MediaStream) {
     try {
+      console.log('🎵 Starting audio level monitoring...');
+      
+      // Debug: Check stream tracks
+      const audioTracks = stream.getAudioTracks();
+      console.log(`🎵 Stream has ${audioTracks.length} audio tracks`);
+      audioTracks.forEach((track, index) => {
+        console.log(`🎵 Track ${index}: ${track.label}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`);
+      });
+      
       // Create Web Audio API context
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Resume audio context if suspended (required by Chrome)
+      if (audioContext.state === 'suspended') {
+        console.log('🎵 Resuming suspended AudioContext...');
+        await audioContext.resume();
+      }
+      
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
+      const gainNode = audioContext.createGain();
       
-      // Configure analyser
-      analyser.fftSize = 256;
-      analyser.smoothingTimeConstant = 0.8;
+      // Configure analyser with better settings for voice
+      analyser.fftSize = 2048; // Good frequency resolution
+      analyser.smoothingTimeConstant = 0.5; // More smoothing for stable readings
+      analyser.minDecibels = -90; // Less sensitive to very quiet sounds
+      analyser.maxDecibels = -30; // Better range for voice
       
-      // Connect nodes
+      // Mute the gain node so we don't hear the audio
+      gainNode.gain.value = 0;
+      
+      // Connect nodes in a complete audio graph
+      // Source → Analyser → Gain (muted) → Destination
       source.connect(analyser);
+      analyser.connect(gainNode);
+      gainNode.connect(audioContext.destination);
       
       setAudioAnalyser(analyser);
       
-      // Start monitoring loop
+      console.log(`🎵 Web Audio API setup complete (state: ${audioContext.state}), starting simple audio monitoring...`);
+      
+      // Ultra-simple audio level monitoring
       const monitorAudioLevel = () => {
-        if (!analyser) return;
+        const timeData = new Uint8Array(analyser.fftSize);
+        analyser.getByteTimeDomainData(timeData);
         
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(dataArray);
-        
-        // Calculate RMS level
+        // Calculate RMS from raw audio samples
         let sum = 0;
-        for (let i = 0; i < dataArray.length; i++) {
-          sum += dataArray[i] * dataArray[i];
+        for (let i = 0; i < timeData.length; i++) {
+          const sample = (timeData[i] - 128) / 128; // Convert to -1 to +1 range
+          sum += sample * sample;
         }
-        const rms = Math.sqrt(sum / dataArray.length);
-        const level = (rms / 255) * 100; // Convert to 0-100 scale
+        const rms = Math.sqrt(sum / timeData.length);
+        const level = Math.min(100, rms * 100 * 3); // 3x multiplier for visibility
         
         setAudioLevel(level);
+        
+        // Simple debug logging
+        if (!window.lastAudioLevelLog || Date.now() - window.lastAudioLevelLog > 1000) {
+          console.log(`🎵 Audio Level: ${level.toFixed(1)}% (RMS: ${rms.toFixed(3)})`);
+          window.lastAudioLevelLog = Date.now();
+        }
         
         // Continue monitoring
         const frameId = requestAnimationFrame(monitorAudioLevel);
@@ -420,9 +468,9 @@ export default function RecordPage() {
       };
       
       monitorAudioLevel();
-      console.log('🎵 Audio level monitoring started');
+      console.log('✅ Audio level monitoring started with simple RMS detection');
     } catch (error) {
-      console.warn('Failed to start audio level monitoring:', error);
+      console.error('❌ Failed to start audio level monitoring:', error);
       // Recording continues without level monitoring
     }
   }
@@ -437,6 +485,13 @@ export default function RecordPage() {
       audioAnalyser.disconnect();
       setAudioAnalyser(null);
     }
+    
+    // TEST: Not using cloned stream
+    // if (analyserStreamRef.current) {
+    //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
+    //   analyserStreamRef.current = null;
+    //   console.log('🔇 Stopped analyser stream tracks');
+    // }
     
     setAudioLevel(0);
     console.log('🔇 Audio level monitoring stopped');
@@ -511,6 +566,15 @@ export default function RecordPage() {
         }
       }
 
+      // TEST: Use original stream instead of cloning to see if that's the issue
+      // const analyserStream = stream.clone();
+      // analyserStreamRef.current = analyserStream; // Store reference for cleanup
+      console.log('🎙️ TEST: Using original stream for audio analyser');
+
+      // Start audio level monitoring BEFORE creating MediaRecorder
+      // This ensures the analyser gets proper access to audio data
+      await startAudioLevelMonitoring(stream);
+
       const recorder = new MediaRecorder(stream, {
         mimeType,
         audioBitsPerSecond: isMobile ? 64000 : 128000, // Lower bitrate for mobile
@@ -524,9 +588,6 @@ export default function RecordPage() {
       // Start location tracking (non-blocking - recording continues regardless)
       await startLocationTracking();
 
-      // Start audio level monitoring (non-blocking - recording continues regardless)
-      startAudioLevelMonitoring(stream);
-
       const chunks: Blob[] = [];
 
       recorder.ondataavailable = event => {
@@ -538,6 +599,13 @@ export default function RecordPage() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
+        
+        // TEST: Not using cloned stream
+        // if (analyserStreamRef.current) {
+        //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
+        //   analyserStreamRef.current = null;
+        //   console.log('🔇 Stopped analyser stream tracks');
+        // }
 
         console.log('Recording stopped, chunks collected:', chunks.length);
         console.log(
@@ -719,27 +787,42 @@ export default function RecordPage() {
       console.log('Upload filename:', filename);
 
       const formData = new FormData();
+      console.log('📤 Creating FormData with blob:', {
+        size: audioBlob.size,
+        type: audioBlob.type,
+        filename
+      });
+      
       formData.append('audio', audioBlob, filename);
       formData.append('speakerCount', speakerCount.toString());
       if (isDraft) {
         formData.append('isDraft', 'true');
       }
+      
+      // Debug FormData contents
+      console.log('📤 FormData entries:');
+      for (const [key, value] of formData.entries()) {
+        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+      }
 
-      // Include location data if available
-      if (locationData) {
-        formData.append('latitude', locationData.latitude.toString());
-        formData.append('longitude', locationData.longitude.toString());
-        formData.append('locationAccuracy', locationData.accuracy.toString());
-        formData.append('locationTimestamp', locationData.timestamp.toString());
-        formData.append('locationProvider', locationData.provider);
-        console.log('📍 Including location data in upload:', locationData);
+      // Include location data if available (check both store and ref)
+      const locationToUpload = locationData || lastLocationRef.current;
+      if (locationToUpload) {
+        formData.append('latitude', locationToUpload.latitude.toString());
+        formData.append('longitude', locationToUpload.longitude.toString());
+        formData.append('locationAccuracy', locationToUpload.accuracy.toString());
+        formData.append('locationTimestamp', locationToUpload.timestamp.toString());
+        formData.append('locationProvider', locationToUpload.provider);
+        console.log('📍 Including location data in upload:', locationToUpload);
       } else {
         console.log('📍 No location data available for upload');
       }
 
+      console.log('📤 Sending upload request...');
       const response = await fetch('/api/upload', {
         method: 'POST',
         body: formData,
+        // Don't set Content-Type - let browser set it automatically for FormData
       });
 
       if (!response.ok) {
@@ -761,25 +844,29 @@ export default function RecordPage() {
         setWorkflowPhase('idle'); // Return to idle for drafts
       } else {
         toast.success('Recording uploaded successfully!');
-        setFileId(result.fileId || result.id);
         
-        // Start transcription workflow
-        if (result.fileId || result.id) {
+        // Extract fileId from the results array
+        const successfulFile = result.results?.find((r: any) => r.success && r.fileId);
+        const fileId = successfulFile?.fileId;
+        
+        if (fileId) {
+          setFileId(fileId);
           setWorkflowPhase('transcribing');
           setUploadProgress(100);
+          console.log(`✅ File uploaded successfully with ID: ${fileId}`);
           
           // Auto-trigger transcription worker
           try {
             const workerResponse = await fetch('/api/worker/transcribe', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ fileId: result.fileId || result.id }),
+              body: JSON.stringify({ fileId }),
             });
             
             if (workerResponse.ok) {
-              console.log('Transcription worker triggered');
+              console.log('🚀 Transcription worker triggered successfully');
               // Start polling for transcription status
-              startTranscriptionPolling(result.fileId || result.id);
+              startTranscriptionPolling(fileId);
             } else {
               throw new Error('Failed to start transcription');
             }
@@ -789,6 +876,7 @@ export default function RecordPage() {
             setWorkflowPhase('error');
           }
         } else {
+          console.error('❌ Upload response missing fileId:', result);
           setError('Upload succeeded but no file ID returned');
           setWorkflowPhase('error');
         }
@@ -898,13 +986,18 @@ export default function RecordPage() {
                     )}
                     
                     {/* Audio Level Meter */}
-                    {isRecording && !isPaused && (
+                    {isRecording && (
                       <div className="mt-4">
                         <AudioLevelMeter
-                          audioLevel={audioLevel}
-                          isActive={isRecording && !isPaused}
+                          audioLevel={isPaused ? 0 : audioLevel}
+                          isActive={isRecording}
                           className="max-w-sm mx-auto"
                         />
+                        {isPaused && (
+                          <div className="text-center text-xs text-muted-foreground mt-1">
+                            Audio monitoring paused
+                          </div>
+                        )}
                       </div>
                     )}
                     {isRecording && (

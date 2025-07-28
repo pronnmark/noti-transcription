@@ -39,7 +39,12 @@ export function TranscriptViewer({
   }
 
   // Parse transcript - handle both JSON speaker format and plain text
-  const parseTranscript = (text: string): TranscriptSegment[] => {
+  const parseTranscript = (text: string | null | undefined): TranscriptSegment[] => {
+    // Ensure we have a valid string
+    if (!text || typeof text !== 'string') {
+      return [{ text: 'No transcript available' }];
+    }
+
     try {
       // Try to parse as JSON first (speaker diarization format)
       const parsed = JSON.parse(text);
@@ -54,6 +59,9 @@ export function TranscriptViewer({
     } catch {
       // Fall back to plain text - split by paragraphs or sentences
       const sentences = text.split(/\n\n|\. /).filter(s => s.trim());
+      if (sentences.length === 0) {
+        return [{ text: text.trim() || 'Empty transcript' }];
+      }
       return sentences.map((sentence, index) => ({
         text: sentence.trim() + (sentence.endsWith('.') ? '' : '.'),
         speaker: speakerCount > 1 ? `Speaker ${(index % speakerCount) + 1}` : undefined,

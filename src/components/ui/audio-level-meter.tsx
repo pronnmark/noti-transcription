@@ -9,20 +9,25 @@ interface AudioLevelMeterProps {
 }
 
 export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelMeterProps) {
+  
   // Normalize audio level to 0-100 range
   const normalizedLevel = Math.max(0, Math.min(100, audioLevel));
   
   // Determine color based on audio level
   const getBarColor = (level: number) => {
-    if (level < 5) return 'bg-red-500'; // No signal
+    if (level === 0) return 'bg-gray-400'; // No signal (gray instead of red)
+    if (level < 5) return 'bg-red-500'; // Very low signal
     if (level < 25) return 'bg-yellow-500'; // Low signal
-    return 'bg-green-500'; // Good signal
+    if (level < 75) return 'bg-green-500'; // Good signal
+    return 'bg-green-600'; // High signal
   };
 
   const getBarGradient = (level: number) => {
+    if (level === 0) return 'from-gray-400 to-gray-300';
     if (level < 5) return 'from-red-500 to-red-400';
     if (level < 25) return 'from-yellow-500 to-yellow-400';
-    return 'from-green-500 to-green-400';
+    if (level < 75) return 'from-green-500 to-green-400';
+    return 'from-green-600 to-green-500';
   };
 
   if (!isActive) {
@@ -36,13 +41,13 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
       </div>
       
       {/* Audio level bar */}
-      <div className="w-full max-w-xs h-6 bg-gray-200 rounded-full overflow-hidden border">
+      <div className="w-full max-w-xs h-8 bg-gray-200 rounded-full overflow-hidden border-2 border-gray-300">
         <div
           className={cn(
-            'h-full transition-all duration-75 ease-out rounded-full bg-gradient-to-r',
+            'h-full transition-all duration-100 ease-out rounded-full bg-gradient-to-r',
             getBarGradient(normalizedLevel)
           )}
-          style={{ width: `${normalizedLevel}%` }}
+          style={{ width: `${Math.max(0, normalizedLevel)}%` }}
         />
       </div>
       
@@ -51,11 +56,12 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
         <div
           className={cn(
             'w-2 h-2 rounded-full transition-colors duration-200',
-            getBarColor(normalizedLevel)
+            normalizedLevel === 0 ? 'bg-gray-400' : getBarColor(normalizedLevel)
           )}
         />
         <span className="text-muted-foreground">
-          {normalizedLevel < 5 ? 'No Signal' : 
+          {normalizedLevel === 0 ? 'Silent' :
+           normalizedLevel < 5 ? 'Very Low' : 
            normalizedLevel < 25 ? 'Low' : 
            normalizedLevel < 75 ? 'Good' : 'High'}
         </span>
