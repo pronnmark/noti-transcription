@@ -413,13 +413,9 @@ export default function RecordPage() {
       
       // Create Web Audio API context
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      console.log(`🎵 AudioContext created, initial state: ${audioContext.state}`);
-      
       // Resume audio context if suspended (required by Chrome)
       if (audioContext.state === 'suspended') {
-        console.log('🎵 Resuming suspended AudioContext...');
         await audioContext.resume();
-        console.log(`🎵 AudioContext resumed, new state: ${audioContext.state}`);
       }
       
       const source = audioContext.createMediaStreamSource(stream);
@@ -441,14 +437,8 @@ export default function RecordPage() {
       analyser.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      console.log('🎵 Audio graph connected: Source → Analyser → Gain → Destination');
-      
       setAudioAnalyser(analyser);
       
-      console.log(`🎵 Web Audio API setup complete (state: ${audioContext.state}), starting simple audio monitoring...`);
-      
-      let frameCount = 0;
-      let lastDebugTime = Date.now();
       let isMonitoringActive = true;
       
       // Enhanced audio level monitoring with improved sensitivity
@@ -456,19 +446,9 @@ export default function RecordPage() {
         try {
           // Check if we should continue monitoring
           if (!isMonitoringActive) {
-            console.log('🎵 Monitoring stopped, not scheduling next frame');
             return;
           }
           
-          frameCount++;
-          
-          // Log entry to first few frames for debugging
-          if (frameCount <= 3) {
-            console.log(`🎵 Monitor frame ${frameCount} running...`);
-          }
-          
-          // Debug every 60 frames (~1 second)
-          const shouldDebug = frameCount % 60 === 0;
           
           // Try float data for better precision if available
           let rms = 0;
@@ -496,7 +476,6 @@ export default function RecordPage() {
           
         } catch (e) {
           // Fallback to byte data if float is not supported
-          console.log('Float data not supported, using byte data');
           const timeData = new Uint8Array(analyser.fftSize);
           analyser.getByteTimeDomainData(timeData);
           
@@ -538,19 +517,10 @@ export default function RecordPage() {
         
         setAudioLevel(level);
         
-        // Enhanced debug logging
-        if (!window.lastAudioLevelLog || Date.now() - window.lastAudioLevelLog > 1000) {
-          console.log(`🎵 Audio Level: ${level.toFixed(1)}% (RMS: ${rms.toFixed(4)}, Peak: ${peak.toFixed(4)})`);
-          window.lastAudioLevelLog = Date.now();
-        }
-        
         // Check and resume AudioContext if suspended (Chrome auto-suspends after ~30s)
         if (audioContext.state === 'suspended') {
-          console.warn('⚠️ AudioContext suspended! Attempting to resume...');
-          audioContext.resume().then(() => {
-            console.log('✅ AudioContext resumed successfully');
-          }).catch(err => {
-            console.error('❌ Failed to resume AudioContext:', err);
+          audioContext.resume().catch(err => {
+            console.error('Failed to resume AudioContext:', err);
           });
         }
         
@@ -570,7 +540,6 @@ export default function RecordPage() {
       
       // Store cleanup function to stop monitoring
       (window as any).stopAudioMonitoring = () => {
-        console.log('🎵 Stopping audio monitoring...');
         isMonitoringActive = false;
         if (animationFrameRef.current) {
           cancelAnimationFrame(animationFrameRef.current);
@@ -579,19 +548,14 @@ export default function RecordPage() {
       };
       
       // Start the monitoring loop
-      console.log('🎵 Starting monitorAudioLevel loop...');
       monitorAudioLevel();
-      console.log('✅ Audio level monitoring started with enhanced RMS detection and logarithmic scaling');
     } catch (error) {
-      console.error('❌ Failed to start audio level monitoring:', error);
-      console.error('Stack trace:', error.stack);
+      console.error('Failed to start audio level monitoring:', error);
       // Recording continues without level monitoring
     }
   }
 
   function stopAudioLevelMonitoring() {
-    console.log('🔇 stopAudioLevelMonitoring called');
-    
     // Call the cleanup function if it exists
     if ((window as any).stopAudioMonitoring) {
       (window as any).stopAudioMonitoring();
@@ -599,7 +563,6 @@ export default function RecordPage() {
     }
     
     if (animationFrameRef.current) {
-      console.log(`🔇 Cancelling animation frame: ${animationFrameRef.current}`);
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
@@ -622,7 +585,6 @@ export default function RecordPage() {
     // }
     
     setAudioLevel(0);
-    console.log('🔇 Audio level monitoring stopped');
   }
 
   async function startRecording() {
