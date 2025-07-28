@@ -423,7 +423,7 @@ export default function RecordPage() {
       
       // Configure analyser with better settings for voice
       analyser.fftSize = 2048; // Good frequency resolution
-      analyser.smoothingTimeConstant = 0.5; // More smoothing for stable readings
+      analyser.smoothingTimeConstant = 0.2; // Less smoothing for more responsive readings
       analyser.minDecibels = -90; // Less sensitive to very quiet sounds
       analyser.maxDecibels = -30; // Better range for voice
       
@@ -440,25 +440,49 @@ export default function RecordPage() {
       
       console.log(`🎵 Web Audio API setup complete (state: ${audioContext.state}), starting simple audio monitoring...`);
       
-      // Ultra-simple audio level monitoring
+      // Enhanced audio level monitoring with improved sensitivity
       const monitorAudioLevel = () => {
         const timeData = new Uint8Array(analyser.fftSize);
         analyser.getByteTimeDomainData(timeData);
         
-        // Calculate RMS from raw audio samples
+        // Calculate RMS and peak from raw audio samples
         let sum = 0;
+        let peak = 0;
+        const noiseFloor = 0.01; // Minimum threshold to distinguish from silence
+        
         for (let i = 0; i < timeData.length; i++) {
           const sample = (timeData[i] - 128) / 128; // Convert to -1 to +1 range
+          const absSample = Math.abs(sample);
           sum += sample * sample;
+          peak = Math.max(peak, absSample);
         }
+        
         const rms = Math.sqrt(sum / timeData.length);
-        const level = Math.min(100, rms * 100 * 3); // 3x multiplier for visibility
+        
+        // Enhanced level calculation with logarithmic scaling and noise floor
+        let level = 0;
+        if (rms > noiseFloor) {
+          // Use logarithmic scaling for better visual representation
+          const logLevel = Math.log10(rms / noiseFloor + 1) * 50; // Logarithmic scaling
+          const linearLevel = rms * 100 * 15; // 15x multiplier for speech sensitivity
+          
+          // Combine logarithmic and linear scaling for optimal response
+          level = Math.max(logLevel, linearLevel);
+          
+          // Use peak detection as fallback for very quiet audio
+          if (level < 5 && peak > noiseFloor) {
+            level = Math.max(level, peak * 100 * 8); // Peak-based fallback
+          }
+        }
+        
+        // Clamp to 0-100 range with smooth ceiling
+        level = Math.min(100, Math.max(0, level));
         
         setAudioLevel(level);
         
-        // Simple debug logging
+        // Enhanced debug logging
         if (!window.lastAudioLevelLog || Date.now() - window.lastAudioLevelLog > 1000) {
-          console.log(`🎵 Audio Level: ${level.toFixed(1)}% (RMS: ${rms.toFixed(3)})`);
+          console.log(`🎵 Audio Level: ${level.toFixed(1)}% (RMS: ${rms.toFixed(4)}, Peak: ${peak.toFixed(4)})`);
           window.lastAudioLevelLog = Date.now();
         }
         
@@ -468,7 +492,7 @@ export default function RecordPage() {
       };
       
       monitorAudioLevel();
-      console.log('✅ Audio level monitoring started with simple RMS detection');
+      console.log('✅ Audio level monitoring started with enhanced RMS detection and logarithmic scaling');
     } catch (error) {
       console.error('❌ Failed to start audio level monitoring:', error);
       // Recording continues without level monitoring
