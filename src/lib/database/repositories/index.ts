@@ -6,6 +6,7 @@ export { AudioRepository } from './AudioRepository';
 export { TranscriptionRepository } from './TranscriptRepository';
 export { ExtractionRepository } from './ExtractionRepository';
 export { SummarizationRepository } from './SummarizationRepository';
+export { NotesRepository } from './NotesRepository';
 export {
   ExtractionTemplateRepository,
   SummarizationTemplateRepository,
@@ -16,6 +17,7 @@ import { AudioRepository } from './AudioRepository';
 import { TranscriptionRepository } from './TranscriptRepository';
 import { ExtractionRepository } from './ExtractionRepository';
 import { SummarizationRepository } from './SummarizationRepository';
+import { NotesRepository } from './NotesRepository';
 import { ExtractionTemplateRepository, SummarizationTemplateRepository } from './TemplateRepository';
 
 // Repository factory for dependency injection
@@ -24,6 +26,7 @@ export class RepositoryFactory {
   private static _transcriptionRepository: TranscriptionRepository;
   private static _extractionRepository: ExtractionRepository;
   private static _summarizationRepository: SummarizationRepository;
+  private static _notesRepository: NotesRepository;
   private static _extractionTemplateRepository: ExtractionTemplateRepository;
   private static _summarizationTemplateRepository: SummarizationTemplateRepository;
 
@@ -55,6 +58,13 @@ export class RepositoryFactory {
     return this._summarizationRepository;
   }
 
+  static get notesRepository(): NotesRepository {
+    if (!this._notesRepository) {
+      this._notesRepository = new NotesRepository();
+    }
+    return this._notesRepository;
+  }
+
   static get extractionTemplateRepository(): ExtractionTemplateRepository {
     if (!this._extractionTemplateRepository) {
       this._extractionTemplateRepository = new ExtractionTemplateRepository();
@@ -75,6 +85,7 @@ export class RepositoryFactory {
     this._transcriptionRepository = undefined as any;
     this._extractionRepository = undefined as any;
     this._summarizationRepository = undefined as any;
+    this._notesRepository = undefined as any;
     this._extractionTemplateRepository = undefined as any;
     this._summarizationTemplateRepository = undefined as any;
   }

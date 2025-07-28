@@ -5,6 +5,7 @@ import { ExtractionService } from './core/ExtractionService';
 import { SummarizationService } from './core/SummarizationService';
 import { CustomAIService } from './customAI';
 import { FileUploadService } from './core/FileUploadService';
+import { SupabaseStorageService } from './core/SupabaseStorageService';
 import { setServiceLocator, clearServiceLocator } from './ServiceLocator';
 
 import { LocalStorageService } from './storage/StorageService';
@@ -53,6 +54,7 @@ export class ServiceContainer {
         audioService: this.audioService,
         transcriptionService: this.transcriptionService,
         fileUploadService: this.fileUploadService,
+        supabaseStorageService: this.supabaseStorageService,
       });
 
       this.initialized = true;
@@ -118,9 +120,12 @@ export class ServiceContainer {
   private registerStorageServices(): void {
     console.log('📋 Registering storage services...');
 
-    // Local file storage service
+    // Local file storage service (legacy - will be phased out)
     const dataDir = process.env.DATA_DIR || './data';
     serviceRegistry.register('storageService', new LocalStorageService(dataDir));
+
+    // Supabase storage service (new primary storage)
+    serviceRegistry.register('supabaseStorageService', new SupabaseStorageService());
 
     console.log('✅ Storage services registered');
   }
@@ -175,6 +180,10 @@ export class ServiceContainer {
 
   get fileUploadService(): FileUploadService {
     return serviceRegistry.resolve<FileUploadService>('fileUploadService');
+  }
+
+  get supabaseStorageService(): SupabaseStorageService {
+    return serviceRegistry.resolve<SupabaseStorageService>('supabaseStorageService');
   }
 
   // Health check for all services

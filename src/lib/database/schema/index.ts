@@ -7,6 +7,7 @@ export * from './system';
 export * from './users';
 export * from './telegram';
 export * from './telegram-notifications';
+export * from './notes';
 
 // Relations exports
 export * from './relations';

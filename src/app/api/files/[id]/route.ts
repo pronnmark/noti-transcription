@@ -1,184 +1,305 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import { join } from 'path';
-import { getDb } from '../../../../lib/database/client';
-import { audioFiles } from '../../../../lib/database/schema/audio';
-import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
-import { aiExtracts } from '../../../../lib/database/schema/extractions';
-import { eq, sql } from 'drizzle-orm';
+import { withAuthMiddleware, createApiResponse, createErrorResponse } from '@/lib/middleware';
+import { RepositoryFactory } from '@/lib/database/repositories';
+import { apiDebug } from '@/lib/utils';
 
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 
+/**
+ * Refactored GET handler using middleware and repository pattern
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-    const db = getDb();
+  const authenticatedHandler = withAuthMiddleware(
+    async (request: NextRequest, context) => {
+      const { id } = await params;
+      const fileId = parseInt(id);
+      
+      if (isNaN(fileId)) {
+        return NextResponse.json(
+          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
+          { status: 400 }
+        );
+      }
 
-    // Query file with transcription status
-    const fileQuery = await db
-      .select({
-        id: audioFiles.id,
-        filename: audioFiles.fileName,
-        originalName: audioFiles.originalFileName,
-        size: audioFiles.fileSize,
-        mimeType: audioFiles.originalFileType,
-        createdAt: audioFiles.uploadedAt,
-        updatedAt: audioFiles.updatedAt,
-        duration: audioFiles.duration,
-        transcriptionStatus: sql<string>`COALESCE(${transcriptionJobs.status}, 'pending')`,
-      })
-      .from(audioFiles)
-      .leftJoin(transcriptionJobs, eq(audioFiles.id, transcriptionJobs.fileId))
-      .where(eq(audioFiles.id, parseInt(id)))
-      .limit(1);
+      apiDebug('Fetching file details', { fileId, requestId: context.requestId });
 
-    if (fileQuery.length === 0) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 },
-      );
+      try {
+        // Get file using repository
+        const audioRepo = RepositoryFactory.audioRepository;
+        const file = await audioRepo.findById(fileId);
+        
+        if (!file) {
+          return NextResponse.json(
+            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
+            { status: 404 }
+          );
+        }
+
+        // Get transcription status using repository
+        const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+        const transcriptionJob = await transcriptionRepo.findLatestByFileId(fileId);
+        
+        const transcriptionStatus = transcriptionJob ? transcriptionJob.status : 'pending';
+
+        return NextResponse.json(
+          createApiResponse({
+            id: file.id,
+            originalFileName: file.originalFileName,
+            fileName: file.fileName,
+            fileSize: file.fileSize,
+            mimeType: file.originalFileType,
+            duration: file.duration || 0,
+            uploadedAt: file.uploadedAt,
+            updatedAt: file.updatedAt,
+            transcriptionStatus,
+            transcribedAt: transcriptionJob?.completedAt || null,
+            language: transcriptionJob?.language || 'auto',
+            modelSize: transcriptionJob?.modelSize || 'large-v3',
+          }, {
+            meta: {
+              requestId: context.requestId,
+            }
+          })
+        );
+      } catch (error) {
+        apiDebug('Error fetching file details', error);
+        throw error; // Let middleware handle the error
+      }
+    },
+    {
+      logging: {
+        enabled: true,
+        logRequests: true,
+        logResponses: false,
+      },
+      errorHandling: {
+        enabled: true,
+        sanitizeErrors: true,
+      },
     }
+  );
 
-    const file = fileQuery[0];
-    return NextResponse.json({
-      id: file.id,
-      originalFileName: file.originalName,
-      fileName: file.filename,
-      duration: file.duration || 0,
-      uploadedAt: file.createdAt,
-      transcribedAt: null,
-      language: 'sv',
-      modelSize: 'large-v3',
-    });
-
-  } catch (error) {
-    console.error('Get file error:', error);
-    return NextResponse.json(
-      { error: 'Failed to get file' },
-      { status: 500 },
-    );
-  }
+  return authenticatedHandler(request);
 }
 
+/**
+ * Refactored PATCH handler using middleware and repository pattern
+ */
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-    const { originalName } = body;
+  const authenticatedHandler = withAuthMiddleware(
+    async (request: NextRequest, context) => {
+      const { id } = await params;
+      const fileId = parseInt(id);
+      
+      if (isNaN(fileId)) {
+        return NextResponse.json(
+          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
+          { status: 400 }
+        );
+      }
 
-    if (!originalName || typeof originalName !== 'string') {
-      return NextResponse.json(
-        { error: 'Original name is required' },
-        { status: 400 },
-      );
+      const body = await request.json();
+      const { originalName } = body;
+
+      if (!originalName || typeof originalName !== 'string') {
+        return NextResponse.json(
+          createErrorResponse('Original name is required', 'MISSING_ORIGINAL_NAME', 400),
+          { status: 400 }
+        );
+      }
+
+      apiDebug('Renaming file', { fileId, newName: originalName, requestId: context.requestId });
+
+      try {
+        // Update file using repository
+        const audioRepo = RepositoryFactory.audioRepository;
+        const updatedFile = await audioRepo.update(fileId, {
+          originalFileName: originalName,
+          updatedAt: new Date(),
+        });
+
+        if (!updatedFile) {
+          return NextResponse.json(
+            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
+            { status: 404 }
+          );
+        }
+
+        return NextResponse.json(
+          createApiResponse({
+            success: true,
+            message: 'File renamed successfully',
+            file: {
+              id: updatedFile.id,
+              originalFileName: updatedFile.originalFileName,
+              updatedAt: updatedFile.updatedAt,
+            },
+          }, {
+            meta: {
+              requestId: context.requestId,
+            }
+          })
+        );
+      } catch (error: any) {
+        if (error.message.includes('not found')) {
+          return NextResponse.json(
+            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
+            { status: 404 }
+          );
+        }
+        apiDebug('Error renaming file', error);
+        throw error; // Let middleware handle the error
+      }
+    },
+    {
+      logging: {
+        enabled: true,
+        logRequests: true,
+        logResponses: true,
+      },
+      errorHandling: {
+        enabled: true,
+        sanitizeErrors: true,
+      },
     }
+  );
 
-    const db = getDb();
-
-    // Update the file name in database
-    await db
-      .update(audioFiles)
-      .set({
-        originalFileName: originalName,
-        updatedAt: new Date(),
-      })
-      .where(eq(audioFiles.id, parseInt(id)));
-
-    return NextResponse.json({
-      success: true,
-      message: 'File renamed successfully',
-    });
-
-  } catch (error) {
-    console.error('Rename file error:', error);
-    return NextResponse.json(
-      { error: 'Failed to rename file' },
-      { status: 500 },
-    );
-  }
+  return authenticatedHandler(request);
 }
 
+/**
+ * Refactored DELETE handler using middleware and repository pattern
+ * Note: File deletion logic will be updated for Supabase Storage later
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  try {
-    const { id } = await params;
-    const db = getDb();
-
-    // Get file info first
-    const fileQuery = await db
-      .select({
-        id: audioFiles.id,
-        filename: audioFiles.fileName,
-      })
-      .from(audioFiles)
-      .where(eq(audioFiles.id, parseInt(id)))
-      .limit(1);
-
-    if (fileQuery.length === 0) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 },
-      );
-    }
-
-    const file = fileQuery[0];
-
-    // Delete physical files
-    const audioFilesDir = join(DATA_DIR, 'audio_files');
-    const transcriptsDir = join(DATA_DIR, 'transcripts');
-
-    try {
-      // Delete audio file (try both original and converted formats)
-      if (file.filename) {
-        const audioPath = join(audioFilesDir, file.filename);
-        await fs.unlink(audioPath).catch(() => {}); // Ignore if file doesn't exist
-
-        // Also try to delete the original uploaded file (might be different format)
-        const baseName = file.filename.split('.')[0];
-        const extensions = ['.m4a', '.mp3', '.wav', '.flac', '.ogg', '.webm', '.mp4'];
-
-        for (const ext of extensions) {
-          const altPath = join(audioFilesDir, baseName + ext);
-          await fs.unlink(altPath).catch(() => {}); // Ignore if file doesn't exist
-        }
+  const authenticatedHandler = withAuthMiddleware(
+    async (request: NextRequest, context) => {
+      const { id } = await params;
+      const fileId = parseInt(id);
+      
+      if (isNaN(fileId)) {
+        return NextResponse.json(
+          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
+          { status: 400 }
+        );
       }
 
-      // Delete transcript file
-      const transcriptPath = join(transcriptsDir, `${id}.json`);
-      await fs.unlink(transcriptPath).catch(() => {}); // Ignore if file doesn't exist
+      apiDebug('Deleting file', { fileId, requestId: context.requestId });
 
-      // Delete transcript metadata file
-      const metadataPath = join(transcriptsDir, `${id}_metadata.json`);
-      await fs.unlink(metadataPath).catch(() => {}); // Ignore if file doesn't exist
+      try {
+        // Get file info first using repository
+        const audioRepo = RepositoryFactory.audioRepository;
+        const file = await audioRepo.findById(fileId);
+        
+        if (!file) {
+          return NextResponse.json(
+            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
+            { status: 404 }
+          );
+        }
 
-    } catch (fileError) {
-      console.error('Error deleting physical files:', fileError);
-      // Continue with database deletion even if file deletion fails
+        // Delete files from Supabase Storage
+        try {
+          // Get services
+          const { getServiceLocator } = await import('@/lib/services/ServiceLocator');
+          const { supabaseStorageService } = getServiceLocator();
+
+          // Delete audio file from Supabase Storage
+          if (file.fileName) {
+            await supabaseStorageService.deleteFiles({
+              bucket: 'audio-files',
+              paths: [file.fileName], // fileName now contains the storage path
+            });
+            
+            apiDebug('Deleted audio file from Supabase Storage', { 
+              storagePath: file.fileName 
+            });
+          }
+
+          // Delete any associated transcript files from Supabase Storage
+          try {
+            await supabaseStorageService.deleteFiles({
+              bucket: 'transcripts',
+              paths: [
+                `${fileId}.json`,
+                `${fileId}_metadata.json`,
+              ],
+            });
+            
+            apiDebug('Deleted transcript files from Supabase Storage', { fileId });
+          } catch (transcriptError) {
+            // Transcript files might not exist, which is fine
+            apiDebug('No transcript files to delete (expected)', transcriptError);
+          }
+
+        } catch (storageError) {
+          apiDebug('Error deleting files from Supabase Storage (continuing with DB deletion)', storageError);
+          // Continue with database deletion even if file deletion fails
+        }
+
+        // Delete related records using repositories (order matters due to foreign key constraints)
+        try {
+          // Delete extractions
+          const extractionRepo = RepositoryFactory.extractionRepository;
+          const extractions = await extractionRepo.findByFileId(fileId);
+          for (const extraction of extractions) {
+            await extractionRepo.delete(extraction.id);
+          }
+
+          // Delete transcription jobs
+          const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+          const transcriptionJobs = await transcriptionRepo.findByFileId(fileId);
+          for (const job of transcriptionJobs) {
+            await transcriptionRepo.delete(job.id);
+          }
+
+          // Delete the main audio file record
+          await audioRepo.delete(fileId);
+
+        } catch (dbError) {
+          apiDebug('Error deleting database records', dbError);
+          throw new Error('Failed to delete database records');
+        }
+
+        return NextResponse.json(
+          createApiResponse({
+            success: true,
+            message: 'File and all related data deleted successfully',
+            deletedFileId: fileId,
+          }, {
+            meta: {
+              requestId: context.requestId,
+            }
+          })
+        );
+      } catch (error) {
+        apiDebug('Error deleting file', error);
+        throw error; // Let middleware handle the error
+      }
+    },
+    {
+      logging: {
+        enabled: true,
+        logRequests: true,
+        logResponses: true,
+      },
+      errorHandling: {
+        enabled: true,
+        sanitizeErrors: true,
+      },
     }
+  );
 
-    // Delete from database (order matters due to foreign key constraints)
-    await db.delete(aiExtracts).where(eq(aiExtracts.fileId, parseInt(id)));
-    await db.delete(transcriptionJobs).where(eq(transcriptionJobs.fileId, parseInt(id)));
-    await db.delete(audioFiles).where(eq(audioFiles.id, parseInt(id)));
-
-    return NextResponse.json({
-      success: true,
-      message: 'File and transcript deleted successfully',
-    });
-
-  } catch (error) {
-    console.error('Delete file error:', error);
-    return NextResponse.json(
-      { error: 'Failed to delete file' },
-      { status: 500 },
-    );
-  }
+  return authenticatedHandler(request);
 }

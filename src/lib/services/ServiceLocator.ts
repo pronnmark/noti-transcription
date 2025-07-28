@@ -4,11 +4,13 @@
 import type { AudioService } from './core/AudioService';
 import type { TranscriptionService } from './core/TranscriptionService';
 import type { FileUploadService } from './core/FileUploadService';
+import type { SupabaseStorageService } from './core/SupabaseStorageService';
 
 export interface ServiceLocator {
   audioService: AudioService;
   transcriptionService: TranscriptionService;
   fileUploadService: FileUploadService;
+  supabaseStorageService: SupabaseStorageService;
 }
 
 let serviceLocator: ServiceLocator | null = null;
