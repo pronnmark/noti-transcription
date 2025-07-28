@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TranscriptionRepository } from '@/lib/database/repositories/TranscriptRepository';
 import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
-import { db, databaseInitializer } from '@/lib/database';
+import { db } from '@/lib/database';
 import { audioFiles, transcriptionJobs, NewTranscriptionJob, TranscriptSegment } from '@/lib/database/schema';
 
 describe('TranscriptionRepository', () => {
@@ -10,13 +10,7 @@ describe('TranscriptionRepository', () => {
   let testAudioFileId: number;
 
   beforeEach(async () => {
-    await databaseInitializer.initialize({
-      runMigrations: true,
-      validateSchema: false,
-      createBackup: false,
-      force: true,
-    });
-
+    // Note: Database should already be initialized in test environment
     transcriptionRepository = new TranscriptionRepository();
     audioRepository = new AudioRepository();
 

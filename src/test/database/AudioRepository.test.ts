@@ -1,19 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
-import { db, databaseInitializer } from '@/lib/database';
+import { db } from '@/lib/database';
 import { audioFiles, NewAudioFile } from '@/lib/database/schema';
 
 describe('AudioRepository', () => {
   let repository: AudioRepository;
 
   beforeEach(async () => {
-    await databaseInitializer.initialize({
-      runMigrations: true,
-      validateSchema: false,
-      createBackup: false,
-      force: true,
-    });
-
+    // Note: Database should already be initialized in test environment
     repository = new AudioRepository();
   });
 

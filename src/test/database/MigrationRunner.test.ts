@@ -15,7 +15,7 @@ describe('MigrationRunner', () => {
     process.env.DATABASE_PATH = testDbPath;
 
     migrationRunner = new MigrationRunner();
-    databaseInitializer = new DatabaseInitializer();
+    _databaseInitializer = new DatabaseInitializer();
 
     // Clean up any existing test database
     if (existsSync(testDbPath)) {

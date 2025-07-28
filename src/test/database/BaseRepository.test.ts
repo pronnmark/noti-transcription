@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { BaseRepository } from '@/lib/database/repositories/BaseRepository';
-import { db, databaseInitializer } from '@/lib/database';
+import { db } from '@/lib/database';
 import { audioFiles, NewAudioFile, AudioFile } from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
 
@@ -15,14 +15,7 @@ describe('BaseRepository', () => {
   let repository: TestAudioRepository;
 
   beforeEach(async () => {
-    // Initialize database for testing
-    await databaseInitializer.initialize({
-      runMigrations: true,
-      validateSchema: false,
-      createBackup: false,
-      force: true,
-    });
-
+    // Note: Database should already be initialized in test environment
     repository = new TestAudioRepository();
   });
 

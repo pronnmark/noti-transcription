@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 describe('Database Simple Test', () => {
   beforeEach(() => {
     // Set test environment
-    process.env.NODE_ENV = 'test';
+    (process.env as any).NODE_ENV = 'test';
     process.env.DATABASE_PATH = 'test-simple.db';
   });
 
