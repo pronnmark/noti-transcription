@@ -160,8 +160,10 @@ Please provide your analysis based on the instruction above:`;
           .values({
             sessionId,
             chunkNumber,
-            transcript: '',
-            thought: `Error processing chunk: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            chunkStartTime: 0,
+            chunkEndTime: 0,
+            transcriptText: '',
+            aiThought: `Error processing chunk: ${error instanceof Error ? error.message : 'Unknown error'}`,
             processingTimeMs: processingTime,
             status: 'failed',
           });

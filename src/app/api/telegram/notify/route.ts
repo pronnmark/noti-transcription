@@ -69,19 +69,26 @@ async function handleTranscriptionComplete(notification: NotificationRequest, co
   }
 
   // Get job details
-  const job = await db.query.transcriptionJobs.findFirst({
-    where: (jobs, { eq }) => eq(jobs.id, notification.jobId!),
-    with: {
-      file: true,
-    },
-  });
+  const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, notification.jobId!)).limit(1);
+  const job = jobResults[0];
 
   if (!job) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
 
+  // Get file details
+  const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+  const file = fileResults[0];
+
+  if (!file) {
+    return NextResponse.json({ success: false, error: 'File not found' });
+  }
+
+  // Attach file to job object to maintain compatibility
+  (job as any).file = file;
+
   // Determine target chat
-  const chatId = notification.chatId || job.metadata?.telegramChatId || config.defaultChatId;
+  const chatId = notification.chatId || config.defaultChatId;
   
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
@@ -94,13 +101,13 @@ async function handleTranscriptionComplete(notification: NotificationRequest, co
 
   const message = `✅ **Transcription Complete!**
 
-📁 File: ${job.file.originalFileName}
+📁 File: ${file.originalFileName}
 ⏱️ Duration: ${duration ? `${duration}s` : 'N/A'}
 🆔 Job ID: ${job.id}
 
-${job.result?.segments?.length ? `📝 ${job.result.segments.length} segments transcribed` : ''}
+${job.transcript?.length ? `📝 ${job.transcript.length} segments transcribed` : ''}
 
-Use /summary ${job.file.id} to see the transcription.`;
+Use /summary ${file.id} to see the transcription.`;
 
   // Send notification
   const result = await sendTelegramMessage(chatId, message);
@@ -120,19 +127,26 @@ async function handleTranscriptionFailed(notification: NotificationRequest, conf
   }
 
   // Get job details
-  const job = await db.query.transcriptionJobs.findFirst({
-    where: (jobs, { eq }) => eq(jobs.id, notification.jobId!),
-    with: {
-      file: true,
-    },
-  });
+  const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, notification.jobId!)).limit(1);
+  const job = jobResults[0];
 
   if (!job) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
 
+  // Get file details
+  const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+  const file = fileResults[0];
+
+  if (!file) {
+    return NextResponse.json({ success: false, error: 'File not found' });
+  }
+
+  // Attach file to job object to maintain compatibility
+  (job as any).file = file;
+
   // Determine target chat
-  const chatId = notification.chatId || job.metadata?.telegramChatId || config.defaultChatId;
+  const chatId = notification.chatId || config.defaultChatId;
   
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
@@ -141,9 +155,9 @@ async function handleTranscriptionFailed(notification: NotificationRequest, conf
   // Format error message
   const message = `❌ **Transcription Failed**
 
-📁 File: ${job.file.originalFileName}
+📁 File: ${file.originalFileName}
 🆔 Job ID: ${job.id}
-💔 Error: ${job.error || 'Unknown error'}
+💔 Error: ${job.lastError || 'Unknown error'}
 
 Please try uploading the file again or contact support if the issue persists.`;
 
