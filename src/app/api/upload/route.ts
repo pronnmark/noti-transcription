@@ -124,7 +124,7 @@ export const POST = withMiddleware(
             };
           } catch (error) {
             if (error instanceof ValidationError) {
-              const metadata = error.getMetadata();
+              const metadata = error.metadata as any;
               if (metadata?.duplicateType) {
                 return {
                   success: false,

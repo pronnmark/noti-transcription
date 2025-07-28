@@ -88,7 +88,8 @@ export function withAuthMiddleware(
     const isValid = await validateSession(token);
 
     if (!isValid) {
-      return import('next/server').NextResponse.json(
+      const { NextResponse } = await import('next/server');
+      return NextResponse.json(
         createErrorResponse(
           'Authentication required',
           'UNAUTHORIZED',

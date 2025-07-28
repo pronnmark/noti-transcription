@@ -530,8 +530,8 @@ export default function RecordPage() {
         
         
       } catch (error) {
-        console.error(`❌ Error in monitorAudioLevel frame ${frameCount}:`, error);
-        console.error('Stack trace:', error.stack);
+        console.error(`❌ Error in monitorAudioLevel:`, error);
+        console.error('Stack trace:', (error as any).stack);
         // Try to recover by scheduling next frame anyway
         const frameId = requestAnimationFrame(monitorAudioLevel);
         animationFrameRef.current = frameId; // Store in ref instead of state

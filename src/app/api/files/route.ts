@@ -82,11 +82,11 @@ export const GET = withMiddleware(
           enrichedFiles,
           {
             page,
-            pageSize: limit,
-            totalItems: totalCount,
+            limit,
+            total: totalCount,
             totalPages: Math.ceil(totalCount / limit),
-            hasNextPage: page < Math.ceil(totalCount / limit),
-            hasPreviousPage: page > 1,
+            hasNext: page < Math.ceil(totalCount / limit),
+            hasPrev: page > 1,
           },
           {
             requestId: context.requestId,

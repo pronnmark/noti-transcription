@@ -49,7 +49,7 @@ export class AuthMiddleware implements MiddlewareHandler {
 
       return next();
     } catch (error) {
-      context.logger.error('Auth middleware error', error);
+      context.logger.error('Auth middleware error', error as Error);
       return NextResponse.json(
         createErrorResponse(
           'Authentication error',
