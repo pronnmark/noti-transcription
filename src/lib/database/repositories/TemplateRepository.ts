@@ -8,7 +8,7 @@ import {
   NewSummarizationTemplate,
 } from '../schema';
 import { getDb } from '../client';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and, inArray } from 'drizzle-orm';
 
 export class ExtractionTemplateRepository extends BaseRepository<ExtractionTemplate, NewExtractionTemplate> {
   constructor() {
@@ -134,6 +134,21 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
       return result as SummarizationTemplate[];
     } catch (error) {
       throw new Error(`Failed to find recent summarization templates: ${error}`);
+    }
+  }
+
+  async findActiveByIds(ids: string[]): Promise<SummarizationTemplate[]> {
+    try {
+      const result = await getDb()
+        .select()
+        .from(this.table)
+        .where(and(
+          eq(this.table.isActive, true),
+          inArray(this.table.id, ids)
+        ));
+      return result as SummarizationTemplate[];
+    } catch (error) {
+      throw new Error(`Failed to find active summarization templates by IDs: ${error}`);
     }
   }
 }

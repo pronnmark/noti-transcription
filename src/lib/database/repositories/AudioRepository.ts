@@ -149,4 +149,25 @@ export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
       throw new Error(`Failed to get unique dates: ${error}`);
     }
   }
+
+  async updateTimestamp(id: number): Promise<AudioFile> {
+    try {
+      const db = getDb();
+      const [result] = await db
+        .update(this.table)
+        .set({
+          updatedAt: new Date(),
+        })
+        .where(eq(this.table.id, id))
+        .returning();
+
+      if (!result) {
+        throw new Error(`Audio file with id ${id} not found`);
+      }
+
+      return result as AudioFile;
+    } catch (error) {
+      throw new Error(`Failed to update timestamp: ${error}`);
+    }
+  }
 }

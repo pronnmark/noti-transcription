@@ -79,14 +79,23 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
     }
   }
 
-  async updateProgress(id: number, progress: number): Promise<TranscriptionJob> {
+  async updateProgress(id: number, progress: number, status?: string): Promise<TranscriptionJob> {
     try {
+      const updateData: any = {
+        progress,
+        updatedAt: new Date(),
+      };
+
+      if (status) {
+        updateData.status = status;
+        if (status === 'processing') {
+          updateData.startedAt = new Date();
+        }
+      }
+
       const [result] = await getDb()
         .update(this.table)
-        .set({
-          progress,
-          updatedAt: new Date(),
-        })
+        .set(updateData)
         .where(eq(this.table.id, id))
         .returning();
 
@@ -124,6 +133,63 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
       return result as TranscriptionJob;
     } catch (error) {
       throw new Error(`Failed to complete transcription: ${error}`);
+    }
+  }
+
+  async updateWithResults(
+    id: number,
+    updates: {
+      status: string;
+      progress: number;
+      transcript: TranscriptSegment[];
+      completedAt: Date;
+    }
+  ): Promise<TranscriptionJob> {
+    try {
+      const [result] = await getDb()
+        .update(this.table)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(this.table.id, id))
+        .returning();
+
+      if (!result) {
+        throw new Error(`Transcription job with id ${id} not found`);
+      }
+
+      return result as TranscriptionJob;
+    } catch (error) {
+      throw new Error(`Failed to update transcription with results: ${error}`);
+    }
+  }
+
+  async updateWithError(
+    id: number,
+    updates: {
+      status: string;
+      lastError: string;
+      completedAt: Date;
+    }
+  ): Promise<TranscriptionJob> {
+    try {
+      const [result] = await getDb()
+        .update(this.table)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(this.table.id, id))
+        .returning();
+
+      if (!result) {
+        throw new Error(`Transcription job with id ${id} not found`);
+      }
+
+      return result as TranscriptionJob;
+    } catch (error) {
+      throw new Error(`Failed to update transcription with error: ${error}`);
     }
   }
 }
