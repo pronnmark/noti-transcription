@@ -21,6 +21,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 server.log
+*.log
 
 # Runtime data
 pids
@@ -124,6 +125,8 @@ ENV/
 *.db
 *.sqlite
 *.sqlite3
+*.db-shm
+*.db-wal
 
 # Migration files
 migrate*.js
