@@ -8,6 +8,18 @@ export class SummarizationRepository extends BaseRepository<Summarization, NewSu
     super(summarizations);
   }
 
+  async countByFileId(fileId: number): Promise<number> {
+    try {
+      const result = await getDb()
+        .select()
+        .from(this.table)
+        .where(eq(this.table.fileId, fileId));
+      return result.length;
+    } catch (error) {
+      throw new Error(`Failed to count summarizations by file ID: ${error}`);
+    }
+  }
+
   async findByFileId(fileId: number): Promise<Summarization[]> {
     try {
       const result = await getDb()

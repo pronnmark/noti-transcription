@@ -9,6 +9,7 @@ import { join } from 'path';
 import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
+import { servicesDebug, debugPerformance, debugError } from '../../utils';
 
 const execAsync = promisify(exec);
 
@@ -16,6 +17,13 @@ export interface UploadOptions {
   speakerCount?: number;
   isDraft?: boolean;
   allowDuplicates?: boolean;
+  location?: {
+    latitude: number;
+    longitude: number;
+    accuracy?: number;
+    timestamp?: number;
+    provider?: string;
+  };
 }
 
 export interface UploadResult {
@@ -56,8 +64,10 @@ export class FileUploadService extends BaseService {
 
   async uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
     return this.executeWithErrorHandling('uploadFile', async () => {
+      const startTime = Date.now();
+      
       // Log file details for debugging
-      this._logger.debug('Upload file called with:', {
+      servicesDebug('Upload file called with:', {
         hasFile: !!file,
         fileName: file?.name,
         fileSize: file?.size,
@@ -90,7 +100,7 @@ export class FileUploadService extends BaseService {
           throw new Error('Unable to read file data - no arrayBuffer or stream method available');
         }
       } catch (error) {
-        this._logger.error('Failed to read file buffer', error instanceof Error ? error : new Error(String(error)));
+        debugError(error, 'services', { operation: 'readFileBuffer', fileName: file.name });
         throw createError.internal('Failed to read file data');
       }
 
@@ -109,13 +119,15 @@ export class FileUploadService extends BaseService {
       const duration = await this.extractDuration(filePath);
 
       // Create database record
-      const audioFile = await this.createDatabaseRecord(file, fileName, fileHash, duration);
+      const audioFile = await this.createDatabaseRecord(file, fileName, fileHash, duration, options.location);
 
       // Start transcription if not a draft
       let transcriptionStarted = false;
       if (!options.isDraft) {
         transcriptionStarted = await this.startTranscription(audioFile.id, filePath, options.speakerCount);
       }
+
+      debugPerformance('File upload completed', startTime, 'services');
 
       return {
         fileId: audioFile.id,
@@ -173,6 +185,28 @@ export class FileUploadService extends BaseService {
         ValidationRules.custom('speakerCount', (val) => val >= 1 && val <= 10, 'must be between 1 and 10'),
       ]);
     }
+
+    if (options.location) {
+      const { latitude, longitude, accuracy, provider } = options.location;
+      
+      if (latitude < -90 || latitude > 90) {
+        throw createError.validation('Invalid latitude: must be between -90 and 90');
+      }
+      
+      if (longitude < -180 || longitude > 180) {
+        throw createError.validation('Invalid longitude: must be between -180 and 180');
+      }
+      
+      if (accuracy !== undefined && accuracy < 0) {
+        throw createError.validation('Invalid accuracy: must be positive');
+      }
+      
+      if (provider && !['gps', 'network', 'passive'].includes(provider)) {
+        throw createError.validation('Invalid location provider');
+      }
+      
+      servicesDebug('📍 Location data validated:', options.location);
+    }
   }
 
   private generateFileHash(buffer: Buffer): string {
@@ -219,7 +253,7 @@ export class FileUploadService extends BaseService {
 
     await fs.writeFile(filePath, buffer);
 
-    this._logger.info('File saved to disk', {
+    servicesDebug('File saved to disk', {
       fileName,
       originalName: file.name,
       size: file.size,
@@ -243,7 +277,13 @@ export class FileUploadService extends BaseService {
     }
   }
 
-  private async createDatabaseRecord(file: File, fileName: string, fileHash: string, duration: number) {
+  private async createDatabaseRecord(
+    file: File, 
+    fileName: string, 
+    fileHash: string, 
+    duration: number,
+    location?: UploadOptions['location']
+  ) {
     const { getServiceLocator } = await import('../ServiceLocator');
     const { audioService } = getServiceLocator();
 
@@ -254,6 +294,12 @@ export class FileUploadService extends BaseService {
       fileSize: file.size,
       fileHash,
       duration,
+      // Include location data if provided
+      latitude: location?.latitude || null,
+      longitude: location?.longitude || null,
+      locationAccuracy: location?.accuracy || null,
+      locationTimestamp: location?.timestamp ? new Date(location.timestamp) : null,
+      locationProvider: location?.provider || null,
     });
   }
 

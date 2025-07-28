@@ -21,6 +21,7 @@ import { MiddlewareOrchestrator, getDefaultOrchestrator } from './MiddlewareOrch
 
 export { RequestContextBuilder } from './RequestContext';
 export { ErrorMiddleware, createErrorMiddleware } from './ErrorMiddleware';
+export { AuthMiddleware, createAuthMiddleware, withAuth } from './AuthMiddleware';
 
 // Utility functions for creating middleware
 export function withMiddleware(
@@ -69,6 +70,39 @@ export function withLogging(
   };
 
   return withMiddleware(handler, config);
+}
+
+// Helper for API route authentication
+export function withAuthMiddleware(
+  handler: (request: import('next/server').NextRequest, context: import('./types').RequestContext) => Promise<import('next/server').NextResponse>,
+  config?: import('./types').MiddlewareConfig,
+) {
+  // Create a wrapped handler that includes auth check
+  const authHandler = async (request: import('next/server').NextRequest, context: import('./types').RequestContext) => {
+    // Import dynamically to avoid circular dependencies
+    const { cookies } = await import('next/headers');
+    const { validateSession } = await import('../auth');
+    
+    const cookieStore = await cookies();
+    const token = cookieStore.get('auth-token')?.value;
+    const isValid = await validateSession(token);
+
+    if (!isValid) {
+      return import('next/server').NextResponse.json(
+        createErrorResponse(
+          'Authentication required',
+          'UNAUTHORIZED',
+          401,
+          { requestId: context.requestId }
+        ),
+        { status: 401 }
+      );
+    }
+
+    return handler(request, context);
+  };
+
+  return withMiddleware(authHandler, config);
 }
 
 // Helper for standardized API responses

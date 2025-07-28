@@ -4,7 +4,7 @@ import { TranscriptionService } from './core/TranscriptionService';
 import { ExtractionService } from './core/ExtractionService';
 import { SummarizationService } from './core/SummarizationService';
 import { CustomAIService } from './customAI';
-import { SimpleFileUploadService } from './core/SimpleFileUploadService';
+import { FileUploadService } from './core/FileUploadService';
 import { setServiceLocator, clearServiceLocator } from './ServiceLocator';
 
 import { LocalStorageService } from './storage/StorageService';
@@ -52,6 +52,7 @@ export class ServiceContainer {
       setServiceLocator({
         audioService: this.audioService,
         transcriptionService: this.transcriptionService,
+        fileUploadService: this.fileUploadService,
       });
 
       this.initialized = true;
@@ -100,7 +101,7 @@ export class ServiceContainer {
     serviceRegistry.register('summarizationService', new SummarizationService());
 
     // File upload service (DRY principle - centralize upload logic)
-    serviceRegistry.register('fileUploadService', new SimpleFileUploadService());
+    serviceRegistry.register('fileUploadService', new FileUploadService());
 
     console.log('✅ Core business services registered');
   }
@@ -172,8 +173,8 @@ export class ServiceContainer {
     return serviceRegistry.resolve<PromptEngine>('promptEngine');
   }
 
-  get fileUploadService(): SimpleFileUploadService {
-    return serviceRegistry.resolve<SimpleFileUploadService>('fileUploadService');
+  get fileUploadService(): FileUploadService {
+    return serviceRegistry.resolve<FileUploadService>('fileUploadService');
   }
 
   // Health check for all services

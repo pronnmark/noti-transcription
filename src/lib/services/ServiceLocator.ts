@@ -3,10 +3,12 @@
 
 import type { AudioService } from './core/AudioService';
 import type { TranscriptionService } from './core/TranscriptionService';
+import type { FileUploadService } from './core/FileUploadService';
 
 export interface ServiceLocator {
   audioService: AudioService;
   transcriptionService: TranscriptionService;
+  fileUploadService: FileUploadService;
 }
 
 let serviceLocator: ServiceLocator | null = null;

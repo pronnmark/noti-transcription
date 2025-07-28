@@ -123,4 +123,30 @@ export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
       throw new Error(`Failed to get audio file statistics: ${error}`);
     }
   }
+
+  async getUniqueDates(): Promise<string[]> {
+    try {
+      const db = getDb();
+      // This is a simplified version - in production, you'd want to use SQL functions
+      // to extract unique dates from the uploadedAt timestamp
+      const files = await db
+        .select({
+          uploadedAt: this.table.uploadedAt,
+        })
+        .from(this.table)
+        .orderBy(desc(this.table.uploadedAt));
+
+      const uniqueDates = new Set<string>();
+      files.forEach(file => {
+        if (file.uploadedAt) {
+          const date = new Date(file.uploadedAt).toISOString().split('T')[0];
+          uniqueDates.add(date);
+        }
+      });
+
+      return Array.from(uniqueDates).sort().reverse();
+    } catch (error) {
+      throw new Error(`Failed to get unique dates: ${error}`);
+    }
+  }
 }
