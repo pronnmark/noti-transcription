@@ -89,9 +89,9 @@ out
 .nuxt
 dist
 
-# Gatsby files
+# Gatsby files  
 .cache/
-public
+# public - commented out to allow PWA manifest tracking
 
 # Storybook build outputs
 .out
