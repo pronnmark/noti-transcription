@@ -1,5 +1,5 @@
-import { getDb } from './database/client';
-import { audioFiles, transcriptionJobs } from './database/schema';
+import { getDb } from '../database/client';
+import { audioFiles, transcriptionJobs } from '../database/schema';
 import { eq } from 'drizzle-orm';
 import { join } from 'path';
 import { promises as fs } from 'fs';

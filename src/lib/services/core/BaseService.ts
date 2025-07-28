@@ -1,5 +1,13 @@
 import type { IService, ServiceEvent, ServiceConfig } from './interfaces';
-import { createServiceLogger, ILogger } from '../../logging';
+// Simple logger interface
+interface ILogger {
+  info: (msg: string, ...args: any[]) => void;
+  warn: (msg: string, ...args: any[]) => void;
+  error: (msg: string, ...args: any[]) => void;
+  debug: (msg: string, ...args: any[]) => void;
+  fatal: (msg: string, ...args: any[]) => void;
+  child: (context: any) => ILogger;
+}
 import { AppError, ValidationError, createError } from '../../errors';
 
 export abstract class BaseService implements IService {
@@ -11,7 +19,21 @@ export abstract class BaseService implements IService {
 
   constructor(name: string) {
     this.name = name;
-    this._logger = createServiceLogger(name);
+    this._logger = {
+      info: (msg: string, ...args: any[]) => console.log(`[INFO] [${name}] ${msg}`, ...args),
+      warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [${name}] ${msg}`, ...args),
+      error: (msg: string, ...args: any[]) => console.error(`[ERROR] [${name}] ${msg}`, ...args),
+      debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [${name}] ${msg}`, ...args),
+      fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] [${name}] ${msg}`, ...args),
+      child: (context: any) => ({
+        info: (msg: string, ...args: any[]) => console.log(`[INFO] [${name}] ${msg}`, context, ...args),
+        warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [${name}] ${msg}`, context, ...args),
+        error: (msg: string, ...args: any[]) => console.error(`[ERROR] [${name}] ${msg}`, context, ...args),
+        debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [${name}] ${msg}`, context, ...args),
+        fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] [${name}] ${msg}`, context, ...args),
+        child: (subContext: any) => this._logger.child({ ...context, ...subContext }),
+      }),
+    };
   }
 
   protected get monitoring(): any {

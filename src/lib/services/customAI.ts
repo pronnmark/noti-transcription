@@ -1,4 +1,4 @@
-import '../logging/init';
+// Removed logging dependency
 import { aiExtractsService, settingsService } from '@/lib/db';
 import { AIProvider } from './ai/AIProvider';
 import type {

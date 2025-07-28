@@ -1,4 +1,4 @@
-import '../logging/init'; // Ensure logger is initialized
+// Removed logging dependency
 import { BaseService } from './core/BaseService';
 
 export interface ServiceConfiguration {

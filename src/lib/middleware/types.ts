@@ -1,6 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AppError } from '@/lib/errors';
-import { ILogger } from '@/lib/logging';
+// Simple logger interface
+interface ILogger {
+  info: (msg: string, ...args: any[]) => void;
+  warn: (msg: string, ...args: any[]) => void;
+  error: (msg: string, ...args: any[]) => void;
+  debug: (msg: string, ...args: any[]) => void;
+  fatal: (msg: string, ...args: any[]) => void;
+}
 
 export interface RequestContext {
   requestId: string;

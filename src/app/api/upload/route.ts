@@ -3,7 +3,7 @@ import { withMiddleware, createApiResponse, createErrorResponse } from '@/lib/mi
 import { getServiceLocator } from '@/lib/services/ServiceLocator';
 import { apiDebug, debugPerformance } from '@/lib/utils';
 import { ValidationError } from '@/lib/errors';
-import { processTranscriptionJobs } from '@/lib/transcriptionWorker';
+import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60; // 60 seconds

@@ -1,6 +1,13 @@
 import { NextRequest } from 'next/server';
 import { RequestContext, MiddlewareConfig } from './types';
-import { createServiceLogger } from '@/lib/logging';
+// Simple logger interface
+interface Logger {
+  info: (msg: string, ...args: any[]) => void;
+  warn: (msg: string, ...args: any[]) => void;
+  error: (msg: string, ...args: any[]) => void;
+  debug: (msg: string, ...args: any[]) => void;
+  fatal: (msg: string, ...args: any[]) => void;
+}
 import { v4 as uuidv4 } from 'uuid';
 
 export class RequestContextBuilder {
@@ -31,14 +38,13 @@ export class RequestContextBuilder {
     const body = await this.extractBody(request);
 
     // Create logger with request context
-    const logger = createServiceLogger('api', {
-      requestId,
-      method,
-      path,
-      userId,
-      sessionId,
-      ip,
-    });
+    const logger: Logger = {
+      info: (msg: string, ...args: any[]) => console.log(`[INFO] [${requestId}] ${msg}`, ...args),
+      warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [${requestId}] ${msg}`, ...args),
+      error: (msg: string, ...args: any[]) => console.error(`[ERROR] [${requestId}] ${msg}`, ...args),
+      debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [${requestId}] ${msg}`, ...args),
+      fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] [${requestId}] ${msg}`, ...args),
+    };
 
     return {
       requestId,

@@ -1,11 +1,11 @@
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { readFile } from 'fs/promises';
-import { AudioService } from './services/core/AudioService';
-import { detectAndApplySpeakerNames } from './services/speakerDetectionService';
-import type { TranscriptSegment } from './database/schema';
-import { getDb } from './database/client';
-import { transcriptionJobs } from './database/schema/transcripts';
+import { AudioService } from './core/AudioService';
+import { detectAndApplySpeakerNames } from './speakerDetectionService';
+import type { TranscriptSegment } from '../database/schema';
+import { getDb } from '../database/client';
+import { transcriptionJobs } from '../database/schema/transcripts';
 import { eq, desc } from 'drizzle-orm';
 
 const _audioService = new AudioService();
@@ -448,7 +448,7 @@ export async function startTranscription(
       // Update audioFiles table with calculated duration
       if (calculatedDuration > 0) {
         try {
-          const { audioFiles } = await import('./database/schema/audio');
+          const { audioFiles } = await import('../database/schema/audio');
           await db.update(audioFiles)
             .set({
               duration: calculatedDuration,

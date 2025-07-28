@@ -1,4 +1,4 @@
-import '../logging/init'; // Ensure logger is initialized
+// Removed logging dependency
 import { customAIService } from './customAI';
 
 export interface TranscriptSegment {

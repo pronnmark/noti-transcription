@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database/client';
 import { transcriptionJobs, audioFiles } from '@/lib/database/schema';
 import { eq, desc } from 'drizzle-orm';
-import { processTranscriptionJobs } from '@/lib/transcriptionWorker';
+import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
 import { debugLog } from '@/lib/utils';
 
 export async function POST(

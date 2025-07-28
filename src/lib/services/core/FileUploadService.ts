@@ -431,7 +431,7 @@ export class FileUploadService extends BaseService {
 
   private async startBackgroundTranscription(jobId: number, wavPath: string, speakerCount?: number): Promise<void> {
     // Import transcription logic
-    const { startTranscription } = await import('../../transcription');
+    const { startTranscription } = await import('../transcription');
     await startTranscription(jobId, wavPath, speakerCount);
   }
 }

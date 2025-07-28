@@ -6,8 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { serviceContainer, areServicesInitialized, initializeServicesOnce } from '../services';
 import { errorHandler } from '../errors';
-import '../logging/init'; // Ensure logger is initialized
-import { createServiceLogger } from '../logging';
+// Removed logging dependencies
 
 export interface ApiResponse<T = any> {
   success: boolean;
@@ -41,7 +40,12 @@ export class ApiHandlerBuilder {
 
   private static get logger() {
     if (!this._logger) {
-      this._logger = createServiceLogger('ApiHandler');
+      this._logger = {
+        info: (msg: string, ...args: any[]) => console.log(`[INFO] [ApiHandler] ${msg}`, ...args),
+        warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [ApiHandler] ${msg}`, ...args),
+        error: (msg: string, ...args: any[]) => console.error(`[ERROR] [ApiHandler] ${msg}`, ...args),
+        debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [ApiHandler] ${msg}`, ...args),
+      };
     }
     return this._logger;
   }
@@ -50,7 +54,12 @@ export class ApiHandlerBuilder {
     return async (request: NextRequest): Promise<NextResponse> => {
       const requestId = this.generateRequestId();
       const startTime = Date.now();
-      const logger = this.logger.child({ requestId });
+      const logger = {
+        info: (msg: string, ...args: any[]) => console.log(`[INFO] [${requestId}] ${msg}`, ...args),
+        warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [${requestId}] ${msg}`, ...args),
+        error: (msg: string, ...args: any[]) => console.error(`[ERROR] [${requestId}] ${msg}`, ...args),
+        debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [${requestId}] ${msg}`, ...args),
+      };
 
       const context: ApiContext = {
         requestId,

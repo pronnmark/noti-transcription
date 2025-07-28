@@ -143,8 +143,6 @@ export class MiddlewareOrchestrator {
   }
 
   private async createFallbackContext(request: NextRequest): Promise<RequestContext> {
-    const { createServiceLogger } = await import('@/lib/logging');
-
     return {
       requestId: `fallback_${Date.now()}`,
       startTime: Date.now(),
@@ -153,7 +151,13 @@ export class MiddlewareOrchestrator {
       path: new URL(request.url).pathname,
       query: {},
       headers: {},
-      logger: createServiceLogger('middleware-fallback'),
+      logger: {
+        info: (msg: string, ...args: any[]) => console.log(`[INFO] ${msg}`, ...args),
+        warn: (msg: string, ...args: any[]) => console.warn(`[WARN] ${msg}`, ...args),
+        error: (msg: string, ...args: any[]) => console.error(`[ERROR] ${msg}`, ...args),
+        debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] ${msg}`, ...args),
+        fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] ${msg}`, ...args),
+      },
     };
   }
 

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
 import { telegramShares, audioFiles, transcriptionJobs } from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
-import { telegramMCP } from '@/lib/telegram-mcp-client';
+import { telegramMCP } from '@/lib/services/telegram-mcp-client';
 import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {

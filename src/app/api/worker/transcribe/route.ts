@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { processTranscriptionJobs } from '../../../../lib/transcriptionWorker';
+import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
 
 // Simple worker endpoint to process pending transcriptions
 // In production, this would be a proper background job queue

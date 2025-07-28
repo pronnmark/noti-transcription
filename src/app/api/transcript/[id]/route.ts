@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTranscript } from '@/lib/transcription';
+import { getTranscript } from '@/lib/services/transcription';
 import { db, speakerLabels } from '@/lib/database';
 import { eq } from 'drizzle-orm';
 

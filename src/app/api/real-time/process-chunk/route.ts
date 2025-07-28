@@ -4,7 +4,7 @@ import { realTimeSessions, realTimeThoughts } from '@/lib/database/schema/system
 import { systemSettings } from '@/lib/database/schema/users';
 import { eq } from 'drizzle-orm';
 import { customAIService } from '@/lib/services/customAI';
-import { getTranscript } from '@/lib/transcription';
+import { getTranscript } from '@/lib/services/transcription';
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
