@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
 import { telegramShares, audioFiles, aiExtracts, summarizationTemplates, extractionTemplates } from '@/lib/database/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import { telegramMCP } from '@/lib/telegram-mcp-client';
 import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
 
@@ -32,26 +32,35 @@ export async function POST(request: NextRequest) {
     }
 
     // Get AI extract - either specific one or latest
-    let extractQuery = db.select({
-      id: aiExtracts.id,
-      content: aiExtracts.content,
-      model: aiExtracts.model,
-      prompt: aiExtracts.prompt,
-      createdAt: aiExtracts.createdAt,
-      templateName: extractionTemplates.name,
-      templateDescription: extractionTemplates.description,
-    })
-    .from(aiExtracts)
-    .leftJoin(extractionTemplates, eq(aiExtracts.templateId, extractionTemplates.id))
-    .where(eq(aiExtracts.fileId, fileId));
-
-    if (extractId) {
-      extractQuery = extractQuery.where(eq(aiExtracts.id, extractId));
-    } else {
-      extractQuery = extractQuery.orderBy(desc(aiExtracts.createdAt));
-    }
-
-    const extractData = await extractQuery.limit(1);
+    // Build query based on whether we want a specific extract or latest
+    const extractData = extractId 
+      ? await db.select({
+          id: aiExtracts.id,
+          content: aiExtracts.content,
+          model: aiExtracts.model,
+          prompt: aiExtracts.prompt,
+          createdAt: aiExtracts.createdAt,
+          templateName: extractionTemplates.name,
+          templateDescription: extractionTemplates.description,
+        })
+        .from(aiExtracts)
+        .leftJoin(extractionTemplates, eq(aiExtracts.templateId, extractionTemplates.id))
+        .where(and(eq(aiExtracts.fileId, fileId), eq(aiExtracts.id, extractId)))
+        .limit(1)
+      : await db.select({
+          id: aiExtracts.id,
+          content: aiExtracts.content,
+          model: aiExtracts.model,
+          prompt: aiExtracts.prompt,
+          createdAt: aiExtracts.createdAt,
+          templateName: extractionTemplates.name,
+          templateDescription: extractionTemplates.description,
+        })
+        .from(aiExtracts)
+        .leftJoin(extractionTemplates, eq(aiExtracts.templateId, extractionTemplates.id))
+        .where(eq(aiExtracts.fileId, fileId))
+        .orderBy(desc(aiExtracts.createdAt))
+        .limit(1);
 
     if (!extractData.length) {
       return NextResponse.json(

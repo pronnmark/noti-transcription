@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
 import { telegramSettings, audioFiles, transcriptionJobs } from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { eq, gte, desc } from 'drizzle-orm';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import * as fs from 'fs/promises';
@@ -188,33 +188,26 @@ async function handleVoiceMessage(chatId: number, userId: number, voice: any) {
     const fileName = `telegram_voice_${userId}_${timestamp}.ogg`;
     const filePath = path.join(process.cwd(), 'data', 'audio_files', fileName);
     
+    if (!fileData.data) {
+      throw new Error('No file data received from Telegram');
+    }
+
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, fileData.data);
 
     // Create audio file record
     const [audioFile] = await db.insert(audioFiles).values({
+      fileName: fileName,
       originalFileName: fileName,
-      storedFileName: fileName,
-      fileSize: voice.file_size || fileData.data.length,
-      mimeType: voice.mime_type || 'audio/ogg',
-      uploadedAt: new Date(),
-      metadata: {
-        source: 'telegram',
-        userId,
-        chatId,
-        duration: voice.duration,
-      },
+      originalFileType: voice.mime_type || 'audio/ogg',
+      fileSize: voice.file_size || fileData.data?.length || 0,
+      duration: voice.duration,
     }).returning();
 
     // Create transcription job
     const [job] = await db.insert(transcriptionJobs).values({
       fileId: audioFile.id,
       status: 'pending',
-      createdAt: new Date(),
-      metadata: {
-        telegramChatId: chatId,
-        telegramUserId: userId,
-      },
     }).returning();
 
     await sendMessage(chatId, `✅ Voice message saved!
@@ -247,35 +240,27 @@ async function handleAudioFile(chatId: number, userId: number, audio: any) {
     const fileName = `telegram_audio_${userId}_${timestamp}.${extension}`;
     const filePath = path.join(process.cwd(), 'data', 'audio_files', fileName);
     
+    if (!fileData.data) {
+      throw new Error('No file data received from Telegram');
+    }
+
     await fs.mkdir(path.dirname(filePath), { recursive: true });
     await fs.writeFile(filePath, fileData.data);
 
     // Create audio file record
     const [audioFile] = await db.insert(audioFiles).values({
+      fileName: fileName,
       originalFileName: audio.title || fileName,
-      storedFileName: fileName,
-      fileSize: audio.file_size || fileData.data.length,
-      mimeType: audio.mime_type || 'audio/mpeg',
-      uploadedAt: new Date(),
-      metadata: {
-        source: 'telegram',
-        userId,
-        chatId,
-        duration: audio.duration,
-        title: audio.title,
-        performer: audio.performer,
-      },
+      originalFileType: audio.mime_type || 'audio/mpeg',
+      fileSize: audio.file_size || fileData.data?.length || 0,
+      duration: audio.duration,
+      title: audio.title,
     }).returning();
 
     // Create transcription job
     const [job] = await db.insert(transcriptionJobs).values({
       fileId: audioFile.id,
       status: 'pending',
-      createdAt: new Date(),
-      metadata: {
-        telegramChatId: chatId,
-        telegramUserId: userId,
-      },
     }).returning();
 
     await sendMessage(chatId, `✅ Audio file saved!
@@ -293,21 +278,13 @@ Use /status ${job.id} to check progress.`);
 // Handle list command
 async function handleListCommand(chatId: number, userId: number) {
   try {
-    // Get recent transcriptions for this user
-    const recentFiles = await db.query.audioFiles.findMany({
-      where: (files, { and, eq, gte }) => and(
-        eq(files.metadata.userId, userId),
-        gte(files.uploadedAt, new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) // Last 7 days
-      ),
-      with: {
-        transcriptionJobs: {
-          orderBy: (jobs, { desc }) => [desc(jobs.createdAt)],
-          limit: 1,
-        },
-      },
-      orderBy: (files, { desc }) => [desc(files.uploadedAt)],
-      limit: 10,
-    });
+    // Get recent transcriptions for this user  
+    const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const recentFiles = await db.select()
+      .from(audioFiles)
+      .where(gte(audioFiles.uploadedAt, sevenDaysAgo))
+      .orderBy(desc(audioFiles.uploadedAt))
+      .limit(10);
 
     if (recentFiles.length === 0) {
       await sendMessage(chatId, 'No recent transcriptions found. Send me an audio file or voice message to get started!');
@@ -317,11 +294,8 @@ async function handleListCommand(chatId: number, userId: number) {
     let message = '📋 **Your Recent Transcriptions**\n\n';
     
     for (const file of recentFiles) {
-      const job = file.transcriptionJobs[0];
-      const statusEmoji = job?.status === 'completed' ? '✅' : job?.status === 'processing' ? '🔄' : '⏳';
-      
-      message += `${statusEmoji} **${file.originalFileName}**\n`;
-      message += `   ID: ${file.id} | Status: ${job?.status || 'pending'}\n`;
+      message += `📁 **${file.originalFileName}**\n`;
+      message += `   ID: ${file.id} | Size: ${Math.round(file.fileSize / 1024)} KB\n`;
       message += `   ${new Date(file.uploadedAt).toLocaleDateString()}\n\n`;
     }
 
@@ -338,12 +312,8 @@ async function handleListCommand(chatId: number, userId: number) {
 // Handle status command
 async function handleStatusCommand(chatId: number, jobId: string) {
   try {
-    const job = await db.query.transcriptionJobs.findFirst({
-      where: (jobs, { eq }) => eq(jobs.id, parseInt(jobId)),
-      with: {
-        file: true,
-      },
-    });
+    const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, parseInt(jobId))).limit(1);
+    const job = jobResults[0];
 
     if (!job) {
       await sendMessage(chatId, `❌ Transcription job #${jobId} not found.`);
@@ -352,7 +322,7 @@ async function handleStatusCommand(chatId: number, jobId: string) {
 
     let message = `📊 **Transcription Status**\n\n`;
     message += `Job ID: ${job.id}\n`;
-    message += `File: ${job.file.originalFileName}\n`;
+    message += `File ID: ${job.fileId}\n`;
     message += `Status: **${job.status}**\n`;
     
     if (job.startedAt) {
@@ -365,11 +335,11 @@ async function handleStatusCommand(chatId: number, jobId: string) {
       message += `Duration: ${Math.round(duration)}s\n`;
     }
 
-    if (job.error) {
-      message += `\n❌ Error: ${job.error}\n`;
+    if (job.lastError) {
+      message += `\n❌ Error: ${job.lastError}\n`;
     }
 
-    if (job.status === 'completed' && job.result) {
+    if (job.status === 'completed') {
       message += `\n✅ Transcription completed! Use /summary ${job.fileId} to see the result.`;
     }
 
