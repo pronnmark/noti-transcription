@@ -410,11 +410,13 @@ export default function RecordPage() {
       
       // Create Web Audio API context
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      console.log(`🎵 AudioContext created, initial state: ${audioContext.state}`);
       
       // Resume audio context if suspended (required by Chrome)
       if (audioContext.state === 'suspended') {
         console.log('🎵 Resuming suspended AudioContext...');
         await audioContext.resume();
+        console.log(`🎵 AudioContext resumed, new state: ${audioContext.state}`);
       }
       
       const source = audioContext.createMediaStreamSource(stream);
@@ -436,28 +438,79 @@ export default function RecordPage() {
       analyser.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
+      console.log('🎵 Audio graph connected: Source → Analyser → Gain → Destination');
+      
       setAudioAnalyser(analyser);
       
       console.log(`🎵 Web Audio API setup complete (state: ${audioContext.state}), starting simple audio monitoring...`);
       
+      let frameCount = 0;
+      let lastDebugTime = Date.now();
+      
       // Enhanced audio level monitoring with improved sensitivity
       const monitorAudioLevel = () => {
-        const timeData = new Uint8Array(analyser.fftSize);
-        analyser.getByteTimeDomainData(timeData);
+        frameCount++;
         
-        // Calculate RMS and peak from raw audio samples
-        let sum = 0;
-        let peak = 0;
-        const noiseFloor = 0.01; // Minimum threshold to distinguish from silence
-        
-        for (let i = 0; i < timeData.length; i++) {
-          const sample = (timeData[i] - 128) / 128; // Convert to -1 to +1 range
-          const absSample = Math.abs(sample);
-          sum += sample * sample;
-          peak = Math.max(peak, absSample);
+        // Debug every 30 frames (~0.5 seconds)
+        const shouldDebug = frameCount % 30 === 0;
+        if (shouldDebug) {
+          console.log(`🎵 Monitor frame ${frameCount}, AudioContext state: ${audioContext.state}`);
         }
         
-        const rms = Math.sqrt(sum / timeData.length);
+        // Try float data for better precision if available
+        let rms = 0;
+        let peak = 0;
+        let minValue = 1;
+        let maxValue = -1;
+        const noiseFloor = 0.01;
+        
+        try {
+          // Try getFloatTimeDomainData for better precision
+          const floatData = new Float32Array(analyser.fftSize);
+          analyser.getFloatTimeDomainData(floatData);
+          
+          if (shouldDebug) {
+            const sampleValues = Array.from(floatData.slice(0, 10)).map(v => v.toFixed(3));
+            console.log(`🎵 Float data sample: [${sampleValues.join(', ')}...]`);
+          }
+          
+          // Calculate RMS and peak from float data
+          let sum = 0;
+          for (let i = 0; i < floatData.length; i++) {
+            const sample = floatData[i];
+            minValue = Math.min(minValue, sample);
+            maxValue = Math.max(maxValue, sample);
+            sum += sample * sample;
+            peak = Math.max(peak, Math.abs(sample));
+          }
+          rms = Math.sqrt(sum / floatData.length);
+          
+        } catch (e) {
+          // Fallback to byte data if float is not supported
+          console.log('Float data not supported, using byte data');
+          const timeData = new Uint8Array(analyser.fftSize);
+          analyser.getByteTimeDomainData(timeData);
+          
+          if (shouldDebug) {
+            const sampleValues = Array.from(timeData.slice(0, 10));
+            const allSilence = timeData.every(v => v === 128);
+            console.log(`🎵 Byte data sample: [${sampleValues.join(', ')}...], All silence: ${allSilence}`);
+          }
+          
+          // Calculate RMS and peak from byte data
+          let sum = 0;
+          minValue = 255;
+          maxValue = 0;
+          for (let i = 0; i < timeData.length; i++) {
+            minValue = Math.min(minValue, timeData[i]);
+            maxValue = Math.max(maxValue, timeData[i]);
+            const sample = (timeData[i] - 128) / 128;
+            const absSample = Math.abs(sample);
+            sum += sample * sample;
+            peak = Math.max(peak, absSample);
+          }
+          rms = Math.sqrt(sum / timeData.length);
+        }
         
         // Enhanced level calculation with logarithmic scaling and noise floor
         let level = 0;
@@ -478,12 +531,33 @@ export default function RecordPage() {
         // Clamp to 0-100 range with smooth ceiling
         level = Math.min(100, Math.max(0, level));
         
+        // Debug: Log before setting state
+        if (shouldDebug) {
+          console.log(`🎵 Setting audio level: ${level.toFixed(1)}% (min: ${minValue}, max: ${maxValue})`);
+          
+          // Also check frequency data as a diagnostic
+          const freqData = new Uint8Array(analyser.frequencyBinCount);
+          analyser.getByteFrequencyData(freqData);
+          const avgFreq = freqData.reduce((a, b) => a + b, 0) / freqData.length;
+          console.log(`🎵 Avg frequency magnitude: ${avgFreq.toFixed(1)}`);
+        }
+        
         setAudioLevel(level);
         
         // Enhanced debug logging
         if (!window.lastAudioLevelLog || Date.now() - window.lastAudioLevelLog > 1000) {
           console.log(`🎵 Audio Level: ${level.toFixed(1)}% (RMS: ${rms.toFixed(4)}, Peak: ${peak.toFixed(4)})`);
           window.lastAudioLevelLog = Date.now();
+        }
+        
+        // Check and resume AudioContext if suspended (Chrome auto-suspends after ~30s)
+        if (audioContext.state === 'suspended') {
+          console.warn('⚠️ AudioContext suspended! Attempting to resume...');
+          audioContext.resume().then(() => {
+            console.log('✅ AudioContext resumed successfully');
+          }).catch(err => {
+            console.error('❌ Failed to resume AudioContext:', err);
+          });
         }
         
         // Continue monitoring

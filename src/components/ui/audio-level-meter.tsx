@@ -13,6 +13,9 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
   // Normalize audio level to 0-100 range
   const normalizedLevel = Math.max(0, Math.min(100, audioLevel));
   
+  // Debug mode - show raw values
+  const debugMode = true; // Enable debug mode
+  
   // Determine color based on audio level
   const getBarColor = (level: number) => {
     if (level === 0) return 'bg-gray-400'; // No signal (gray instead of red)
@@ -39,6 +42,15 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
       <div className="text-xs text-muted-foreground font-medium">
         Audio Level
       </div>
+      
+      {/* Debug info */}
+      {debugMode && (
+        <div className="bg-gray-100 rounded p-2 text-xs font-mono">
+          <div>Raw prop: {audioLevel.toFixed(2)}</div>
+          <div>Normalized: {normalizedLevel.toFixed(2)}</div>
+          <div>isActive: {isActive.toString()}</div>
+        </div>
+      )}
       
       {/* Audio level bar */}
       <div className="w-full max-w-xs h-8 bg-gray-200 rounded-full overflow-hidden border-2 border-gray-300">
