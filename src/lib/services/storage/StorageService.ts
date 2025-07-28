@@ -1,26 +1,31 @@
-import { BaseService, ValidationRules } from '../core/BaseService';
-import type { IStorageService, FileStats } from '../core/interfaces';
 import { promises as fs } from 'fs';
 import { join, dirname, basename, extname } from 'path';
 import { createHash } from 'crypto';
 
-export abstract class StorageService extends BaseService implements IStorageService {
+export interface FileStats {
+  size: number;
+  created: Date;
+  modified: Date;
+  isDirectory: boolean;
+}
+
+export abstract class StorageService {
   protected basePath: string;
 
-  constructor(name: string, basePath: string) {
-    super(name);
+  constructor(basePath: string) {
     this.basePath = basePath;
   }
 
-  protected async onInitialize(): Promise<void> {
-    // Ensure base directory exists - use direct fs call to avoid circular dependency
-    const fullPath = this.getFullPath('');
-    await fs.mkdir(fullPath, { recursive: true });
-    this._logger.info(`Storage service initialized with base path: ${this.basePath}`);
-  }
-
-  protected async onDestroy(): Promise<void> {
-    this._logger.info('Storage service destroyed');
+  async initialize(): Promise<void> {
+    try {
+      // Ensure base directory exists
+      const fullPath = this.getFullPath('');
+      await fs.mkdir(fullPath, { recursive: true });
+      console.log(`Storage service initialized with base path: ${this.basePath}`);
+    } catch (error) {
+      console.error('Failed to initialize storage service:', error);
+      throw error;
+    }
   }
 
   abstract saveFile(path: string, data: Buffer): Promise<string>;
@@ -29,14 +34,18 @@ export abstract class StorageService extends BaseService implements IStorageServ
   abstract fileExists(path: string): Promise<boolean>;
 
   async createDirectory(path: string): Promise<void> {
-    return this.executeWithErrorHandling(`createDirectory(${path})`, async () => {
+    try {
       const fullPath = this.getFullPath(path);
       await fs.mkdir(fullPath, { recursive: true });
-    });
+      console.log(`Directory created: ${path}`);
+    } catch (error) {
+      console.error(`Failed to create directory ${path}:`, error);
+      throw error;
+    }
   }
 
   async listFiles(path: string): Promise<string[]> {
-    return this.executeWithErrorHandling(`listFiles(${path})`, async () => {
+    try {
       const fullPath = this.getFullPath(path);
 
       if (!(await this.fileExists(path))) {
@@ -47,11 +56,14 @@ export abstract class StorageService extends BaseService implements IStorageServ
       return entries
         .filter(entry => entry.isFile())
         .map(entry => entry.name);
-    });
+    } catch (error) {
+      console.error(`Failed to list files in ${path}:`, error);
+      throw error;
+    }
   }
 
   async getFileStats(path: string): Promise<FileStats> {
-    return this.executeWithErrorHandling(`getFileStats(${path})`, async () => {
+    try {
       const fullPath = this.getFullPath(path);
       const stats = await fs.stat(fullPath);
 
@@ -61,7 +73,10 @@ export abstract class StorageService extends BaseService implements IStorageServ
         modified: stats.mtime,
         isDirectory: stats.isDirectory(),
       };
-    });
+    } catch (error) {
+      console.error(`Failed to get file stats for ${path}:`, error);
+      throw error;
+    }
   }
 
   protected getFullPath(path: string): string {
@@ -71,10 +86,9 @@ export abstract class StorageService extends BaseService implements IStorageServ
   }
 
   protected validatePath(path: string): void {
-    this.validateInput(path, [
-      ValidationRules.required('path'),
-      ValidationRules.isString('path'),
-    ]);
+    if (!path || typeof path !== 'string') {
+      throw new Error('Path is required and must be a string');
+    }
 
     // Security check: prevent path traversal
     const normalizedPath = path.replace(/^\/+/, '');
@@ -100,11 +114,11 @@ export abstract class StorageService extends BaseService implements IStorageServ
 // Local file system implementation
 export class LocalStorageService extends StorageService {
   constructor(basePath: string = './data') {
-    super('LocalStorage', basePath);
+    super(basePath);
   }
 
   async saveFile(path: string, data: Buffer): Promise<string> {
-    return this.executeWithErrorHandling(`saveFile(${path})`, async () => {
+    try {
       this.validatePath(path);
 
       const fullPath = this.getFullPath(path);
@@ -116,45 +130,54 @@ export class LocalStorageService extends StorageService {
       // Write file
       await fs.writeFile(fullPath, data);
 
-      this._logger.info(`File saved: ${path} (${data.length} bytes)`);
+      console.log(`File saved: ${path} (${data.length} bytes)`);
       return fullPath;
-    });
+    } catch (error) {
+      console.error(`Failed to save file ${path}:`, error);
+      throw error;
+    }
   }
 
   async readFile(path: string): Promise<Buffer> {
-    return this.executeWithErrorHandling(`readFile(${path})`, async () => {
+    try {
       this.validatePath(path);
 
       const fullPath = this.getFullPath(path);
       const data = await fs.readFile(fullPath);
 
-      this._logger.debug(`File read: ${path} (${data.length} bytes)`);
+      console.log(`File read: ${path} (${data.length} bytes)`);
       return data;
-    });
+    } catch (error) {
+      console.error(`Failed to read file ${path}:`, error);
+      throw error;
+    }
   }
 
   async deleteFile(path: string): Promise<boolean> {
-    return this.executeWithErrorHandling(`deleteFile(${path})`, async () => {
+    try {
       this.validatePath(path);
 
       const fullPath = this.getFullPath(path);
 
       try {
         await fs.unlink(fullPath);
-        this._logger.info(`File deleted: ${path}`);
+        console.log(`File deleted: ${path}`);
         return true;
       } catch (error: any) {
         if (error.code === 'ENOENT') {
-          this._logger.warn(`File not found for deletion: ${path}`);
+          console.warn(`File not found for deletion: ${path}`);
           return false;
         }
         throw error;
       }
-    });
+    } catch (error) {
+      console.error(`Failed to delete file ${path}:`, error);
+      throw error;
+    }
   }
 
   async fileExists(path: string): Promise<boolean> {
-    return this.executeWithErrorHandling(`fileExists(${path})`, async () => {
+    try {
       this.validatePath(path);
 
       const fullPath = this.getFullPath(path);
@@ -165,12 +188,15 @@ export class LocalStorageService extends StorageService {
       } catch {
         return false;
       }
-    });
+    } catch (error) {
+      console.error(`Failed to check file existence ${path}:`, error);
+      return false;
+    }
   }
 
   // Additional local storage methods
   async moveFile(fromPath: string, toPath: string): Promise<void> {
-    return this.executeWithErrorHandling(`moveFile(${fromPath} -> ${toPath})`, async () => {
+    try {
       this.validatePath(fromPath);
       this.validatePath(toPath);
 
@@ -184,12 +210,15 @@ export class LocalStorageService extends StorageService {
       // Move file
       await fs.rename(fromFullPath, toFullPath);
 
-      this._logger.info(`File moved: ${fromPath} -> ${toPath}`);
-    });
+      console.log(`File moved: ${fromPath} -> ${toPath}`);
+    } catch (error) {
+      console.error(`Failed to move file ${fromPath} -> ${toPath}:`, error);
+      throw error;
+    }
   }
 
   async copyFile(fromPath: string, toPath: string): Promise<void> {
-    return this.executeWithErrorHandling(`copyFile(${fromPath} -> ${toPath})`, async () => {
+    try {
       this.validatePath(fromPath);
       this.validatePath(toPath);
 
@@ -203,12 +232,15 @@ export class LocalStorageService extends StorageService {
       // Copy file
       await fs.copyFile(fromFullPath, toFullPath);
 
-      this._logger.info(`File copied: ${fromPath} -> ${toPath}`);
-    });
+      console.log(`File copied: ${fromPath} -> ${toPath}`);
+    } catch (error) {
+      console.error(`Failed to copy file ${fromPath} -> ${toPath}:`, error);
+      throw error;
+    }
   }
 
   async getDirectorySize(path: string = ''): Promise<number> {
-    return this.executeWithErrorHandling(`getDirectorySize(${path})`, async () => {
+    try {
       const fullPath = this.getFullPath(path);
 
       const calculateSize = async (dirPath: string): Promise<number> => {
@@ -230,11 +262,14 @@ export class LocalStorageService extends StorageService {
       };
 
       return await calculateSize(fullPath);
-    });
+    } catch (error) {
+      console.error(`Failed to get directory size for ${path}:`, error);
+      throw error;
+    }
   }
 
   async cleanupOldFiles(path: string, maxAge: number): Promise<number> {
-    return this.executeWithErrorHandling(`cleanupOldFiles(${path}, ${maxAge}ms)`, async () => {
+    try {
       const fullPath = this.getFullPath(path);
       const cutoffTime = Date.now() - maxAge;
       let deletedCount = 0;
@@ -258,9 +293,12 @@ export class LocalStorageService extends StorageService {
       };
 
       await cleanup(fullPath);
-      this._logger.info(`Cleaned up ${deletedCount} old files from ${path}`);
+      console.log(`Cleaned up ${deletedCount} old files from ${path}`);
 
       return deletedCount;
-    });
+    } catch (error) {
+      console.error(`Failed to cleanup old files from ${path}:`, error);
+      throw error;
+    }
   }
 }
