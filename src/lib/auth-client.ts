@@ -3,23 +3,23 @@
 // Client-side authentication utilities
 export function getSessionToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('noti-session');
+  return localStorage.getItem('auth-token');
 }
 
 export function setSessionToken(token: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem('noti-session', token);
+  localStorage.setItem('auth-token', token);
 
   // Also set as cookie for server-side access
-  document.cookie = `noti-session=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
+  document.cookie = `auth-token=${token}; path=/; max-age=${7 * 24 * 60 * 60}`; // 7 days
 }
 
 export function clearSessionToken(): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem('noti-session');
+  localStorage.removeItem('auth-token');
 
   // Clear cookie
-  document.cookie = 'noti-session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 }
 
 export function isAuthenticated(): boolean {

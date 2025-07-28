@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db, dataPoints, dataPointTemplates, audioFiles, eq, and, inArray } from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
-
-// Debug logging (can be disabled by setting DEBUG_API=false)
-const DEBUG_API = process.env.DEBUG_API !== 'false';
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_API) {
-    console.log(...args);
-  }
-};
+import { debugLog } from '@/lib/utils';
 
 export async function GET(request: NextRequest) {
   try {
@@ -61,7 +54,7 @@ export async function GET(request: NextRequest) {
       templates: templates,
     });
   } catch (error) {
-    debugLog('Error fetching data points:', error);
+    debugLog('api', 'Error fetching data points:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -126,7 +119,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    debugLog('Error creating data point:', error);
+    debugLog('api', 'Error creating data point:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

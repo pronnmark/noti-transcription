@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { SignJWT } from 'jose';
-
-// Debug logging (can be disabled by setting DEBUG_API=false)
-const DEBUG_API = process.env.DEBUG_API !== 'false';
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_API) {
-    console.log(...args);
-  }
-};
+import { debugLog } from '@/lib/utils';
 
 // Get password from environment variable or use default
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'ddash';
@@ -48,7 +41,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    debugLog('Login error:', error);
+    debugLog('api', 'Login error:', error);
     return NextResponse.json({ error: 'Login failed' }, { status: 500 });
   }
 }

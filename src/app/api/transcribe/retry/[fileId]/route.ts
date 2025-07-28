@@ -3,14 +3,7 @@ import { getDb } from '@/lib/database/client';
 import { transcriptionJobs, audioFiles } from '@/lib/database/schema';
 import { eq, desc } from 'drizzle-orm';
 import { processTranscriptionJobs } from '@/lib/transcriptionWorker';
-
-// Debug logging (can be disabled by setting DEBUG_API=false)
-const DEBUG_API = process.env.DEBUG_API !== 'false';
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_API) {
-    console.log(...args);
-  }
-};
+import { debugLog } from '@/lib/utils';
 
 export async function POST(
   request: NextRequest,
@@ -56,7 +49,7 @@ export async function POST(
         lastError: 'Retry requested - creating new job',
       });
 
-      debugLog(`Created new transcription job for file ${fileIdInt}`);
+      debugLog('api', `Created new transcription job for file ${fileIdInt}`);
     } else {
       // Reset existing job to pending
       await db
@@ -72,15 +65,15 @@ export async function POST(
         })
         .where(eq(transcriptionJobs.id, existingJob[0].id));
 
-      debugLog(`Reset transcription job ${existingJob[0].id} for file ${fileIdInt}`);
+      debugLog('api', `Reset transcription job ${existingJob[0].id} for file ${fileIdInt}`);
     }
 
     // Trigger transcription worker asynchronously
     setImmediate(async () => {
       try {
-        debugLog(`Starting transcription retry for file ${fileIdInt}...`);
+        debugLog('api', `Starting transcription retry for file ${fileIdInt}...`);
         const result = await processTranscriptionJobs();
-        debugLog('Transcription worker completed:', result);
+        debugLog('api', 'Transcription worker completed:', result);
       } catch (error) {
         console.error('Error in transcription worker:', error);
       }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { debugLog } from '@/lib/utils';
 
 // This endpoint acts as a proxy to call MCP tools
 export async function POST(request: NextRequest) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
           const normalizedUsername = args.username.toLowerCase().replace('@', '');
           if (knownUsers[normalizedUsername]) {
             chatId = knownUsers[normalizedUsername];
-            console.log(`Resolved ${args.username} to known chat ID: ${chatId}`);
+            debugLog('api', `Resolved ${args.username} to known chat ID: ${chatId}`);
           }
           
           // If not in known mappings, try to resolve username to chat ID using getChat
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
               const chatData = await chatResponse.json();
               if (chatData.ok) {
                 chatId = chatData.result.id;
-                console.log(`Resolved ${username} to chat ID: ${chatId}`);
+                debugLog('api', `Resolved ${username} to chat ID: ${chatId}`);
                 break;
               }
             } catch (e) {
@@ -229,7 +230,7 @@ export async function POST(request: NextRequest) {
           const normalizedGroupName = args.group_name.toLowerCase().replace('@', '');
           if (knownGroups[normalizedGroupName]) {
             chatId = knownGroups[normalizedGroupName];
-            console.log(`Resolved group ${args.group_name} to chat ID: ${chatId}`);
+            debugLog('api', `Resolved group ${args.group_name} to chat ID: ${chatId}`);
           }
           
           // If we have a known chat ID, use it directly

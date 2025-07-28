@@ -66,7 +66,7 @@ async function loadSettings(): Promise<Settings> {
 
 async function saveSettings(settings: Settings): Promise<void> {
   // Save AI and real-time settings to database
-  debugLog('Attempting to save AI and real-time settings to database...');
+  debugLog('api', 'Attempting to save AI and real-time settings to database...');
   try {
     const dbSettingsData = {
       customAiBaseUrl: settings.ai.customAiBaseUrl,
@@ -84,7 +84,7 @@ async function saveSettings(settings: Settings): Promise<void> {
     debugLog('Settings data to save:', JSON.stringify(dbSettingsData, null, 2));
 
     await settingsService.update(dbSettingsData);
-    debugLog('Successfully saved settings to database');
+    debugLog('api', 'Successfully saved settings to database');
   } catch (error) {
     console.error('Error saving settings to database:', error);
     console.error('Error details:', error instanceof Error ? error.message : String(error));
@@ -92,7 +92,7 @@ async function saveSettings(settings: Settings): Promise<void> {
   }
 
   // Save other settings to JSON file (for backward compatibility)
-  debugLog('Saving other settings to JSON file...');
+  debugLog('api', 'Saving other settings to JSON file...');
   try {
     const fileSettings = {
       transcription: settings.transcription,
@@ -102,7 +102,7 @@ async function saveSettings(settings: Settings): Promise<void> {
     };
 
     writeFileSync(SETTINGS_FILE, JSON.stringify(fileSettings, null, 2));
-    debugLog('Successfully saved other settings to JSON file');
+    debugLog('api', 'Successfully saved other settings to JSON file');
   } catch (error) {
     console.error('Error saving settings to JSON file:', error);
     throw error;
@@ -205,7 +205,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const settings: Settings = await request.json();
-    debugLog('Received settings to save:', JSON.stringify(settings.ai, null, 2));
+    debugLog('api', 'Received settings to save:', JSON.stringify(settings.ai, null, 2));
 
     // Save settings (AI to database, others to file)
     await saveSettings(settings);

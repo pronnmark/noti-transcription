@@ -1,13 +1,12 @@
 import { getAvailableModels } from '@/lib/services/customAI';
-import { createDebugLogger, createSuccessResponse, withErrorHandler } from '@/lib/api-utils';
+import { NextResponse } from 'next/server';
+import { withAuthMiddleware } from '@/lib/middleware';
 
-const _debugLog = createDebugLogger('ai-models');
-
-export const GET = withErrorHandler(async () => {
+export const GET = withAuthMiddleware(async () => {
   const modelDetails = getAvailableModels();
   const models = modelDetails.map((model: { id: string }) => model.id);
 
-  return createSuccessResponse({
+  return NextResponse.json({
     models,
     modelDetails,
     configured: models.length > 0,
