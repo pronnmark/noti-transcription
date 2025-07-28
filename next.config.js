@@ -1,5 +1,5 @@
 const withPWA = require('next-pwa')({
-  dest: 'public',
+  dest: '.next/static/workbox',
   register: true,
   skipWaiting: true,
   reloadOnOnline: true,
