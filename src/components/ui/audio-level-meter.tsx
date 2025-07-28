@@ -14,7 +14,7 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
   const normalizedLevel = Math.max(0, Math.min(100, audioLevel));
   
   // Debug mode - show raw values
-  const debugMode = true; // Enable debug mode
+  const debugMode = false; // Disable debug mode
   
   // Determine color based on audio level
   const getBarColor = (level: number) => {

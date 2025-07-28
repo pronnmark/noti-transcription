@@ -107,6 +107,9 @@ export default function RecordPage() {
   // Ref to store the cloned audio stream for the analyser
   const analyserStreamRef = useRef<MediaStream | null>(null);
   
+  // Ref to store the animation frame ID
+  const animationFrameRef = useRef<number | null>(null);
+  
   // Ref to store the last known location to ensure it persists through upload
   const lastLocationRef = useRef<LocationData | null>(null);
 
@@ -459,18 +462,13 @@ export default function RecordPage() {
           
           frameCount++;
           
-          // Log entry to every frame for debugging
-          if (frameCount <= 5 || frameCount % 30 === 0) {
-            console.log(`🎵 [ENTRY] Monitor frame ${frameCount}, entering function...`);
-            console.log(`🎵 Current levelAnimationFrame value:`, levelAnimationFrame);
+          // Log entry to first few frames for debugging
+          if (frameCount <= 3) {
+            console.log(`🎵 Monitor frame ${frameCount} running...`);
           }
           
-          // Debug every 30 frames (~0.5 seconds)
-          const shouldDebug = frameCount % 30 === 0;
-          if (shouldDebug) {
-            console.log(`🎵 Monitor frame ${frameCount}, AudioContext state: ${audioContext.state}`);
-            console.log(`🎵 Analyser node state:`, analyser.context.state, 'connected:', analyser.numberOfInputs > 0);
-          }
+          // Debug every 60 frames (~1 second)
+          const shouldDebug = frameCount % 60 === 0;
           
           // Try float data for better precision if available
           let rms = 0;
@@ -484,10 +482,6 @@ export default function RecordPage() {
           const floatData = new Float32Array(analyser.fftSize);
           analyser.getFloatTimeDomainData(floatData);
           
-          if (shouldDebug) {
-            const sampleValues = Array.from(floatData.slice(0, 10)).map(v => v.toFixed(3));
-            console.log(`🎵 Float data sample: [${sampleValues.join(', ')}...]`);
-          }
           
           // Calculate RMS and peak from float data
           let sum = 0;
@@ -506,11 +500,6 @@ export default function RecordPage() {
           const timeData = new Uint8Array(analyser.fftSize);
           analyser.getByteTimeDomainData(timeData);
           
-          if (shouldDebug) {
-            const sampleValues = Array.from(timeData.slice(0, 10));
-            const allSilence = timeData.every(v => v === 128);
-            console.log(`🎵 Byte data sample: [${sampleValues.join(', ')}...], All silence: ${allSilence}`);
-          }
           
           // Calculate RMS and peak from byte data
           let sum = 0;
@@ -546,16 +535,6 @@ export default function RecordPage() {
         // Clamp to 0-100 range with smooth ceiling
         level = Math.min(100, Math.max(0, level));
         
-        // Debug: Log before setting state
-        if (shouldDebug) {
-          console.log(`🎵 Setting audio level: ${level.toFixed(1)}% (min: ${minValue}, max: ${maxValue})`);
-          
-          // Also check frequency data as a diagnostic
-          const freqData = new Uint8Array(analyser.frequencyBinCount);
-          analyser.getByteFrequencyData(freqData);
-          const avgFreq = freqData.reduce((a, b) => a + b, 0) / freqData.length;
-          console.log(`🎵 Avg frequency magnitude: ${avgFreq.toFixed(1)}`);
-        }
         
         setAudioLevel(level);
         
@@ -576,25 +555,16 @@ export default function RecordPage() {
         }
         
         // Continue monitoring
-        console.log(`🎵 [PRE-RAF] About to call requestAnimationFrame for frame ${frameCount + 1}`);
         const frameId = requestAnimationFrame(monitorAudioLevel);
-        console.log(`🎵 [POST-RAF] requestAnimationFrame returned ID: ${frameId}`);
+        animationFrameRef.current = frameId; // Store in ref instead of state
         
-        // Try NOT setting the frame ID in state to see if that's breaking it
-        // setLevelAnimationFrame(frameId);
-        console.log(`🎵 [SKIP] Skipping setLevelAnimationFrame to test if it's breaking the loop`);
-        
-        // Log exit from frame
-        if (frameCount <= 5 || frameCount % 30 === 0) {
-          console.log(`🎵 [EXIT] Monitor frame ${frameCount}, scheduled next frame with ID: ${frameId}`);
-        }
         
       } catch (error) {
         console.error(`❌ Error in monitorAudioLevel frame ${frameCount}:`, error);
         console.error('Stack trace:', error.stack);
         // Try to recover by scheduling next frame anyway
         const frameId = requestAnimationFrame(monitorAudioLevel);
-        setLevelAnimationFrame(frameId);
+        animationFrameRef.current = frameId; // Store in ref instead of state
       }
     };
       
@@ -602,8 +572,9 @@ export default function RecordPage() {
       (window as any).stopAudioMonitoring = () => {
         console.log('🎵 Stopping audio monitoring...');
         isMonitoringActive = false;
-        if (levelAnimationFrame) {
-          cancelAnimationFrame(levelAnimationFrame);
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
         }
       };
       
@@ -627,9 +598,14 @@ export default function RecordPage() {
       delete (window as any).stopAudioMonitoring;
     }
     
+    if (animationFrameRef.current) {
+      console.log(`🔇 Cancelling animation frame: ${animationFrameRef.current}`);
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+    
+    // Clear the state too (though it's not used for the loop anymore)
     if (levelAnimationFrame) {
-      console.log(`🔇 Cancelling animation frame: ${levelAnimationFrame}`);
-      cancelAnimationFrame(levelAnimationFrame);
       setLevelAnimationFrame(null);
     }
     
