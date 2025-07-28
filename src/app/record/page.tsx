@@ -446,25 +446,40 @@ export default function RecordPage() {
       
       let frameCount = 0;
       let lastDebugTime = Date.now();
+      let isMonitoringActive = true;
       
       // Enhanced audio level monitoring with improved sensitivity
       const monitorAudioLevel = () => {
-        frameCount++;
-        
-        // Debug every 30 frames (~0.5 seconds)
-        const shouldDebug = frameCount % 30 === 0;
-        if (shouldDebug) {
-          console.log(`🎵 Monitor frame ${frameCount}, AudioContext state: ${audioContext.state}`);
-        }
-        
-        // Try float data for better precision if available
-        let rms = 0;
-        let peak = 0;
-        let minValue = 1;
-        let maxValue = -1;
-        const noiseFloor = 0.01;
-        
         try {
+          // Check if we should continue monitoring
+          if (!isMonitoringActive) {
+            console.log('🎵 Monitoring stopped, not scheduling next frame');
+            return;
+          }
+          
+          frameCount++;
+          
+          // Log entry to every frame for debugging
+          if (frameCount <= 5 || frameCount % 30 === 0) {
+            console.log(`🎵 [ENTRY] Monitor frame ${frameCount}, entering function...`);
+            console.log(`🎵 Current levelAnimationFrame value:`, levelAnimationFrame);
+          }
+          
+          // Debug every 30 frames (~0.5 seconds)
+          const shouldDebug = frameCount % 30 === 0;
+          if (shouldDebug) {
+            console.log(`🎵 Monitor frame ${frameCount}, AudioContext state: ${audioContext.state}`);
+            console.log(`🎵 Analyser node state:`, analyser.context.state, 'connected:', analyser.numberOfInputs > 0);
+          }
+          
+          // Try float data for better precision if available
+          let rms = 0;
+          let peak = 0;
+          let minValue = 1;
+          let maxValue = -1;
+          const noiseFloor = 0.01;
+          
+          try {
           // Try getFloatTimeDomainData for better precision
           const floatData = new Float32Array(analyser.fftSize);
           analyser.getFloatTimeDomainData(floatData);
@@ -561,20 +576,59 @@ export default function RecordPage() {
         }
         
         // Continue monitoring
+        console.log(`🎵 [PRE-RAF] About to call requestAnimationFrame for frame ${frameCount + 1}`);
+        const frameId = requestAnimationFrame(monitorAudioLevel);
+        console.log(`🎵 [POST-RAF] requestAnimationFrame returned ID: ${frameId}`);
+        
+        // Try NOT setting the frame ID in state to see if that's breaking it
+        // setLevelAnimationFrame(frameId);
+        console.log(`🎵 [SKIP] Skipping setLevelAnimationFrame to test if it's breaking the loop`);
+        
+        // Log exit from frame
+        if (frameCount <= 5 || frameCount % 30 === 0) {
+          console.log(`🎵 [EXIT] Monitor frame ${frameCount}, scheduled next frame with ID: ${frameId}`);
+        }
+        
+      } catch (error) {
+        console.error(`❌ Error in monitorAudioLevel frame ${frameCount}:`, error);
+        console.error('Stack trace:', error.stack);
+        // Try to recover by scheduling next frame anyway
         const frameId = requestAnimationFrame(monitorAudioLevel);
         setLevelAnimationFrame(frameId);
+      }
+    };
+      
+      // Store cleanup function to stop monitoring
+      (window as any).stopAudioMonitoring = () => {
+        console.log('🎵 Stopping audio monitoring...');
+        isMonitoringActive = false;
+        if (levelAnimationFrame) {
+          cancelAnimationFrame(levelAnimationFrame);
+        }
       };
       
+      // Start the monitoring loop
+      console.log('🎵 Starting monitorAudioLevel loop...');
       monitorAudioLevel();
       console.log('✅ Audio level monitoring started with enhanced RMS detection and logarithmic scaling');
     } catch (error) {
       console.error('❌ Failed to start audio level monitoring:', error);
+      console.error('Stack trace:', error.stack);
       // Recording continues without level monitoring
     }
   }
 
   function stopAudioLevelMonitoring() {
+    console.log('🔇 stopAudioLevelMonitoring called');
+    
+    // Call the cleanup function if it exists
+    if ((window as any).stopAudioMonitoring) {
+      (window as any).stopAudioMonitoring();
+      delete (window as any).stopAudioMonitoring;
+    }
+    
     if (levelAnimationFrame) {
+      console.log(`🔇 Cancelling animation frame: ${levelAnimationFrame}`);
       cancelAnimationFrame(levelAnimationFrame);
       setLevelAnimationFrame(null);
     }
