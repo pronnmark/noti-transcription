@@ -58,7 +58,7 @@ export async function GET(
 
     // Calculate estimated time remaining (rough estimate)
     let estimatedTimeRemaining: number | null = null;
-    if (job.status === 'processing' && job.startedAt && job.progress > 0) {
+    if (job.status === 'processing' && job.startedAt && job.progress && job.progress > 0) {
       const elapsedMs = Date.now() - new Date(job.startedAt).getTime();
       const progressDecimal = job.progress / 100;
       const totalEstimatedMs = elapsedMs / progressDecimal;

@@ -801,9 +801,9 @@ export default function RecordPage() {
       
       // Debug FormData contents
       console.log('📤 FormData entries:');
-      for (const [key, value] of formData.entries()) {
+      Array.from(formData.entries()).forEach(([key, value]) => {
         console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
-      }
+      });
 
       // Include location data if available (check both store and ref)
       const locationToUpload = locationData || lastLocationRef.current;

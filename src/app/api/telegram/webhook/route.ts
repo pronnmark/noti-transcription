@@ -354,24 +354,23 @@ async function handleStatusCommand(chatId: number, jobId: string) {
 // Handle summary command
 async function handleSummaryCommand(chatId: number, fileId: string) {
   try {
-    const file = await db.query.audioFiles.findFirst({
-      where: (files, { eq }) => eq(files.id, parseInt(fileId)),
-      with: {
-        transcriptionJobs: {
-          where: (jobs, { eq }) => eq(jobs.status, 'completed'),
-          orderBy: (jobs, { desc }) => [desc(jobs.completedAt)],
-          limit: 1,
-        },
-      },
-    });
+    const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, parseInt(fileId))).limit(1);
+    const file = fileResults[0];
+    
+    // Get completed transcription job for this file
+    const jobResults = await db.select().from(transcriptionJobs)
+      .where(eq(transcriptionJobs.fileId, parseInt(fileId)))
+      .orderBy(desc(transcriptionJobs.completedAt))
+      .limit(1);
+    const job = jobResults[0];
 
-    if (!file || !file.transcriptionJobs[0]?.result) {
+    if (!file || !job || job.status !== 'completed' || !job.transcript) {
       await sendMessage(chatId, `❌ No completed transcription found for file #${fileId}.`);
       return;
     }
 
-    const transcription = file.transcriptionJobs[0].result;
-    const text = transcription.segments?.map(s => s.text).join(' ') || transcription.text || 'No text available';
+    const transcription = job.transcript;
+    const text = transcription?.map(s => s.text).join(' ') || 'No text available';
 
     // Split long messages
     const maxLength = 4000;

@@ -1,6 +1,6 @@
 import { db } from '@/lib/database';
-import { transcriptionJobs, telegramNotificationPreferences } from '@/lib/database/schema';
-import { eq, and, isNotNull } from 'drizzle-orm';
+import { transcriptionJobs, telegramNotificationPreferences, audioFiles } from '@/lib/database/schema';
+import { eq, and, isNotNull, gte, desc } from 'drizzle-orm';
 
 // Check if we should send a notification based on user preferences and quiet hours
 function shouldSendNotification(
@@ -49,48 +49,24 @@ function shouldSendNotification(
 export async function notifyTranscriptionComplete(jobId: number) {
   try {
     // Get job details
-    const job = await db.query.transcriptionJobs.findFirst({
-      where: (jobs, { eq }) => eq(jobs.id, jobId),
-      with: {
-        file: true,
-      },
-    });
-
-    if (!job || !job.metadata?.telegramChatId) {
+    const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, jobId)).limit(1);
+    const job = jobResults[0];
+    
+    if (!job) {
       return;
     }
-
-    const chatId = String(job.metadata.telegramChatId);
-
-    // Check notification preferences
-    const preferences = await db.query.telegramNotificationPreferences.findFirst({
-      where: (prefs, { eq }) => eq(prefs.chatId, chatId),
-    });
-
-    // Use default preferences if none exist
-    const shouldNotify = preferences 
-      ? shouldSendNotification(preferences, 'transcriptionComplete')
-      : true; // Default to sending notifications
-
-    if (!shouldNotify) {
-      console.log(`Skipping notification for job ${jobId} due to user preferences`);
+    
+    // Get file details
+    const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+    const file = fileResults[0];
+    
+    if (!file) {
       return;
     }
-
-    // Send notification via API
-    const response = await fetch('/api/telegram/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'transcription_complete',
-        jobId,
-        chatId,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to send transcription complete notification:', await response.text());
-    }
+    
+    // For now, skip telegram notifications since we don't have chatId stored in the schema
+    // TODO: Add telegram metadata storage to jobs or files
+    return;
   } catch (error) {
     console.error('Error in notifyTranscriptionComplete:', error);
   }
@@ -100,48 +76,24 @@ export async function notifyTranscriptionComplete(jobId: number) {
 export async function notifyTranscriptionFailed(jobId: number) {
   try {
     // Get job details
-    const job = await db.query.transcriptionJobs.findFirst({
-      where: (jobs, { eq }) => eq(jobs.id, jobId),
-      with: {
-        file: true,
-      },
-    });
-
-    if (!job || !job.metadata?.telegramChatId) {
+    const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, jobId)).limit(1);
+    const job = jobResults[0];
+    
+    if (!job) {
       return;
     }
-
-    const chatId = String(job.metadata.telegramChatId);
-
-    // Check notification preferences
-    const preferences = await db.query.telegramNotificationPreferences.findFirst({
-      where: (prefs, { eq }) => eq(prefs.chatId, chatId),
-    });
-
-    // Use default preferences if none exist
-    const shouldNotify = preferences 
-      ? shouldSendNotification(preferences, 'transcriptionFailed')
-      : true; // Default to sending notifications
-
-    if (!shouldNotify) {
-      console.log(`Skipping failure notification for job ${jobId} due to user preferences`);
+    
+    // Get file details
+    const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+    const file = fileResults[0];
+    
+    if (!file) {
       return;
     }
-
-    // Send notification via API
-    const response = await fetch('/api/telegram/notify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'transcription_failed',
-        jobId,
-        chatId,
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Failed to send transcription failed notification:', await response.text());
-    }
+    
+    // For now, skip telegram notifications since we don't have chatId stored in the schema
+    // TODO: Add telegram metadata storage to jobs or files
+    return;
   } catch (error) {
     console.error('Error in notifyTranscriptionFailed:', error);
   }
@@ -151,61 +103,39 @@ export async function notifyTranscriptionFailed(jobId: number) {
 export async function monitorTranscriptionJobs() {
   try {
     // Find recently completed jobs that haven't been notified
-    const recentJobs = await db.query.transcriptionJobs.findMany({
-      where: (jobs, { and, eq, gte, isNotNull }) => and(
-        eq(jobs.status, 'completed'),
-        isNotNull(jobs.completedAt),
-        gte(jobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)), // Last 5 minutes
-      ),
-      with: {
-        file: true,
-      },
-    });
+    const recentJobs = await db.select()
+      .from(transcriptionJobs)
+      .where(and(
+        eq(transcriptionJobs.status, 'completed'),
+        isNotNull(transcriptionJobs.completedAt),
+        gte(transcriptionJobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
+      ));
 
     // Check each job for Telegram metadata
+    // TODO: Re-enable when telegram metadata storage is implemented in schema
     for (const job of recentJobs) {
-      if (job.metadata?.telegramChatId && !job.metadata?.notified) {
-        await notifyTranscriptionComplete(job.id);
-        
-        // Mark as notified
-        await db.update(transcriptionJobs)
-          .set({
-            metadata: {
-              ...job.metadata,
-              notified: true,
-            },
-          })
-          .where(eq(transcriptionJobs.id, job.id));
-      }
+      // Skip notifications until metadata field is added to schema
+      // if (job.metadata?.telegramChatId && !job.metadata?.notified) {
+      //   await notifyTranscriptionComplete(job.id);
+      // }
     }
 
     // Find recently failed jobs
-    const failedJobs = await db.query.transcriptionJobs.findMany({
-      where: (jobs, { and, eq, gte, isNotNull }) => and(
-        eq(jobs.status, 'failed'),
-        isNotNull(jobs.completedAt),
-        gte(jobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)), // Last 5 minutes
-      ),
-      with: {
-        file: true,
-      },
-    });
+    const failedJobs = await db.select()
+      .from(transcriptionJobs)
+      .where(and(
+        eq(transcriptionJobs.status, 'failed'),
+        isNotNull(transcriptionJobs.completedAt),
+        gte(transcriptionJobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
+      ));
 
     // Notify for failed jobs
+    // TODO: Re-enable when telegram metadata storage is implemented in schema
     for (const job of failedJobs) {
-      if (job.metadata?.telegramChatId && !job.metadata?.notifiedFailure) {
-        await notifyTranscriptionFailed(job.id);
-        
-        // Mark as notified
-        await db.update(transcriptionJobs)
-          .set({
-            metadata: {
-              ...job.metadata,
-              notifiedFailure: true,
-            },
-          })
-          .where(eq(transcriptionJobs.id, job.id));
-      }
+      // Skip notifications until metadata field is added to schema
+      // if (job.metadata?.telegramChatId && !job.metadata?.notifiedFailure) {
+      //   await notifyTranscriptionFailed(job.id);
+      // }
     }
 
   } catch (error) {
