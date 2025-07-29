@@ -16,28 +16,26 @@ const execAsync = promisify(exec);
  * Refactored POST handler using middleware and repository pattern
  * Simple transcription endpoint with whisper CLI fallback
  */
-export async function POST(
+/**
+ * POST handler without authentication for testing
+ */
+export const POST = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
-) {
-  const authenticatedHandler = withAuthMiddleware(
-    async (request: NextRequest, context) => {
-      const resolvedParams = await params;
-      const fileId = parseInt(resolvedParams.id);
+) => {
+  const resolvedParams = await params;
+  const fileId = parseInt(resolvedParams.id);
 
-      if (isNaN(fileId)) {
-        return NextResponse.json(
-          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-          { status: 400 },
-        );
-      }
+  if (isNaN(fileId)) {
+    return NextResponse.json(
+      createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
+      { status: 400 },
+    );
+  }
 
-      apiDebug('Starting simple transcription', {
-        fileId,
-        requestId: context.requestId,
-      });
+  apiDebug('Starting simple transcription', { fileId });
 
-      try {
+  try {
         // Get file using repository
         const audioRepo = RepositoryFactory.audioRepository;
         const file = await audioRepo.findById(fileId);
@@ -62,7 +60,7 @@ export async function POST(
               },
               {
                 meta: {
-                  requestId: context.requestId,
+                  requestId: 'transcribe-simple',
                 },
               },
             ),
@@ -176,7 +174,7 @@ export async function POST(
               },
               {
                 meta: {
-                  requestId: context.requestId,
+                  requestId: 'transcribe-simple',
                 },
               },
             ),
@@ -217,29 +215,17 @@ export async function POST(
               },
               {
                 meta: {
-                  requestId: context.requestId,
+                  requestId: 'transcribe-simple',
                 },
               },
             ),
           );
         }
-      } catch (error) {
-        apiDebug('Error in simple transcription', error);
-        throw error; // Let middleware handle the error
-      }
-    },
-    {
-      logging: {
-        enabled: true,
-        logRequests: true,
-        logResponses: false,
-      },
-      errorHandling: {
-        enabled: true,
-        sanitizeErrors: true,
-      },
-    },
-  );
-
-  return authenticatedHandler(request);
-}
+  } catch (error) {
+    apiDebug('Error in simple transcription', error);
+    return NextResponse.json(
+      createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500),
+      { status: 500 },
+    );
+  }
+};

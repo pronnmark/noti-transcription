@@ -71,19 +71,24 @@ export class TestHelpers {
     file: TestFile,
     options: { isDraft?: boolean; speakerCount?: number } = {}
   ): Promise<any> {
-    const formData = new FormData();
-    const blob = new Blob([file.buffer], { type: file.contentType });
-    formData.append('file', blob, file.name);
+    // Use Playwright's multipart format instead of FormData
+    const multipartData: any = {
+      file: {
+        name: file.name,
+        mimeType: file.contentType,
+        buffer: file.buffer,
+      }
+    };
     
     if (options.isDraft) {
-      formData.append('isDraft', 'true');
+      multipartData.isDraft = 'true';
     }
     if (options.speakerCount) {
-      formData.append('speakerCount', options.speakerCount.toString());
+      multipartData.speakerCount = options.speakerCount.toString();
     }
 
     const response = await request.post('/api/upload', {
-      multipart: formData,
+      multipart: multipartData,
     });
 
     if (!response.ok()) {
@@ -96,7 +101,15 @@ export class TestHelpers {
     }
 
     expect(response.ok()).toBeTruthy();
-    return await response.json();
+    const responseData = await response.json();
+    
+    // Return the first result for backward compatibility
+    if (responseData.data?.results?.length > 0) {
+      return responseData.data.results[0];
+    }
+    
+    // Fallback if response structure is different
+    return responseData;
   }
 
   static async waitForTranscription(

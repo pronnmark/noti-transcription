@@ -82,17 +82,19 @@ test.describe('API Endpoints with Supabase Integration', () => {
     test('should reject invalid file types', async ({ request }) => {
       const invalidFile = TestHelpers.getTestFile('invalid-file.txt');
       
-      const formData = new FormData();
-      const blob = new Blob([invalidFile.buffer], { type: 'text/plain' });
-      formData.append('file', blob, invalidFile.name);
-
       const response = await request.post('/api/upload', {
-        multipart: formData,
+        multipart: {
+          file: {
+            name: invalidFile.name,
+            mimeType: 'text/plain',
+            buffer: invalidFile.buffer,
+          }
+        },
       });
 
       expect(response.status()).toBe(400);
       const errorData = await response.json();
-      expect(errorData.error).toContain('Invalid file type');
+      expect(errorData.message || errorData.error).toContain('Invalid file type');
     });
 
     test('should handle speaker count option', async ({ request }) => {
@@ -205,7 +207,7 @@ test.describe('API Endpoints with Supabase Integration', () => {
       expect(response.status()).toBe(404);
       
       const errorData = await response.json();
-      expect(errorData.error).toContain('File not found');
+      expect(errorData.message).toContain('File not found');
     });
   });
 

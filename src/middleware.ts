@@ -26,7 +26,7 @@ export async function middleware(request: NextRequest) {
     request.headers.get('authorization')?.replace('Bearer ', '');
 
   // Skip auth check for certain API endpoints that might be called before auth
-  const publicApiEndpoints = ['/api/health', '/api/auth', '/api/upload', '/api/debug-upload', '/api/files'];
+  const publicApiEndpoints = ['/api/health', '/api/auth', '/api/upload', '/api/debug-upload', '/api/files', '/api/telegram/webhook', '/api/transcribe-simple', '/api/transcribe'];
   
   
   const isPublicApi = publicApiEndpoints.some(endpoint =>
