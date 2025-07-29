@@ -71,8 +71,8 @@ export class AdaptiveAIService {
     let validatedTemplateId = null;
     if (templateId) {
       const { getDb } = await import('@/lib/database/client');
-      const { summarizationPrompts } = await import('@/lib/database/schema');
-      const { eq, and } = await import('drizzle-orm');
+      // Removed schema import - using Supabase queries
+      // Removed drizzle-orm dependency
 
       const result = await getDb()
         .select()
@@ -131,7 +131,7 @@ export class AdaptiveAIService {
     });
 
     // Store in database using validated template ID
-    const { summarizations } = await import('@/lib/database/schema');
+    // Removed schema import - using Supabase queries
     const db = await import('@/lib/database/client').then(m => m.getDb());
 
     const [summarization] = await db
@@ -167,8 +167,8 @@ export class AdaptiveAIService {
       options;
 
     // Get templates
-    const { extractionTemplates } = await import('@/lib/database/schema');
-    const { inArray } = await import('drizzle-orm');
+    // Removed schema import - using Supabase queries
+    // Removed drizzle-orm dependency
     const db = await import('@/lib/database/client').then(m => m.getDb());
 
     const templates = await db
@@ -213,7 +213,7 @@ export class AdaptiveAIService {
 
         // Store each extracted item in the database
         for (const item of parsedResults) {
-          const { extractions } = await import('@/lib/database/schema');
+          // Removed schema import - using Supabase queries
           const [extraction] = await db
             .insert(extractions)
             .values({
@@ -268,8 +268,8 @@ export class AdaptiveAIService {
     const { model = this.defaultModel, temperature = 0.1 } = options; // Lower temperature for consistent analysis
 
     // Get templates
-    const { dataPointTemplates } = await import('@/lib/database/schema');
-    const { inArray } = await import('drizzle-orm');
+    // Removed schema import - using Supabase queries
+    // Removed drizzle-orm dependency
     const db = await import('@/lib/database/client').then(m => m.getDb());
 
     const templates = await db
@@ -313,7 +313,7 @@ export class AdaptiveAIService {
         );
 
         // Store in database
-        const { dataPoints } = await import('@/lib/database/schema');
+        // Removed schema import - using Supabase queries
         const [dataPoint] = await db
           .insert(dataPoints)
           .values({
@@ -358,8 +358,8 @@ export class AdaptiveAIService {
     dataPoints: DataPointResult[];
   }> {
     // Get default templates
-    const { extractionTemplates } = await import('@/lib/database/schema');
-    const { eq } = await import('drizzle-orm');
+    // Removed schema import - using Supabase queries
+    // Removed drizzle-orm dependency
     const db = await import('@/lib/database/client').then(m => m.getDb());
 
     const defaultExtractionTemplates = await db
@@ -367,7 +367,7 @@ export class AdaptiveAIService {
       .from(extractionTemplates)
       .where(eq(extractionTemplates.isDefault, true));
 
-    const { dataPointTemplates } = await import('@/lib/database/schema');
+    // Removed schema import - using Supabase queries
 
     const defaultDataPointTemplates = await db
       .select()

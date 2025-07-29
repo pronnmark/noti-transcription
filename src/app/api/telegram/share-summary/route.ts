@@ -1,13 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import {
-  telegramShares,
-  audioFiles,
-  aiExtracts,
-  summarizationTemplates,
-  extractionTemplates,
-} from '@/lib/database/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { telegramMCP } from '@/lib/services/telegram-mcp-client';
 import {
   getSessionTokenFromRequest,
@@ -39,12 +31,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Get file information
-    const fileData = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileId))
+    const supabase = getSupabase();
+    const { data: fileData, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileId)
       .limit(1);
-    if (!fileData.length) {
+    
+    if (fileError || !fileData || fileData.length === 0) {
       return NextResponse.json(
         { success: false, error: 'File not found' },
         { status: 404 },
@@ -52,47 +46,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Get AI extract - either specific one or latest
-    // Build query based on whether we want a specific extract or latest
-    const extractData = extractId
-      ? await db
-        .select({
-          id: aiExtracts.id,
-          content: aiExtracts.content,
-          model: aiExtracts.model,
-          prompt: aiExtracts.prompt,
-          createdAt: aiExtracts.createdAt,
-          templateName: extractionTemplates.name,
-          templateDescription: extractionTemplates.description,
-        })
-        .from(aiExtracts)
-        .leftJoin(
-          extractionTemplates,
-          eq(aiExtracts.templateId, extractionTemplates.id),
+    let extractQuery = supabase
+      .from('ai_extracts')
+      .select(`
+        id,
+        content,
+        model,
+        prompt,
+        created_at,
+        extraction_templates (
+          name,
+          description
         )
-        .where(
-          and(eq(aiExtracts.fileId, fileId), eq(aiExtracts.id, extractId)),
-        )
-        .limit(1)
-      : await db
-        .select({
-          id: aiExtracts.id,
-          content: aiExtracts.content,
-          model: aiExtracts.model,
-          prompt: aiExtracts.prompt,
-          createdAt: aiExtracts.createdAt,
-          templateName: extractionTemplates.name,
-          templateDescription: extractionTemplates.description,
-        })
-        .from(aiExtracts)
-        .leftJoin(
-          extractionTemplates,
-          eq(aiExtracts.templateId, extractionTemplates.id),
-        )
-        .where(eq(aiExtracts.fileId, fileId))
-        .orderBy(desc(aiExtracts.createdAt))
-        .limit(1);
+      `)
+      .eq('file_id', fileId);
+    
+    if (extractId) {
+      extractQuery = extractQuery.eq('id', extractId);
+    } else {
+      extractQuery = extractQuery.order('created_at', { ascending: false });
+    }
+    
+    const { data: extractData, error: extractError } = await extractQuery.limit(1);
 
-    if (!extractData.length) {
+    if (extractError || !extractData || extractData.length === 0) {
       return NextResponse.json(
         { success: false, error: 'No AI summary found for this file' },
         { status: 404 },
@@ -140,12 +117,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Format the complete message
-    const fileName = file.originalFileName || file.fileName;
+    const fileName = file.original_file_name || file.file_name;
     const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
-    const templateInfo = extract.templateName
-      ? ` (${extract.templateName})`
+    const templateInfo = extract.extraction_templates?.name
+      ? ` (${extract.extraction_templates.name})`
       : '';
-    const createdDate = new Date(extract.createdAt).toLocaleDateString();
+    const createdDate = new Date(extract.created_at).toLocaleDateString();
 
     const message = telegramMCP.formatMessage(summaryContent, {
       title: `AI Summary${templateInfo}`,
@@ -211,16 +188,16 @@ export async function POST(request: NextRequest) {
 
     // Record the share in database
     const telegramMessage = result.result;
-    await db.insert(telegramShares).values({
-      fileId,
-      chatId: telegramMessage?.chat?.id?.toString() || targetIdentifier,
-      chatName:
+    await supabase.from('telegram_shares').insert({
+      file_id: fileId,
+      chat_id: telegramMessage?.chat?.id?.toString() || targetIdentifier,
+      chat_name:
         telegramMessage?.chat?.title ||
         telegramMessage?.chat?.username ||
         targetIdentifier,
-      messageText: message,
+      message_text: message,
       status: 'sent',
-      telegramMessageId: telegramMessage?.message_id?.toString() || 'sent',
+      telegram_message_id: telegramMessage?.message_id?.toString() || 'sent',
     });
 
     return NextResponse.json({
@@ -229,9 +206,9 @@ export async function POST(request: NextRequest) {
       telegramMessageId: telegramMessage?.message_id,
       summaryInfo: {
         id: extract.id,
-        templateName: extract.templateName,
+        templateName: extract.extraction_templates?.name,
         model: extract.model,
-        createdAt: extract.createdAt,
+        createdAt: extract.created_at,
       },
       chat: {
         id: telegramMessage?.chat?.id,

@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import {
-  telegramSettings,
-  audioFiles,
-  transcriptionJobs,
-} from '@/lib/database/schema';
-import { eq, gte, desc } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { v4 as uuidv4 } from 'uuid';
@@ -72,10 +66,14 @@ export async function POST(request: NextRequest) {
     const update: TelegramUpdate = await request.json();
 
     // Check if Telegram integration is enabled
-    const settings = await db.select().from(telegramSettings).limit(1);
-    const config = settings[0];
+    const supabase = getSupabase();
+    const { data: settings } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
+    const config = settings?.[0];
 
-    if (!config?.isEnabled) {
+    if (!config?.is_enabled) {
       return NextResponse.json({ ok: true }); // Acknowledge but don't process
     }
 

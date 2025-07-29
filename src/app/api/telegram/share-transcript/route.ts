@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import {
-  telegramShares,
-  audioFiles,
-  transcriptionJobs,
-} from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { telegramMCP } from '@/lib/services/telegram-mcp-client';
 import {
   getSessionTokenFromRequest,
@@ -35,25 +29,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Get file and transcript information
-    const fileData = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileId))
+    const supabase = getSupabase();
+    const { data: fileData, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileId)
       .limit(1);
-    if (!fileData.length) {
+    
+    if (fileError || !fileData || fileData.length === 0) {
       return NextResponse.json(
         { success: false, error: 'File not found' },
         { status: 404 },
       );
     }
 
-    const transcriptData = await db
-      .select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileId))
+    const { data: transcriptData, error: transcriptError } = await supabase
+      .from('transcription_jobs')
+      .select('*')
+      .eq('file_id', fileId)
       .limit(1);
 
-    if (!transcriptData.length || !transcriptData[0].transcript) {
+    if (transcriptError || !transcriptData || transcriptData.length === 0 || !transcriptData[0].transcript) {
       return NextResponse.json(
         { success: false, error: 'No transcript available for this file' },
         { status: 404 },
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Format the complete message
-    const fileName = file.originalFileName || file.fileName;
+    const fileName = file.original_file_name || file.file_name;
     const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
 
     const message = telegramMCP.formatMessage(transcriptText, {
@@ -198,16 +194,16 @@ export async function POST(request: NextRequest) {
 
     // Record the share in database
     const telegramMessage = result.result;
-    await db.insert(telegramShares).values({
-      fileId,
-      chatId: telegramMessage?.chat?.id?.toString() || targetIdentifier,
-      chatName:
+    await supabase.from('telegram_shares').insert({
+      file_id: fileId,
+      chat_id: telegramMessage?.chat?.id?.toString() || targetIdentifier,
+      chat_name:
         telegramMessage?.chat?.title ||
         telegramMessage?.chat?.username ||
         targetIdentifier,
-      messageText: message,
+      message_text: message,
       status: 'sent',
-      telegramMessageId: telegramMessage?.message_id?.toString() || 'sent',
+      telegram_message_id: telegramMessage?.message_id?.toString() || 'sent',
     });
 
     return NextResponse.json({

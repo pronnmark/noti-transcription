@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTranscript } from '@/lib/services/transcription';
 import { db, speakerLabels } from '@/lib/database';
-import { eq } from 'drizzle-orm';
-
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },

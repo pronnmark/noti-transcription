@@ -12,7 +12,7 @@ export async function GET() {
     const { data: settings } = await supabase.from('telegram_settings').select('*').limit(1);
     const config = settings?.[0];
 
-    const hasBotToken = !!(config?.botToken || process.env.TELEGRAM_BOT_TOKEN);
+    const hasBotToken = !!(config?.bot_token || process.env.TELEGRAM_BOT_TOKEN);
     let botInfo = null;
 
     // If bot token exists, try to get bot info via MCP
@@ -55,11 +55,11 @@ asyncio.run(get_bot_info())
       settings: {
         id: config?.id || null,
         hasBotToken,
-        botTokenSource: config?.botToken ? 'database' : 'environment',
-        chatConfigurations: config?.chatConfigurations || [],
+        botTokenSource: config?.bot_token ? 'database' : 'environment',
+        chatConfigurations: config?.chat_configurations || [],
         defaultChatId:
-          config?.defaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
-        isEnabled: config?.isEnabled ?? true,
+          config?.default_chat_id || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
+        isEnabled: config?.is_enabled ?? true,
         botInfo,
       },
     });
@@ -78,34 +78,53 @@ export async function POST(request: NextRequest) {
     const { botToken, chatConfigurations, defaultChatId, isEnabled } =
       await request.json();
 
+    const supabase = getSupabase();
+    
     // Get existing settings
-    const existingSettings = await db.select().from(telegramSettings).limit(1);
-    const existing = existingSettings[0];
+    const { data: existingSettings } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
+    const existing = existingSettings?.[0];
 
     const updateData = {
-      botToken: botToken || null,
-      chatConfigurations: chatConfigurations || [],
-      defaultChatId: defaultChatId || null,
-      isEnabled: isEnabled ?? true,
-      updatedAt: new Date(),
+      bot_token: botToken || null,
+      chat_configurations: chatConfigurations || [],
+      default_chat_id: defaultChatId || null,
+      is_enabled: isEnabled ?? true,
+      updated_at: new Date().toISOString(),
     };
 
     let result;
     if (existing) {
       // Update existing settings
-      result = await db
-        .update(telegramSettings)
-        .set(updateData)
-        .where(eq(telegramSettings.id, existing.id))
-        .returning();
+      const { data, error } = await supabase
+        .from('telegram_settings')
+        .update(updateData)
+        .eq('id', existing.id)
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
     } else {
       // Create new settings
-      result = await db.insert(telegramSettings).values(updateData).returning();
+      const { data, error } = await supabase
+        .from('telegram_settings')
+        .insert({
+          ...updateData,
+          created_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      result = data;
     }
 
     return NextResponse.json({
       success: true,
-      settings: result[0],
+      settings: result,
       message: 'Telegram settings updated successfully',
     });
   } catch (error) {
@@ -130,9 +149,13 @@ export async function PUT(request: NextRequest) {
     }
 
     // Get bot token (DB or env)
-    const settings = await db.select().from(telegramSettings).limit(1);
-    const config = settings[0];
-    const botToken = config?.botToken || process.env.TELEGRAM_BOT_TOKEN;
+    const supabase = getSupabase();
+    const { data: settings } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
+    const config = settings?.[0];
+    const botToken = config?.bot_token || process.env.TELEGRAM_BOT_TOKEN;
 
     if (!botToken) {
       return NextResponse.json(
