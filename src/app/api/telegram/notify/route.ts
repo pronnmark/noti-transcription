@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { telegramSettings, transcriptionJobs, audioFiles } from '@/lib/database/schema';
+import {
+  telegramSettings,
+  transcriptionJobs,
+  audioFiles,
+} from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -8,7 +12,11 @@ import { promisify } from 'util';
 const execAsync = promisify(exec);
 
 interface NotificationRequest {
-  type: 'transcription_complete' | 'transcription_failed' | 'summary_ready' | 'custom';
+  type:
+    | 'transcription_complete'
+    | 'transcription_failed'
+    | 'summary_ready'
+    | 'custom';
   fileId?: number;
   jobId?: number;
   chatId?: string;
@@ -24,7 +32,7 @@ export async function POST(request: NextRequest) {
     // Check if Telegram integration is enabled
     const settings = await db.select().from(telegramSettings).limit(1);
     const config = settings[0];
-    
+
     if (!config?.isEnabled) {
       return NextResponse.json({
         success: false,
@@ -36,40 +44,49 @@ export async function POST(request: NextRequest) {
     switch (notification.type) {
       case 'transcription_complete':
         return await handleTranscriptionComplete(notification, config);
-      
+
       case 'transcription_failed':
         return await handleTranscriptionFailed(notification, config);
-      
+
       case 'summary_ready':
         return await handleSummaryReady(notification, config);
-      
+
       case 'custom':
         return await handleCustomNotification(notification, config);
-      
+
       default:
         return NextResponse.json({
           success: false,
           error: 'Invalid notification type',
         });
     }
-
   } catch (error) {
     console.error('Notification error:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 },
     );
   }
 }
 
 // Handle transcription complete notifications
-async function handleTranscriptionComplete(notification: NotificationRequest, config: any) {
+async function handleTranscriptionComplete(
+  notification: NotificationRequest,
+  config: any,
+) {
   if (!notification.jobId) {
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
   // Get job details
-  const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, notification.jobId!)).limit(1);
+  const jobResults = await db
+    .select()
+    .from(transcriptionJobs)
+    .where(eq(transcriptionJobs.id, notification.jobId!))
+    .limit(1);
   const job = jobResults[0];
 
   if (!job) {
@@ -77,7 +94,11 @@ async function handleTranscriptionComplete(notification: NotificationRequest, co
   }
 
   // Get file details
-  const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+  const fileResults = await db
+    .select()
+    .from(audioFiles)
+    .where(eq(audioFiles.id, job.fileId))
+    .limit(1);
   const file = fileResults[0];
 
   if (!file) {
@@ -89,15 +110,20 @@ async function handleTranscriptionComplete(notification: NotificationRequest, co
 
   // Determine target chat
   const chatId = notification.chatId || config.defaultChatId;
-  
+
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
   }
 
   // Format notification message
-  const duration = job.completedAt && job.startedAt
-    ? Math.round((new Date(job.completedAt).getTime() - new Date(job.startedAt).getTime()) / 1000)
-    : null;
+  const duration =
+    job.completedAt && job.startedAt
+      ? Math.round(
+        (new Date(job.completedAt).getTime() -
+            new Date(job.startedAt).getTime()) /
+            1000,
+      )
+      : null;
 
   const message = `✅ **Transcription Complete!**
 
@@ -111,7 +137,7 @@ Use /summary ${file.id} to see the transcription.`;
 
   // Send notification
   const result = await sendTelegramMessage(chatId, message);
-  
+
   return NextResponse.json({
     success: result.success,
     chatId,
@@ -121,13 +147,20 @@ Use /summary ${file.id} to see the transcription.`;
 }
 
 // Handle transcription failed notifications
-async function handleTranscriptionFailed(notification: NotificationRequest, config: any) {
+async function handleTranscriptionFailed(
+  notification: NotificationRequest,
+  config: any,
+) {
   if (!notification.jobId) {
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
   // Get job details
-  const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, notification.jobId!)).limit(1);
+  const jobResults = await db
+    .select()
+    .from(transcriptionJobs)
+    .where(eq(transcriptionJobs.id, notification.jobId!))
+    .limit(1);
   const job = jobResults[0];
 
   if (!job) {
@@ -135,7 +168,11 @@ async function handleTranscriptionFailed(notification: NotificationRequest, conf
   }
 
   // Get file details
-  const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+  const fileResults = await db
+    .select()
+    .from(audioFiles)
+    .where(eq(audioFiles.id, job.fileId))
+    .limit(1);
   const file = fileResults[0];
 
   if (!file) {
@@ -147,7 +184,7 @@ async function handleTranscriptionFailed(notification: NotificationRequest, conf
 
   // Determine target chat
   const chatId = notification.chatId || config.defaultChatId;
-  
+
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
   }
@@ -163,7 +200,7 @@ Please try uploading the file again or contact support if the issue persists.`;
 
   // Send notification
   const result = await sendTelegramMessage(chatId, message);
-  
+
   return NextResponse.json({
     success: result.success,
     chatId,
@@ -173,18 +210,23 @@ Please try uploading the file again or contact support if the issue persists.`;
 }
 
 // Handle summary ready notifications
-async function handleSummaryReady(notification: NotificationRequest, config: any) {
+async function handleSummaryReady(
+  notification: NotificationRequest,
+  config: any,
+) {
   if (!notification.fileId) {
     return NextResponse.json({ success: false, error: 'File ID required' });
   }
 
   const chatId = notification.chatId || config.defaultChatId;
-  
+
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
   }
 
-  const message = notification.message || `📊 **Summary Ready!**
+  const message =
+    notification.message ||
+    `📊 **Summary Ready!**
 
 Your audio summary is now available.
 File ID: ${notification.fileId}
@@ -193,7 +235,7 @@ Visit the Noti dashboard to view and share the summary.`;
 
   // Send notification
   const result = await sendTelegramMessage(chatId, message);
-  
+
   return NextResponse.json({
     success: result.success,
     chatId,
@@ -203,19 +245,22 @@ Visit the Noti dashboard to view and share the summary.`;
 }
 
 // Handle custom notifications
-async function handleCustomNotification(notification: NotificationRequest, config: any) {
+async function handleCustomNotification(
+  notification: NotificationRequest,
+  config: any,
+) {
   const chatId = notification.chatId || config.defaultChatId;
-  
+
   if (!chatId || !notification.message) {
-    return NextResponse.json({ 
-      success: false, 
-      error: 'Chat ID and message required for custom notifications' 
+    return NextResponse.json({
+      success: false,
+      error: 'Chat ID and message required for custom notifications',
     });
   }
 
   // Send custom message
   const result = await sendTelegramMessage(chatId, notification.message);
-  
+
   return NextResponse.json({
     success: result.success,
     chatId,
@@ -225,7 +270,10 @@ async function handleCustomNotification(notification: NotificationRequest, confi
 }
 
 // Helper function to send Telegram messages
-async function sendTelegramMessage(chatId: string | number, text: string): Promise<{
+async function sendTelegramMessage(
+  chatId: string | number,
+  text: string,
+): Promise<{
   success: boolean;
   messageId?: number;
   error?: string;
@@ -262,7 +310,7 @@ asyncio.run(send())
 "`;
 
     const { stdout, stderr } = await execAsync(command);
-    
+
     if (stderr && !stdout) {
       return { success: false, error: stderr };
     }
@@ -273,7 +321,6 @@ asyncio.run(send())
       messageId: result.message_id,
       error: result.error,
     };
-
   } catch (error) {
     return {
       success: false,
@@ -294,12 +341,11 @@ export async function GET() {
       hasDefaultChat: !!config?.defaultChatId,
       chatConfigurations: config?.chatConfigurations?.length || 0,
     });
-
   } catch (error) {
     console.error('Error fetching notification settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch settings' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

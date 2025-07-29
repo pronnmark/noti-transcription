@@ -1,36 +1,25 @@
-import { BaseService, ValidationRules } from './BaseService';
 import { RepositoryFactory } from '../../database/repositories';
 import type { TranscriptionRepository } from '../../database/repositories/TranscriptRepository';
-import type { ITranscriptionService } from './interfaces';
 import type {
   TranscriptionJob,
   NewTranscriptionJob,
   TranscriptSegment,
 } from '../../database/schema';
 
-export class TranscriptionService extends BaseService implements ITranscriptionService {
+export class TranscriptionService {
   private transcriptionRepository: TranscriptionRepository;
 
   constructor() {
-    super('TranscriptionService');
     this.transcriptionRepository = RepositoryFactory.transcriptionRepository;
-  }
-
-  protected async onInitialize(): Promise<void> {
-    this._logger.info('Transcription service initialized');
-  }
-
-  protected async onDestroy(): Promise<void> {
-    this._logger.info('Transcription service destroyed');
+    console.log('Transcription service initialized');
   }
 
   async createJob(data: NewTranscriptionJob): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('createJob', async () => {
-      this.validateInput(data, [
-        ValidationRules.required('fileId'),
-        ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId'),
-      ]);
+    try {
+      // Validate input
+      if (!data.fileId || typeof data.fileId !== 'number' || data.fileId <= 0) {
+        throw new Error('fileId is required and must be a positive number');
+      }
 
       // Set default values
       const jobData: NewTranscriptionJob = {
@@ -45,67 +34,74 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       };
 
       const job = await this.transcriptionRepository.create(jobData);
-      this._logger.info(`Created transcription job ${job.id} for file ${data.fileId}`);
+      console.log(
+        `Created transcription job ${job.id} for file ${data.fileId}`,
+      );
       return job;
-    });
+    } catch (error) {
+      console.error('Error in createJob:', error);
+      throw error;
+    }
   }
 
   async getJobById(id: number): Promise<TranscriptionJob | null> {
-    return this.executeWithErrorHandling('getJobById', async () => {
-      this.validateInput(id, [
-        ValidationRules.required('id'),
-        ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id'),
-      ]);
+    try {
+      if (!id || typeof id !== 'number' || id <= 0) {
+        throw new Error('id is required and must be a positive number');
+      }
 
       return await this.transcriptionRepository.findById(id);
-    });
+    } catch (error) {
+      console.error('Error in getJobById:', error);
+      throw error;
+    }
   }
 
   async getJobsByFileId(fileId: number): Promise<TranscriptionJob[]> {
-    return this.executeWithErrorHandling('getJobsByFileId', async () => {
-      this.validateInput(fileId, [
-        ValidationRules.required('fileId'),
-        ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId'),
-      ]);
+    try {
+      if (!fileId || typeof fileId !== 'number' || fileId <= 0) {
+        throw new Error('fileId is required and must be a positive number');
+      }
 
       return await this.transcriptionRepository.findByFileId(fileId);
-    });
+    } catch (error) {
+      console.error('Error in getJobsByFileId:', error);
+      throw error;
+    }
   }
 
   // Add singular method for getting the latest job by file ID (DRY principle)
   async getJobByFileId(fileId: number): Promise<TranscriptionJob | null> {
-    return this.executeWithErrorHandling('getJobByFileId', async () => {
-      this.validateInput(fileId, [
-        ValidationRules.required('fileId'),
-        ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId'),
-      ]);
+    try {
+      if (!fileId || typeof fileId !== 'number' || fileId <= 0) {
+        throw new Error('fileId is required and must be a positive number');
+      }
 
       return await this.transcriptionRepository.findLatestByFileId(fileId);
-    });
+    } catch (error) {
+      console.error('Error in getJobByFileId:', error);
+      throw error;
+    }
   }
 
   async getLatestJobByFileId(fileId: number): Promise<TranscriptionJob | null> {
-    return this.executeWithErrorHandling('getLatestJobByFileId', async () => {
-      this.validateInput(fileId, [
-        ValidationRules.required('fileId'),
-        ValidationRules.isNumber('fileId'),
-        ValidationRules.isPositive('fileId'),
-      ]);
+    try {
+      if (!fileId || typeof fileId !== 'number' || fileId <= 0) {
+        throw new Error('fileId is required and must be a positive number');
+      }
 
       return await this.transcriptionRepository.findLatestByFileId(fileId);
-    });
+    } catch (error) {
+      console.error('Error in getLatestJobByFileId:', error);
+      throw error;
+    }
   }
 
   async startTranscription(jobId: number): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('startTranscription', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
       // Check if job exists and is in pending state
       const job = await this.transcriptionRepository.findById(jobId);
@@ -114,122 +110,181 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       }
 
       if (job.status !== 'pending') {
-        throw new Error(`Cannot start transcription job ${jobId}: current status is ${job.status}`);
+        throw new Error(
+          `Cannot start transcription job ${jobId}: current status is ${job.status}`,
+        );
       }
 
-      const updatedJob = await this.transcriptionRepository.updateStatus(jobId, 'processing');
-      this._logger.info(`Started transcription job ${jobId}`);
+      const updatedJob = await this.transcriptionRepository.updateStatus(
+        jobId,
+        'processing',
+      );
+      console.log(`Started transcription job ${jobId}`);
       return updatedJob;
-    });
+    } catch (error) {
+      console.error('Error in startTranscription:', error);
+      throw error;
+    }
   }
 
-  async updateProgress(jobId: number, progress: number): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('updateProgress', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+  async updateProgress(
+    jobId: number,
+    progress: number,
+  ): Promise<TranscriptionJob> {
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
-      this.validateInput(progress, [
-        ValidationRules.required('progress'),
-        ValidationRules.isNumber('progress'),
-        ValidationRules.custom('progress', (val) => val >= 0 && val <= 100, 'must be between 0 and 100'),
-      ]);
+      if (
+        progress === null ||
+        progress === undefined ||
+        typeof progress !== 'number' ||
+        progress < 0 ||
+        progress > 100
+      ) {
+        throw new Error(
+          'progress is required and must be a number between 0 and 100',
+        );
+      }
 
-      const updatedJob = await this.transcriptionRepository.updateProgress(jobId, progress);
-      this._logger.debug(`Updated progress for job ${jobId}: ${progress}%`);
+      const updatedJob = await this.transcriptionRepository.updateProgress(
+        jobId,
+        progress,
+      );
+      console.log(`Updated progress for job ${jobId}: ${progress}%`);
       return updatedJob;
-    });
+    } catch (error) {
+      console.error('Error in updateProgress:', error);
+      throw error;
+    }
   }
 
-  async completeTranscription(jobId: number, transcript: TranscriptSegment[]): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('completeTranscription', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+  async completeTranscription(
+    jobId: number,
+    transcript: TranscriptSegment[],
+  ): Promise<TranscriptionJob> {
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
-      this.validateInput(transcript, [
-        ValidationRules.required('transcript'),
-        ValidationRules.isArray('transcript'),
-      ]);
+      if (!transcript || !Array.isArray(transcript)) {
+        throw new Error('transcript is required and must be an array');
+      }
 
       // Validate transcript segments
       for (const segment of transcript) {
-        this.validateInput(segment, [
-          ValidationRules.required('start'),
-          ValidationRules.required('end'),
-          ValidationRules.required('text'),
-          ValidationRules.isNumber('start'),
-          ValidationRules.isNumber('end'),
-          ValidationRules.isString('text'),
-        ]);
-
+        if (!segment.start || !segment.end || !segment.text) {
+          throw new Error(
+            'Each transcript segment must have start, end, and text properties',
+          );
+        }
+        if (
+          typeof segment.start !== 'number' ||
+          typeof segment.end !== 'number' ||
+          typeof segment.text !== 'string'
+        ) {
+          throw new Error(
+            'Transcript segment start and end must be numbers, text must be a string',
+          );
+        }
         if (segment.start >= segment.end) {
-          throw new Error('Transcript segment start time must be before end time');
+          throw new Error(
+            'Transcript segment start time must be before end time',
+          );
         }
       }
 
-      const completedJob = await this.transcriptionRepository.completeTranscription(jobId, transcript);
-      this._logger.info(`Completed transcription job ${jobId} with ${transcript.length} segments`);
+      const completedJob =
+        await this.transcriptionRepository.completeTranscription(
+          jobId,
+          transcript,
+        );
+      console.log(
+        `Completed transcription job ${jobId} with ${transcript.length} segments`,
+      );
       return completedJob;
-    });
+    } catch (error) {
+      console.error('Error in completeTranscription:', error);
+      throw error;
+    }
   }
 
-  async failTranscription(jobId: number, error: string): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('failTranscription', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+  async failTranscription(
+    jobId: number,
+    error: string,
+  ): Promise<TranscriptionJob> {
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
-      this.validateInput(error, [
-        ValidationRules.required('error'),
-        ValidationRules.isString('error'),
-        ValidationRules.minLength('error', 1),
-      ]);
+      if (!error || typeof error !== 'string' || error.length < 1) {
+        throw new Error('error is required and must be a non-empty string');
+      }
 
-      const failedJob = await this.transcriptionRepository.updateStatus(jobId, 'failed', error);
-      this._logger.warn(`Failed transcription job ${jobId}: ${error}`);
+      const failedJob = await this.transcriptionRepository.updateStatus(
+        jobId,
+        'failed',
+        error,
+      );
+      console.error(`Failed transcription job ${jobId}: ${error}`);
       return failedJob;
-    });
+    } catch (err) {
+      console.error('Error in failTranscription:', err);
+      throw err;
+    }
   }
 
   async getJobsByStatus(status: string): Promise<TranscriptionJob[]> {
-    return this.executeWithErrorHandling('getJobsByStatus', async () => {
-      this.validateInput(status, [
-        ValidationRules.required('status'),
-        ValidationRules.isString('status'),
-        ValidationRules.oneOf('status', ['pending', 'processing', 'completed', 'failed', 'draft']),
-      ]);
+    try {
+      if (!status || typeof status !== 'string') {
+        throw new Error('status is required and must be a string');
+      }
+
+      const validStatuses = [
+        'pending',
+        'processing',
+        'completed',
+        'failed',
+        'draft',
+      ];
+      if (!validStatuses.includes(status)) {
+        throw new Error(`status must be one of: ${validStatuses.join(', ')}`);
+      }
 
       return await this.transcriptionRepository.findByStatus(status);
-    });
+    } catch (error) {
+      console.error('Error in getJobsByStatus:', error);
+      throw error;
+    }
   }
 
   async getPendingJobs(): Promise<TranscriptionJob[]> {
-    return this.executeWithErrorHandling('getPendingJobs', async () => {
+    try {
       return await this.transcriptionRepository.findByStatus('pending');
-    });
+    } catch (error) {
+      console.error('Error in getPendingJobs:', error);
+      throw error;
+    }
   }
 
   async getProcessingJobs(): Promise<TranscriptionJob[]> {
-    return this.executeWithErrorHandling('getProcessingJobs', async () => {
+    try {
       return await this.transcriptionRepository.findByStatus('processing');
-    });
+    } catch (error) {
+      console.error('Error in getProcessingJobs:', error);
+      throw error;
+    }
   }
 
   // Additional utility methods
   async cancelJob(jobId: number): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('cancelJob', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
       const job = await this.transcriptionRepository.findById(jobId);
       if (!job) {
@@ -240,19 +295,24 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
         throw new Error(`Cannot cancel completed transcription job ${jobId}`);
       }
 
-      const cancelledJob = await this.transcriptionRepository.updateStatus(jobId, 'failed', 'Cancelled by user');
-      this._logger.info(`Cancelled transcription job ${jobId}`);
+      const cancelledJob = await this.transcriptionRepository.updateStatus(
+        jobId,
+        'failed',
+        'Cancelled by user',
+      );
+      console.log(`Cancelled transcription job ${jobId}`);
       return cancelledJob;
-    });
+    } catch (error) {
+      console.error('Error in cancelJob:', error);
+      throw error;
+    }
   }
 
   async retryJob(jobId: number): Promise<TranscriptionJob> {
-    return this.executeWithErrorHandling('retryJob', async () => {
-      this.validateInput(jobId, [
-        ValidationRules.required('jobId'),
-        ValidationRules.isNumber('jobId'),
-        ValidationRules.isPositive('jobId'),
-      ]);
+    try {
+      if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
+        throw new Error('jobId is required and must be a positive number');
+      }
 
       const job = await this.transcriptionRepository.findById(jobId);
       if (!job) {
@@ -260,13 +320,21 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       }
 
       if (job.status !== 'failed') {
-        throw new Error(`Cannot retry transcription job ${jobId}: current status is ${job.status}`);
+        throw new Error(
+          `Cannot retry transcription job ${jobId}: current status is ${job.status}`,
+        );
       }
 
-      const retriedJob = await this.transcriptionRepository.updateStatus(jobId, 'pending');
-      this._logger.info(`Retrying transcription job ${jobId}`);
+      const retriedJob = await this.transcriptionRepository.updateStatus(
+        jobId,
+        'pending',
+      );
+      console.log(`Retrying transcription job ${jobId}`);
       return retriedJob;
-    });
+    } catch (error) {
+      console.error('Error in retryJob:', error);
+      throw error;
+    }
   }
 
   async getJobStatistics(): Promise<{
@@ -276,7 +344,7 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
     completed: number;
     failed: number;
   }> {
-    return this.executeWithErrorHandling('getJobStatistics', async () => {
+    try {
       const [pending, processing, completed, failed] = await Promise.all([
         this.transcriptionRepository.findByStatus('pending'),
         this.transcriptionRepository.findByStatus('processing'),
@@ -285,12 +353,16 @@ export class TranscriptionService extends BaseService implements ITranscriptionS
       ]);
 
       return {
-        total: pending.length + processing.length + completed.length + failed.length,
+        total:
+          pending.length + processing.length + completed.length + failed.length,
         pending: pending.length,
         processing: processing.length,
         completed: completed.length,
         failed: failed.length,
       };
-    });
+    } catch (error) {
+      console.error('Error in getJobStatistics:', error);
+      throw error;
+    }
   }
 }

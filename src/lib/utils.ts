@@ -14,5 +14,5 @@ export {
   servicesDebug,
   debugPerformance,
   debugError,
-  type DebugContext
+  type DebugContext,
 } from './utils/debug';

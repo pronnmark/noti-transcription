@@ -17,15 +17,25 @@ export {
 } from './MiddlewareOrchestrator';
 
 // Import for internal use
-import { MiddlewareOrchestrator, getDefaultOrchestrator } from './MiddlewareOrchestrator';
+import {
+  MiddlewareOrchestrator,
+  getDefaultOrchestrator,
+} from './MiddlewareOrchestrator';
 
 export { RequestContextBuilder } from './RequestContext';
 export { ErrorMiddleware, createErrorMiddleware } from './ErrorMiddleware';
-export { AuthMiddleware, createAuthMiddleware, withAuth } from './AuthMiddleware';
+export {
+  AuthMiddleware,
+  createAuthMiddleware,
+  withAuth,
+} from './AuthMiddleware';
 
 // Utility functions for creating middleware
 export function withMiddleware(
-  handler: (request: import('next/server').NextRequest, context: import('./types').RequestContext) => Promise<import('next/server').NextResponse>,
+  handler: (
+    request: import('next/server').NextRequest,
+    context: import('./types').RequestContext
+  ) => Promise<import('next/server').NextResponse>,
   config?: import('./types').MiddlewareConfig,
 ) {
   const orchestrator = config
@@ -39,7 +49,9 @@ export function withMiddleware(
 
 // Helper for API route error handling
 export function withErrorHandling(
-  handler: (request: import('next/server').NextRequest) => Promise<import('next/server').NextResponse>,
+  handler: (
+    request: import('next/server').NextRequest
+  ) => Promise<import('next/server').NextResponse>,
 ) {
   return withMiddleware(async (request, context) => {
     try {
@@ -52,7 +64,10 @@ export function withErrorHandling(
 
 // Helper for API route logging
 export function withLogging(
-  handler: (request: import('next/server').NextRequest, context: import('./types').RequestContext) => Promise<import('next/server').NextResponse>,
+  handler: (
+    request: import('next/server').NextRequest,
+    context: import('./types').RequestContext
+  ) => Promise<import('next/server').NextResponse>,
   options?: {
     logBody?: boolean;
     logHeaders?: boolean;
@@ -74,15 +89,21 @@ export function withLogging(
 
 // Helper for API route authentication
 export function withAuthMiddleware(
-  handler: (request: import('next/server').NextRequest, context: import('./types').RequestContext) => Promise<import('next/server').NextResponse>,
+  handler: (
+    request: import('next/server').NextRequest,
+    context: import('./types').RequestContext
+  ) => Promise<import('next/server').NextResponse>,
   config?: import('./types').MiddlewareConfig,
 ) {
   // Create a wrapped handler that includes auth check
-  const authHandler = async (request: import('next/server').NextRequest, context: import('./types').RequestContext) => {
+  const authHandler = async (
+    request: import('next/server').NextRequest,
+    context: import('./types').RequestContext,
+  ) => {
     // Import dynamically to avoid circular dependencies
     const { cookies } = await import('next/headers');
     const { validateSession } = await import('../auth');
-    
+
     const cookieStore = await cookies();
     const token = cookieStore.get('auth-token')?.value;
     const isValid = await validateSession(token);
@@ -90,13 +111,10 @@ export function withAuthMiddleware(
     if (!isValid) {
       const { NextResponse } = await import('next/server');
       return NextResponse.json(
-        createErrorResponse(
-          'Authentication required',
-          'UNAUTHORIZED',
-          401,
-          { requestId: context.requestId }
-        ),
-        { status: 401 }
+        createErrorResponse('Authentication required', 'UNAUTHORIZED', 401, {
+          requestId: context.requestId,
+        }),
+        { status: 401 },
       );
     }
 

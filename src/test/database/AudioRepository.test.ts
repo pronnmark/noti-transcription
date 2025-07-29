@@ -124,7 +124,10 @@ describe('AudioRepository', () => {
         fileHash: 'hash-today',
       });
 
-      const filesInRange = await repository.findByDateRange(yesterday, tomorrow);
+      const filesInRange = await repository.findByDateRange(
+        yesterday,
+        tomorrow,
+      );
       expect(filesInRange).toHaveLength(1);
       expect(filesInRange[0].fileName).toBe('today.mp3');
     });

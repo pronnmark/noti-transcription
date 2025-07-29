@@ -5,7 +5,16 @@ import { useParams, useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Copy, RefreshCw, FileText, Calendar, User, Loader2, Trash2 } from 'lucide-react';
+import {
+  ArrowLeft,
+  Copy,
+  RefreshCw,
+  FileText,
+  Calendar,
+  User,
+  Loader2,
+  Trash2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { TelegramShareButton } from '@/components/ui/telegram-share-button';
 
@@ -45,11 +54,14 @@ export default function SummaryPage() {
   const container3Ref = useRef<HTMLDivElement>(null);
   const container4Ref = useRef<HTMLDivElement>(null);
 
-  const [debugInfo, setDebugInfo] = useState<{[key: string]: any}>({});
+  const [debugInfo, setDebugInfo] = useState<{ [key: string]: any }>({});
   const [scrollEvents, setScrollEvents] = useState<string[]>([]);
 
   // Debugging functions
-  const measureContainer = (ref: React.RefObject<HTMLDivElement | null>, name: string) => {
+  const measureContainer = (
+    ref: React.RefObject<HTMLDivElement | null>,
+    name: string,
+  ) => {
     if (ref.current) {
       const elem = ref.current;
       return {
@@ -58,7 +70,8 @@ export default function SummaryPage() {
         offsetHeight: elem.offsetHeight,
         scrollTop: elem.scrollTop,
         canScroll: elem.scrollHeight > elem.clientHeight,
-        hasScrollbar: elem.scrollHeight > elem.clientHeight && elem.offsetHeight > 0,
+        hasScrollbar:
+          elem.scrollHeight > elem.clientHeight && elem.offsetHeight > 0,
       };
     }
     return null;
@@ -66,15 +79,25 @@ export default function SummaryPage() {
 
   const logScrollEvent = (event: string, container: string) => {
     const timestamp = new Date().toLocaleTimeString();
-    setScrollEvents(prev => [...prev.slice(-9), `${timestamp}: ${event} on ${container}`]);
+    setScrollEvents(prev => [
+      ...prev.slice(-9),
+      `${timestamp}: ${event} on ${container}`,
+    ]);
   };
 
-  const testProgrammaticScroll = (ref: React.RefObject<HTMLDivElement>, name: string, amount: number) => {
+  const testProgrammaticScroll = (
+    ref: React.RefObject<HTMLDivElement>,
+    name: string,
+    amount: number,
+  ) => {
     if (ref.current) {
       const oldScrollTop = ref.current.scrollTop;
       ref.current.scrollTop += amount;
       const newScrollTop = ref.current.scrollTop;
-      logScrollEvent(`Programmatic scroll ${oldScrollTop}→${newScrollTop}`, name);
+      logScrollEvent(
+        `Programmatic scroll ${oldScrollTop}→${newScrollTop}`,
+        name,
+      );
       updateDebugInfo();
     }
   };
@@ -178,15 +201,18 @@ export default function SummaryPage() {
 
     setIsRegenerating(true);
     try {
-      const response = await fetch(`/api/ai/dynamic-process/${summary.file.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
+      const response = await fetch(
+        `/api/ai/dynamic-process/${summary.file.id}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            summarizationPromptId: summary.template?.id || null,
+          }),
         },
-        body: JSON.stringify({
-          summarizationPromptId: summary.template?.id || null,
-        }),
-      });
+      );
 
       if (response.ok) {
         toast.success('New summary generated');
@@ -206,7 +232,9 @@ export default function SummaryPage() {
   const handleDelete = async () => {
     if (!summary) return;
 
-    const confirmed = window.confirm('Are you sure you want to delete this summary? This action cannot be undone.');
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this summary? This action cannot be undone.',
+    );
 
     if (!confirmed) return;
 
@@ -245,24 +273,26 @@ export default function SummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   if (!summary) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <Card className="w-full max-w-md">
-          <CardContent className="text-center py-8">
-            <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Summary Not Found</h3>
-            <p className="text-gray-600 mb-4">
+          <CardContent className="py-8 text-center">
+            <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+            <h3 className="mb-2 text-lg font-medium text-gray-900">
+              Summary Not Found
+            </h3>
+            <p className="mb-4 text-gray-600">
               The summary you're looking for doesn't exist or has been deleted.
             </p>
             <Button onClick={() => router.push('/ai/summarization')}>
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Summaries
             </Button>
           </CardContent>
@@ -272,10 +302,10 @@ export default function SummaryPage() {
   }
 
   return (
-    <div className="h-screen bg-gray-50 flex flex-col">
+    <div className="flex h-screen flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b flex-shrink-0">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+      <div className="flex-shrink-0 border-b bg-white">
+        <div className="mx-auto max-w-4xl px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Button
@@ -284,11 +314,15 @@ export default function SummaryPage() {
                 onClick={() => router.push('/ai/summarization')}
                 className="h-8 w-8 p-0"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="h-4 w-4" />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">AI Summary</h1>
-                <p className="text-sm text-gray-600">{summary.file.originalFileName}</p>
+                <h1 className="text-xl font-semibold text-gray-900">
+                  AI Summary
+                </h1>
+                <p className="text-sm text-gray-600">
+                  {summary.file.originalFileName}
+                </p>
               </div>
             </div>
 
@@ -299,7 +333,7 @@ export default function SummaryPage() {
                 onClick={handleCopy}
                 className="h-8 px-3"
               >
-                <Copy className="w-3 h-3 mr-1" />
+                <Copy className="mr-1 h-3 w-3" />
                 Copy
               </Button>
               <TelegramShareButton
@@ -319,9 +353,9 @@ export default function SummaryPage() {
                 className="h-8 px-3"
               >
                 {isRegenerating ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                 ) : (
-                  <RefreshCw className="w-3 h-3 mr-1" />
+                  <RefreshCw className="mr-1 h-3 w-3" />
                 )}
                 Regenerate
               </Button>
@@ -330,12 +364,12 @@ export default function SummaryPage() {
                 size="sm"
                 onClick={handleDelete}
                 disabled={isDeleting || isRegenerating}
-                className="h-8 px-3 hover:bg-red-50 hover:border-red-200 hover:text-red-600"
+                className="h-8 px-3 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
               >
                 {isDeleting ? (
-                  <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
                 ) : (
-                  <Trash2 className="w-3 h-3 mr-1" />
+                  <Trash2 className="mr-1 h-3 w-3" />
                 )}
                 Delete
               </Button>
@@ -345,17 +379,20 @@ export default function SummaryPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0">
-        <div className="max-w-4xl mx-auto px-4 py-6 flex-1 flex flex-col min-h-0">
-          <Card className="flex-1 flex flex-col min-h-0">
+      <div className="min-h-0 flex-1">
+        <div className="mx-auto flex min-h-0 max-w-4xl flex-1 flex-col px-4 py-6">
+          <Card className="flex min-h-0 flex-1 flex-col">
             <CardHeader className="flex-shrink-0">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="default" className="text-xs">
                     Latest
                   </Badge>
                   {summary.template && (
-                    <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-xs text-green-700"
+                    >
                       {summary.template.name}
                       {summary.template.isDefault && ' (Default)'}
                     </Badge>
@@ -367,9 +404,13 @@ export default function SummaryPage() {
 
                 <div className="flex items-center gap-4 text-xs text-gray-500">
                   <div className="flex items-center gap-1">
-                    <Calendar className="w-3 h-3" />
-                    <span className="hidden sm:inline">{formatDate(summary.createdAt)}</span>
-                    <span className="sm:hidden">{new Date(summary.createdAt).toLocaleDateString()}</span>
+                    <Calendar className="h-3 w-3" />
+                    <span className="hidden sm:inline">
+                      {formatDate(summary.createdAt)}
+                    </span>
+                    <span className="sm:hidden">
+                      {new Date(summary.createdAt).toLocaleDateString()}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -384,10 +425,10 @@ export default function SummaryPage() {
             <CardContent className="p-6">
               {/* SUCCESS: Using the proven working approach from Test 1 */}
               <div
-                className="overflow-y-auto border rounded-lg p-4 bg-white"
+                className="overflow-y-auto rounded-lg border bg-white p-4"
                 style={{ height: '60vh' }}
               >
-                <div className="whitespace-pre-wrap text-gray-800 leading-relaxed break-words">
+                <div className="whitespace-pre-wrap break-words leading-relaxed text-gray-800">
                   {summary.content}
                 </div>
               </div>
@@ -398,7 +439,7 @@ export default function SummaryPage() {
                   variant="outline"
                   onClick={() => router.push('/ai/summarization')}
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to All Summaries
                 </Button>
               </div>

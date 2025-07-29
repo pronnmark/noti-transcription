@@ -22,13 +22,11 @@ const IOSCard = forwardRef<HTMLDivElement, IOSCardProps>(
         ref={ref}
         className={cn(
           // Base unibody construction - no borders, only space and shadow
-          'bg-white rounded-xl overflow-hidden',
+          'overflow-hidden rounded-xl bg-white',
           'transition-all duration-300 ease-out',
 
           // Variant-specific styling following iOS design patterns
-          variant === 'default' && [
-            'shadow-[0_1px_3px_rgba(0,0,0,0.08)]',
-          ],
+          variant === 'default' && ['shadow-[0_1px_3px_rgba(0,0,0,0.08)]'],
           variant === 'elevated' && [
             'shadow-[0_4px_20px_rgba(0,0,0,0.08),0_1px_3px_rgba(0,0,0,0.1)]',
           ],
@@ -83,7 +81,7 @@ const IOSCardHeader = forwardRef<
     ref={ref}
     className={cn(
       // iOS system typography with generous spacing
-      'px-5 pt-5 pb-2',
+      'px-5 pb-2 pt-5',
       className,
     )}
     {...props}
@@ -123,7 +121,7 @@ const IOSCardDescription = forwardRef<
     ref={ref}
     className={cn(
       // iOS secondary text style - clear but understated
-      'text-sm font-normal leading-relaxed text-gray-600 mt-1',
+      'mt-1 text-sm font-normal leading-relaxed text-gray-600',
       className,
     )}
     {...props}

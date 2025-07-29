@@ -50,7 +50,7 @@ export function LabelEditor({
   // Color assignment based on label text
   const getLabelColor = (label: string) => {
     const hash = label.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
     return LABEL_COLORS[Math.abs(hash) % LABEL_COLORS.length];
@@ -64,7 +64,9 @@ export function LabelEditor({
     }
 
     try {
-      const response = await fetch(`/api/labels?q=${encodeURIComponent(query)}&limit=10`);
+      const response = await fetch(
+        `/api/labels?q=${encodeURIComponent(query)}&limit=10`,
+      );
       if (response.ok) {
         const data = await response.json();
         setSuggestions(data.labels || []);
@@ -90,7 +92,10 @@ export function LabelEditor({
   // Click outside to close
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(event.target as Node)
+      ) {
         setIsEditing(false);
         setShowSuggestions(false);
         setInputValue('');
@@ -103,7 +108,11 @@ export function LabelEditor({
 
   const addLabel = (label: string) => {
     const trimmedLabel = label.trim();
-    if (trimmedLabel && !labels.includes(trimmedLabel) && labels.length < maxLabels) {
+    if (
+      trimmedLabel &&
+      !labels.includes(trimmedLabel) &&
+      labels.length < maxLabels
+    ) {
       onChange([...labels, trimmedLabel]);
     }
     setInputValue('');
@@ -139,26 +148,26 @@ export function LabelEditor({
     <div ref={containerRef} className={cn('relative', className)}>
       <div className="flex flex-wrap items-center gap-1">
         {/* Existing Labels */}
-        {labels.map((label) => (
+        {labels.map(label => (
           <Badge
             key={label}
             variant="secondary"
             className={cn(
-              'text-xs border',
+              'border text-xs',
               getLabelColor(label),
-              !disabled && 'group hover:pr-1 transition-all',
+              !disabled && 'group transition-all hover:pr-1',
             )}
           >
-            <Tag className="w-3 h-3 mr-1" />
+            <Tag className="mr-1 h-3 w-3" />
             {label}
             {!disabled && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-1 h-3 w-3 p-0 opacity-0 group-hover:opacity-100 hover:bg-transparent"
+                className="ml-1 h-3 w-3 p-0 opacity-0 hover:bg-transparent group-hover:opacity-100"
                 onClick={() => removeLabel(label)}
               >
-                <X className="w-2 h-2" />
+                <X className="h-2 w-2" />
               </Button>
             )}
           </Badge>
@@ -172,28 +181,30 @@ export function LabelEditor({
                 <Input
                   ref={inputRef}
                   value={inputValue}
-                  onChange={(e) => {
+                  onChange={e => {
                     setInputValue(e.target.value);
                     setShowSuggestions(true);
                   }}
                   onKeyDown={handleKeyDown}
                   onFocus={() => setShowSuggestions(true)}
                   placeholder={placeholder}
-                  className="h-6 text-xs w-32 px-2"
+                  className="h-6 w-32 px-2 text-xs"
                   autoFocus
                 />
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div className="absolute top-full left-0 mt-1 w-48 bg-white border rounded-md shadow-lg z-50 max-h-32 overflow-y-auto">
-                    {filteredSuggestions.map((suggestion) => (
+                  <div className="absolute left-0 top-full z-50 mt-1 max-h-32 w-48 overflow-y-auto rounded-md border bg-white shadow-lg">
+                    {filteredSuggestions.map(suggestion => (
                       <button
                         key={suggestion.label}
-                        className="w-full text-left px-3 py-1 text-xs hover:bg-gray-50 flex items-center justify-between"
+                        className="flex w-full items-center justify-between px-3 py-1 text-left text-xs hover:bg-gray-50"
                         onClick={() => addLabel(suggestion.label)}
                       >
                         <span>{suggestion.label}</span>
-                        <span className="text-gray-400 text-xs">({suggestion.count})</span>
+                        <span className="text-xs text-gray-400">
+                          ({suggestion.count})
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -209,7 +220,7 @@ export function LabelEditor({
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
               >
-                <Plus className="w-3 h-3 mr-1" />
+                <Plus className="mr-1 h-3 w-3" />
                 Add label
               </Button>
             )}

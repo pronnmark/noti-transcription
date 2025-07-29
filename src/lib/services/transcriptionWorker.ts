@@ -21,7 +21,9 @@ export interface WorkerResult {
 function createTimeoutPromise(timeoutMs: number): Promise<never> {
   return new Promise((_, reject) => {
     setTimeout(() => {
-      reject(new Error(`Transcription timeout after ${timeoutMs / 1000} seconds`));
+      reject(
+        new Error(`Transcription timeout after ${timeoutMs / 1000} seconds`),
+      );
     }, timeoutMs);
   });
 }
@@ -31,10 +33,11 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
 
   try {
     // Get pending or stuck processing jobs
-    const jobs = await db.select({
-      job: transcriptionJobs,
-      file: audioFiles,
-    })
+    const jobs = await db
+      .select({
+        job: transcriptionJobs,
+        file: audioFiles,
+      })
       .from(transcriptionJobs)
       .innerJoin(audioFiles, eq(transcriptionJobs.fileId, audioFiles.id))
       .where(eq(transcriptionJobs.status, 'pending'))
@@ -48,14 +51,23 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
       };
     }
 
-    const results: { jobId: number; fileId: number; fileName: string; status: 'completed' | 'failed'; error?: string }[] = [];
+    const results: {
+      jobId: number;
+      fileId: number;
+      fileName: string;
+      status: 'completed' | 'failed';
+      error?: string;
+    }[] = [];
 
     for (const { job, file } of jobs) {
       try {
-        console.log(`Processing transcription job ${job.id} for file: ${file.originalFileName}`);
+        console.log(
+          `Processing transcription job ${job.id} for file: ${file.originalFileName}`,
+        );
 
         // Update status to processing
-        await db.update(transcriptionJobs)
+        await db
+          .update(transcriptionJobs)
           .set({
             status: 'processing',
             startedAt: new Date(),
@@ -64,7 +76,12 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           .where(eq(transcriptionJobs.id, job.id));
 
         // Check if file exists
-        const audioPath = join(process.cwd(), 'data', 'audio_files', file.fileName);
+        const audioPath = join(
+          process.cwd(),
+          'data',
+          'audio_files',
+          file.fileName,
+        );
         try {
           await fs.access(audioPath);
         } catch (_e) {
@@ -78,11 +95,15 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
         console.log(`File size: ${fileSizeMB.toFixed(2)}MB`);
 
         if (fileSizeMB > 100) {
-          throw new Error(`File too large: ${fileSizeMB.toFixed(2)}MB (max 100MB)`);
+          throw new Error(
+            `File too large: ${fileSizeMB.toFixed(2)}MB (max 100MB)`,
+          );
         }
 
         // Start real transcription with timeout protection
-        console.log(`Starting real transcription for job ${job.id}, file: ${file.originalFileName}`);
+        console.log(
+          `Starting real transcription for job ${job.id}, file: ${file.originalFileName}`,
+        );
 
         try {
           // Call the real transcription function with timeout (10 minutes)
@@ -93,7 +114,8 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           ]);
 
           // After transcription completes, read the result from the database
-          const updatedJob = await db.select()
+          const updatedJob = await db
+            .select()
             .from(transcriptionJobs)
             .where(eq(transcriptionJobs.id, job.id))
             .limit(1);
@@ -108,20 +130,28 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           if (transcriptionResult.status !== 'completed') {
             // The transcription function should have updated the status to 'completed'
             // If it didn't, something went wrong
-            throw new Error(`Transcription failed with status: ${transcriptionResult.status}`);
+            throw new Error(
+              `Transcription failed with status: ${transcriptionResult.status}`,
+            );
           }
 
           console.log(`Transcription completed successfully for job ${job.id}`);
-
         } catch (transcriptionError) {
-          console.error(`Transcription failed for job ${job.id}:`, transcriptionError);
+          console.error(
+            `Transcription failed for job ${job.id}:`,
+            transcriptionError,
+          );
 
           // Update job as failed
-          await db.update(transcriptionJobs)
+          await db
+            .update(transcriptionJobs)
             .set({
               status: 'failed',
               progress: 0,
-              lastError: transcriptionError instanceof Error ? transcriptionError.message : 'Unknown transcription error',
+              lastError:
+                transcriptionError instanceof Error
+                  ? transcriptionError.message
+                  : 'Unknown transcription error',
               completedAt: new Date(),
             })
             .where(eq(transcriptionJobs.id, job.id));
@@ -135,16 +165,17 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           fileName: file.originalFileName,
           status: 'completed',
         });
-
       } catch (error) {
         console.error(`Error processing job ${job.id}:`, error);
 
         // Mark job as failed if not already updated
         try {
-          await db.update(transcriptionJobs)
+          await db
+            .update(transcriptionJobs)
             .set({
               status: 'failed',
-              lastError: error instanceof Error ? error.message : 'Unknown error',
+              lastError:
+                error instanceof Error ? error.message : 'Unknown error',
               completedAt: new Date(),
             })
             .where(eq(transcriptionJobs.id, job.id));
@@ -167,7 +198,6 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
       processed: results.length,
       results,
     };
-
   } catch (error: unknown) {
     console.error('Worker error:', error);
     throw new Error((error as Error).message || 'Worker failed');

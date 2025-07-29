@@ -10,6 +10,9 @@ export const GET = withAuthMiddleware(async () => {
     models,
     modelDetails,
     configured: models.length > 0,
-    message: models.length === 0 ? 'No AI models configured. Please configure custom AI endpoint in Settings or set environment variables.' : undefined,
+    message:
+      models.length === 0
+        ? 'No AI models configured. Please configure custom AI endpoint in Settings or set environment variables.'
+        : undefined,
   });
 });

@@ -26,7 +26,7 @@
     },
     {
       "name": "Record Audio",
-      "short_name": "Record", 
+      "short_name": "Record",
       "description": "Start new audio recording",
       "url": "/record",
       "icons": [
@@ -45,7 +45,7 @@
       "icons": [
         {
           "src": "/icons/transcript-shortcut-96x96.png",
-          "sizes": "96x96", 
+          "sizes": "96x96",
           "type": "image/png"
         }
       ]

@@ -19,7 +19,8 @@ export function clearSessionToken(): void {
   localStorage.removeItem('auth-token');
 
   // Clear cookie
-  document.cookie = 'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  document.cookie =
+    'auth-token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 }
 
 export function isAuthenticated(): boolean {

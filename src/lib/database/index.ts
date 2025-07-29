@@ -1,5 +1,11 @@
 // Database client and utilities
-export { getDb, getSqlite, healthCheck, closeDatabase, ensureConnection } from './client';
+export {
+  getDb,
+  getSqlite,
+  healthCheck,
+  closeDatabase,
+  ensureConnection,
+} from './client';
 
 // Direct exports for better ESM compatibility - create singleton instance
 import { getDb } from './client';
@@ -14,7 +20,29 @@ export * from './schema';
 export * from './repositories';
 
 // Drizzle ORM operators
-export { eq, and, or, not, isNull, isNotNull, inArray, notInArray, exists, notExists, between, like, ilike, desc, asc, count, sum, avg, min, max, sql } from 'drizzle-orm';
+export {
+  eq,
+  and,
+  or,
+  not,
+  isNull,
+  isNotNull,
+  inArray,
+  notInArray,
+  exists,
+  notExists,
+  between,
+  like,
+  ilike,
+  desc,
+  asc,
+  count,
+  sum,
+  avg,
+  min,
+  max,
+  sql,
+} from 'drizzle-orm';
 
 // Note: Database initialization and migration utilities are available in
 // separate server-only exports to avoid bundling Node.js modules in client code

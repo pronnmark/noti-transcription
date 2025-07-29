@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { MiddlewareHandler, RequestContext, ResponseMiddlewareHandler, ResponseContext } from './types';
+import {
+  MiddlewareHandler,
+  RequestContext,
+  ResponseMiddlewareHandler,
+  ResponseContext,
+} from './types';
 
 export class RequestLoggingMiddleware implements MiddlewareHandler {
   public readonly name = 'request-logging';
@@ -37,7 +42,12 @@ export class RequestLoggingMiddleware implements MiddlewareHandler {
     const { skipPaths = [], skipMethods = [] } = this.options;
 
     // Skip health check and static assets
-    const defaultSkipPaths = ['/health', '/favicon.ico', '/_next/', '/api/health'];
+    const defaultSkipPaths = [
+      '/health',
+      '/favicon.ico',
+      '/_next/',
+      '/api/health',
+    ];
     const allSkipPaths = [...defaultSkipPaths, ...skipPaths];
 
     if (allSkipPaths.some(path => context.path.startsWith(path))) {
@@ -111,11 +121,18 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
     return response;
   }
 
-  private shouldSkip(context: RequestContext | (RequestContext & ResponseContext)): boolean {
+  private shouldSkip(
+    context: RequestContext | (RequestContext & ResponseContext),
+  ): boolean {
     const { skipPaths = [] } = this.options;
 
     // Skip health check and static assets
-    const defaultSkipPaths = ['/health', '/favicon.ico', '/_next/', '/api/health'];
+    const defaultSkipPaths = [
+      '/health',
+      '/favicon.ico',
+      '/_next/',
+      '/api/health',
+    ];
     const allSkipPaths = [...defaultSkipPaths, ...skipPaths];
 
     if (allSkipPaths.some(path => context.path.startsWith(path))) {
@@ -123,15 +140,22 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
     }
 
     // Skip successful requests if configured (only if we have response context)
-    if (this.options.skipSuccessful && 'statusCode' in context &&
-        context.statusCode >= 200 && context.statusCode < 400) {
+    if (
+      this.options.skipSuccessful &&
+      'statusCode' in context &&
+      context.statusCode >= 200 &&
+      context.statusCode < 400
+    ) {
       return true;
     }
 
     return false;
   }
 
-  private logResponse(response: NextResponse, context: RequestContext & ResponseContext): void {
+  private logResponse(
+    response: NextResponse,
+    context: RequestContext & ResponseContext,
+  ): void {
     const logData: Record<string, any> = {
       method: context.method,
       path: context.path,
@@ -182,7 +206,9 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
     }
   }
 
-  private getLogLevel(context: RequestContext & ResponseContext): 'error' | 'warn' | 'info' | 'debug' {
+  private getLogLevel(
+    context: RequestContext & ResponseContext,
+  ): 'error' | 'warn' | 'info' | 'debug' {
     // Error responses
     if (context.statusCode >= 500) {
       return 'error';
@@ -239,7 +265,9 @@ export class PerformanceLoggingMiddleware implements MiddlewareHandler {
     next: () => Promise<NextResponse>,
   ): Promise<NextResponse> {
     const startTime = Date.now();
-    const startMemory = this.options.trackMemoryUsage ? process.memoryUsage() : null;
+    const startMemory = this.options.trackMemoryUsage
+      ? process.memoryUsage()
+      : null;
 
     try {
       const response = await next();

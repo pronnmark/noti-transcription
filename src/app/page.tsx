@@ -4,7 +4,13 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Mic, Eye, EyeOff, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getSessionToken, setSessionToken } from '@/lib/auth-client';
@@ -72,8 +78,8 @@ export default function HomePage() {
     <div className="flex h-screen items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="w-full max-w-md px-6">
         <Card className="border-0 shadow-xl">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto mb-4 p-3 bg-blue-100 rounded-2xl w-fit">
+          <CardHeader className="pb-2 text-center">
+            <div className="mx-auto mb-4 w-fit rounded-2xl bg-blue-100 p-3">
               <Mic className="h-8 w-8 text-blue-600" />
             </div>
             <CardTitle className="text-2xl font-bold text-gray-900">
@@ -86,7 +92,10 @@ export default function HomePage() {
           <CardContent className="pt-6">
             <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="password"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Access Password
                 </label>
                 <div className="relative">
@@ -94,16 +103,16 @@ export default function HomePage() {
                     id="password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     placeholder="Enter password"
-                    className="pr-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="border-gray-300 pr-10 focus:border-blue-500 focus:ring-blue-500"
                     disabled={isLoading}
                     autoFocus
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? (
                       <EyeOff className="h-4 w-4" />
@@ -115,7 +124,7 @@ export default function HomePage() {
               </div>
               <Button
                 type="submit"
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5"
+                className="w-full bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700"
                 disabled={isLoading}
               >
                 {isLoading ? (
@@ -128,7 +137,7 @@ export default function HomePage() {
                 )}
               </Button>
             </form>
-            <div className="mt-6 pt-6 border-t border-gray-200">
+            <div className="mt-6 border-t border-gray-200 pt-6">
               <div className="text-center text-sm text-gray-500">
                 Secure access to audio transcription tools
               </div>

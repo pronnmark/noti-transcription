@@ -30,7 +30,10 @@ export async function GET(request: NextRequest) {
     }
   } catch (error) {
     console.error('Error fetching real-time sessions:', error);
-    return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch sessions' },
+      { status: 500 },
+    );
   }
 }
 
@@ -41,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!fileId || !chunkIntervalMs || !aiInstruction) {
       return NextResponse.json(
         { error: 'fileId, chunkIntervalMs, and aiInstruction are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -49,16 +52,14 @@ export async function POST(request: NextRequest) {
     const existingSession = await db
       .select()
       .from(realTimeSessions)
-      .where(
-        eq(realTimeSessions.fileId, fileId)
-      )
+      .where(eq(realTimeSessions.fileId, fileId))
       .orderBy(desc(realTimeSessions.createdAt))
       .limit(1);
 
     if (existingSession.length > 0 && existingSession[0].status === 'active') {
       return NextResponse.json(
         { error: 'An active real-time session already exists for this file' },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -78,7 +79,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ session: newSession[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating real-time session:', error);
-    return NextResponse.json({ error: 'Failed to create session' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create session' },
+      { status: 500 },
+    );
   }
 }
 
@@ -87,7 +91,10 @@ export async function PATCH(request: NextRequest) {
     const { sessionId, status, endedAt, totalChunks } = await request.json();
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'sessionId is required' },
+        { status: 400 },
+      );
     }
 
     const updateData: any = {};
@@ -108,6 +115,9 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ session: updatedSession[0] });
   } catch (error) {
     console.error('Error updating real-time session:', error);
-    return NextResponse.json({ error: 'Failed to update session' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update session' },
+      { status: 500 },
+    );
   }
 }

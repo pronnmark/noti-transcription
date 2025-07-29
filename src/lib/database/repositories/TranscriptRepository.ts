@@ -1,9 +1,17 @@
 import { BaseRepository } from './BaseRepository';
-import { transcriptionJobs, TranscriptionJob, NewTranscriptionJob, TranscriptSegment } from '../schema';
+import {
+  transcriptionJobs,
+  TranscriptionJob,
+  NewTranscriptionJob,
+  TranscriptSegment,
+} from '../schema';
 import { getDb } from '../client';
 import { eq, and, desc } from 'drizzle-orm';
 
-export class TranscriptionRepository extends BaseRepository<TranscriptionJob, NewTranscriptionJob> {
+export class TranscriptionRepository extends BaseRepository<
+  TranscriptionJob,
+  NewTranscriptionJob
+> {
   constructor() {
     super(transcriptionJobs);
   }
@@ -48,7 +56,11 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
     }
   }
 
-  async updateStatus(id: number, status: string, error?: string): Promise<TranscriptionJob> {
+  async updateStatus(
+    id: number,
+    status: string,
+    error?: string,
+  ): Promise<TranscriptionJob> {
     try {
       const updateData: any = {
         status,
@@ -79,7 +91,11 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
     }
   }
 
-  async updateProgress(id: number, progress: number, status?: string): Promise<TranscriptionJob> {
+  async updateProgress(
+    id: number,
+    progress: number,
+    status?: string,
+  ): Promise<TranscriptionJob> {
     try {
       const updateData: any = {
         progress,
@@ -143,7 +159,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
       progress: number;
       transcript: TranscriptSegment[];
       completedAt: Date;
-    }
+    },
   ): Promise<TranscriptionJob> {
     try {
       const [result] = await getDb()
@@ -171,7 +187,7 @@ export class TranscriptionRepository extends BaseRepository<TranscriptionJob, Ne
       status: string;
       lastError: string;
       completedAt: Date;
-    }
+    },
   ): Promise<TranscriptionJob> {
     try {
       const [result] = await getDb()

@@ -42,13 +42,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background py-12 px-4 sm:px-6 lg:px-8">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-sm">
         <div className="space-y-8">
           {/* Header */}
-          <div className="text-center space-y-3">
-            <h1 className="text-3xl font-light tracking-tight text-foreground">Noti</h1>
-            <p className="text-muted-foreground text-sm">
+          <div className="space-y-3 text-center">
+            <h1 className="text-3xl font-light tracking-tight text-foreground">
+              Noti
+            </h1>
+            <p className="text-sm text-muted-foreground">
               AI-powered audio transcription with speaker diarization
             </p>
           </div>
@@ -58,7 +60,10 @@ export default function LoginPage() {
             <CardContent className="p-8">
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium text-foreground">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-foreground"
+                  >
                     Password
                   </Label>
                   <Input
@@ -66,7 +71,7 @@ export default function LoginPage() {
                     type="password"
                     placeholder="Enter password"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={e => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
                     autoFocus
@@ -76,7 +81,7 @@ export default function LoginPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-12 text-base font-medium"
+                  className="h-12 w-full text-base font-medium"
                   disabled={isLoading}
                 >
                   {isLoading ? 'Logging in...' : 'Continue'}

@@ -12,7 +12,12 @@ interface TaskCheckboxProps {
   className?: string;
 }
 
-export function TaskCheckbox({ id, checked, onToggle, className }: TaskCheckboxProps) {
+export function TaskCheckbox({
+  id,
+  checked,
+  onToggle,
+  className,
+}: TaskCheckboxProps) {
   const [isToggling, setIsToggling] = useState(false);
 
   const handleToggle = async () => {
@@ -36,7 +41,7 @@ export function TaskCheckbox({ id, checked, onToggle, className }: TaskCheckboxP
       disabled={isToggling}
       className={cn(
         'transition-all duration-200',
-        isToggling && 'opacity-50 cursor-not-allowed',
+        isToggling && 'cursor-not-allowed opacity-50',
         className,
       )}
     />

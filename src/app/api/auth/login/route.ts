@@ -14,7 +14,10 @@ export async function POST(request: NextRequest) {
     const { password } = await request.json();
 
     if (!password) {
-      return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Password is required' },
+        { status: 400 },
+      );
     }
 
     // Check password

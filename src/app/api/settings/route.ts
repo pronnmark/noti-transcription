@@ -22,18 +22,27 @@ async function loadSettings(): Promise<Settings> {
   try {
     const dbSettings = await settingsService.get();
     if (dbSettings) {
-      defaults.ai.customAiBaseUrl = dbSettings.customAiBaseUrl || process.env.CUSTOM_AI_BASE_URL || '';
-      defaults.ai.customAiApiKey = dbSettings.customAiApiKey || process.env.CUSTOM_AI_API_KEY || '';
-      defaults.ai.customAiModel = dbSettings.customAiModel || process.env.CUSTOM_AI_MODEL || '';
-      defaults.ai.customAiProvider = dbSettings.customAiProvider || process.env.CUSTOM_AI_PROVIDER || 'custom';
+      defaults.ai.customAiBaseUrl =
+        dbSettings.customAiBaseUrl || process.env.CUSTOM_AI_BASE_URL || '';
+      defaults.ai.customAiApiKey =
+        dbSettings.customAiApiKey || process.env.CUSTOM_AI_API_KEY || '';
+      defaults.ai.customAiModel =
+        dbSettings.customAiModel || process.env.CUSTOM_AI_MODEL || '';
+      defaults.ai.customAiProvider =
+        dbSettings.customAiProvider ||
+        process.env.CUSTOM_AI_PROVIDER ||
+        'custom';
       defaults.ai.openaiApiKey = dbSettings.openaiApiKey || '';
       defaults.ai.aiExtractEnabled = dbSettings.aiExtractEnabled || false;
       defaults.ai.aiExtractModel = dbSettings.aiExtractModel || '';
-      
+
       // Load real-time settings
       defaults.realTime.realTimeEnabled = dbSettings.realTimeEnabled || false;
-      defaults.realTime.realTimeChunkInterval = dbSettings.realTimeChunkInterval || 120;
-      defaults.realTime.realTimeAiInstruction = dbSettings.realTimeAiInstruction || 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.';
+      defaults.realTime.realTimeChunkInterval =
+        dbSettings.realTimeChunkInterval || 120;
+      defaults.realTime.realTimeAiInstruction =
+        dbSettings.realTimeAiInstruction ||
+        'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.';
     }
   } catch (error) {
     console.error('Error loading settings from database:', error);
@@ -66,7 +75,10 @@ async function loadSettings(): Promise<Settings> {
 
 async function saveSettings(settings: Settings): Promise<void> {
   // Save AI and real-time settings to database
-  debugLog('api', 'Attempting to save AI and real-time settings to database...');
+  debugLog(
+    'api',
+    'Attempting to save AI and real-time settings to database...',
+  );
   try {
     const dbSettingsData = {
       customAiBaseUrl: settings.ai.customAiBaseUrl,
@@ -87,7 +99,10 @@ async function saveSettings(settings: Settings): Promise<void> {
     debugLog('api', 'Successfully saved settings to database');
   } catch (error) {
     console.error('Error saving settings to database:', error);
-    console.error('Error details:', error instanceof Error ? error.message : String(error));
+    console.error(
+      'Error details:',
+      error instanceof Error ? error.message : String(error),
+    );
     throw error;
   }
 
@@ -172,7 +187,8 @@ function getDefaultSettings(): Settings {
     realTime: {
       realTimeEnabled: false,
       realTimeChunkInterval: 120, // 2 minutes default
-      realTimeAiInstruction: 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
+      realTimeAiInstruction:
+        'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
     },
     storage: {
       obsidianEnabled: false,
@@ -205,7 +221,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const settings: Settings = await request.json();
-    debugLog('api', 'Received settings to save:', JSON.stringify(settings.ai, null, 2));
+    debugLog(
+      'api',
+      'Received settings to save:',
+      JSON.stringify(settings.ai, null, 2),
+    );
 
     // Save settings (AI to database, others to file)
     await saveSettings(settings);
@@ -218,8 +238,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error saving settings:', error);
-    console.error('Error details:', error instanceof Error ? error.message : String(error));
-    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    console.error(
+      'Error details:',
+      error instanceof Error ? error.message : String(error),
+    );
+    console.error(
+      'Error stack:',
+      error instanceof Error ? error.stack : 'No stack trace',
+    );
     return NextResponse.json(
       {
         error: 'Failed to save settings',

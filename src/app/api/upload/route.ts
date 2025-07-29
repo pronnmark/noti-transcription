@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withMiddleware, createApiResponse, createErrorResponse } from '@/lib/middleware';
-import { getServiceLocator } from '@/lib/services/ServiceLocator';
+import {
+  withMiddleware,
+  createApiResponse,
+  createErrorResponse,
+} from '@/lib/middleware';
+import { FileUploadService } from '@/lib/services/core/FileUploadService';
 import { apiDebug, debugPerformance } from '@/lib/utils';
 import { ValidationError } from '@/lib/errors';
 import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
@@ -24,10 +28,10 @@ export const POST = withMiddleware(
     try {
       // Parse form data
       const formData = await request.formData();
-      
+
       // Get all files from formData (support both single and multiple files)
       const files: File[] = [];
-      
+
       // Check for multiple files (files[] format)
       const multipleFiles = formData.getAll('files');
       if (multipleFiles.length > 0) {
@@ -37,7 +41,7 @@ export const POST = withMiddleware(
           }
         });
       }
-      
+
       // Check for single file (backward compatibility)
       if (files.length === 0) {
         const singleFile = formData.get('file') || formData.get('audio');
@@ -48,16 +52,11 @@ export const POST = withMiddleware(
 
       if (files.length === 0) {
         return NextResponse.json(
-          createErrorResponse(
-            'No files provided',
-            'NO_FILES',
-            400,
-            {
-              receivedFields: Array.from(formData.keys()),
-              hint: 'Expected field name: files[] for multiple files or file/audio for single file',
-            }
-          ),
-          { status: 400 }
+          createErrorResponse('No files provided', 'NO_FILES', 400, {
+            receivedFields: Array.from(formData.keys()),
+            hint: 'Expected field name: files[] for multiple files or file/audio for single file',
+          }),
+          { status: 400 },
         );
       }
 
@@ -71,9 +70,9 @@ export const POST = withMiddleware(
             createErrorResponse(
               'Invalid speaker count',
               'INVALID_SPEAKER_COUNT',
-              400
+              400,
             ),
-            { status: 400 }
+            { status: 400 },
           );
         }
       }
@@ -82,33 +81,33 @@ export const POST = withMiddleware(
       const locationData: any = {};
       const latitudeField = formData.get('latitude');
       const longitudeField = formData.get('longitude');
-      
+
       if (latitudeField && longitudeField) {
         locationData.latitude = parseFloat(latitudeField.toString());
         locationData.longitude = parseFloat(longitudeField.toString());
-        
+
         const accuracyField = formData.get('locationAccuracy');
         if (accuracyField) {
           locationData.accuracy = parseInt(accuracyField.toString());
         }
-        
+
         const timestampField = formData.get('locationTimestamp');
         if (timestampField) {
           locationData.timestamp = parseInt(timestampField.toString());
         }
-        
+
         const providerField = formData.get('locationProvider');
         if (providerField) {
           locationData.provider = providerField.toString();
         }
       }
 
-      // Get FileUploadService from service locator
-      const { fileUploadService } = getServiceLocator();
+      // Create FileUploadService instance directly
+      const fileUploadService = new FileUploadService();
 
       // Process each file using the service
       const results = await Promise.all(
-        files.map(async (file) => {
+        files.map(async file => {
           try {
             const result = await fileUploadService.uploadFile(file, {
               speakerCount,
@@ -134,14 +133,14 @@ export const POST = withMiddleware(
                 };
               }
             }
-            
+
             return {
               success: false,
               fileName: file.name,
               error: error instanceof Error ? error.message : 'Unknown error',
             };
           }
-        })
+        }),
       );
 
       // Auto-trigger transcription worker for successful uploads (non-blocking)
@@ -149,7 +148,9 @@ export const POST = withMiddleware(
       if (successfulUploads > 0) {
         setImmediate(async () => {
           try {
-            apiDebug(`Starting transcription worker for ${successfulUploads} newly uploaded files...`);
+            apiDebug(
+              `Starting transcription worker for ${successfulUploads} newly uploaded files...`,
+            );
             const result = await processTranscriptionJobs();
             apiDebug('Transcription worker completed:', result);
           } catch (error) {
@@ -165,22 +166,26 @@ export const POST = withMiddleware(
       debugPerformance('Upload endpoint', startTime, 'api');
 
       return NextResponse.json(
-        createApiResponse({
-          totalFiles: files.length,
-          successCount,
-          failureCount,
-          results,
-          speakerCount: speakerCount || null,
-          speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
-          locationCaptured: !!(locationData.latitude && locationData.longitude),
-        }, {
-          meta: {
-            requestId: context.requestId,
-            duration: Date.now() - startTime,
-          }
-        })
+        createApiResponse(
+          {
+            totalFiles: files.length,
+            successCount,
+            failureCount,
+            results,
+            speakerCount: speakerCount || null,
+            speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
+            locationCaptured: !!(
+              locationData.latitude && locationData.longitude
+            ),
+          },
+          {
+            meta: {
+              requestId: context.requestId,
+              duration: Date.now() - startTime,
+            },
+          },
+        ),
       );
-
     } catch (error) {
       apiDebug('Upload error:', error);
       return NextResponse.json(
@@ -188,9 +193,9 @@ export const POST = withMiddleware(
           error instanceof Error ? error.message : 'Unknown error',
           'UPLOAD_ERROR',
           500,
-          { stack: error instanceof Error ? error.stack : undefined }
+          { stack: error instanceof Error ? error.stack : undefined },
         ),
-        { status: 500 }
+        { status: 500 },
       );
     }
   },
@@ -212,5 +217,5 @@ export const POST = withMiddleware(
       includeStackTrace: process.env.NODE_ENV === 'development',
       sanitizeErrors: true,
     },
-  }
+  },
 );

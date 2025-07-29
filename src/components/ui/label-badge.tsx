@@ -35,7 +35,7 @@ export function LabelBadge({
   // Color assignment based on label text
   const getLabelColor = (label: string) => {
     const hash = label.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
     return LABEL_COLORS[Math.abs(hash) % LABEL_COLORS.length];
@@ -48,8 +48,8 @@ export function LabelBadge({
   const iconSize = size === 'sm' ? 'w-2 h-2' : 'w-3 h-3';
 
   return (
-    <div className={cn('flex items-center gap-1 flex-wrap', className)}>
-      {visibleLabels.map((label) => (
+    <div className={cn('flex flex-wrap items-center gap-1', className)}>
+      {visibleLabels.map(label => (
         <Badge
           key={label}
           variant="secondary"
@@ -69,10 +69,7 @@ export function LabelBadge({
       {remainingCount > 0 && (
         <Badge
           variant="secondary"
-          className={cn(
-            badgeSize,
-            'bg-gray-100 text-gray-600 border-gray-200',
-          )}
+          className={cn(badgeSize, 'border-gray-200 bg-gray-100 text-gray-600')}
         >
           +{remainingCount} more
         </Badge>

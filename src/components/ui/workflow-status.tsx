@@ -77,28 +77,30 @@ export function WorkflowStatus({
   };
 
   return (
-    <div className={cn('space-y-4 p-6 border rounded-lg bg-card', className)}>
+    <div className={cn('space-y-4 rounded-lg border bg-card p-6', className)}>
       {/* Status Header */}
       <div className="flex items-center gap-3">
-        <div className={cn(
-          'flex items-center justify-center w-8 h-8 rounded-full',
-          phase === 'uploading' && 'bg-blue-100 text-blue-600',
-          phase === 'transcribing' && 'bg-purple-100 text-purple-600',
-          phase === 'completed' && 'bg-green-100 text-green-600',
-          phase === 'error' && 'bg-red-100 text-red-600'
-        )}>
+        <div
+          className={cn(
+            'flex h-8 w-8 items-center justify-center rounded-full',
+            phase === 'uploading' && 'bg-blue-100 text-blue-600',
+            phase === 'transcribing' && 'bg-purple-100 text-purple-600',
+            phase === 'completed' && 'bg-green-100 text-green-600',
+            phase === 'error' && 'bg-red-100 text-red-600',
+          )}
+        >
           {phase === 'uploading' || phase === 'transcribing' ? (
             <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
             icon
           )}
         </div>
-        
+
         <div className="flex-1">
-          <h3 className="font-semibold text-lg">{title}</h3>
-          <p className="text-muted-foreground text-sm">{description}</p>
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
-        
+
         {(phase === 'uploading' || phase === 'transcribing') && (
           <div className="text-right">
             <div className="text-2xl font-bold text-primary">
@@ -114,20 +116,22 @@ export function WorkflowStatus({
       </div>
 
       {/* Progress Bar */}
-      {(phase === 'uploading' || phase === 'transcribing' || phase === 'completed') && (
+      {(phase === 'uploading' ||
+        phase === 'transcribing' ||
+        phase === 'completed') && (
         <div className="space-y-2">
-          <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
             <div
               className={cn(
-                'h-full transition-all duration-300 ease-out rounded-full',
+                'h-full rounded-full transition-all duration-300 ease-out',
                 color === 'blue' && 'bg-blue-500',
                 color === 'purple' && 'bg-purple-500',
-                color === 'green' && 'bg-green-500'
+                color === 'green' && 'bg-green-500',
               )}
               style={{ width: `${progress}%` }}
             />
           </div>
-          
+
           {phase === 'transcribing' && progress > 0 && (
             <div className="flex justify-between text-xs text-muted-foreground">
               <span>Processing audio...</span>
@@ -139,8 +143,8 @@ export function WorkflowStatus({
 
       {/* Error Details */}
       {phase === 'error' && error && (
-        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <p className="text-red-700 text-sm">{error}</p>
+        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
+          <p className="text-sm text-red-700">{error}</p>
         </div>
       )}
     </div>

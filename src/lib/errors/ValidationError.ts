@@ -51,40 +51,49 @@ export class ValidationError extends AppError {
   }
 
   static required(field: string, value?: any): ValidationError {
-    return new ValidationError(
-      `Field '${field}' is required`,
-      field,
-      value,
-      [{ field, rule: 'required', message: 'This field is required', value }],
-    );
+    return new ValidationError(`Field '${field}' is required`, field, value, [
+      { field, rule: 'required', message: 'This field is required', value },
+    ]);
   }
 
-  static invalidType(field: string, expectedType: string, actualValue?: any): ValidationError {
+  static invalidType(
+    field: string,
+    expectedType: string,
+    actualValue?: any,
+  ): ValidationError {
     const actualType = typeof actualValue;
     return new ValidationError(
       `Field '${field}' must be of type '${expectedType}', got '${actualType}'`,
       field,
       actualValue,
-      [{
-        field,
-        rule: 'type',
-        message: `Must be of type '${expectedType}'`,
-        value: actualValue,
-      }],
+      [
+        {
+          field,
+          rule: 'type',
+          message: `Must be of type '${expectedType}'`,
+          value: actualValue,
+        },
+      ],
     );
   }
 
-  static invalidFormat(field: string, format: string, value?: any): ValidationError {
+  static invalidFormat(
+    field: string,
+    format: string,
+    value?: any,
+  ): ValidationError {
     return new ValidationError(
       `Field '${field}' has invalid format, expected '${format}'`,
       field,
       value,
-      [{
-        field,
-        rule: 'format',
-        message: `Must match format '${format}'`,
-        value,
-      }],
+      [
+        {
+          field,
+          rule: 'format',
+          message: `Must match format '${format}'`,
+          value,
+        },
+      ],
     );
   }
 
@@ -103,17 +112,14 @@ export class ValidationError extends AppError {
       message += ` (must be at most ${max})`;
     }
 
-    return new ValidationError(
-      message,
-      field,
-      value,
-      [{
+    return new ValidationError(message, field, value, [
+      {
         field,
         rule: 'range',
         message: `Must be between ${min} and ${max}`,
         value,
-      }],
-    );
+      },
+    ]);
   }
 
   static invalidLength(
@@ -135,45 +141,50 @@ export class ValidationError extends AppError {
       message += `, got ${actualLength}`;
     }
 
-    return new ValidationError(
-      message,
-      field,
-      actualLength,
-      [{
+    return new ValidationError(message, field, actualLength, [
+      {
         field,
         rule: 'length',
         message: `Length must be between ${minLength} and ${maxLength}`,
         value: actualLength,
-      }],
-    );
+      },
+    ]);
   }
 
-  static invalidChoice(field: string, validChoices: any[], value?: any): ValidationError {
+  static invalidChoice(
+    field: string,
+    validChoices: any[],
+    value?: any,
+  ): ValidationError {
     return new ValidationError(
       `Field '${field}' must be one of: ${validChoices.join(', ')}`,
       field,
       value,
-      [{
-        field,
-        rule: 'choice',
-        message: `Must be one of: ${validChoices.join(', ')}`,
-        value,
-      }],
+      [
+        {
+          field,
+          rule: 'choice',
+          message: `Must be one of: ${validChoices.join(', ')}`,
+          value,
+        },
+      ],
     );
   }
 
-  static custom(field: string, message: string, value?: any, rule?: string): ValidationError {
-    return new ValidationError(
-      message,
-      field,
-      value,
-      [{
+  static custom(
+    field: string,
+    message: string,
+    value?: any,
+    rule?: string,
+  ): ValidationError {
+    return new ValidationError(message, field, value, [
+      {
         field,
         rule: rule || 'custom',
         message,
         value,
-      }],
-    );
+      },
+    ]);
   }
 
   static multiple(rules: ValidationRule[], message?: string): ValidationError {

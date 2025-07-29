@@ -17,7 +17,6 @@ type SummarizationPrompt = {
 
 export async function GET(_request: NextRequest) {
   try {
-
     const db = getDb();
     const dbPrompts = await db
       .select()
@@ -34,7 +33,9 @@ export async function GET(_request: NextRequest) {
         // If it's already a string, try to parse it
         if (typeof value === 'string') {
           const date = new Date(value);
-          return isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
+          return isNaN(date.getTime())
+            ? new Date().toISOString()
+            : date.toISOString();
         }
 
         // If it's a number (Unix timestamp)
@@ -70,7 +71,10 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching summarization prompts:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -81,9 +85,12 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || !prompt) {
-      return NextResponse.json({
-        error: 'Missing required fields: name, prompt',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: name, prompt',
+        },
+        { status: 400 },
+      );
     }
 
     const db = getDb();
@@ -127,16 +134,17 @@ export async function POST(request: NextRequest) {
       success: true,
       prompt: newPrompt,
     });
-
   } catch (error) {
     console.error('Error creating summarization prompt:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
-
     const body = await request.json();
     const { id, ...updates } = body;
 
@@ -187,16 +195,17 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({
       success: true,
     });
-
   } catch (error) {
     console.error('Error updating summarization prompt:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -225,9 +234,11 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({
       success: true,
     });
-
   } catch (error) {
     console.error('Error deleting summarization prompt:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

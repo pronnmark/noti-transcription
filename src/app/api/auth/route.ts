@@ -10,7 +10,9 @@ export async function POST(request: NextRequest) {
 
     if (password === AUTH_PASSWORD) {
       // Generate a simple session token
-      const sessionToken = Buffer.from(`noti-session-${Date.now()}-${Math.random()}`).toString('base64');
+      const sessionToken = Buffer.from(
+        `noti-session-${Date.now()}-${Math.random()}`,
+      ).toString('base64');
 
       return NextResponse.json({
         success: true,
@@ -18,17 +20,23 @@ export async function POST(request: NextRequest) {
         message: 'Authentication successful',
       });
     } else {
-      return NextResponse.json({
-        success: false,
-        message: 'Invalid password',
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          success: false,
+          message: 'Invalid password',
+        },
+        { status: 401 },
+      );
     }
   } catch (error) {
     debugLog('api', 'Auth error:', error);
-    return NextResponse.json({
-      success: false,
-      message: 'Authentication failed',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Authentication failed',
+      },
+      { status: 500 },
+    );
   }
 }
 

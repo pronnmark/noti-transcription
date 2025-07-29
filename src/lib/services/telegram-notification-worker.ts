@@ -1,11 +1,18 @@
 import { db } from '@/lib/database';
-import { transcriptionJobs, telegramNotificationPreferences, audioFiles } from '@/lib/database/schema';
+import {
+  transcriptionJobs,
+  telegramNotificationPreferences,
+  audioFiles,
+} from '@/lib/database/schema';
 import { eq, and, isNotNull, gte, desc } from 'drizzle-orm';
 
 // Check if we should send a notification based on user preferences and quiet hours
 function shouldSendNotification(
   preferences: any,
-  notificationType: 'transcriptionComplete' | 'transcriptionFailed' | 'summaryReady'
+  notificationType:
+    | 'transcriptionComplete'
+    | 'transcriptionFailed'
+    | 'summaryReady',
 ): boolean {
   // Check if this notification type is enabled
   if (!preferences[notificationType]) {
@@ -16,15 +23,19 @@ function shouldSendNotification(
   if (preferences.quietHoursStart && preferences.quietHoursEnd) {
     const now = new Date();
     const timezone = preferences.timezone || 'UTC';
-    
+
     // Convert to user's timezone (simplified - in production use a proper timezone library)
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const currentTime = currentHour * 60 + currentMinute;
 
-    const [startHour, startMinute] = preferences.quietHoursStart.split(':').map(Number);
-    const [endHour, endMinute] = preferences.quietHoursEnd.split(':').map(Number);
-    
+    const [startHour, startMinute] = preferences.quietHoursStart
+      .split(':')
+      .map(Number);
+    const [endHour, endMinute] = preferences.quietHoursEnd
+      .split(':')
+      .map(Number);
+
     const quietStart = startHour * 60 + startMinute;
     const quietEnd = endHour * 60 + endMinute;
 
@@ -49,21 +60,29 @@ function shouldSendNotification(
 export async function notifyTranscriptionComplete(jobId: number) {
   try {
     // Get job details
-    const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, jobId)).limit(1);
+    const jobResults = await db
+      .select()
+      .from(transcriptionJobs)
+      .where(eq(transcriptionJobs.id, jobId))
+      .limit(1);
     const job = jobResults[0];
-    
+
     if (!job) {
       return;
     }
-    
+
     // Get file details
-    const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+    const fileResults = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, job.fileId))
+      .limit(1);
     const file = fileResults[0];
-    
+
     if (!file) {
       return;
     }
-    
+
     // For now, skip telegram notifications since we don't have chatId stored in the schema
     // TODO: Add telegram metadata storage to jobs or files
     return;
@@ -76,21 +95,29 @@ export async function notifyTranscriptionComplete(jobId: number) {
 export async function notifyTranscriptionFailed(jobId: number) {
   try {
     // Get job details
-    const jobResults = await db.select().from(transcriptionJobs).where(eq(transcriptionJobs.id, jobId)).limit(1);
+    const jobResults = await db
+      .select()
+      .from(transcriptionJobs)
+      .where(eq(transcriptionJobs.id, jobId))
+      .limit(1);
     const job = jobResults[0];
-    
+
     if (!job) {
       return;
     }
-    
+
     // Get file details
-    const fileResults = await db.select().from(audioFiles).where(eq(audioFiles.id, job.fileId)).limit(1);
+    const fileResults = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, job.fileId))
+      .limit(1);
     const file = fileResults[0];
-    
+
     if (!file) {
       return;
     }
-    
+
     // For now, skip telegram notifications since we don't have chatId stored in the schema
     // TODO: Add telegram metadata storage to jobs or files
     return;
@@ -103,13 +130,19 @@ export async function notifyTranscriptionFailed(jobId: number) {
 export async function monitorTranscriptionJobs() {
   try {
     // Find recently completed jobs that haven't been notified
-    const recentJobs = await db.select()
+    const recentJobs = await db
+      .select()
       .from(transcriptionJobs)
-      .where(and(
-        eq(transcriptionJobs.status, 'completed'),
-        isNotNull(transcriptionJobs.completedAt),
-        gte(transcriptionJobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
-      ));
+      .where(
+        and(
+          eq(transcriptionJobs.status, 'completed'),
+          isNotNull(transcriptionJobs.completedAt),
+          gte(
+            transcriptionJobs.completedAt,
+            new Date(Date.now() - 5 * 60 * 1000),
+          ), // Last 5 minutes
+        ),
+      );
 
     // Check each job for Telegram metadata
     // TODO: Re-enable when telegram metadata storage is implemented in schema
@@ -121,13 +154,19 @@ export async function monitorTranscriptionJobs() {
     }
 
     // Find recently failed jobs
-    const failedJobs = await db.select()
+    const failedJobs = await db
+      .select()
       .from(transcriptionJobs)
-      .where(and(
-        eq(transcriptionJobs.status, 'failed'),
-        isNotNull(transcriptionJobs.completedAt),
-        gte(transcriptionJobs.completedAt, new Date(Date.now() - 5 * 60 * 1000)) // Last 5 minutes
-      ));
+      .where(
+        and(
+          eq(transcriptionJobs.status, 'failed'),
+          isNotNull(transcriptionJobs.completedAt),
+          gte(
+            transcriptionJobs.completedAt,
+            new Date(Date.now() - 5 * 60 * 1000),
+          ), // Last 5 minutes
+        ),
+      );
 
     // Notify for failed jobs
     // TODO: Re-enable when telegram metadata storage is implemented in schema
@@ -137,7 +176,6 @@ export async function monitorTranscriptionJobs() {
       //   await notifyTranscriptionFailed(job.id);
       // }
     }
-
   } catch (error) {
     console.error('Error monitoring transcription jobs:', error);
   }
@@ -147,7 +185,7 @@ export async function monitorTranscriptionJobs() {
 export function startNotificationMonitoring(intervalMs: number = 30000) {
   // Run immediately
   monitorTranscriptionJobs();
-  
+
   // Then run periodically
   return setInterval(() => {
     monitorTranscriptionJobs();

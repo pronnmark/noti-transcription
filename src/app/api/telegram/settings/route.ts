@@ -36,7 +36,7 @@ asyncio.run(get_bot_info())
 
         const { stdout } = await execAsync(command);
         const result = JSON.parse(stdout.trim());
-        
+
         if (!result.error) {
           botInfo = {
             id: result.id,
@@ -58,7 +58,8 @@ asyncio.run(get_bot_info())
         hasBotToken,
         botTokenSource: config?.botToken ? 'database' : 'environment',
         chatConfigurations: config?.chatConfigurations || [],
-        defaultChatId: config?.defaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
+        defaultChatId:
+          config?.defaultChatId || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
         isEnabled: config?.isEnabled ?? true,
         botInfo,
       },
@@ -75,7 +76,8 @@ asyncio.run(get_bot_info())
 // POST - Update Telegram settings
 export async function POST(request: NextRequest) {
   try {
-    const { botToken, chatConfigurations, defaultChatId, isEnabled } = await request.json();
+    const { botToken, chatConfigurations, defaultChatId, isEnabled } =
+      await request.json();
 
     // Get existing settings
     const existingSettings = await db.select().from(telegramSettings).limit(1);
@@ -92,15 +94,14 @@ export async function POST(request: NextRequest) {
     let result;
     if (existing) {
       // Update existing settings
-      result = await db.update(telegramSettings)
+      result = await db
+        .update(telegramSettings)
         .set(updateData)
         .where(eq(telegramSettings.id, existing.id))
         .returning();
     } else {
       // Create new settings
-      result = await db.insert(telegramSettings)
-        .values(updateData)
-        .returning();
+      result = await db.insert(telegramSettings).values(updateData).returning();
     }
 
     return NextResponse.json({
@@ -108,7 +109,6 @@ export async function POST(request: NextRequest) {
       settings: result[0],
       message: 'Telegram settings updated successfully',
     });
-
   } catch (error) {
     console.error('Error updating Telegram settings:', error);
     return NextResponse.json(
@@ -205,7 +205,6 @@ asyncio.run(test_connection())
     } catch (error) {
       throw error;
     }
-
   } catch (error) {
     console.error('Telegram connection test error:', error);
     return NextResponse.json(

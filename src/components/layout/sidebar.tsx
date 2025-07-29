@@ -43,7 +43,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   return (
     <div className="flex h-full w-64 flex-col border-r bg-card">
       {/* Logo */}
-      <div className="flex h-16 items-center px-6 border-b bg-muted/30">
+      <div className="flex h-16 items-center border-b bg-muted/30 px-6">
         <Image
           src="/logo.svg"
           alt="Noti"
@@ -56,7 +56,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
 
       {/* Navigation */}
       <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
+        {navigation.map(item => {
           const itemIsActive = isActive(item.href);
 
           return (
@@ -79,7 +79,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
 
       {/* App Info */}
       <div className="border-t p-4">
-        <div className="text-xs text-muted-foreground text-center">
+        <div className="text-center text-xs text-muted-foreground">
           Version 1.0.0
         </div>
       </div>

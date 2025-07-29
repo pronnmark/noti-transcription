@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, extractionTemplates, extractions, eq, and, desc, asc } from '@/lib/database';
+import {
+  db,
+  extractionTemplates,
+  extractions,
+  eq,
+  and,
+  desc,
+  asc,
+} from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
@@ -22,7 +30,9 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(extractionTemplates.isDefault, true));
     }
 
-    const templates = await db.select().from(extractionTemplates)
+    const templates = await db
+      .select()
+      .from(extractionTemplates)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(
         desc(extractionTemplates.isDefault),
@@ -35,7 +45,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching extraction templates:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -60,21 +73,27 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || !prompt) {
-      return NextResponse.json({
-        error: 'Missing required fields: name, prompt',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: name, prompt',
+        },
+        { status: 400 },
+      );
     }
 
     // Create template
-    const [template] = await db.insert(extractionTemplates).values({
-      name: name,
-      description: description || null,
-      prompt: prompt,
-      expectedOutputFormat: expectedOutputFormat || null,
-      defaultPriority: defaultPriority,
-      isActive: isActive,
-      isDefault: isDefault,
-    }).returning();
+    const [template] = await db
+      .insert(extractionTemplates)
+      .values({
+        name: name,
+        description: description || null,
+        prompt: prompt,
+        expectedOutputFormat: expectedOutputFormat || null,
+        defaultPriority: defaultPriority,
+        isActive: isActive,
+        isDefault: isDefault,
+      })
+      .returning();
 
     // Template already returned from insert, no need to fetch again
 
@@ -82,10 +101,12 @@ export async function POST(request: NextRequest) {
       success: true,
       template: template,
     });
-
   } catch (error) {
     console.error('Error creating extraction template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -111,16 +132,26 @@ export async function PUT(request: NextRequest) {
 
     // Validate required fields
     if (!id) {
-      return NextResponse.json({
-        error: 'Missing required field: id',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required field: id',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if template exists
-    const existingTemplate = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
+    const existingTemplate = await db
+      .select()
+      .from(extractionTemplates)
+      .where(eq(extractionTemplates.id, id))
+      .limit(1);
 
     if (!existingTemplate || existingTemplate.length === 0) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 },
+      );
     }
 
     // Update template
@@ -131,26 +162,33 @@ export async function PUT(request: NextRequest) {
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
     if (prompt !== undefined) updateData.prompt = prompt;
-    if (expectedOutputFormat !== undefined) updateData.expectedOutputFormat = expectedOutputFormat;
-    if (defaultPriority !== undefined) updateData.defaultPriority = defaultPriority;
+    if (expectedOutputFormat !== undefined) {updateData.expectedOutputFormat = expectedOutputFormat;}
+    if (defaultPriority !== undefined) {updateData.defaultPriority = defaultPriority;}
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isDefault !== undefined) updateData.isDefault = isDefault;
 
-    await db.update(extractionTemplates)
+    await db
+      .update(extractionTemplates)
       .set(updateData)
       .where(eq(extractionTemplates.id, id));
 
     // Get the updated template
-    const template = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
+    const template = await db
+      .select()
+      .from(extractionTemplates)
+      .where(eq(extractionTemplates.id, id))
+      .limit(1);
 
     return NextResponse.json({
       success: true,
       template: template,
     });
-
   } catch (error) {
     console.error('Error updating extraction template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -166,38 +204,56 @@ export async function DELETE(request: NextRequest) {
     const id = url.searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({
-        error: 'Missing required parameter: id',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required parameter: id',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if template exists
-    const existingTemplate = await db.select().from(extractionTemplates).where(eq(extractionTemplates.id, id)).limit(1);
+    const existingTemplate = await db
+      .select()
+      .from(extractionTemplates)
+      .where(eq(extractionTemplates.id, id))
+      .limit(1);
 
     if (!existingTemplate || existingTemplate.length === 0) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 },
+      );
     }
 
     // Check if template is in use
-    const extractionsCount = await db.select().from(extractions).where(eq(extractions.templateId, id));
+    const extractionsCount = await db
+      .select()
+      .from(extractions)
+      .where(eq(extractions.templateId, id));
 
     if (extractionsCount && extractionsCount.length > 0) {
-      return NextResponse.json({
-        error: 'Cannot delete template that is in use. Deactivate it instead.',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            'Cannot delete template that is in use. Deactivate it instead.',
+        },
+        { status: 400 },
+      );
     }
 
     // Delete template
-    await db.delete(extractionTemplates)
-      .where(eq(extractionTemplates.id, id));
+    await db.delete(extractionTemplates).where(eq(extractionTemplates.id, id));
 
     return NextResponse.json({
       success: true,
       message: 'Template deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting extraction template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

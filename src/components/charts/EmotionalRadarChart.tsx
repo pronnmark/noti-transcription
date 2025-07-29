@@ -1,7 +1,20 @@
 'use client';
 
-import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 interface EmotionalRadarChartProps {
   moodData: {
@@ -25,7 +38,6 @@ export function EmotionalRadarChart({
   description = 'Multi-dimensional emotional state analysis',
   height = 400,
 }: EmotionalRadarChartProps) {
-
   // Transform mood data for radar chart
   const radarData = [
     { emotion: 'Happy', value: moodData.happy || 0, fullMark: 10 },
@@ -87,19 +99,21 @@ export function EmotionalRadarChart({
 
         {/* Dominant emotions summary */}
         <div className="mt-4">
-          <h4 className="font-medium mb-3">Dominant Emotions</h4>
+          <h4 className="mb-3 font-medium">Dominant Emotions</h4>
           <div className="space-y-2">
             {sortedEmotions.map(([emotion, value], index) => (
               <div key={emotion} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-3 h-3 rounded-full"
+                    className="h-3 w-3 rounded-full"
                     style={{ backgroundColor: getEmotionColor(emotion) }}
                   />
-                  <span className="text-sm font-medium capitalize">{emotion}</span>
+                  <span className="text-sm font-medium capitalize">
+                    {emotion}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-20 bg-gray-200 rounded-full h-2">
+                  <div className="h-2 w-20 rounded-full bg-gray-200">
                     <div
                       className="h-2 rounded-full transition-all duration-300"
                       style={{
@@ -108,7 +122,9 @@ export function EmotionalRadarChart({
                       }}
                     />
                   </div>
-                  <span className="text-sm text-gray-600 w-8">{value?.toFixed(1)}</span>
+                  <span className="w-8 text-sm text-gray-600">
+                    {value?.toFixed(1)}
+                  </span>
                 </div>
               </div>
             ))}
@@ -116,26 +132,38 @@ export function EmotionalRadarChart({
         </div>
 
         {/* Emotional insights */}
-        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-          <h4 className="font-medium mb-2">Emotional Insights</h4>
+        <div className="mt-4 rounded-lg bg-gray-50 p-3">
+          <h4 className="mb-2 font-medium">Emotional Insights</h4>
           <div className="text-sm text-gray-600">
             {sortedEmotions.length > 0 && (
               <p>
-                Primary emotion: <span className="font-medium">{sortedEmotions[0][0]}</span>
-                {sortedEmotions[0][1] && ` (${sortedEmotions[0][1].toFixed(1)}/10)`}
+                Primary emotion:{' '}
+                <span className="font-medium">{sortedEmotions[0][0]}</span>
+                {sortedEmotions[0][1] &&
+                  ` (${sortedEmotions[0][1].toFixed(1)}/10)`}
               </p>
             )}
             {sortedEmotions.length > 1 && (
               <p>
-                Secondary emotion: <span className="font-medium">{sortedEmotions[1][0]}</span>
-                {sortedEmotions[1][1] && ` (${sortedEmotions[1][1].toFixed(1)}/10)`}
+                Secondary emotion:{' '}
+                <span className="font-medium">{sortedEmotions[1][0]}</span>
+                {sortedEmotions[1][1] &&
+                  ` (${sortedEmotions[1][1].toFixed(1)}/10)`}
               </p>
             )}
             {/* Emotional balance assessment */}
             <p className="mt-2">
               {(() => {
-                const positiveEmotions = (moodData.happy || 0) + (moodData.confident || 0) + (moodData.excited || 0) + (moodData.calm || 0);
-                const negativeEmotions = (moodData.frustrated || 0) + (moodData.stressed || 0) + (moodData.anxious || 0) + (moodData.sad || 0);
+                const positiveEmotions =
+                  (moodData.happy || 0) +
+                  (moodData.confident || 0) +
+                  (moodData.excited || 0) +
+                  (moodData.calm || 0);
+                const negativeEmotions =
+                  (moodData.frustrated || 0) +
+                  (moodData.stressed || 0) +
+                  (moodData.anxious || 0) +
+                  (moodData.sad || 0);
                 const ratio = positiveEmotions / Math.max(negativeEmotions, 1);
 
                 if (ratio > 2) return 'Strong positive emotional balance';

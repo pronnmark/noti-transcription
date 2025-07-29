@@ -68,7 +68,8 @@ export const extractionsService = new ExtractionRepository();
 export const aiExtractsService = extractionsService; // Alias for backward compatibility
 export const summarizationsService = new SummarizationRepository();
 export const templatesService = new ExtractionTemplateRepository();
-export const summarizationTemplatesService = new SummarizationTemplateRepository();
+export const summarizationTemplatesService =
+  new SummarizationTemplateRepository();
 
 // Legacy settings service - DEPRECATED: Use repositories instead
 // Keeping minimal implementation for backward compatibility with /api/settings route
@@ -86,7 +87,10 @@ export const settingsService = {
     try {
       const existing = await this.get();
       if (existing) {
-        await db.update(systemSettings).set(data).where(eq(systemSettings.id, existing.id));
+        await db
+          .update(systemSettings)
+          .set(data)
+          .where(eq(systemSettings.id, existing.id));
       } else {
         await db.insert(systemSettings).values({ id: 1, ...data });
       }

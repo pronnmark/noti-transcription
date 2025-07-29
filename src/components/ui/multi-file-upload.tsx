@@ -3,10 +3,23 @@
 import { useState, useRef } from 'react';
 import { Button } from './button';
 import { Card, CardContent } from './card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 import { Badge } from './badge';
 import { Progress } from './progress';
-import { FileAudio, Upload, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import {
+  FileAudio,
+  Upload,
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +35,18 @@ interface MultiFileUploadProps {
   className?: string;
 }
 
-const SUPPORTED_FORMATS = ['flac', 'm4a', 'mp3', 'mp4', 'mpeg', 'mpga', 'oga', 'ogg', 'wav', 'webm'];
+const SUPPORTED_FORMATS = [
+  'flac',
+  'm4a',
+  'mp3',
+  'mp4',
+  'mpeg',
+  'mpga',
+  'oga',
+  'ogg',
+  'wav',
+  'webm',
+];
 
 function getFileExtension(filename: string): string {
   return filename.toLowerCase().split('.').pop() || '';
@@ -30,7 +54,7 @@ function getFileExtension(filename: string): string {
 
 function validateAudioFormat(file: File): { valid: boolean; error?: string } {
   const extension = getFileExtension(file.name);
-  
+
   if (!SUPPORTED_FORMATS.includes(extension)) {
     return {
       valid: false,
@@ -41,7 +65,10 @@ function validateAudioFormat(file: File): { valid: boolean; error?: string } {
   return { valid: true };
 }
 
-export function MultiFileUpload({ onUploadComplete, className }: MultiFileUploadProps) {
+export function MultiFileUpload({
+  onUploadComplete,
+  className,
+}: MultiFileUploadProps) {
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -51,7 +78,7 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-    
+
     // Validate all files
     const validFiles: File[] = [];
     const invalidFiles: string[] = [];
@@ -71,7 +98,9 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
 
     if (validFiles.length > 0) {
       setSelectedFiles(prev => [...prev, ...validFiles]);
-      toast.success(`Selected ${validFiles.length} valid audio file${validFiles.length > 1 ? 's' : ''}`);
+      toast.success(
+        `Selected ${validFiles.length} valid audio file${validFiles.length > 1 ? 's' : ''}`,
+      );
     }
 
     // Reset file input
@@ -101,12 +130,12 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
 
     try {
       const formData = new FormData();
-      
+
       // Add all files
       selectedFiles.forEach(file => {
         formData.append('files', file);
       });
-      
+
       // Add speaker count
       formData.append('speakerCount', speakerCount.toString());
 
@@ -120,24 +149,27 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
       }
 
       const result = await response.json();
-      
+
       if (result.success) {
-        toast.success(`Successfully uploaded ${result.successCount} of ${result.totalFiles} files`);
+        toast.success(
+          `Successfully uploaded ${result.successCount} of ${result.totalFiles} files`,
+        );
         if (result.failureCount > 0) {
           toast.warning(`${result.failureCount} files failed to upload`);
         }
         setUploadResults(result.results || []);
         onUploadComplete?.(result.results || []);
-        
+
         // Clear files after successful upload
         setSelectedFiles([]);
       } else {
         throw new Error(result.error || 'Upload failed');
       }
-
     } catch (error) {
       console.error('Upload error:', error);
-      toast.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
       setUploading(false);
       setUploadProgress(0);
@@ -176,7 +208,7 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
                 <FileAudio className="h-4 w-4" />
                 Select Audio Files
               </Button>
-              
+
               <div className="flex items-center gap-2">
                 <label htmlFor="speakerCount" className="text-sm font-medium">
                   Speakers:
@@ -232,18 +264,21 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
                 </Button>
               </div>
 
-              <div className="max-h-48 overflow-y-auto space-y-2">
+              <div className="max-h-48 space-y-2 overflow-y-auto">
                 {selectedFiles.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="flex items-center justify-between p-3 bg-muted/30 rounded-lg"
+                    className="flex items-center justify-between rounded-lg bg-muted/30 p-3"
                   >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <FileAudio className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                    <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <FileAudio className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium truncate">{file.name}</div>
+                        <div className="truncate text-sm font-medium">
+                          {file.name}
+                        </div>
                         <div className="text-xs text-muted-foreground">
-                          {formatFileSize(file.size)} • {getFileExtension(file.name).toUpperCase()}
+                          {formatFileSize(file.size)} •{' '}
+                          {getFileExtension(file.name).toUpperCase()}
                         </div>
                       </div>
                     </div>
@@ -252,7 +287,7 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
                       size="sm"
                       onClick={() => removeFile(index)}
                       disabled={uploading}
-                      className="flex-shrink-0 h-8 w-8 p-0"
+                      className="h-8 w-8 flex-shrink-0 p-0"
                     >
                       <X className="h-4 w-4" />
                     </Button>
@@ -287,7 +322,10 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
                     )}
                     <span className="flex-1 truncate">{result.fileName}</span>
                     {result.success ? (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-100 text-green-800"
+                      >
                         Success
                       </Badge>
                     ) : (
@@ -313,7 +351,8 @@ export function MultiFileUpload({ onUploadComplete, className }: MultiFileUpload
             ) : (
               <>
                 <Upload className="mr-2 h-4 w-4" />
-                Upload {selectedFiles.length} File{selectedFiles.length !== 1 ? 's' : ''}
+                Upload {selectedFiles.length} File
+                {selectedFiles.length !== 1 ? 's' : ''}
               </>
             )}
           </Button>

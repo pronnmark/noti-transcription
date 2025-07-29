@@ -9,7 +9,10 @@ interface TranscriptionStatusProps {
   initialStatus?: string;
 }
 
-export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStatusProps) {
+export function TranscriptionStatus({
+  fileId,
+  initialStatus,
+}: TranscriptionStatusProps) {
   const [status, setStatus] = useState(initialStatus || 'none');
   const [progress, setProgress] = useState(0);
   const [transcript, setTranscript] = useState<any>(null);
@@ -63,11 +66,11 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
   const getStatusIcon = () => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'processing':
-        return <Loader2 className="w-4 h-4 animate-spin" />;
+        return <Loader2 className="h-4 w-4 animate-spin" />;
       case 'failed':
-        return <XCircle className="w-4 h-4 text-red-500" />;
+        return <XCircle className="h-4 w-4 text-red-500" />;
       default:
         return null;
     }
@@ -103,12 +106,12 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
           >
             {loading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Starting...
               </>
             ) : (
               <>
-                <Play className="w-4 h-4 mr-2" />
+                <Play className="mr-2 h-4 w-4" />
                 Transcribe
               </>
             )}
@@ -117,12 +120,11 @@ export function TranscriptionStatus({ fileId, initialStatus }: TranscriptionStat
       </div>
 
       {transcript && (
-        <div className="mt-2 p-3 bg-muted rounded-md">
+        <div className="mt-2 rounded-md bg-muted p-3">
           <p className="text-sm">
             {Array.isArray(transcript)
               ? transcript.map((seg: any) => seg.text).join(' ')
-              : transcript
-            }
+              : transcript}
           </p>
         </div>
       )}

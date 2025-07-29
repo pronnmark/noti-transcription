@@ -19,7 +19,10 @@ export const GET = withAuthMiddleware(async (request: NextRequest) => {
         low: allNotes.filter(n => n.priority === 'low').length,
       },
       recentActivity: allNotes
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
         .slice(0, 10)
         .map(n => ({
           id: n.id,
@@ -28,9 +31,14 @@ export const GET = withAuthMiddleware(async (request: NextRequest) => {
           fileId: n.fileId,
           updatedAt: n.updatedAt,
         })),
-      completionRate: allNotes.length > 0
-        ? Math.round((allNotes.filter(n => n.status === 'completed').length / allNotes.length) * 100)
-        : 0,
+      completionRate:
+        allNotes.length > 0
+          ? Math.round(
+            (allNotes.filter(n => n.status === 'completed').length /
+                allNotes.length) *
+                100,
+          )
+          : 0,
     };
 
     return NextResponse.json({

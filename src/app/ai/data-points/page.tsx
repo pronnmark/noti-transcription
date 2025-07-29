@@ -5,8 +5,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Loader2, BarChart3, Settings, TrendingUp, Activity } from 'lucide-react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Loader2,
+  BarChart3,
+  Settings,
+  TrendingUp,
+  Activity,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import TemplateManager from '@/components/templates/TemplateManager';
 
@@ -92,13 +104,13 @@ export default function DataPointsPage() {
   const getVisualizationIcon = (type: string) => {
     switch (type) {
       case 'chart':
-        return <BarChart3 className="w-4 h-4" />;
+        return <BarChart3 className="h-4 w-4" />;
       case 'gauge':
-        return <Activity className="w-4 h-4" />;
+        return <Activity className="h-4 w-4" />;
       case 'text':
-        return <TrendingUp className="w-4 h-4" />;
+        return <TrendingUp className="h-4 w-4" />;
       default:
-        return <BarChart3 className="w-4 h-4" />;
+        return <BarChart3 className="h-4 w-4" />;
     }
   };
 
@@ -156,7 +168,9 @@ export default function DataPointsPage() {
                 <div className="text-2xl font-bold text-blue-600">
                   {typeof value === 'number' ? value : JSON.stringify(value)}
                 </div>
-                <div className="text-sm text-gray-600 capitalize">{key.replace('_', ' ')}</div>
+                <div className="text-sm capitalize text-gray-600">
+                  {key.replace('_', ' ')}
+                </div>
               </div>
             ))}
           </div>
@@ -166,9 +180,13 @@ export default function DataPointsPage() {
           <div className="space-y-2">
             {Object.entries(results).map(([key, value]) => (
               <div key={key}>
-                <strong className="text-sm capitalize">{key.replace('_', ' ')}:</strong>
+                <strong className="text-sm capitalize">
+                  {key.replace('_', ' ')}:
+                </strong>
                 <span className="ml-2 text-sm text-gray-700">
-                  {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                  {typeof value === 'object'
+                    ? JSON.stringify(value)
+                    : String(value)}
                 </span>
               </div>
             ))}
@@ -176,8 +194,8 @@ export default function DataPointsPage() {
         );
       default:
         return (
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+          <div className="rounded-lg bg-gray-50 p-4">
+            <pre className="whitespace-pre-wrap text-sm text-gray-700">
               {JSON.stringify(results, null, 2)}
             </pre>
           </div>
@@ -187,28 +205,34 @@ export default function DataPointsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Data Points</h1>
-          <p className="text-gray-600">Analyze and visualize insights from your transcripts with flexible templates</p>
+          <p className="text-gray-600">
+            Analyze and visualize insights from your transcripts with flexible
+            templates
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Dialog open={showTemplateManager} onOpenChange={setShowTemplateManager}>
+          <Dialog
+            open={showTemplateManager}
+            onOpenChange={setShowTemplateManager}
+          >
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
+                <Settings className="mr-2 h-4 w-4" />
                 Manage Templates
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-h-[80vh] max-w-6xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Data Point Template Management</DialogTitle>
               </DialogHeader>
@@ -240,11 +264,11 @@ export default function DataPointsPage() {
         <TabsContent value="analysis" className="space-y-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <BarChart3 className="w-4 h-4 text-gray-500" />
+              <BarChart3 className="h-4 w-4 text-gray-500" />
               <select
-                className="border rounded px-3 py-1 text-sm"
+                className="rounded border px-3 py-1 text-sm"
                 value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
+                onChange={e => setSelectedTemplate(e.target.value)}
               >
                 <option value="all">All Templates</option>
                 {activeTemplates.map(template => (
@@ -260,13 +284,19 @@ export default function DataPointsPage() {
           </div>
 
           <div className="grid gap-4">
-            {filteredDataPoints.map((dataPoint) => (
-              <Card key={dataPoint.id} className="hover:shadow-md transition-shadow">
+            {filteredDataPoints.map(dataPoint => (
+              <Card
+                key={dataPoint.id}
+                className="transition-shadow hover:shadow-md"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2">
-                        {getVisualizationIcon(templates.find(t => t.id === dataPoint.template_id)?.visualization_type || 'chart')}
+                        {getVisualizationIcon(
+                          templates.find(t => t.id === dataPoint.template_id)
+                            ?.visualization_type || 'chart',
+                        )}
                         <Badge variant="outline">
                           {getTemplateName(dataPoint.template_id)}
                         </Badge>
@@ -290,14 +320,16 @@ export default function DataPointsPage() {
           </div>
 
           {filteredDataPoints.length === 0 && (
-            <Card className="text-center py-12">
+            <Card className="py-12 text-center">
               <CardContent>
-                <BarChart3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No data points found</h3>
-                <p className="text-gray-600 mb-4">
+                <BarChart3 className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <h3 className="mb-2 text-lg font-medium text-gray-900">
+                  No data points found
+                </h3>
+                <p className="mb-4 text-gray-600">
                   Analyze your transcripts to generate data points
                 </p>
-                <Button onClick={() => window.location.href = '/files'}>
+                <Button onClick={() => (window.location.href = '/files')}>
                   Upload Files
                 </Button>
               </CardContent>
@@ -307,12 +339,14 @@ export default function DataPointsPage() {
 
         <TabsContent value="files" className="space-y-4">
           <div className="grid gap-4">
-            {files.map((file) => (
-              <Card key={file.id} className="hover:shadow-md transition-shadow">
+            {files.map(file => (
+              <Card key={file.id} className="transition-shadow hover:shadow-md">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <CardTitle className="text-lg">{file.originalFileName}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {file.originalFileName}
+                      </CardTitle>
                       <Badge
                         variant="secondary"
                         className={getStatusColor(file.dataPointStatus)}
@@ -322,26 +356,38 @@ export default function DataPointsPage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
-                        onClick={() => handleRunAnalysis(file.id, defaultTemplates.map(t => t.id))}
+                        onClick={() =>
+                          handleRunAnalysis(
+                            file.id,
+                            defaultTemplates.map(t => t.id),
+                          )
+                        }
                         disabled={isProcessing}
                         size="sm"
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <BarChart3 className="w-4 h-4 mr-2" />
+                          <BarChart3 className="mr-2 h-4 w-4" />
                         )}
                         Run Analysis
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                {file.dataPointTemplatesUsed && file.dataPointTemplatesUsed.length > 0 && (
+                {file.dataPointTemplatesUsed &&
+                  file.dataPointTemplatesUsed.length > 0 && (
                   <CardContent className="pt-0">
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-sm text-gray-600">Templates used:</span>
+                      <span className="text-sm text-gray-600">
+                          Templates used:
+                      </span>
                       {file.dataPointTemplatesUsed.map(templateId => (
-                        <Badge key={templateId} variant="outline" className="text-xs">
+                        <Badge
+                          key={templateId}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {getTemplateName(templateId)}
                         </Badge>
                       ))}
@@ -355,23 +401,34 @@ export default function DataPointsPage() {
 
         <TabsContent value="templates" className="space-y-4">
           <div className="grid gap-4">
-            {templates.map((template) => (
-              <Card key={template.id} className="hover:shadow-md transition-shadow">
+            {templates.map(template => (
+              <Card
+                key={template.id}
+                className="transition-shadow hover:shadow-md"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <div className="flex items-center space-x-2">
                         {getVisualizationIcon(template.visualization_type)}
-                        <CardTitle className="text-lg">{template.name}</CardTitle>
+                        <CardTitle className="text-lg">
+                          {template.name}
+                        </CardTitle>
                       </div>
                       <div className="flex items-center space-x-2">
                         {template.is_active && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-800"
+                          >
                             Active
                           </Badge>
                         )}
                         {template.is_default && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800"
+                          >
                             Default
                           </Badge>
                         )}
@@ -391,10 +448,10 @@ export default function DataPointsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-gray-600 mb-3">{template.description}</p>
-                  <div className="bg-gray-50 p-3 rounded text-sm">
+                  <p className="mb-3 text-gray-600">{template.description}</p>
+                  <div className="rounded bg-gray-50 p-3 text-sm">
                     <strong>Output Schema:</strong>
-                    <pre className="mt-1 text-xs text-gray-700 whitespace-pre-wrap">
+                    <pre className="mt-1 whitespace-pre-wrap text-xs text-gray-700">
                       {template.output_schema}
                     </pre>
                   </div>

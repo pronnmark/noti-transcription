@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/database/client';
 import { transcriptionJobs, audioFiles } from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
-import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
+import {
+  getSessionTokenFromRequest,
+  unauthorizedResponse,
+} from '@/lib/auth-server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> }
+  { params }: { params: Promise<{ fileId: string }> },
 ) {
   try {
     // Check authentication
@@ -17,12 +20,9 @@ export async function GET(
 
     const { fileId: fileIdParam } = await params;
     const fileId = parseInt(fileIdParam);
-    
+
     if (!fileId || isNaN(fileId)) {
-      return NextResponse.json(
-        { error: 'Invalid file ID' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
     }
 
     const db = getDb();
@@ -50,7 +50,7 @@ export async function GET(
     if (jobs.length === 0) {
       return NextResponse.json(
         { error: 'No transcription job found for this file' },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -58,7 +58,12 @@ export async function GET(
 
     // Calculate estimated time remaining (rough estimate)
     let estimatedTimeRemaining: number | null = null;
-    if (job.status === 'processing' && job.startedAt && job.progress && job.progress > 0) {
+    if (
+      job.status === 'processing' &&
+      job.startedAt &&
+      job.progress &&
+      job.progress > 0
+    ) {
       const elapsedMs = Date.now() - new Date(job.startedAt).getTime();
       const progressDecimal = job.progress / 100;
       const totalEstimatedMs = elapsedMs / progressDecimal;
@@ -73,7 +78,9 @@ export async function GET(
       error: job.status === 'failed' ? job.lastError : null,
       speakerCount: job.speakerCount,
       diarizationStatus: job.diarizationStatus,
-      estimatedTimeRemaining: estimatedTimeRemaining ? Math.round(estimatedTimeRemaining / 1000) : null, // in seconds
+      estimatedTimeRemaining: estimatedTimeRemaining
+        ? Math.round(estimatedTimeRemaining / 1000)
+        : null, // in seconds
       fileName: job.fileName,
       jobId: job.id,
       startedAt: job.startedAt,
@@ -81,12 +88,11 @@ export async function GET(
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error('Transcription status error:', error);
     return NextResponse.json(
       { error: 'Failed to get transcription status' },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

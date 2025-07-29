@@ -1,91 +1,95 @@
-import { BaseService, ValidationRules } from './BaseService';
 import { RepositoryFactory } from '../../database/repositories';
 import type { AudioRepository } from '../../database/repositories/AudioRepository';
-import type { IAudioService } from './interfaces';
-import type { AudioFile, NewAudioFile, TranscriptSegment } from '../../database/schema';
+import type { AudioFile, NewAudioFile } from '../../database/schema';
 
-export class AudioService extends BaseService implements IAudioService {
+export class AudioService {
   private audioRepository: AudioRepository;
 
   constructor() {
-    super('AudioService');
     this.audioRepository = RepositoryFactory.audioRepository;
   }
 
-  protected async onInitialize(): Promise<void> {
-    this._logger.info('Audio service initialized');
-  }
-
-  protected async onDestroy(): Promise<void> {
-    this._logger.info('Audio service destroyed');
-  }
-
   async getAllFiles(): Promise<AudioFile[]> {
-    return this.executeWithErrorHandling('getAllFiles', async () => {
+    try {
       const files = await this.audioRepository.findAll();
-      this._logger.info(`Found ${files.length} audio files`);
+      console.log(`[AudioService] Found ${files.length} audio files`);
       return files;
-    });
+    } catch (error) {
+      console.error('[AudioService] Error getting all files:', error);
+      throw error;
+    }
   }
 
   async getFileById(id: number): Promise<AudioFile | null> {
-    return this.executeWithErrorHandling('getFileById', async () => {
-      this.validateInput(id, [
-        ValidationRules.required('id'),
-        ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id'),
-      ]);
-
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Valid file ID is required');
+      }
       return await this.audioRepository.findById(id);
-    });
+    } catch (error) {
+      console.error(`[AudioService] Error getting file ${id}:`, error);
+      throw error;
+    }
   }
 
   async createFile(data: NewAudioFile): Promise<AudioFile> {
-    return this.executeWithErrorHandling('createFile', async () => {
-      this.validateInput(data, [
-        ValidationRules.required('fileName'),
-        ValidationRules.required('originalFileName'),
-        ValidationRules.required('originalFileType'),
-        ValidationRules.required('fileSize'),
-        ValidationRules.isPositive('fileSize'),
-      ]);
+    try {
+      if (
+        !data.fileName ||
+        !data.originalFileName ||
+        !data.originalFileType ||
+        !data.fileSize
+      ) {
+        throw new Error('Required file data is missing');
+      }
+      if (data.fileSize <= 0) {
+        throw new Error('File size must be positive');
+      }
 
       const newFile = await this.audioRepository.create(data);
-      this._logger.info(`Created audio file with ID: ${newFile.id}`);
+      console.log(`[AudioService] Created audio file with ID: ${newFile.id}`);
       return newFile;
-    });
+    } catch (error) {
+      console.error('[AudioService] Error creating file:', error);
+      throw error;
+    }
   }
 
-  async updateFile(id: number, data: Partial<NewAudioFile>): Promise<AudioFile> {
-    return this.executeWithErrorHandling('updateFile', async () => {
-      this.validateInput(id, [
-        ValidationRules.required('id'),
-        ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id'),
-      ]);
+  async updateFile(
+    id: number,
+    data: Partial<NewAudioFile>,
+  ): Promise<AudioFile> {
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Valid file ID is required');
+      }
 
       const updatedFile = await this.audioRepository.update(id, data);
-      this._logger.info(`Updated audio file ${id}`);
+      console.log(`[AudioService] Updated audio file ${id}`);
       return updatedFile;
-    });
+    } catch (error) {
+      console.error(`[AudioService] Error updating file ${id}:`, error);
+      throw error;
+    }
   }
 
   async deleteFile(id: number): Promise<boolean> {
-    return this.executeWithErrorHandling('deleteFile', async () => {
-      this.validateInput(id, [
-        ValidationRules.required('id'),
-        ValidationRules.isNumber('id'),
-        ValidationRules.isPositive('id'),
-      ]);
+    try {
+      if (!id || id <= 0) {
+        throw new Error('Valid file ID is required');
+      }
 
       const deleted = await this.audioRepository.delete(id);
       if (deleted) {
-        this._logger.info(`Deleted audio file ${id}`);
+        console.log(`[AudioService] Deleted audio file ${id}`);
       } else {
-        this._logger.warn(`Audio file ${id} not found for deletion`);
+        console.warn(`[AudioService] Audio file ${id} not found for deletion`);
       }
       return deleted;
-    });
+    } catch (error) {
+      console.error(`[AudioService] Error deleting file ${id}:`, error);
+      throw error;
+    }
   }
 
   async checkForDuplicates(data: {
@@ -98,20 +102,20 @@ export class AudioService extends BaseService implements IAudioService {
     message?: string;
     existingFile?: AudioFile;
   }> {
-    return this.executeWithErrorHandling('checkForDuplicates', async () => {
-      this.validateInput(data, [
-        ValidationRules.required('fileHash'),
-        ValidationRules.required('originalFileName'),
-        ValidationRules.required('fileSize'),
-        ValidationRules.isString('fileHash'),
-        ValidationRules.isString('originalFileName'),
-        ValidationRules.isNumber('fileSize'),
-        ValidationRules.isPositive('fileSize'),
-      ]);
+    try {
+      if (!data.fileHash || !data.originalFileName || !data.fileSize) {
+        throw new Error('Required duplicate check data is missing');
+      }
+      if (data.fileSize <= 0) {
+        throw new Error('File size must be positive');
+      }
 
       const existingFile = await this.audioRepository.findByHash(data.fileHash);
       if (existingFile) {
-        if (existingFile.fileSize === data.fileSize && existingFile.originalFileName === data.originalFileName) {
+        if (
+          existingFile.fileSize === data.fileSize &&
+          existingFile.originalFileName === data.originalFileName
+        ) {
           return {
             isDuplicate: true,
             duplicateType: 'full',
@@ -122,12 +126,16 @@ export class AudioService extends BaseService implements IAudioService {
         return {
           isDuplicate: true,
           duplicateType: 'hash',
-          message: 'A file with the same content but different metadata exists.',
+          message:
+            'A file with the same content but different metadata exists.',
           existingFile,
         };
       }
       return { isDuplicate: false };
-    });
+    } catch (error) {
+      console.error('[AudioService] Error checking duplicates:', error);
+      throw error;
+    }
   }
 
   async getStatistics(): Promise<{
@@ -136,93 +144,107 @@ export class AudioService extends BaseService implements IAudioService {
     averageSize: number;
     averageDuration: number;
   }> {
-    return this.executeWithErrorHandling('getStatistics', async () => {
+    try {
       return await this.audioRepository.getStatistics();
-    });
+    } catch (error) {
+      console.error('[AudioService] Error getting statistics:', error);
+      throw error;
+    }
   }
 
   async findByHash(hash: string): Promise<AudioFile | null> {
-    return this.executeWithErrorHandling('findByHash', async () => {
-      this.validateInput(hash, [
-        ValidationRules.required('hash'),
-        ValidationRules.isString('hash'),
-        ValidationRules.minLength('hash', 1),
-      ]);
-
+    try {
+      if (!hash) {
+        throw new Error('Hash is required');
+      }
       return await this.audioRepository.findByHash(hash);
-    });
+    } catch (error) {
+      console.error(`[AudioService] Error finding file by hash:`, error);
+      throw error;
+    }
   }
 
   async findByFileName(fileName: string): Promise<AudioFile | null> {
-    return this.executeWithErrorHandling('findByFileName', async () => {
-      this.validateInput(fileName, [
-        ValidationRules.required('fileName'),
-        ValidationRules.isString('fileName'),
-        ValidationRules.minLength('fileName', 1),
-      ]);
-
+    try {
+      if (!fileName) {
+        throw new Error('File name is required');
+      }
       return await this.audioRepository.findByFileName(fileName);
-    });
+    } catch (error) {
+      console.error(`[AudioService] Error finding file by name:`, error);
+      throw error;
+    }
   }
 
   async findRecent(limit: number = 10): Promise<AudioFile[]> {
-    return this.executeWithErrorHandling('findRecent', async () => {
-      this.validateInput(limit, [
-        ValidationRules.isNumber('limit'),
-        ValidationRules.isPositive('limit'),
-      ]);
-
+    try {
+      if (limit <= 0) {
+        throw new Error('Limit must be positive');
+      }
       return await this.audioRepository.findRecent(limit);
-    });
+    } catch (error) {
+      console.error('[AudioService] Error finding recent files:', error);
+      throw error;
+    }
   }
 
   async findByDateRange(startDate: Date, endDate: Date): Promise<AudioFile[]> {
-    return this.executeWithErrorHandling('findByDateRange', async () => {
-      this.validateInput(startDate, [ValidationRules.required('startDate')]);
-      this.validateInput(endDate, [ValidationRules.required('endDate')]);
-
+    try {
+      if (!startDate || !endDate) {
+        throw new Error('Start and end dates are required');
+      }
       if (startDate > endDate) {
         throw new Error('Start date must be before end date');
       }
-
       return await this.audioRepository.findByDateRange(startDate, endDate);
-    });
+    } catch (error) {
+      console.error('[AudioService] Error finding files by date range:', error);
+      throw error;
+    }
   }
 
-  // New method to get files with all related details (DRY principle - centralize data aggregation)
-  async getAllFilesWithDetails(): Promise<Array<{
-    id: string;
-    filename: string;
-    originalName: string;
-    size: number;
-    mimeType: string;
-    createdAt: Date;
-    updatedAt: Date;
-    transcriptionStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'draft';
-    hasTranscript: boolean;
-    hasAiExtract: boolean;
-    extractCount: number;
-    duration?: number;
-  }>> {
-    return this.executeWithErrorHandling('getAllFilesWithDetails', async () => {
+  async getAllFilesWithDetails(): Promise<
+    Array<{
+      id: string;
+      filename: string;
+      originalName: string;
+      size: number;
+      mimeType: string;
+      createdAt: Date;
+      updatedAt: Date;
+      transcriptionStatus:
+        | 'pending'
+        | 'processing'
+        | 'completed'
+        | 'failed'
+        | 'draft';
+      hasTranscript: boolean;
+      hasAiExtract: boolean;
+      extractCount: number;
+      duration?: number;
+    }>
+    > {
+    try {
       // Get all files
       const files = await this.audioRepository.findAll();
 
-      // Get related services through service container
-      const { serviceContainer } = await import('../../services');
-      const transcriptionService = serviceContainer.transcriptionService;
-      const extractionService = serviceContainer.extractionService;
+      // Get related repositories directly
+      const transcriptionRepository = RepositoryFactory.transcriptionRepository;
+      const extractionRepository = RepositoryFactory.extractionRepository;
 
       // Transform files with related data
       const transformedFiles = await Promise.all(
-        files.map(async (file) => {
+        files.map(async file => {
           // Get transcription status
-          const transcriptionJob = await transcriptionService.getJobByFileId(file.id);
+          const transcriptionJob =
+            await transcriptionRepository.findLatestByFileId(file.id);
           const transcriptionStatus = transcriptionJob?.status || 'pending';
-          const hasTranscript = transcriptionStatus === 'completed' && !!transcriptionJob?.transcript;
+          const hasTranscript =
+            transcriptionStatus === 'completed' &&
+            !!transcriptionJob?.transcript;
 
           // Get extraction count
-          const extracts = await extractionService.getExtractionsByFileId(file.id);
+          const extracts = await extractionRepository.findByFileId(file.id);
           const extractCount = extracts.length;
 
           return {
@@ -233,17 +255,27 @@ export class AudioService extends BaseService implements IAudioService {
             mimeType: file.originalFileType,
             createdAt: file.uploadedAt,
             updatedAt: file.updatedAt,
-            transcriptionStatus: transcriptionStatus as 'pending' | 'processing' | 'completed' | 'failed' | 'draft',
+            transcriptionStatus: transcriptionStatus as
+              | 'pending'
+              | 'processing'
+              | 'completed'
+              | 'failed'
+              | 'draft',
             hasTranscript,
             hasAiExtract: extractCount > 0,
             extractCount,
-            duration: file.duration ?? undefined, // Convert null to undefined
+            duration: file.duration ?? undefined,
           };
         }),
       );
 
-      this._logger.info(`Retrieved ${transformedFiles.length} files with details`);
+      console.log(
+        `[AudioService] Retrieved ${transformedFiles.length} files with details`,
+      );
       return transformedFiles;
-    });
+    } catch (error) {
+      console.error('[AudioService] Error getting files with details:', error);
+      throw error;
+    }
   }
 }

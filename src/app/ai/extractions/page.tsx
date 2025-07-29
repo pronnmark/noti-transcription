@@ -5,7 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Loader2, Settings, FileText, Filter } from 'lucide-react';
 import { toast } from 'sonner';
 import TemplateManager from '@/components/templates/TemplateManager';
@@ -148,28 +154,34 @@ export default function ExtractionsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6">
+    <div className="container mx-auto space-y-6 p-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">AI Extractions</h1>
-          <p className="text-gray-600">Extract specific elements from your transcripts using flexible templates</p>
+          <p className="text-gray-600">
+            Extract specific elements from your transcripts using flexible
+            templates
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Dialog open={showTemplateManager} onOpenChange={setShowTemplateManager}>
+          <Dialog
+            open={showTemplateManager}
+            onOpenChange={setShowTemplateManager}
+          >
             <DialogTrigger asChild>
               <Button variant="outline" size="sm">
-                <Settings className="w-4 h-4 mr-2" />
+                <Settings className="mr-2 h-4 w-4" />
                 Manage Templates
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+            <DialogContent className="max-h-[80vh] max-w-6xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Extraction Template Management</DialogTitle>
               </DialogHeader>
@@ -200,11 +212,11 @@ export default function ExtractionsPage() {
         <TabsContent value="extractions" className="space-y-4">
           <div className="flex items-center space-x-4">
             <div className="flex items-center space-x-2">
-              <Filter className="w-4 h-4 text-gray-500" />
+              <Filter className="h-4 w-4 text-gray-500" />
               <select
-                className="border rounded px-3 py-1 text-sm"
+                className="rounded border px-3 py-1 text-sm"
                 value={selectedTemplate}
-                onChange={(e) => setSelectedTemplate(e.target.value)}
+                onChange={e => setSelectedTemplate(e.target.value)}
               >
                 <option value="all">All Templates</option>
                 {activeTemplates.map(template => (
@@ -214,14 +226,15 @@ export default function ExtractionsPage() {
                 ))}
               </select>
             </div>
-            <Badge variant="outline">
-              {filteredExtractions.length} items
-            </Badge>
+            <Badge variant="outline">{filteredExtractions.length} items</Badge>
           </div>
 
           <div className="grid gap-4">
-            {filteredExtractions.map((extraction) => (
-              <Card key={extraction.id} className="standard-card standard-card-hover">
+            {filteredExtractions.map(extraction => (
+              <Card
+                key={extraction.id}
+                className="standard-card standard-card-hover"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
@@ -243,23 +256,25 @@ export default function ExtractionsPage() {
                         {extraction.status}
                       </Badge>
                       {extraction.speaker && (
-                        <Badge variant="outline">
-                          {extraction.speaker}
-                        </Badge>
+                        <Badge variant="outline">{extraction.speaker}</Badge>
                       )}
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-gray-900 mb-2">{extraction.content}</p>
+                  <p className="mb-2 text-gray-900">{extraction.content}</p>
                   {extraction.context && (
-                    <p className="text-sm text-gray-600 mb-2">
+                    <p className="mb-2 text-sm text-gray-600">
                       <strong>Context:</strong> {extraction.context}
                     </p>
                   )}
                   {extraction.timestamp && (
                     <p className="text-xs text-gray-500">
-                      Timestamp: {Math.floor(extraction.timestamp / 60)}:{String(Math.floor(extraction.timestamp % 60)).padStart(2, '0')}
+                      Timestamp: {Math.floor(extraction.timestamp / 60)}:
+                      {String(Math.floor(extraction.timestamp % 60)).padStart(
+                        2,
+                        '0',
+                      )}
                     </p>
                   )}
                 </CardContent>
@@ -268,14 +283,16 @@ export default function ExtractionsPage() {
           </div>
 
           {filteredExtractions.length === 0 && (
-            <Card className="standard-card text-center py-12">
+            <Card className="standard-card py-12 text-center">
               <CardContent>
-                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">No extractions found</h3>
-                <p className="text-gray-600 mb-4">
+                <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
+                <h3 className="mb-2 text-lg font-medium text-gray-900">
+                  No extractions found
+                </h3>
+                <p className="mb-4 text-gray-600">
                   Process your transcripts to extract specific elements
                 </p>
-                <Button onClick={() => window.location.href = '/files'}>
+                <Button onClick={() => (window.location.href = '/files')}>
                   Upload Files
                 </Button>
               </CardContent>
@@ -285,12 +302,14 @@ export default function ExtractionsPage() {
 
         <TabsContent value="files" className="space-y-4">
           <div className="grid gap-4">
-            {files.map((file) => (
+            {files.map(file => (
               <Card key={file.id} className="standard-card standard-card-hover">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
-                      <CardTitle className="text-lg">{file.originalFileName}</CardTitle>
+                      <CardTitle className="text-lg">
+                        {file.originalFileName}
+                      </CardTitle>
                       <Badge
                         variant="secondary"
                         className={getStatusColor(file.extractionStatus)}
@@ -300,26 +319,38 @@ export default function ExtractionsPage() {
                     </div>
                     <div className="flex items-center space-x-2">
                       <Button
-                        onClick={() => handleRunExtraction(file.id, defaultTemplates.map(t => t.id))}
+                        onClick={() =>
+                          handleRunExtraction(
+                            file.id,
+                            defaultTemplates.map(t => t.id),
+                          )
+                        }
                         disabled={isProcessing}
                         size="sm"
                       >
                         {isProcessing ? (
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                         ) : (
-                          <FileText className="w-4 h-4 mr-2" />
+                          <FileText className="mr-2 h-4 w-4" />
                         )}
                         Run Extraction
                       </Button>
                     </div>
                   </div>
                 </CardHeader>
-                {file.extractionTemplatesUsed && file.extractionTemplatesUsed.length > 0 && (
+                {file.extractionTemplatesUsed &&
+                  file.extractionTemplatesUsed.length > 0 && (
                   <CardContent className="pt-0">
                     <div className="flex flex-wrap gap-2">
-                      <span className="text-sm text-gray-600">Templates used:</span>
+                      <span className="text-sm text-gray-600">
+                          Templates used:
+                      </span>
                       {file.extractionTemplatesUsed.map(templateId => (
-                        <Badge key={templateId} variant="outline" className="text-xs">
+                        <Badge
+                          key={templateId}
+                          variant="outline"
+                          className="text-xs"
+                        >
                           {getTemplateName(templateId)}
                         </Badge>
                       ))}
@@ -333,20 +364,29 @@ export default function ExtractionsPage() {
 
         <TabsContent value="templates" className="space-y-4">
           <div className="grid gap-4">
-            {templates.map((template) => (
-              <Card key={template.id} className="standard-card standard-card-hover">
+            {templates.map(template => (
+              <Card
+                key={template.id}
+                className="standard-card standard-card-hover"
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-3">
                       <CardTitle className="text-lg">{template.name}</CardTitle>
                       <div className="flex items-center space-x-2">
                         {template.is_active && (
-                          <Badge variant="secondary" className="bg-green-100 text-green-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-green-100 text-green-800"
+                          >
                             Active
                           </Badge>
                         )}
                         {template.is_default && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                          <Badge
+                            variant="secondary"
+                            className="bg-blue-100 text-blue-800"
+                          >
                             Default
                           </Badge>
                         )}
@@ -363,9 +403,10 @@ export default function ExtractionsPage() {
                   </div>
                 </CardHeader>
                 <CardContent className="pt-0">
-                  <p className="text-gray-600 mb-2">{template.description}</p>
-                  <div className="bg-gray-50 p-3 rounded text-sm">
-                    <strong>Expected Output:</strong> {template.expected_output_format}
+                  <p className="mb-2 text-gray-600">{template.description}</p>
+                  <div className="rounded bg-gray-50 p-3 text-sm">
+                    <strong>Expected Output:</strong>{' '}
+                    {template.expected_output_format}
                   </div>
                 </CardContent>
               </Card>

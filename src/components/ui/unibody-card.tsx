@@ -25,7 +25,7 @@ const UnibodyCard = forwardRef<HTMLDivElement, UnibodyCardProps>(
         ref={ref}
         className={cn(
           // Base unibody construction - monolithic form with Design Buzz spacing
-          'bg-white rounded-xl buzz-content-spacing',
+          'buzz-content-spacing rounded-xl bg-white',
 
           // Honest materials - Design Buzz soft shadows for subtle elevation
           'buzz-shadow-sm border border-border',

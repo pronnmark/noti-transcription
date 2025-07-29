@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Send, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -12,7 +18,13 @@ interface TelegramShareButtonProps {
   content: string;
   summarizationId?: string;
   className?: string;
-  variant?: 'default' | 'outline' | 'secondary' | 'ghost' | 'link' | 'destructive';
+  variant?:
+    | 'default'
+    | 'outline'
+    | 'secondary'
+    | 'ghost'
+    | 'link'
+    | 'destructive';
   size?: 'default' | 'sm' | 'lg' | 'icon';
 }
 
@@ -41,7 +53,8 @@ export function TelegramShareButton({
   size = 'sm',
 }: TelegramShareButtonProps) {
   const [isSharing, setIsSharing] = useState(false);
-  const [telegramSettings, setTelegramSettings] = useState<TelegramSettings | null>(null);
+  const [telegramSettings, setTelegramSettings] =
+    useState<TelegramSettings | null>(null);
   const [selectedChatId, setSelectedChatId] = useState<string>('');
   const [showChatPicker, setShowChatPicker] = useState(false);
 
@@ -77,7 +90,8 @@ export function TelegramShareButton({
       return;
     }
 
-    const targetChatId = chatId || selectedChatId || telegramSettings.defaultChatId;
+    const targetChatId =
+      chatId || selectedChatId || telegramSettings.defaultChatId;
     if (!targetChatId) {
       toast.error('Please select a chat to share to');
       return;
@@ -119,22 +133,30 @@ export function TelegramShareButton({
   }
 
   // If no chat configurations and no default, show simple share button
-  if (telegramSettings.chatConfigurations.length === 0 && !telegramSettings.defaultChatId) {
+  if (
+    telegramSettings.chatConfigurations.length === 0 &&
+    !telegramSettings.defaultChatId
+  ) {
     return (
       <Button
         variant={variant}
         size={size}
-        onClick={() => toast.error('No Telegram chats configured. Check settings.')}
+        onClick={() =>
+          toast.error('No Telegram chats configured. Check settings.')
+        }
         className={className}
       >
-        <Send className="h-4 w-4 mr-2" />
+        <Send className="mr-2 h-4 w-4" />
         Share to Telegram
       </Button>
     );
   }
 
   // If only one option (default chat), show simple share button
-  if (telegramSettings.chatConfigurations.length === 0 && telegramSettings.defaultChatId) {
+  if (
+    telegramSettings.chatConfigurations.length === 0 &&
+    telegramSettings.defaultChatId
+  ) {
     return (
       <Button
         variant={variant}
@@ -144,9 +166,9 @@ export function TelegramShareButton({
         className={className}
       >
         {isSharing ? (
-          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          <Send className="h-4 w-4 mr-2" />
+          <Send className="mr-2 h-4 w-4" />
         )}
         {isSharing ? 'Sharing...' : 'Share to Telegram'}
       </Button>
@@ -162,7 +184,7 @@ export function TelegramShareButton({
         onClick={() => setShowChatPicker(true)}
         className={className}
       >
-        <Send className="h-4 w-4 mr-2" />
+        <Send className="mr-2 h-4 w-4" />
         Share to Telegram
       </Button>
     );
@@ -170,10 +192,7 @@ export function TelegramShareButton({
 
   return (
     <div className="flex items-center gap-2">
-      <Select
-        value={selectedChatId}
-        onValueChange={setSelectedChatId}
-      >
+      <Select value={selectedChatId} onValueChange={setSelectedChatId}>
         <SelectTrigger className="w-48">
           <SelectValue placeholder="Select chat..." />
         </SelectTrigger>
@@ -183,7 +202,7 @@ export function TelegramShareButton({
               Default Chat
             </SelectItem>
           )}
-          {telegramSettings.chatConfigurations.map((chat) => (
+          {telegramSettings.chatConfigurations.map(chat => (
             <SelectItem key={chat.chatId} value={chat.chatId}>
               {chat.name} ({chat.type})
             </SelectItem>
@@ -198,9 +217,9 @@ export function TelegramShareButton({
         disabled={isSharing || !selectedChatId}
       >
         {isSharing ? (
-          <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
         ) : (
-          <Send className="h-4 w-4 mr-2" />
+          <Send className="mr-2 h-4 w-4" />
         )}
         {isSharing ? 'Sharing...' : 'Share'}
       </Button>

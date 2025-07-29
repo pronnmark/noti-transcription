@@ -16,10 +16,13 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [showPrompt, setShowPrompt] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [platform, setPlatform] = useState<'ios' | 'android' | 'desktop' | 'other'>('other');
+  const [platform, setPlatform] = useState<
+    'ios' | 'android' | 'desktop' | 'other'
+  >('other');
 
   useEffect(() => {
     const handleBeforeInstallPrompt = (e: Event) => {
@@ -47,8 +50,10 @@ export function InstallPrompt() {
     }
 
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches ||
-        (window.navigator as any).standalone === true) {
+    if (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true
+    ) {
       setIsInstalled(true);
     }
 
@@ -56,7 +61,10 @@ export function InstallPrompt() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt,
+      );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
@@ -84,9 +92,12 @@ export function InstallPrompt() {
   };
 
   // Don't show if already installed or dismissed in this session
-  if (isInstalled ||
-      (typeof window !== 'undefined' && sessionStorage.getItem('install-prompt-dismissed') === 'true') ||
-      !showPrompt) {
+  if (
+    isInstalled ||
+    (typeof window !== 'undefined' &&
+      sessionStorage.getItem('install-prompt-dismissed') === 'true') ||
+    !showPrompt
+  ) {
     return null;
   }
 
@@ -128,17 +139,17 @@ export function InstallPrompt() {
   const { icon, title, instructions } = getInstallInstructions();
 
   return (
-    <div className="fixed bottom-20 md:bottom-4 left-4 right-4 z-50 max-w-sm mx-auto">
+    <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm md:bottom-4">
       <UnibodyCard className="border border-primary/20 shadow-lg">
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-3 flex items-start justify-between">
           <div className="flex items-center gap-2">
             {icon}
-            <h3 className="font-semibold text-sm text-foreground">{title}</h3>
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="h-6 w-6 p-0 -mt-1 -mr-1"
+            className="-mr-1 -mt-1 h-6 w-6 p-0"
             onClick={handleDismiss}
           >
             <X className="h-3 w-3" />
@@ -151,7 +162,9 @@ export function InstallPrompt() {
             <ul className="space-y-1">
               {instructions.map((instruction, index) => (
                 <li key={index} className="flex items-start gap-2">
-                  <span className="text-primary font-bold text-[10px] mt-0.5">•</span>
+                  <span className="mt-0.5 text-[10px] font-bold text-primary">
+                    •
+                  </span>
                   <span>{instruction}</span>
                 </li>
               ))}
@@ -163,9 +176,9 @@ export function InstallPrompt() {
               <Button
                 onClick={handleInstall}
                 size="sm"
-                className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
               >
-                <Download className="h-3 w-3 mr-1" />
+                <Download className="mr-1 h-3 w-3" />
                 Install
               </Button>
             )}
@@ -173,7 +186,10 @@ export function InstallPrompt() {
               onClick={handleDismiss}
               variant="outline"
               size="sm"
-              className={cn('', deferredPrompt && platform !== 'ios' ? '' : 'flex-1')}
+              className={cn(
+                '',
+                deferredPrompt && platform !== 'ios' ? '' : 'flex-1',
+              )}
             >
               Maybe Later
             </Button>
@@ -192,8 +208,10 @@ export function usePWAInstall() {
   useEffect(() => {
     // Check if already installed
     const checkInstalled = () => {
-      return window.matchMedia('(display-mode: standalone)').matches ||
-             (window.navigator as any).standalone === true;
+      return (
+        window.matchMedia('(display-mode: standalone)').matches ||
+        (window.navigator as any).standalone === true
+      );
     };
 
     setIsInstalled(checkInstalled());
@@ -211,7 +229,10 @@ export function usePWAInstall() {
     window.addEventListener('appinstalled', handleAppInstalled);
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener(
+        'beforeinstallprompt',
+        handleBeforeInstallPrompt,
+      );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);

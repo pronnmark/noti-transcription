@@ -10,7 +10,12 @@ interface ProgressIndicatorProps {
   className?: string;
 }
 
-export function ProgressIndicator({ completed, total, label, className }: ProgressIndicatorProps) {
+export function ProgressIndicator({
+  completed,
+  total,
+  label,
+  className,
+}: ProgressIndicatorProps) {
   const percentage = total > 0 ? (completed / total) * 100 : 0;
 
   return (

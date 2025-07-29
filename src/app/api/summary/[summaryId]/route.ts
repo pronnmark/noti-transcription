@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../lib/database/client';
 import { audioFiles } from '../../../../lib/database/schema/audio';
-import { summarizations, summarizationPrompts } from '../../../../lib/database/schema';
+import {
+  summarizations,
+  summarizationPrompts,
+} from '../../../../lib/database/schema';
 import { eq } from 'drizzle-orm';
 
 export async function GET(
@@ -36,7 +39,10 @@ export async function GET(
       })
       .from(summarizations)
       .innerJoin(audioFiles, eq(summarizations.fileId, audioFiles.id))
-      .leftJoin(summarizationPrompts, eq(summarizations.templateId, summarizationPrompts.id))
+      .leftJoin(
+        summarizationPrompts,
+        eq(summarizations.templateId, summarizationPrompts.id),
+      )
       .where(eq(summarizations.id, summaryId))
       .limit(1);
 
@@ -59,22 +65,26 @@ export async function GET(
         fileName: result.fileName,
         originalFileName: result.originalFileName,
       },
-      template: result.templateId ? {
-        id: result.templateId,
-        name: result.templateName,
-        description: result.templateDescription,
-        isDefault: result.templateIsDefault,
-      } : null,
+      template: result.templateId
+        ? {
+          id: result.templateId,
+          name: result.templateName,
+          description: result.templateDescription,
+          isDefault: result.templateIsDefault,
+        }
+        : null,
     };
 
     return NextResponse.json({
       summary,
       success: true,
     });
-
   } catch (error) {
     console.error('Error fetching summary:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -98,17 +108,17 @@ export async function DELETE(
     }
 
     // Delete the summary
-    await db
-      .delete(summarizations)
-      .where(eq(summarizations.id, summaryId));
+    await db.delete(summarizations).where(eq(summarizations.id, summaryId));
 
     return NextResponse.json({
       success: true,
       message: 'Summary deleted successfully',
     });
-
   } catch (error) {
     console.error('Error deleting summary:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

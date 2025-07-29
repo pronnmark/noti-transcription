@@ -9,7 +9,10 @@ export const GET = withAuthMiddleware(async (request: NextRequest) => {
     const fileId = searchParams.get('fileId');
 
     if (!fileId) {
-      return NextResponse.json({ error: 'File ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File ID is required' },
+        { status: 400 },
+      );
     }
 
     const extractionRepo = new ExtractionRepository();
@@ -26,7 +29,10 @@ export const GET = withAuthMiddleware(async (request: NextRequest) => {
         low: notes.filter(n => n.priority === 'low').length,
       },
       recentActivity: notes
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .sort(
+          (a, b) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
+        )
         .slice(0, 5)
         .map(n => ({
           id: n.id,
@@ -39,6 +45,9 @@ export const GET = withAuthMiddleware(async (request: NextRequest) => {
     return NextResponse.json(stats);
   } catch (error) {
     debugLog('api', 'Error getting stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 });

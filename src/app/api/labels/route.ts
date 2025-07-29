@@ -24,7 +24,8 @@ export async function GET(request: NextRequest) {
         record.labels.forEach(label => {
           if (typeof label === 'string' && label.trim()) {
             const normalizedLabel = label.trim().toLowerCase();
-            labelCounts[normalizedLabel] = (labelCounts[normalizedLabel] || 0) + 1;
+            labelCounts[normalizedLabel] =
+              (labelCounts[normalizedLabel] || 0) + 1;
           }
         });
       }
@@ -65,6 +66,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching labels:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

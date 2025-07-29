@@ -15,7 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: 'Noti - AI Transcription Dashboard',
-  description: 'Premium AI-powered audio transcription with speaker diarization',
+  description:
+    'Premium AI-powered audio transcription with speaker diarization',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -55,18 +56,37 @@ export default function RootLayout({
 
         {/* Apple Touch Icons */}
         <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png" />
+        <link
+          rel="apple-touch-icon"
+          sizes="152x152"
+          href="/icons/icon-152x152.png"
+        />
+        <link
+          rel="apple-touch-icon"
+          sizes="180x180"
+          href="/icons/icon-192x192.png"
+        />
 
         {/* Favicons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png" />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="32x32"
+          href="/icons/icon-32x32.png"
+        />
+        <link
+          rel="icon"
+          type="image/png"
+          sizes="16x16"
+          href="/icons/icon-16x16.png"
+        />
         <link rel="shortcut icon" href="/favicon.ico" />
       </head>
-      <body className={cn(jetbrainsMono.className, 'h-full bg-background')} suppressHydrationWarning>
-        <ResponsiveLayout>
-          {children}
-        </ResponsiveLayout>
+      <body
+        className={cn(jetbrainsMono.className, 'h-full bg-background')}
+        suppressHydrationWarning
+      >
+        <ResponsiveLayout>{children}</ResponsiveLayout>
         <InstallPrompt />
         <Toaster richColors position="top-right" />
       </body>

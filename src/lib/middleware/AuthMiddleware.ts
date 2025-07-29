@@ -10,7 +10,7 @@ export class AuthMiddleware implements MiddlewareHandler {
   async execute(
     request: NextRequest,
     context: RequestContext,
-    next: () => Promise<NextResponse>
+    next: () => Promise<NextResponse>,
   ): Promise<NextResponse> {
     try {
       // Skip auth for certain paths if needed
@@ -33,13 +33,10 @@ export class AuthMiddleware implements MiddlewareHandler {
         });
 
         return NextResponse.json(
-          createErrorResponse(
-            'Authentication required',
-            'UNAUTHORIZED',
-            401,
-            { requestId: context.requestId }
-          ),
-          { status: 401 }
+          createErrorResponse('Authentication required', 'UNAUTHORIZED', 401, {
+            requestId: context.requestId,
+          }),
+          { status: 401 },
         );
       }
 
@@ -51,13 +48,10 @@ export class AuthMiddleware implements MiddlewareHandler {
     } catch (error) {
       context.logger.error('Auth middleware error', error as Error);
       return NextResponse.json(
-        createErrorResponse(
-          'Authentication error',
-          'AUTH_ERROR',
-          500,
-          { requestId: context.requestId }
-        ),
-        { status: 500 }
+        createErrorResponse('Authentication error', 'AUTH_ERROR', 500, {
+          requestId: context.requestId,
+        }),
+        { status: 500 },
       );
     }
   }
@@ -71,7 +65,10 @@ export function createAuthMiddleware(): AuthMiddleware {
  * Helper to create a withAuth wrapper
  */
 export function withAuth(
-  handler: (request: NextRequest, context: RequestContext) => Promise<NextResponse>
+  handler: (
+    request: NextRequest,
+    context: RequestContext
+  ) => Promise<NextResponse>,
 ) {
   return async (request: NextRequest) => {
     const authMiddleware = createAuthMiddleware();

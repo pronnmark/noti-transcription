@@ -39,7 +39,9 @@ export function TranscriptViewer({
   }
 
   // Parse transcript - handle both JSON speaker format and plain text
-  const parseTranscript = (text: string | null | undefined): TranscriptSegment[] => {
+  const parseTranscript = (
+    text: string | null | undefined,
+  ): TranscriptSegment[] => {
     // Ensure we have a valid string
     if (!text || typeof text !== 'string') {
       return [{ text: 'No transcript available' }];
@@ -64,7 +66,10 @@ export function TranscriptViewer({
       }
       return sentences.map((sentence, index) => ({
         text: sentence.trim() + (sentence.endsWith('.') ? '' : '.'),
-        speaker: speakerCount > 1 ? `Speaker ${(index % speakerCount) + 1}` : undefined,
+        speaker:
+          speakerCount > 1
+            ? `Speaker ${(index % speakerCount) + 1}`
+            : undefined,
       }));
     }
 
@@ -76,10 +81,10 @@ export function TranscriptViewer({
 
   const copyToClipboard = async () => {
     try {
-      const plainText = segments.map(s => 
-        s.speaker ? `${s.speaker}: ${s.text}` : s.text
-      ).join('\n\n');
-      
+      const plainText = segments
+        .map(s => (s.speaker ? `${s.speaker}: ${s.text}` : s.text))
+        .join('\n\n');
+
       await navigator.clipboard.writeText(plainText);
       toast.success('Transcript copied to clipboard');
     } catch (error) {
@@ -88,10 +93,10 @@ export function TranscriptViewer({
   };
 
   const downloadTranscript = () => {
-    const plainText = segments.map(s => 
-      s.speaker ? `${s.speaker}: ${s.text}` : s.text
-    ).join('\n\n');
-    
+    const plainText = segments
+      .map(s => (s.speaker ? `${s.speaker}: ${s.text}` : s.text))
+      .join('\n\n');
+
     const blob = new Blob([plainText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -101,7 +106,7 @@ export function TranscriptViewer({
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
-    
+
     toast.success('Transcript downloaded');
   };
 
@@ -116,14 +121,14 @@ export function TranscriptViewer({
     if (!speaker) return '';
     const colors = [
       'bg-blue-100 text-blue-800',
-      'bg-green-100 text-green-800', 
+      'bg-green-100 text-green-800',
       'bg-purple-100 text-purple-800',
       'bg-orange-100 text-orange-800',
       'bg-pink-100 text-pink-800',
       'bg-indigo-100 text-indigo-800',
     ];
     const hash = speaker.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0);
+      a = (a << 5) - a + b.charCodeAt(0);
       return a & a;
     }, 0);
     return colors[Math.abs(hash) % colors.length];
@@ -145,11 +150,9 @@ export function TranscriptViewer({
             </Badge>
           </div>
         </div>
-        
+
         {fileName && (
-          <p className="text-muted-foreground text-sm">
-            📁 {fileName}
-          </p>
+          <p className="text-sm text-muted-foreground">📁 {fileName}</p>
         )}
       </CardHeader>
 
@@ -162,17 +165,17 @@ export function TranscriptViewer({
             onClick={copyToClipboard}
             className="text-xs"
           >
-            <Copy className="h-3 w-3 mr-1" />
+            <Copy className="mr-1 h-3 w-3" />
             Copy
           </Button>
-          
+
           <Button
-            variant="outline" 
+            variant="outline"
             size="sm"
             onClick={downloadTranscript}
             className="text-xs"
           >
-            <Download className="h-3 w-3 mr-1" />
+            <Download className="mr-1 h-3 w-3" />
             Download
           </Button>
 
@@ -183,7 +186,7 @@ export function TranscriptViewer({
               onClick={() => toast.info('Share feature coming soon!')}
               className="text-xs"
             >
-              <Share className="h-3 w-3 mr-1" />
+              <Share className="mr-1 h-3 w-3" />
               Share
             </Button>
           )}
@@ -201,26 +204,26 @@ export function TranscriptViewer({
         </div>
 
         {/* Transcript Content */}
-        <div className="space-y-4 max-h-96 overflow-y-auto border rounded-lg p-4 bg-muted/30">
+        <div className="max-h-96 space-y-4 overflow-y-auto rounded-lg border bg-muted/30 p-4">
           {segments.map((segment, index) => (
             <div key={index} className="space-y-2">
               {segment.speaker && (
                 <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="secondary" 
+                  <Badge
+                    variant="secondary"
                     className={cn('text-xs', getSpeakerColor(segment.speaker))}
                   >
                     {segment.speaker}
                   </Badge>
                   {showTimestamps && segment.start && (
-                    <span className="text-xs text-muted-foreground font-mono">
+                    <span className="font-mono text-xs text-muted-foreground">
                       {formatTimestamp(segment.start)}
                       {segment.end && ` - ${formatTimestamp(segment.end)}`}
                     </span>
                   )}
                 </div>
               )}
-              <p className="text-sm leading-relaxed pl-2 border-l-2 border-muted">
+              <p className="border-l-2 border-muted pl-2 text-sm leading-relaxed">
                 {segment.text}
               </p>
             </div>
@@ -228,12 +231,9 @@ export function TranscriptViewer({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-center pt-4 border-t">
-          <Button
-            onClick={onStartNewRecording}
-            className="w-full sm:w-auto"
-          >
-            <RotateCcw className="h-4 w-4 mr-2" />
+        <div className="flex justify-center border-t pt-4">
+          <Button onClick={onStartNewRecording} className="w-full sm:w-auto">
+            <RotateCcw className="mr-2 h-4 w-4" />
             Record Another
           </Button>
         </div>

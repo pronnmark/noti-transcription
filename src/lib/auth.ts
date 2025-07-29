@@ -17,7 +17,9 @@ export async function createSession(): Promise<string> {
   return token;
 }
 
-export async function validateSession(token: string | null | undefined): Promise<boolean> {
+export async function validateSession(
+  token: string | null | undefined,
+): Promise<boolean> {
   if (!token) return false;
 
   try {
@@ -34,7 +36,9 @@ export async function deleteSession(token: string): Promise<void> {
   // Session invalidation is handled by clearing the cookie
 }
 
-export async function getSessionFromRequest(request: NextRequest): Promise<string | null> {
+export async function getSessionFromRequest(
+  request: NextRequest,
+): Promise<string | null> {
   // Check cookie first - use the same cookie name as middleware
   const cookieStore = await cookies();
   const sessionCookie = cookieStore.get('auth-token');

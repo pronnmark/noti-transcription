@@ -48,24 +48,25 @@ interface TelegramMessage {
 
 class TelegramMCPClient {
   private async callMCPTool<T = any>(
-    toolName: string, 
-    args: Record<string, any> = {}, 
-    sessionToken?: string | null
+    toolName: string,
+    args: Record<string, any> = {},
+    sessionToken?: string | null,
   ): Promise<MCPToolResponse<T>> {
     try {
       // For client-side usage, try to get token from localStorage if not provided
       if (!sessionToken && typeof window !== 'undefined') {
         sessionToken = localStorage.getItem('noti-session');
       }
-      
+
       if (!sessionToken) {
         return { success: false, error: 'Not authenticated' };
       }
 
       // Construct absolute URL for server-side usage
-      const baseUrl = typeof window === 'undefined' 
-        ? (process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5173')
-        : '';
+      const baseUrl =
+        typeof window === 'undefined'
+          ? process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:5173'
+          : '';
       const apiUrl = `${baseUrl}/api/mcp/tools`;
 
       const response = await fetch(apiUrl, {
@@ -86,7 +87,7 @@ class TelegramMCPClient {
       }
 
       const data = await response.json();
-      
+
       // Handle MCP tool response format
       if (data.error) {
         return { success: false, error: data.error };
@@ -105,93 +106,175 @@ class TelegramMCPClient {
       return { success: true, result };
     } catch (error) {
       console.error(`Error calling MCP tool ${toolName}:`, error);
-      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 
-  async getBotInfo(sessionToken?: string | null): Promise<MCPToolResponse<TelegramBotInfo>> {
-    return this.callMCPTool<TelegramBotInfo>(TELEGRAM_TOOLS.GET_ME, {}, sessionToken);
+  async getBotInfo(
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramBotInfo>> {
+    return this.callMCPTool<TelegramBotInfo>(
+      TELEGRAM_TOOLS.GET_ME,
+      {},
+      sessionToken,
+    );
   }
 
-  async sendMessage(chatId: number | string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
+  async sendMessage(
+    chatId: number | string,
+    message: string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramMessage>> {
     // Convert string chatId to number if needed
-    const numericChatId = typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
-    
+    const numericChatId =
+      typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
+
     if (isNaN(numericChatId)) {
       return { success: false, error: 'Invalid chat ID' };
     }
 
-    return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE, {
-      chat_id: numericChatId,
-      message,
-    }, sessionToken);
+    return this.callMCPTool<TelegramMessage>(
+      TELEGRAM_TOOLS.SEND_MESSAGE,
+      {
+        chat_id: numericChatId,
+        message,
+      },
+      sessionToken,
+    );
   }
 
-  async sendMessageToUser(username: string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
-    return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE_TO_USER, {
-      username,
-      message,
-    }, sessionToken);
+  async sendMessageToUser(
+    username: string,
+    message: string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramMessage>> {
+    return this.callMCPTool<TelegramMessage>(
+      TELEGRAM_TOOLS.SEND_MESSAGE_TO_USER,
+      {
+        username,
+        message,
+      },
+      sessionToken,
+    );
   }
 
-  async sendMessageToGroup(groupName: string, message: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramMessage>> {
-    return this.callMCPTool<TelegramMessage>(TELEGRAM_TOOLS.SEND_MESSAGE_TO_GROUP, {
-      group_name: groupName,
-      message,
-    }, sessionToken);
+  async sendMessageToGroup(
+    groupName: string,
+    message: string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramMessage>> {
+    return this.callMCPTool<TelegramMessage>(
+      TELEGRAM_TOOLS.SEND_MESSAGE_TO_GROUP,
+      {
+        group_name: groupName,
+        message,
+      },
+      sessionToken,
+    );
   }
 
-  async getChat(chatId: number | string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramChat>> {
-    const numericChatId = typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
-    
+  async getChat(
+    chatId: number | string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramChat>> {
+    const numericChatId =
+      typeof chatId === 'string' ? parseInt(chatId, 10) : chatId;
+
     if (isNaN(numericChatId)) {
       return { success: false, error: 'Invalid chat ID' };
     }
 
-    return this.callMCPTool<TelegramChat>(TELEGRAM_TOOLS.GET_CHAT, {
-      chat_id: numericChatId,
-    }, sessionToken);
+    return this.callMCPTool<TelegramChat>(
+      TELEGRAM_TOOLS.GET_CHAT,
+      {
+        chat_id: numericChatId,
+      },
+      sessionToken,
+    );
   }
 
-  async resolveUsername(username: string, sessionToken?: string | null): Promise<MCPToolResponse<{ id: number; type: string }>> {
-    return this.callMCPTool<{ id: number; type: string }>(TELEGRAM_TOOLS.RESOLVE_USERNAME, {
-      username,
-    }, sessionToken);
+  async resolveUsername(
+    username: string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<{ id: number; type: string }>> {
+    return this.callMCPTool<{ id: number; type: string }>(
+      TELEGRAM_TOOLS.RESOLVE_USERNAME,
+      {
+        username,
+      },
+      sessionToken,
+    );
   }
 
-  async getUserStatus(userId: number, sessionToken?: string | null): Promise<MCPToolResponse<{ status: string; was_online?: number }>> {
-    return this.callMCPTool<{ status: string; was_online?: number }>(TELEGRAM_TOOLS.GET_USER_STATUS, {
-      user_id: userId,
-    }, sessionToken);
+  async getUserStatus(
+    userId: number,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<{ status: string; was_online?: number }>> {
+    return this.callMCPTool<{ status: string; was_online?: number }>(
+      TELEGRAM_TOOLS.GET_USER_STATUS,
+      {
+        user_id: userId,
+      },
+      sessionToken,
+    );
   }
 
-  async getUserPhotos(userId: number, limit: number = 10, sessionToken?: string | null): Promise<MCPToolResponse<any[]>> {
-    return this.callMCPTool<any[]>(TELEGRAM_TOOLS.GET_USER_PHOTOS, {
-      user_id: userId,
-      limit,
-    }, sessionToken);
+  async getUserPhotos(
+    userId: number,
+    limit: number = 10,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<any[]>> {
+    return this.callMCPTool<any[]>(
+      TELEGRAM_TOOLS.GET_USER_PHOTOS,
+      {
+        user_id: userId,
+        limit,
+      },
+      sessionToken,
+    );
   }
 
-  async getBotInfoByUsername(botUsername: string, sessionToken?: string | null): Promise<MCPToolResponse<TelegramBotInfo>> {
-    return this.callMCPTool<TelegramBotInfo>(TELEGRAM_TOOLS.GET_BOT_INFO, {
-      bot_username: botUsername,
-    }, sessionToken);
+  async getBotInfoByUsername(
+    botUsername: string,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<TelegramBotInfo>> {
+    return this.callMCPTool<TelegramBotInfo>(
+      TELEGRAM_TOOLS.GET_BOT_INFO,
+      {
+        bot_username: botUsername,
+      },
+      sessionToken,
+    );
   }
 
-  async setBotCommands(botUsername: string, commands: Array<{ command: string; description: string }>, sessionToken?: string | null): Promise<MCPToolResponse<boolean>> {
-    return this.callMCPTool<boolean>(TELEGRAM_TOOLS.SET_BOT_COMMANDS, {
-      bot_username: botUsername,
-      commands,
-    }, sessionToken);
+  async setBotCommands(
+    botUsername: string,
+    commands: Array<{ command: string; description: string }>,
+    sessionToken?: string | null,
+  ): Promise<MCPToolResponse<boolean>> {
+    return this.callMCPTool<boolean>(
+      TELEGRAM_TOOLS.SET_BOT_COMMANDS,
+      {
+        bot_username: botUsername,
+        commands,
+      },
+      sessionToken,
+    );
   }
 
   // Helper method to format messages with Markdown
-  formatMessage(content: string, options?: {
-    title?: string;
-    fileName?: string;
-    footer?: string;
-    emoji?: string;
-  }): string {
+  formatMessage(
+    content: string,
+    options?: {
+      title?: string;
+      fileName?: string;
+      footer?: string;
+      emoji?: string;
+    },
+  ): string {
     const parts: string[] = [];
 
     if (options?.emoji && options?.title) {

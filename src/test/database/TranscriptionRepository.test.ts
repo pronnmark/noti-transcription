@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TranscriptionRepository } from '@/lib/database/repositories/TranscriptRepository';
 import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
 import { db } from '@/lib/database';
-import { audioFiles, transcriptionJobs, NewTranscriptionJob, TranscriptSegment } from '@/lib/database/schema';
+import {
+  audioFiles,
+  transcriptionJobs,
+  NewTranscriptionJob,
+  TranscriptSegment,
+} from '@/lib/database/schema';
 
 describe('TranscriptionRepository', () => {
   let transcriptionRepository: TranscriptionRepository;
@@ -105,7 +110,8 @@ describe('TranscriptionRepository', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
       await transcriptionRepository.create(job2);
 
-      const latest = await transcriptionRepository.findLatestByFileId(testAudioFileId);
+      const latest =
+        await transcriptionRepository.findLatestByFileId(testAudioFileId);
 
       expect(latest).toBeDefined();
       expect(latest?.language).toBe('sv'); // Most recent
@@ -141,7 +147,8 @@ describe('TranscriptionRepository', () => {
       expect(pendingJobs).toHaveLength(2);
       expect(pendingJobs.every(job => job.status === 'pending')).toBe(true);
 
-      const completedJobs = await transcriptionRepository.findByStatus('completed');
+      const completedJobs =
+        await transcriptionRepository.findByStatus('completed');
       expect(completedJobs).toHaveLength(1);
       expect(completedJobs[0].status).toBe('completed');
     });
@@ -155,7 +162,10 @@ describe('TranscriptionRepository', () => {
         language: 'en',
       });
 
-      const updated = await transcriptionRepository.updateStatus(job.id, 'processing');
+      const updated = await transcriptionRepository.updateStatus(
+        job.id,
+        'processing',
+      );
 
       expect(updated.status).toBe('processing');
       expect(updated.startedAt).toBeDefined();
@@ -168,7 +178,10 @@ describe('TranscriptionRepository', () => {
         language: 'en',
       });
 
-      const updated = await transcriptionRepository.updateStatus(job.id, 'completed');
+      const updated = await transcriptionRepository.updateStatus(
+        job.id,
+        'completed',
+      );
 
       expect(updated.status).toBe('completed');
       expect(updated.completedAt).toBeDefined();
@@ -182,7 +195,11 @@ describe('TranscriptionRepository', () => {
       });
 
       const errorMessage = 'Transcription failed due to audio format';
-      const updated = await transcriptionRepository.updateStatus(job.id, 'failed', errorMessage);
+      const updated = await transcriptionRepository.updateStatus(
+        job.id,
+        'failed',
+        errorMessage,
+      );
 
       expect(updated.status).toBe('failed');
       expect(updated.lastError).toBe(errorMessage);
@@ -240,7 +257,10 @@ describe('TranscriptionRepository', () => {
         },
       ];
 
-      const completed = await transcriptionRepository.completeTranscription(job.id, transcript);
+      const completed = await transcriptionRepository.completeTranscription(
+        job.id,
+        transcript,
+      );
 
       expect(completed.status).toBe('completed');
       expect(completed.progress).toBe(100);

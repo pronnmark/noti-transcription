@@ -1,31 +1,73 @@
-import { ConfigurableService, ValidationRules } from '../core/BaseService';
 import { ValidationError } from '../../errors';
-import type {
-  IAIProvider,
-  AIGenerationOptions,
-  AIModelInfo,
-  AIProviderConfig,
-} from '../core/interfaces';
 
-export abstract class AIProvider extends ConfigurableService implements IAIProvider {
+export interface AIGenerationOptions {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  jsonSchema?: any;
+  retryOnFailure?: boolean;
+}
+
+export interface AIModelInfo {
+  name: string;
+  provider: string;
+  maxTokens: number;
+  supportsStructuredOutput: boolean;
+  supportsFunctionCalling: boolean;
+}
+
+export interface AIProviderConfig {
+  apiKey?: string;
+  baseUrl?: string;
+  model?: string;
+  timeout?: number;
+  retries?: number;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+export abstract class AIProvider {
   protected apiKey?: string;
   protected baseUrl?: string;
   protected defaultModel?: string;
   protected timeout: number = 120000;
   protected retries: number = 3;
+  protected config: AIProviderConfig;
+  protected name: string;
 
   constructor(name: string, config: AIProviderConfig = {}) {
-    super(name, config);
-    this.configure(config);
-  }
-
-  protected getDefaultConfig(): any {
-    return {
+    this.name = name;
+    this.config = {
       timeout: 30000,
       retries: 3,
       temperature: 0.7,
       maxTokens: 4000,
+      ...config,
     };
+    this.configure(config);
+  }
+
+  async initialize(): Promise<void> {
+    // Check if API key is provided
+    if (!this.apiKey) {
+      console.warn(
+        `[${this.name}] No API key provided. Service will be unavailable.`,
+      );
+      return;
+    }
+
+    // Test connection
+    try {
+      const isAvailable = await this.isAvailable();
+      if (!isAvailable) {
+        console.warn(`[${this.name}] Provider is not available`);
+        return;
+      }
+      console.log(`[${this.name}] AI provider initialized successfully`);
+    } catch (error) {
+      console.warn(`[${this.name}] Provider check failed:`, error);
+    }
   }
 
   configure(config: AIProviderConfig): void {
@@ -36,43 +78,24 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     if (config.timeout) this.timeout = config.timeout;
     if (config.retries) this.retries = config.retries;
 
-    this.updateConfig(config);
+    this.config = { ...this.config, ...config };
   }
 
-  protected async onInitialize(): Promise<void> {
-    // Check if API key is provided
-    if (!this.apiKey) {
-      this._logger.warn(`No API key provided for ${this.name}. Service will be unavailable.`);
-      // Don't throw error - just mark as initialized but unavailable
-      return;
-    }
-
-    // Test connection
-    try {
-      const isAvailable = await this.isAvailable();
-      if (!isAvailable) {
-        this._logger.warn(`${this.name} provider is not available`);
-        // Don't throw error - service is initialized but not available
-        return;
-      }
-      this._logger.info('AI provider initialized successfully');
-    } catch (error) {
-      this._logger.warn(`${this.name} provider check failed`, error instanceof Error ? error : new Error(String(error)));
-      // Don't throw error - service is initialized but not available
-    }
-  }
-
-  protected async onDestroy(): Promise<void> {
-    // Cleanup any resources
-    this._logger.info('AI provider destroyed');
-  }
-
-  abstract generateText(prompt: string, options?: AIGenerationOptions): Promise<string>;
-  abstract generateStructuredOutput(prompt: string, schema: any, options?: AIGenerationOptions): Promise<any>;
+  abstract generateText(
+    prompt: string,
+    options?: AIGenerationOptions
+  ): Promise<string>;
+  abstract generateStructuredOutput(
+    prompt: string,
+    schema: any,
+    options?: AIGenerationOptions
+  ): Promise<any>;
   abstract getModelInfo(): AIModelInfo;
   abstract isAvailable(): Promise<boolean>;
 
-  protected validateGenerationOptions(options?: AIGenerationOptions): AIGenerationOptions {
+  protected validateGenerationOptions(
+    options?: AIGenerationOptions,
+  ): AIGenerationOptions {
     const validated: AIGenerationOptions = {
       model: options?.model || this.defaultModel,
       temperature: options?.temperature ?? this.config.temperature,
@@ -84,21 +107,27 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
 
     // Validate temperature
     if (validated.temperature !== undefined) {
-      if (typeof validated.temperature !== 'number' || isNaN(validated.temperature)) {
-        throw ValidationError.custom('temperature', 'must be a valid number', validated.temperature);
+      if (
+        typeof validated.temperature !== 'number' ||
+        isNaN(validated.temperature)
+      ) {
+        throw new ValidationError('temperature must be a valid number');
       }
       if (validated.temperature < 0 || validated.temperature > 2) {
-        throw ValidationError.outOfRange('temperature', 0, 2, validated.temperature);
+        throw new ValidationError('temperature must be between 0 and 2');
       }
     }
 
     // Validate maxTokens
     if (validated.maxTokens !== undefined) {
-      if (typeof validated.maxTokens !== 'number' || isNaN(validated.maxTokens)) {
-        throw ValidationError.custom('maxTokens', 'must be a valid number', validated.maxTokens);
+      if (
+        typeof validated.maxTokens !== 'number' ||
+        isNaN(validated.maxTokens)
+      ) {
+        throw new ValidationError('maxTokens must be a valid number');
       }
       if (validated.maxTokens <= 0) {
-        throw ValidationError.outOfRange('maxTokens', 1, undefined, validated.maxTokens);
+        throw new ValidationError('maxTokens must be positive');
       }
     }
 
@@ -127,9 +156,10 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
         }
 
         const delay = this.calculateRetryDelay(attempt);
-        this._logger.warn(`Attempt ${attempt} failed, retrying in ${delay}ms`, {
-          error: error instanceof Error ? error.message : String(error),
-        });
+        console.warn(
+          `[${this.name}] Attempt ${attempt} failed, retrying in ${delay}ms:`,
+          error instanceof Error ? error.message : String(error),
+        );
 
         await new Promise(resolve => setTimeout(resolve, delay));
       }
@@ -139,7 +169,6 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
   }
 
   protected isRetryableError(error: any): boolean {
-    // Override in subclasses to define retryable errors
     // Common retryable errors: network timeouts, rate limits, temporary server errors
     if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
       return true;
@@ -149,7 +178,8 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
       return true;
     }
 
-    if (error.status === 429) { // Rate limit
+    if (error.status === 429) {
+      // Rate limit
       return true;
     }
 
@@ -202,7 +232,9 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
       // Try parsing the entire response as JSON
       return JSON.parse(text);
     } catch (error) {
-      this._logger.warn('Failed to parse JSON response, returning raw text');
+      console.warn(
+        `[${this.name}] Failed to parse JSON response, returning raw text`,
+      );
       return { content: text, parseError: true };
     }
   }
@@ -212,19 +244,21 @@ export abstract class AIProvider extends ConfigurableService implements IAIProvi
     try {
       return await this.isAvailable();
     } catch (error) {
-      this._logger.error('Health check failed',
-        error instanceof Error ? error : new Error(String(error)));
+      console.error(`[${this.name}] Health check failed:`, error);
       return false;
     }
   }
 
   // Usage tracking
-  protected trackUsage(operation: string, tokens?: number, cost?: number): void {
-    // Override in subclasses to implement usage tracking
-    this._logger.debug(`Usage: ${operation}`, { tokens, cost });
+  protected trackUsage(
+    operation: string,
+    tokens?: number,
+    cost?: number,
+  ): void {
+    console.debug(`[${this.name}] Usage: ${operation}`, { tokens, cost });
   }
 
-  // Rate limiting
+  // Rate limiting placeholder
   protected async checkRateLimit(): Promise<void> {
     // Override in subclasses to implement rate limiting
   }

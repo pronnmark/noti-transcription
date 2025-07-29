@@ -12,7 +12,10 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
 
     if (!sessionId) {
-      return NextResponse.json({ error: 'sessionId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'sessionId is required' },
+        { status: 400 },
+      );
     }
 
     // Get thoughts for a specific session, ordered by chunk number
@@ -27,7 +30,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ thoughts });
   } catch (error) {
     console.error('Error fetching real-time thoughts:', error);
-    return NextResponse.json({ error: 'Failed to fetch thoughts' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch thoughts' },
+      { status: 500 },
+    );
   }
 }
 
@@ -41,13 +47,21 @@ export async function POST(request: NextRequest) {
       transcriptText,
       aiThought,
       processingTimeMs,
-      status = 'completed'
+      status = 'completed',
     } = await request.json();
 
-    if (!sessionId || chunkNumber === undefined || !transcriptText || !aiThought) {
+    if (
+      !sessionId ||
+      chunkNumber === undefined ||
+      !transcriptText ||
+      !aiThought
+    ) {
       return NextResponse.json(
-        { error: 'sessionId, chunkNumber, transcriptText, and aiThought are required' },
-        { status: 400 }
+        {
+          error:
+            'sessionId, chunkNumber, transcriptText, and aiThought are required',
+        },
+        { status: 400 },
       );
     }
 
@@ -70,22 +84,29 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ thought: newThought[0] }, { status: 201 });
   } catch (error) {
     console.error('Error creating real-time thought:', error);
-    return NextResponse.json({ error: 'Failed to create thought' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to create thought' },
+      { status: 500 },
+    );
   }
 }
 
 export async function PATCH(request: NextRequest) {
   try {
-    const { thoughtId, status, aiThought, processingTimeMs } = await request.json();
+    const { thoughtId, status, aiThought, processingTimeMs } =
+      await request.json();
 
     if (!thoughtId) {
-      return NextResponse.json({ error: 'thoughtId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'thoughtId is required' },
+        { status: 400 },
+      );
     }
 
     const updateData: any = {};
     if (status) updateData.status = status;
     if (aiThought) updateData.aiThought = aiThought;
-    if (processingTimeMs !== undefined) updateData.processingTimeMs = processingTimeMs;
+    if (processingTimeMs !== undefined) {updateData.processingTimeMs = processingTimeMs;}
 
     const updatedThought = await db
       .update(realTimeThoughts)
@@ -100,7 +121,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ thought: updatedThought[0] });
   } catch (error) {
     console.error('Error updating real-time thought:', error);
-    return NextResponse.json({ error: 'Failed to update thought' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to update thought' },
+      { status: 500 },
+    );
   }
 }
 
@@ -110,7 +134,10 @@ export async function DELETE(request: NextRequest) {
     const thoughtId = searchParams.get('thoughtId');
 
     if (!thoughtId) {
-      return NextResponse.json({ error: 'thoughtId is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'thoughtId is required' },
+        { status: 400 },
+      );
     }
 
     const deletedThought = await db
@@ -125,6 +152,9 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ message: 'Thought deleted successfully' });
   } catch (error) {
     console.error('Error deleting real-time thought:', error);
-    return NextResponse.json({ error: 'Failed to delete thought' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to delete thought' },
+      { status: 500 },
+    );
   }
 }

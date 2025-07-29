@@ -64,7 +64,6 @@ export class DatabaseInitializer {
       await this.initializeDefaultData();
 
       console.log('✅ Database initialization completed successfully');
-
     } catch (error) {
       console.error('❌ Database initialization failed:', error);
       throw error;
@@ -96,7 +95,6 @@ export class DatabaseInitializer {
       // For now, we'll just log the intent
       console.log(`📁 Backup would be created at: ${backupPath}`);
       console.log('✅ Backup created successfully');
-
     } catch (error) {
       console.error('❌ Backup creation failed:', error);
       throw error;
@@ -111,7 +109,6 @@ export class DatabaseInitializer {
       // This is where you'd add default extraction templates, etc.
 
       console.log('✅ Default data check completed');
-
     } catch (error) {
       console.error('❌ Default data initialization failed:', error);
       throw error;
@@ -137,9 +134,10 @@ export class DatabaseInitializer {
       // Get migration info
       const migrations = await this.migrationRunner.getMigrationInfo();
       const appliedMigrations = migrations.filter(m => m.applied);
-      const lastMigration = appliedMigrations.length > 0
-        ? appliedMigrations[appliedMigrations.length - 1].name
-        : undefined;
+      const lastMigration =
+        appliedMigrations.length > 0
+          ? appliedMigrations[appliedMigrations.length - 1].name
+          : undefined;
 
       // Get database size (simplified)
       let databaseSize: number | undefined;
@@ -159,7 +157,6 @@ export class DatabaseInitializer {
         lastMigration,
         databaseSize,
       };
-
     } catch (error) {
       console.error('Error getting database status:', error);
       return {
@@ -181,7 +178,6 @@ export class DatabaseInitializer {
       // In a real implementation, you'd drop all tables or delete the database file
       // For now, we'll just log the intent
       console.log('🔄 Database reset completed');
-
     } catch (error) {
       console.error('❌ Database reset failed:', error);
       throw error;
@@ -211,7 +207,9 @@ async function main() {
           console.log(`  Last Migration: ${status.lastMigration}`);
         }
         if (status.databaseSize) {
-          console.log(`  Database Size: ${(status.databaseSize / 1024).toFixed(2)} KB`);
+          console.log(
+            `  Database Size: ${(status.databaseSize / 1024).toFixed(2)} KB`,
+          );
         }
         break;
       case 'reset':
@@ -222,12 +220,13 @@ async function main() {
         console.log('📖 Usage:');
         console.log('  npm run db init     - Initialize database');
         console.log('  npm run db status   - Show database status');
-        console.log('  npm run db reset --confirm - Reset database (destructive!)');
+        console.log(
+          '  npm run db reset --confirm - Reset database (destructive!)',
+        );
         break;
     }
 
     process.exit(0);
-
   } catch (error) {
     console.error('💥 Database operation failed:', error);
     process.exit(1);

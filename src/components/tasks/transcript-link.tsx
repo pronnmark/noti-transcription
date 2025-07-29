@@ -11,7 +11,12 @@ interface TranscriptLinkProps {
   className?: string;
 }
 
-export function TranscriptLink({ fileId, timestamp, speaker, className }: TranscriptLinkProps) {
+export function TranscriptLink({
+  fileId,
+  timestamp,
+  speaker,
+  className,
+}: TranscriptLinkProps) {
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -31,14 +36,19 @@ export function TranscriptLink({ fileId, timestamp, speaker, className }: Transc
         onClick={handleClick}
         className={cn('text-muted-foreground hover:text-foreground', className)}
       >
-        <Play className="h-3 w-3 mr-1" />
+        <Play className="mr-1 h-3 w-3" />
         View transcript
       </Button>
     );
   }
 
   return (
-    <div className={cn('flex items-center gap-2 text-sm text-muted-foreground', className)}>
+    <div
+      className={cn(
+        'flex items-center gap-2 text-sm text-muted-foreground',
+        className,
+      )}
+    >
       <Clock className="h-3 w-3" />
       <Button
         variant="ghost"

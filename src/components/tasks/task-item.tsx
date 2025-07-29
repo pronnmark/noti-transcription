@@ -35,7 +35,13 @@ interface TaskItemProps {
   className?: string;
 }
 
-export function TaskItem({ note, index, onToggleStatus, onUpdateComment, className }: TaskItemProps) {
+export function TaskItem({
+  note,
+  index,
+  onToggleStatus,
+  onUpdateComment,
+  className,
+}: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery('(max-width: 767px)');
 
@@ -46,33 +52,41 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'high': return 'bg-red-100 text-red-800 border-red-200';
-      case 'medium': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'low': return 'bg-green-100 text-green-800 border-green-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'high':
+        return 'bg-red-100 text-red-800 border-red-200';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'low':
+        return 'bg-green-100 text-green-800 border-green-200';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
 
   const getTypeColor = (noteType: string) => {
     switch (noteType) {
-      case 'task': return 'bg-blue-100 text-blue-800';
-      case 'question': return 'bg-orange-100 text-orange-800';
-      case 'decision': return 'bg-green-100 text-green-800';
-      case 'followup': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'task':
+        return 'bg-blue-100 text-blue-800';
+      case 'question':
+        return 'bg-orange-100 text-orange-800';
+      case 'decision':
+        return 'bg-green-100 text-green-800';
+      case 'followup':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   return (
-    <Card className={cn(
-      'transition-all duration-200',
-      isCompleted && 'opacity-60',
-      className,
-    )}>
-      <CardContent className={cn(
-        'p-4',
-        isMobile ? 'space-y-3' : 'space-y-4',
-      )}>
+    <Card
+      className={cn(
+        'transition-all duration-200',
+        isCompleted && 'opacity-60',
+        className,
+      )}
+    >
+      <CardContent className={cn('p-4', isMobile ? 'space-y-3' : 'space-y-4')}>
         {/* Main task content */}
         <div className="flex items-start gap-3">
           <div className="flex-shrink-0 pt-1">
@@ -83,26 +97,37 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
             />
           </div>
 
-          <div className="flex-1 min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <p className={cn(
-                  'text-sm font-medium leading-relaxed',
-                  isCompleted && 'line-through text-muted-foreground',
-                )}>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    'text-sm font-medium leading-relaxed',
+                    isCompleted && 'text-muted-foreground line-through',
+                  )}
+                >
                   {note.content}
                 </p>
 
                 {/* Metadata */}
-                <div className="flex items-center gap-2 mt-2 flex-wrap">
-                  <Badge variant="outline" className={cn('text-xs', getTypeColor(note.noteType))}>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={cn('text-xs', getTypeColor(note.noteType))}
+                  >
                     {note.noteType}
                   </Badge>
-                  <Badge variant="outline" className={cn('text-xs', getPriorityColor(note.priority))}>
+                  <Badge
+                    variant="outline"
+                    className={cn('text-xs', getPriorityColor(note.priority))}
+                  >
                     {note.priority}
                   </Badge>
                   {isCompleted && note.completedAt && (
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
+                    <Badge
+                      variant="outline"
+                      className="bg-green-50 text-xs text-green-700"
+                    >
                       Completed
                     </Badge>
                   )}
@@ -137,7 +162,7 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
                     onClick={() => setIsExpanded(true)}
                     className="text-muted-foreground hover:text-foreground"
                   >
-                    <ChevronDown className="h-4 w-4 mr-2" />
+                    <ChevronDown className="mr-2 h-4 w-4" />
                     Show details
                   </Button>
                 )}
@@ -151,15 +176,17 @@ export function TaskItem({ note, index, onToggleStatus, onUpdateComment, classNa
                         onClick={() => setIsExpanded(false)}
                         className="text-muted-foreground hover:text-foreground"
                       >
-                        <ChevronUp className="h-4 w-4 mr-2" />
+                        <ChevronUp className="mr-2 h-4 w-4" />
                         Hide details
                       </Button>
                     )}
 
                     {hasContext && (
                       <div className="space-y-2">
-                        <div className="text-sm font-medium text-muted-foreground">Context</div>
-                        <div className="text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg border-l-2 border-muted">
+                        <div className="text-sm font-medium text-muted-foreground">
+                          Context
+                        </div>
+                        <div className="rounded-lg border-l-2 border-muted bg-muted/50 p-3 text-sm text-muted-foreground">
                           {note.context}
                         </div>
                       </div>

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthMiddleware, createApiResponse, createErrorResponse } from '@/lib/middleware';
+import {
+  withAuthMiddleware,
+  createApiResponse,
+  createErrorResponse,
+} from '@/lib/middleware';
 import { RepositoryFactory } from '@/lib/database/repositories';
 import { apiDebug } from '@/lib/utils';
 import { exec } from 'child_process';
@@ -20,25 +24,28 @@ export async function POST(
     async (request: NextRequest, context) => {
       const resolvedParams = await params;
       const fileId = parseInt(resolvedParams.id);
-      
+
       if (isNaN(fileId)) {
         return NextResponse.json(
           createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-          { status: 400 }
+          { status: 400 },
         );
       }
 
-      apiDebug('Starting simple transcription', { fileId, requestId: context.requestId });
+      apiDebug('Starting simple transcription', {
+        fileId,
+        requestId: context.requestId,
+      });
 
       try {
         // Get file using repository
         const audioRepo = RepositoryFactory.audioRepository;
         const file = await audioRepo.findById(fileId);
-        
+
         if (!file) {
           return NextResponse.json(
             createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-            { status: 404 }
+            { status: 404 },
           );
         }
 
@@ -48,14 +55,17 @@ export async function POST(
 
         if (existingJob && existingJob.status === 'completed') {
           return NextResponse.json(
-            createApiResponse({
-              message: 'Transcription already completed',
-              transcript: existingJob.transcript,
-            }, {
-              meta: {
-                requestId: context.requestId,
-              }
-            })
+            createApiResponse(
+              {
+                message: 'Transcription already completed',
+                transcript: existingJob.transcript,
+              },
+              {
+                meta: {
+                  requestId: context.requestId,
+                },
+              },
+            ),
           );
         }
 
@@ -83,25 +93,34 @@ export async function POST(
         // Download audio file from Supabase Storage for processing
         let tempAudioPath: string | null = null;
         try {
-          const { getServiceLocator } = await import('@/lib/services/ServiceLocator');
-          const { supabaseStorageService } = getServiceLocator();
-          
+          const { SupabaseStorageService } = await import(
+            '@/lib/services/core/SupabaseStorageService'
+          );
+          const supabaseStorageService = new SupabaseStorageService();
+
           // Download file from Supabase Storage
-          const fileBuffer = await supabaseStorageService.downloadFile('audio-files', file.fileName);
-          
+          const fileBuffer = await supabaseStorageService.downloadFile(
+            'audio-files',
+            file.fileName,
+          );
+
           // Create temporary file for whisper processing
           const tempFileName = `temp_${Date.now()}_${file.originalFileName}`;
           tempAudioPath = join('/tmp', tempFileName);
-          
-          await import('fs').then(fs => fs.promises.writeFile(tempAudioPath!, fileBuffer));
-          
-          apiDebug('Downloaded audio file from Supabase for processing', { 
-            storagePath: file.fileName, 
-            tempPath: tempAudioPath 
-          });
 
+          await import('fs').then(fs =>
+            fs.promises.writeFile(tempAudioPath!, fileBuffer),
+          );
+
+          apiDebug('Downloaded audio file from Supabase for processing', {
+            storagePath: file.fileName,
+            tempPath: tempAudioPath,
+          });
         } catch (downloadError) {
-          apiDebug('Failed to download audio file from Supabase Storage', downloadError);
+          apiDebug(
+            'Failed to download audio file from Supabase Storage',
+            downloadError,
+          );
           throw new Error('Failed to access audio file for transcription');
         }
 
@@ -118,11 +137,15 @@ export async function POST(
           );
 
           // Read the JSON output
-          const baseFileName = tempAudioPath.split('/').pop()?.replace(/\.[^/.]+$/, '') || 'output';
+          const baseFileName =
+            tempAudioPath
+              .split('/')
+              .pop()
+              ?.replace(/\.[^/.]+$/, '') || 'output';
           const jsonPath = `/tmp/${baseFileName}.json`;
           const { stdout: jsonContent } = await execAsync(`cat "${jsonPath}"`);
           const result = JSON.parse(jsonContent);
-          
+
           // Clean up temporary files
           await import('fs').then(fs => {
             fs.promises.unlink(tempAudioPath!).catch(() => {});
@@ -145,31 +168,37 @@ export async function POST(
           });
 
           return NextResponse.json(
-            createApiResponse({
-              success: true,
-              transcript: segments,
-              text: result.text,
-            }, {
-              meta: {
-                requestId: context.requestId,
-              }
-            })
+            createApiResponse(
+              {
+                success: true,
+                transcript: segments,
+                text: result.text,
+              },
+              {
+                meta: {
+                  requestId: context.requestId,
+                },
+              },
+            ),
           );
-
         } catch (whisperError) {
           apiDebug('Whisper not available, using fallback...', whisperError);
 
           // Clean up temp file on error
           if (tempAudioPath) {
-            await import('fs').then(fs => fs.promises.unlink(tempAudioPath!).catch(() => {}));
+            await import('fs').then(fs =>
+              fs.promises.unlink(tempAudioPath!).catch(() => {}),
+            );
           }
 
           // Fallback: Create a dummy transcription
-          const dummyTranscript = [{
-            start: 0,
-            end: file.duration || 10,
-            text: `[Transcription pending for ${file.originalFileName}. Audio duration: ${file.duration || 0} seconds]`,
-          }];
+          const dummyTranscript = [
+            {
+              start: 0,
+              end: file.duration || 10,
+              text: `[Transcription pending for ${file.originalFileName}. Audio duration: ${file.duration || 0} seconds]`,
+            },
+          ];
 
           await transcriptionRepo.update(job.id, {
             status: 'completed',
@@ -179,19 +208,21 @@ export async function POST(
           });
 
           return NextResponse.json(
-            createApiResponse({
-              success: true,
-              transcript: dummyTranscript,
-              text: dummyTranscript[0].text,
-              note: 'Using placeholder transcription. Install whisper for real transcription.',
-            }, {
-              meta: {
-                requestId: context.requestId,
-              }
-            })
+            createApiResponse(
+              {
+                success: true,
+                transcript: dummyTranscript,
+                text: dummyTranscript[0].text,
+                note: 'Using placeholder transcription. Install whisper for real transcription.',
+              },
+              {
+                meta: {
+                  requestId: context.requestId,
+                },
+              },
+            ),
           );
         }
-
       } catch (error) {
         apiDebug('Error in simple transcription', error);
         throw error; // Let middleware handle the error
@@ -207,7 +238,7 @@ export async function POST(
         enabled: true,
         sanitizeErrors: true,
       },
-    }
+    },
   );
 
   return authenticatedHandler(request);

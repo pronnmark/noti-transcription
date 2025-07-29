@@ -2,7 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, FileText, Brain } from 'lucide-react';
 import Link from 'next/link';
@@ -50,12 +56,14 @@ export default function ExtractPage() {
       const fileData = await fileResponse.json();
       setFile({
         id: fileData.id,
-        originalName: fileData.originalFileName || fileData.originalName || 'Unknown File',
+        originalName:
+          fileData.originalFileName || fileData.originalName || 'Unknown File',
       });
-
     } catch (error) {
       console.error('Error loading extract:', error);
-      setError(error instanceof Error ? error.message : 'Failed to load extract');
+      setError(
+        error instanceof Error ? error.message : 'Failed to load extract',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -79,7 +87,7 @@ export default function ExtractPage() {
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center h-64">
+        <div className="flex h-64 items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin" />
         </div>
       </div>
@@ -90,11 +98,13 @@ export default function ExtractPage() {
     return (
       <div className="container mx-auto p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold mb-4">Error</h1>
-          <p className="text-muted-foreground mb-4">{error || 'Extract not found'}</p>
+          <h1 className="mb-4 text-2xl font-bold">Error</h1>
+          <p className="mb-4 text-muted-foreground">
+            {error || 'Extract not found'}
+          </p>
           <Link href="/ai/extracts">
             <Button variant="outline">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Extracts
             </Button>
           </Link>
@@ -104,17 +114,17 @@ export default function ExtractPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/ai/extracts">
           <Button variant="outline" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Extracts
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-2xl font-bold">
             <Brain className="h-6 w-6" />
             AI Extract
           </h1>
@@ -143,18 +153,16 @@ export default function ExtractPage() {
               </div>
             ) : extract.status === 'processing' ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 <span>Processing AI extraction...</span>
               </div>
             ) : (
-              <div className="text-center py-8">
-                <p className="text-muted-foreground mb-4">
+              <div className="py-8 text-center">
+                <p className="mb-4 text-muted-foreground">
                   Extract failed or has no content.
                 </p>
                 <Link href={`/transcript/${extract.fileId}`}>
-                  <Button variant="outline">
-                    View Transcript Instead
-                  </Button>
+                  <Button variant="outline">View Transcript Instead</Button>
                 </Link>
               </div>
             )}
@@ -170,7 +178,7 @@ export default function ExtractPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-sm bg-muted/50 rounded-lg p-3">
+            <div className="rounded-lg bg-muted/50 p-3 text-sm">
               {extract.prompt}
             </div>
           </CardContent>
@@ -180,7 +188,7 @@ export default function ExtractPage() {
         <div className="flex gap-4">
           <Link href={`/transcript/${extract.fileId}`}>
             <Button variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="mr-2 h-4 w-4" />
               View Full Transcript
             </Button>
           </Link>

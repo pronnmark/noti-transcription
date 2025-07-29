@@ -42,7 +42,6 @@ function createDatabase(): Database.Database {
 
     console.log('✅ Database connection established');
     return sqlite;
-
   } catch (error) {
     console.error('❌ Failed to connect to database:', error);
     console.error('Error details:', {
@@ -57,10 +56,14 @@ function createDatabase(): Database.Database {
       console.error('💡 To fix this, try:');
       console.error('   1. Check file permissions in the project directory');
       console.error('   2. Ensure you have write access to:', DB_PATH);
-      console.error('   3. Try deleting any existing sqlite.db file and let it recreate');
+      console.error(
+        '   3. Try deleting any existing sqlite.db file and let it recreate',
+      );
     }
 
-    throw new Error(`Database connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Database connection failed: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 

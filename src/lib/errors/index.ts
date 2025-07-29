@@ -1,37 +1,28 @@
 // Core error classes
 export * from './AppError';
 export * from './ValidationError';
-export * from './DatabaseError';
-export * from './AIServiceError';
 
 // Error handling infrastructure
 export * from './ErrorHandler';
-export * from './ErrorReporter';
 
 // Import the classes for use in factory functions
 import { AppError } from './AppError';
 import { ValidationError } from './ValidationError';
-import { DatabaseError } from './DatabaseError';
-import { AIServiceError } from './AIServiceError';
 
 // Re-export commonly used items
 export { errorHandler } from './ErrorHandler';
 
 // Utility functions for error handling
-export function isAppError(error: unknown): error is import('./AppError').AppError {
+export function isAppError(
+  error: unknown,
+): error is import('./AppError').AppError {
   return error instanceof Error && 'code' in error && 'severity' in error;
 }
 
-export function isValidationError(error: unknown): error is import('./ValidationError').ValidationError {
+export function isValidationError(
+  error: unknown,
+): error is import('./ValidationError').ValidationError {
   return error instanceof Error && error.name === 'ValidationError';
-}
-
-export function isDatabaseError(error: unknown): error is import('./DatabaseError').DatabaseError {
-  return error instanceof Error && error.name === 'DatabaseError';
-}
-
-export function isAIServiceError(error: unknown): error is import('./AIServiceError').AIServiceError {
-  return error instanceof Error && error.name === 'AIServiceError';
 }
 
 // Error factory functions for common scenarios
@@ -58,13 +49,5 @@ export const createError = {
 
   internal: (message: string, cause?: Error) => {
     return AppError.internal(message, cause);
-  },
-
-  database: (message: string, cause?: Error) => {
-    return new DatabaseError(message, undefined, cause);
-  },
-
-  aiService: (message: string, provider?: string, cause?: Error) => {
-    return new AIServiceError(message, undefined, undefined, cause, { provider });
   },
 };

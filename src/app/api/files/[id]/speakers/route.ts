@@ -15,7 +15,8 @@ export async function GET(
     }
 
     // Get speaker labels for this file
-    const result = await db.select()
+    const result = await db
+      .select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileId))
       .limit(1);
@@ -27,7 +28,6 @@ export async function GET(
       labels,
       hasCustomNames: Object.keys(labels).length > 0,
     });
-
   } catch (error) {
     console.error('Failed to get speaker labels:', error);
     return NextResponse.json(
@@ -53,29 +53,37 @@ export async function PUT(
     const { labels } = body;
 
     if (!labels || typeof labels !== 'object') {
-      return NextResponse.json({ error: 'Invalid labels format' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid labels format' },
+        { status: 400 },
+      );
     }
 
     // Validate that speaker IDs follow expected format
     for (const speakerId of Object.keys(labels)) {
       if (!speakerId.startsWith('SPEAKER_')) {
-        return NextResponse.json({
-          error: `Invalid speaker ID format: ${speakerId}. Expected format: SPEAKER_XX`,
-        }, { status: 400 });
+        return NextResponse.json(
+          {
+            error: `Invalid speaker ID format: ${speakerId}. Expected format: SPEAKER_XX`,
+          },
+          { status: 400 },
+        );
       }
     }
 
     const now = new Date();
 
     // Check if labels already exist for this file
-    const existing = await db.select()
+    const existing = await db
+      .select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileId))
       .limit(1);
 
     if (existing.length > 0) {
       // Update existing labels
-      await db.update(speakerLabels)
+      await db
+        .update(speakerLabels)
         .set({
           labels: labels,
           updatedAt: now,
@@ -83,13 +91,12 @@ export async function PUT(
         .where(eq(speakerLabels.fileId, fileId));
     } else {
       // Insert new labels
-      await db.insert(speakerLabels)
-        .values({
-          fileId,
-          labels: labels,
-          createdAt: now,
-          updatedAt: now,
-        });
+      await db.insert(speakerLabels).values({
+        fileId,
+        labels: labels,
+        createdAt: now,
+        updatedAt: now,
+      });
     }
 
     return NextResponse.json({
@@ -98,7 +105,6 @@ export async function PUT(
       labels,
       updatedAt: now.toISOString(),
     });
-
   } catch (error) {
     console.error('Failed to save speaker labels:', error);
     return NextResponse.json(
@@ -121,14 +127,12 @@ export async function DELETE(
     }
 
     // Delete speaker labels for this file
-    await db.delete(speakerLabels)
-      .where(eq(speakerLabels.fileId, fileId));
+    await db.delete(speakerLabels).where(eq(speakerLabels.fileId, fileId));
 
     return NextResponse.json({
       success: true,
       message: 'Speaker labels reset successfully',
     });
-
   } catch (error) {
     console.error('Failed to delete speaker labels:', error);
     return NextResponse.json(

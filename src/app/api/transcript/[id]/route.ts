@@ -20,7 +20,8 @@ export async function GET(
     }
 
     // Get speaker labels for this file
-    const speakerLabelResult = await db.select()
+    const speakerLabelResult = await db
+      .select()
       .from(speakerLabels)
       .where(eq(speakerLabels.fileId, fileIdInt))
       .limit(1);
@@ -28,17 +29,21 @@ export async function GET(
     const customSpeakerNames = speakerLabelResult[0]?.labels || {};
 
     // Enhance segments with display names
-    const enhancedSegments = transcript.segments?.map((segment: any) => ({
-      ...segment,
-      displayName: segment.speaker && customSpeakerNames[segment.speaker]
-        ? customSpeakerNames[segment.speaker]
-        : segment.speaker,
-    })) || [];
+    const enhancedSegments =
+      transcript.segments?.map((segment: any) => ({
+        ...segment,
+        displayName:
+          segment.speaker && customSpeakerNames[segment.speaker]
+            ? customSpeakerNames[segment.speaker]
+            : segment.speaker,
+      })) || [];
 
     // Extract unique speakers with their display names
-    const speakers = Array.from(new Set(
-      transcript.segments?.map((s: any) => s.speaker).filter(Boolean) || [],
-    )).map(speaker => ({
+    const speakers = Array.from(
+      new Set(
+        transcript.segments?.map((s: any) => s.speaker).filter(Boolean) || [],
+      ),
+    ).map(speaker => ({
       id: speaker,
       displayName: customSpeakerNames[speaker] || speaker,
       hasCustomName: !!customSpeakerNames[speaker],
@@ -47,7 +52,9 @@ export async function GET(
     return NextResponse.json({
       segments: enhancedSegments,
       speakers,
-      hasSpeakers: transcript.segments?.some((s: { speaker?: string }) => s.speaker) || false,
+      hasSpeakers:
+        transcript.segments?.some((s: { speaker?: string }) => s.speaker) ||
+        false,
       customSpeakerNames,
     });
   } catch (error) {

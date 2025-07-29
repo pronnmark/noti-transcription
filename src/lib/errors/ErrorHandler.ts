@@ -1,7 +1,5 @@
 import { AppError, ErrorCode, ErrorSeverity } from './AppError';
 import { ValidationError } from './ValidationError';
-import { DatabaseError } from './DatabaseError';
-import { AIServiceError } from './AIServiceError';
 
 export interface ErrorHandlerOptions {
   logErrors?: boolean;
@@ -45,7 +43,10 @@ export class ErrorHandler {
   }
 
   // Handle error and return formatted response
-  async handleError(error: unknown, requestId?: string): Promise<ErrorResponse> {
+  async handleError(
+    error: unknown,
+    requestId?: string,
+  ): Promise<ErrorResponse> {
     const appError = this.normalizeError(error, requestId);
 
     // Log error if enabled
@@ -54,7 +55,10 @@ export class ErrorHandler {
     }
 
     // Report error if enabled and it's not operational
-    if (this.options.reportErrors && (!appError.isOperational || appError.severity === ErrorSeverity.CRITICAL)) {
+    if (
+      this.options.reportErrors &&
+      (!appError.isOperational || appError.severity === ErrorSeverity.CRITICAL)
+    ) {
       await this.reportError(appError);
     }
 
@@ -74,12 +78,20 @@ export class ErrorHandler {
 
     if (error instanceof Error) {
       // Convert known error types
-      if (error.name === 'ValidationError' || error.message.includes('validation')) {
-        return new ValidationError(error.message, undefined, undefined, [], { requestId });
+      if (
+        error.name === 'ValidationError' ||
+        error.message.includes('validation')
+      ) {
+        return new ValidationError(error.message, undefined, undefined, [], {
+          requestId,
+        });
       }
 
-      if (error.name === 'DatabaseError' || error.message.includes('database')) {
-        return DatabaseError.query('Database operation failed', [], error);
+      if (
+        error.name === 'DatabaseError' ||
+        error.message.includes('database')
+      ) {
+        return AppError.internal('Database operation failed', error);
       }
 
       if (error.name === 'TimeoutError' || error.message.includes('timeout')) {
@@ -95,8 +107,12 @@ export class ErrorHandler {
     }
 
     // Handle non-Error objects
-    const message = typeof error === 'string' ? error : 'An unknown error occurred';
-    return AppError.internal(message, undefined, { requestId, originalError: error });
+    const message =
+      typeof error === 'string' ? error : 'An unknown error occurred';
+    return AppError.internal(message, undefined, {
+      requestId,
+      originalError: error,
+    });
   }
 
   // Log error with appropriate level
@@ -130,7 +146,7 @@ export class ErrorHandler {
 
   // Report error to external services
   private async reportError(error: AppError): Promise<void> {
-    const reportPromises = this.errorReporters.map(async (reporter) => {
+    const reportPromises = this.errorReporters.map(async reporter => {
       try {
         await reporter(error);
       } catch (reporterError) {
@@ -145,7 +161,9 @@ export class ErrorHandler {
   private formatErrorResponse(error: AppError): ErrorResponse {
     const response: ErrorResponse = {
       error: {
-        message: this.options.sanitizeErrors ? this.getSanitizedMessage(error) : error.message,
+        message: this.options.sanitizeErrors
+          ? this.getSanitizedMessage(error)
+          : error.message,
         code: error.code,
         statusCode: error.statusCode,
         severity: error.severity,
@@ -155,7 +173,11 @@ export class ErrorHandler {
     };
 
     // Add details for validation errors
-    if (error instanceof ValidationError && error.rules.length > 0) {
+    if (
+      error instanceof ValidationError &&
+      error.rules &&
+      error.rules.length > 0
+    ) {
       response.error.details = error.getValidationErrors();
     }
 
@@ -172,14 +194,6 @@ export class ErrorHandler {
     // Return user-friendly messages for known error types
     if (error instanceof ValidationError) {
       return 'Invalid input provided. Please check your data and try again.';
-    }
-
-    if (error instanceof DatabaseError) {
-      return error.getUserMessage();
-    }
-
-    if (error instanceof AIServiceError) {
-      return error.getUserMessage();
     }
 
     // Generic messages based on error code
@@ -207,21 +221,23 @@ export class ErrorHandler {
       return stackTrace;
     }
 
-    return stackTrace.substring(0, this.options.maxStackTraceLength) + '\n... (truncated)';
+    return (
+      stackTrace.substring(0, this.options.maxStackTraceLength) +
+      '\n... (truncated)'
+    );
   }
 
   // Static method for quick error handling
-  static async handle(error: unknown, requestId?: string): Promise<ErrorResponse> {
+  static async handle(
+    error: unknown,
+    requestId?: string,
+  ): Promise<ErrorResponse> {
     const handler = new ErrorHandler();
     return handler.handleError(error, requestId);
   }
 
   // Helper method to check if error should be retried
   static shouldRetry(error: unknown): boolean {
-    if (error instanceof DatabaseError || error instanceof AIServiceError) {
-      return error.isRetryable();
-    }
-
     if (error instanceof AppError) {
       const retryableCodes = [
         ErrorCode.TIMEOUT_ERROR,
@@ -237,10 +253,6 @@ export class ErrorHandler {
 
   // Helper method to get retry delay
   static getRetryDelay(error: unknown): number {
-    if (error instanceof AIServiceError) {
-      return error.getRetryDelay();
-    }
-
     if (error instanceof AppError) {
       switch (error.code) {
         case ErrorCode.RATE_LIMIT_EXCEEDED:

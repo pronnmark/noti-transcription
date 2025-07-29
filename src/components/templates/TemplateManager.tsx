@@ -7,9 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit, Trash2, Settings, Play, AlertCircle } from 'lucide-react';
 
@@ -35,10 +47,16 @@ interface TemplateManagerProps {
   onTemplateChange: () => void;
 }
 
-export default function TemplateManager({ type, templates, onTemplateChange }: TemplateManagerProps) {
+export default function TemplateManager({
+  type,
+  templates,
+  onTemplateChange,
+}: TemplateManagerProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null);
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -54,7 +72,10 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const apiEndpoint = type === 'extraction' ? '/api/extractions/templates' : '/api/data-points/templates';
+  const apiEndpoint =
+    type === 'extraction'
+      ? '/api/extractions/templates'
+      : '/api/data-points/templates';
 
   const resetForm = () => {
     setFormData({
@@ -80,29 +101,34 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
 
     const promptField = type === 'extraction' ? 'prompt' : 'analysisPrompt';
     if (!formData[promptField].trim()) {
-      setError(`${type === 'extraction' ? 'Prompt' : 'Analysis prompt'} is required`);
+      setError(
+        `${type === 'extraction' ? 'Prompt' : 'Analysis prompt'} is required`,
+      );
       return;
     }
 
     setLoading(true);
     try {
-      const payload = type === 'extraction' ? {
-        name: formData.name,
-        description: formData.description,
-        prompt: formData.prompt,
-        expectedOutputFormat: formData.expectedOutputFormat,
-        defaultPriority: formData.defaultPriority,
-        isActive: formData.isActive,
-        isDefault: formData.isDefault,
-      } : {
-        name: formData.name,
-        description: formData.description,
-        analysisPrompt: formData.analysisPrompt,
-        outputSchema: formData.outputSchema,
-        visualizationType: formData.visualizationType,
-        isActive: formData.isActive,
-        isDefault: formData.isDefault,
-      };
+      const payload =
+        type === 'extraction'
+          ? {
+            name: formData.name,
+            description: formData.description,
+            prompt: formData.prompt,
+            expectedOutputFormat: formData.expectedOutputFormat,
+            defaultPriority: formData.defaultPriority,
+            isActive: formData.isActive,
+            isDefault: formData.isDefault,
+          }
+          : {
+            name: formData.name,
+            description: formData.description,
+            analysisPrompt: formData.analysisPrompt,
+            outputSchema: formData.outputSchema,
+            visualizationType: formData.visualizationType,
+            isActive: formData.isActive,
+            isDefault: formData.isDefault,
+          };
 
       const response = await fetch(apiEndpoint, {
         method: 'POST',
@@ -153,31 +179,36 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
 
     const promptField = type === 'extraction' ? 'prompt' : 'analysisPrompt';
     if (!formData[promptField].trim()) {
-      setError(`${type === 'extraction' ? 'Prompt' : 'Analysis prompt'} is required`);
+      setError(
+        `${type === 'extraction' ? 'Prompt' : 'Analysis prompt'} is required`,
+      );
       return;
     }
 
     setLoading(true);
     try {
-      const payload = type === 'extraction' ? {
-        id: selectedTemplate.id,
-        name: formData.name,
-        description: formData.description,
-        prompt: formData.prompt,
-        expectedOutputFormat: formData.expectedOutputFormat,
-        defaultPriority: formData.defaultPriority,
-        isActive: formData.isActive,
-        isDefault: formData.isDefault,
-      } : {
-        id: selectedTemplate.id,
-        name: formData.name,
-        description: formData.description,
-        analysisPrompt: formData.analysisPrompt,
-        outputSchema: formData.outputSchema,
-        visualizationType: formData.visualizationType,
-        isActive: formData.isActive,
-        isDefault: formData.isDefault,
-      };
+      const payload =
+        type === 'extraction'
+          ? {
+            id: selectedTemplate.id,
+            name: formData.name,
+            description: formData.description,
+            prompt: formData.prompt,
+            expectedOutputFormat: formData.expectedOutputFormat,
+            defaultPriority: formData.defaultPriority,
+            isActive: formData.isActive,
+            isDefault: formData.isDefault,
+          }
+          : {
+            id: selectedTemplate.id,
+            name: formData.name,
+            description: formData.description,
+            analysisPrompt: formData.analysisPrompt,
+            outputSchema: formData.outputSchema,
+            visualizationType: formData.visualizationType,
+            isActive: formData.isActive,
+            isDefault: formData.isDefault,
+          };
 
       const response = await fetch(apiEndpoint, {
         method: 'PUT',
@@ -218,13 +249,18 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
 
       onTemplateChange();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete template');
+      setError(
+        err instanceof Error ? err.message : 'Failed to delete template',
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  const handleToggleActive = async (templateId: string, currentState: boolean) => {
+  const handleToggleActive = async (
+    templateId: string,
+    currentState: boolean,
+  ) => {
     setLoading(true);
     try {
       const response = await fetch(apiEndpoint, {
@@ -253,8 +289,8 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
   const TemplateForm = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="space-y-4">
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 bg-red-50 p-3 rounded">
-          <AlertCircle className="w-4 h-4" />
+        <div className="flex items-center space-x-2 rounded bg-red-50 p-3 text-red-600">
+          <AlertCircle className="h-4 w-4" />
           <span className="text-sm">{error}</span>
         </div>
       )}
@@ -265,7 +301,7 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
           <Input
             id="name"
             value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            onChange={e => setFormData({ ...formData, name: e.target.value })}
             placeholder="Enter template name"
           />
         </div>
@@ -274,7 +310,9 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
           <Input
             id="description"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={e =>
+              setFormData({ ...formData, description: e.target.value })
+            }
             placeholder="Optional description"
           />
         </div>
@@ -286,14 +324,20 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
         </Label>
         <Textarea
           id={type === 'extraction' ? 'prompt' : 'analysisPrompt'}
-          value={type === 'extraction' ? formData.prompt : formData.analysisPrompt}
-          onChange={(e) => setFormData({
-            ...formData,
-            [type === 'extraction' ? 'prompt' : 'analysisPrompt']: e.target.value,
-          })}
-          placeholder={type === 'extraction'
-            ? 'Enter the prompt for extracting information...'
-            : 'Enter the prompt for analyzing data...'
+          value={
+            type === 'extraction' ? formData.prompt : formData.analysisPrompt
+          }
+          onChange={e =>
+            setFormData({
+              ...formData,
+              [type === 'extraction' ? 'prompt' : 'analysisPrompt']:
+                e.target.value,
+            })
+          }
+          placeholder={
+            type === 'extraction'
+              ? 'Enter the prompt for extracting information...'
+              : 'Enter the prompt for analyzing data...'
           }
           rows={6}
         />
@@ -306,14 +350,27 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
             <Textarea
               id="expectedOutputFormat"
               value={formData.expectedOutputFormat}
-              onChange={(e) => setFormData({ ...formData, expectedOutputFormat: e.target.value })}
+              onChange={e =>
+                setFormData({
+                  ...formData,
+                  expectedOutputFormat: e.target.value,
+                })
+              }
               placeholder="Describe the expected output format..."
               rows={3}
             />
           </div>
           <div>
             <Label htmlFor="defaultPriority">Default Priority</Label>
-            <Select value={formData.defaultPriority} onValueChange={(value) => setFormData({ ...formData, defaultPriority: value as 'high' | 'medium' | 'low' })}>
+            <Select
+              value={formData.defaultPriority}
+              onValueChange={value =>
+                setFormData({
+                  ...formData,
+                  defaultPriority: value as 'high' | 'medium' | 'low',
+                })
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -332,14 +389,28 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
             <Textarea
               id="outputSchema"
               value={formData.outputSchema}
-              onChange={(e) => setFormData({ ...formData, outputSchema: e.target.value })}
+              onChange={e =>
+                setFormData({ ...formData, outputSchema: e.target.value })
+              }
               placeholder="JSON schema or format description..."
               rows={3}
             />
           </div>
           <div>
             <Label htmlFor="visualizationType">Visualization Type</Label>
-            <Select value={formData.visualizationType} onValueChange={(value) => setFormData({ ...formData, visualizationType: value as 'chart' | 'gauge' | 'text' | 'mixed' })}>
+            <Select
+              value={formData.visualizationType}
+              onValueChange={value =>
+                setFormData({
+                  ...formData,
+                  visualizationType: value as
+                    | 'chart'
+                    | 'gauge'
+                    | 'text'
+                    | 'mixed',
+                })
+              }
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -359,7 +430,9 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
           <Checkbox
             id="isActive"
             checked={formData.isActive}
-            onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked as boolean })}
+            onCheckedChange={checked =>
+              setFormData({ ...formData, isActive: checked as boolean })
+            }
           />
           <Label htmlFor="isActive">Active</Label>
         </div>
@@ -367,23 +440,35 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
           <Checkbox
             id="isDefault"
             checked={formData.isDefault}
-            onCheckedChange={(checked) => setFormData({ ...formData, isDefault: checked as boolean })}
+            onCheckedChange={checked =>
+              setFormData({ ...formData, isDefault: checked as boolean })
+            }
           />
           <Label htmlFor="isDefault">Default Template</Label>
         </div>
       </div>
 
       <div className="flex justify-end space-x-2">
-        <Button variant="outline" onClick={() => {
-          resetForm();
-          setIsCreateOpen(false);
-          setIsEditOpen(false);
-          setSelectedTemplate(null);
-        }}>
+        <Button
+          variant="outline"
+          onClick={() => {
+            resetForm();
+            setIsCreateOpen(false);
+            setIsEditOpen(false);
+            setSelectedTemplate(null);
+          }}
+        >
           Cancel
         </Button>
-        <Button onClick={isEdit ? handleUpdate : handleCreate} disabled={loading}>
-          {loading ? 'Saving...' : isEdit ? 'Update Template' : 'Create Template'}
+        <Button
+          onClick={isEdit ? handleUpdate : handleCreate}
+          disabled={loading}
+        >
+          {loading
+            ? 'Saving...'
+            : isEdit
+              ? 'Update Template'
+              : 'Create Template'}
         </Button>
       </div>
     </div>
@@ -396,13 +481,16 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
         <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               Create Template
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
             <DialogHeader>
-              <DialogTitle>Create New {type === 'extraction' ? 'Extraction' : 'Data Point'} Template</DialogTitle>
+              <DialogTitle>
+                Create New {type === 'extraction' ? 'Extraction' : 'Data Point'}{' '}
+                Template
+              </DialogTitle>
             </DialogHeader>
             <TemplateForm />
           </DialogContent>
@@ -410,20 +498,26 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
       </div>
 
       <div className="grid gap-4">
-        {templates.map((template) => (
-          <Card key={template.id} className="hover:shadow-md transition-shadow">
+        {templates.map(template => (
+          <Card key={template.id} className="transition-shadow hover:shadow-md">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-3">
                   <CardTitle className="text-lg">{template.name}</CardTitle>
                   <div className="flex items-center space-x-2">
                     {template.isActive && (
-                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                      <Badge
+                        variant="secondary"
+                        className="bg-green-100 text-green-800"
+                      >
                         Active
                       </Badge>
                     )}
                     {template.isDefault && (
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                      <Badge
+                        variant="secondary"
+                        className="bg-blue-100 text-blue-800"
+                      >
                         Default
                       </Badge>
                     )}
@@ -443,7 +537,9 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleToggleActive(template.id, template.isActive)}
+                    onClick={() =>
+                      handleToggleActive(template.id, template.isActive)
+                    }
                     disabled={loading}
                   >
                     {template.isActive ? 'Deactivate' : 'Activate'}
@@ -453,7 +549,7 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
                     size="sm"
                     onClick={() => handleEdit(template)}
                   >
-                    <Edit className="w-4 h-4" />
+                    <Edit className="h-4 w-4" />
                   </Button>
                   <Button
                     variant="outline"
@@ -461,19 +557,23 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
                     onClick={() => handleDelete(template.id)}
                     disabled={loading}
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-gray-600 mb-3">{template.description}</p>
-              <div className="bg-gray-50 p-3 rounded text-sm">
+              <p className="mb-3 text-gray-600">{template.description}</p>
+              <div className="rounded bg-gray-50 p-3 text-sm">
                 <strong>
-                  {type === 'extraction' ? 'Expected Output:' : 'Output Schema:'}
+                  {type === 'extraction'
+                    ? 'Expected Output:'
+                    : 'Output Schema:'}
                 </strong>
-                <div className="mt-1 text-xs text-gray-700 whitespace-pre-wrap">
-                  {type === 'extraction' ? template.expectedOutputFormat : template.outputSchema}
+                <div className="mt-1 whitespace-pre-wrap text-xs text-gray-700">
+                  {type === 'extraction'
+                    ? template.expectedOutputFormat
+                    : template.outputSchema}
                 </div>
               </div>
             </CardContent>
@@ -485,7 +585,10 @@ export default function TemplateManager({ type, templates, onTemplateChange }: T
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>Edit {type === 'extraction' ? 'Extraction' : 'Data Point'} Template</DialogTitle>
+            <DialogTitle>
+              Edit {type === 'extraction' ? 'Extraction' : 'Data Point'}{' '}
+              Template
+            </DialogTitle>
           </DialogHeader>
           <TemplateForm isEdit />
         </DialogContent>

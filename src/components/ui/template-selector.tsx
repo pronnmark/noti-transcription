@@ -2,7 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Settings } from 'lucide-react';
 import { toast } from 'sonner';
@@ -138,7 +144,9 @@ export function TemplateSelector({
       newSelectedIds = selectedTemplateIds.filter(id => id !== templateId);
     }
 
-    const selectedTemplates = templates.filter(t => newSelectedIds.includes(t.id));
+    const selectedTemplates = templates.filter(t =>
+      newSelectedIds.includes(t.id),
+    );
     onMultipleSelect(selectedTemplates);
   };
 
@@ -168,8 +176,10 @@ export function TemplateSelector({
   if (loading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Loader2 className="w-4 h-4 animate-spin" />
-        <span className="text-sm text-muted-foreground">Loading templates...</span>
+        <Loader2 className="h-4 w-4 animate-spin" />
+        <span className="text-sm text-muted-foreground">
+          Loading templates...
+        </span>
       </div>
     );
   }
@@ -196,26 +206,33 @@ export function TemplateSelector({
         // Multiple selection with checkboxes
         <div className="space-y-2">
           <div className="text-sm font-medium">Select templates:</div>
-          <div className="space-y-1 max-h-32 overflow-y-auto">
-            {templates.map((template) => (
-              <label key={template.id} className="flex items-center gap-2 cursor-pointer">
+          <div className="max-h-32 space-y-1 overflow-y-auto">
+            {templates.map(template => (
+              <label
+                key={template.id}
+                className="flex cursor-pointer items-center gap-2"
+              >
                 <input
                   type="checkbox"
                   checked={selectedTemplateIds.includes(template.id)}
-                  onChange={(e) => handleMultipleSelection(template.id, e.target.checked)}
+                  onChange={e =>
+                    handleMultipleSelection(template.id, e.target.checked)
+                  }
                   disabled={disabled}
                   className="rounded border-gray-300"
                 />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm">{template.name}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium">{template.name}</div>
                   {template.description && (
-                    <div className="text-xs text-muted-foreground truncate">
+                    <div className="truncate text-xs text-muted-foreground">
                       {template.description}
                     </div>
                   )}
                 </div>
                 {template.isDefault && (
-                  <Badge variant="outline" className="text-xs">Default</Badge>
+                  <Badge variant="outline" className="text-xs">
+                    Default
+                  </Badge>
                 )}
               </label>
             ))}
@@ -237,19 +254,21 @@ export function TemplateSelector({
             <SelectItem value="none">
               <span className="text-muted-foreground">No template</span>
             </SelectItem>
-            {templates.map((template) => (
+            {templates.map(template => (
               <SelectItem key={template.id} value={template.id}>
-                <div className="flex items-center justify-between w-full">
-                  <div className="flex-1 min-w-0">
+                <div className="flex w-full items-center justify-between">
+                  <div className="min-w-0 flex-1">
                     <div className="font-medium">{template.name}</div>
                     {template.description && (
-                      <div className="text-xs text-muted-foreground truncate">
+                      <div className="truncate text-xs text-muted-foreground">
                         {template.description}
                       </div>
                     )}
                   </div>
                   {template.isDefault && (
-                    <Badge variant="outline" className="ml-2 text-xs">Default</Badge>
+                    <Badge variant="outline" className="ml-2 text-xs">
+                      Default
+                    </Badge>
                   )}
                 </div>
               </SelectItem>
@@ -266,7 +285,7 @@ export function TemplateSelector({
           disabled={disabled}
           className="flex-shrink-0"
         >
-          <Settings className="w-4 h-4" />
+          <Settings className="h-4 w-4" />
           {size !== 'sm' && <span className="ml-2">Manage</span>}
         </Button>
       )}

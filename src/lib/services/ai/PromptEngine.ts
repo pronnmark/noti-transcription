@@ -1,5 +1,3 @@
-import { BaseService } from '../core/BaseService';
-
 export interface PromptTemplate {
   id: string;
   name: string;
@@ -16,22 +14,27 @@ export interface PromptVariables {
   [key: string]: string | number | boolean;
 }
 
-export class PromptEngine extends BaseService {
+export class PromptEngine {
   private templates: Map<string, PromptTemplate> = new Map();
+  private name: string = 'PromptEngine';
 
   constructor() {
-    super('PromptEngine');
+    // Load default templates on initialization
+    this.loadDefaultTemplates();
+    console.log('[PromptEngine] Initialized with default templates');
   }
 
-  protected async onInitialize(): Promise<void> {
+  async initialize(): Promise<void> {
     // Load default templates
     this.loadDefaultTemplates();
-    this._logger.info('Prompt engine initialized with default templates');
+    console.log(
+      '[PromptEngine] Prompt engine initialized with default templates',
+    );
   }
 
-  protected async onDestroy(): Promise<void> {
+  async destroy(): Promise<void> {
     this.templates.clear();
-    this._logger.info('Prompt engine destroyed');
+    console.log('[PromptEngine] Prompt engine destroyed');
   }
 
   private loadDefaultTemplates(): void {
@@ -226,13 +229,17 @@ Transcript:
     return Array.from(this.templates.values());
   }
 
-  getTemplatesByCategory(category: PromptTemplate['category']): PromptTemplate[] {
-    return Array.from(this.templates.values()).filter(t => t.category === category);
+  getTemplatesByCategory(
+    category: PromptTemplate['category'],
+  ): PromptTemplate[] {
+    return Array.from(this.templates.values()).filter(
+      t => t.category === category,
+    );
   }
 
   addTemplate(template: PromptTemplate): void {
     this.templates.set(template.id, template);
-    this._logger.info(`Added prompt template: ${template.id}`);
+    console.log(`[PromptEngine] Added prompt template: ${template.id}`);
   }
 
   updateTemplate(id: string, updates: Partial<PromptTemplate>): boolean {
@@ -248,14 +255,14 @@ Transcript:
     };
 
     this.templates.set(id, updated);
-    this._logger.info(`Updated prompt template: ${id}`);
+    console.log(`[PromptEngine] Updated prompt template: ${id}`);
     return true;
   }
 
   removeTemplate(id: string): boolean {
     const deleted = this.templates.delete(id);
     if (deleted) {
-      this._logger.info(`Removed prompt template: ${id}`);
+      console.log(`[PromptEngine] Removed prompt template: ${id}`);
     }
     return deleted;
   }
@@ -269,7 +276,10 @@ Transcript:
     return this.interpolateTemplate(template.template, variables);
   }
 
-  private interpolateTemplate(template: string, variables: PromptVariables): string {
+  private interpolateTemplate(
+    template: string,
+    variables: PromptVariables,
+  ): string {
     let result = template;
 
     // Simple variable substitution: {{variable}}
@@ -279,10 +289,13 @@ Transcript:
     }
 
     // Simple conditional blocks: {{#if variable}}...{{/if}}
-    result = result.replace(/{{#if\s+(\w+)}}([\s\S]*?){{\/if}}/g, (match, varName, content) => {
-      const value = variables[varName];
-      return value ? content : '';
-    });
+    result = result.replace(
+      /{{#if\s+(\w+)}}([\s\S]*?){{\/if}}/g,
+      (match, varName, content) => {
+        const value = variables[varName];
+        return value ? content : '';
+      },
+    );
 
     // Remove any remaining unresolved variables
     result = result.replace(/{{[^}]+}}/g, '');

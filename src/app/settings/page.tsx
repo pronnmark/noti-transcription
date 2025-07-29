@@ -1,15 +1,37 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
-import { Save, RefreshCw, Eye, EyeOff, Plus, Edit2, Trash2, Send, TestTube } from 'lucide-react';
+import {
+  Save,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Plus,
+  Edit2,
+  Trash2,
+  Send,
+  TestTube,
+} from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
@@ -106,17 +128,18 @@ const LANGUAGES = [
 ];
 
 export default function SettingsPage() {
-  const [transcriptionSettings, setTranscriptionSettings] = useState<TranscriptionSettings>({
-    modelSize: 'large-v3',
-    language: 'sv',
-    enableSpeakerDiarization: true,
-    huggingfaceToken: '',
-    preferredDevice: 'auto',
-    computeType: 'float32',
-    batchSize: 16,
-    threads: 4,
-    speakerCount: undefined,
-  });
+  const [transcriptionSettings, setTranscriptionSettings] =
+    useState<TranscriptionSettings>({
+      modelSize: 'large-v3',
+      language: 'sv',
+      enableSpeakerDiarization: true,
+      huggingfaceToken: '',
+      preferredDevice: 'auto',
+      computeType: 'float32',
+      batchSize: 16,
+      threads: 4,
+      speakerCount: undefined,
+    });
 
   const [aiSettings, setAISettings] = useState<AISettings>({
     customAiBaseUrl: '',
@@ -136,11 +159,14 @@ export default function SettingsPage() {
 
   const [isSaving, setIsSaving] = useState(false);
 
-  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
 
   const [templates, setTemplates] = useState<SummarizationTemplate[]>([]);
   const [isTemplateDialogOpen, setIsTemplateDialogOpen] = useState(false);
-  const [editingTemplate, setEditingTemplate] = useState<SummarizationTemplate | null>(null);
+  const [editingTemplate, setEditingTemplate] =
+    useState<SummarizationTemplate | null>(null);
   const [templateForm, setTemplateForm] = useState({
     name: '',
     description: '',
@@ -168,7 +194,8 @@ export default function SettingsPage() {
   const [realTimeSettings, setRealTimeSettings] = useState<RealTimeSettings>({
     realTimeEnabled: false,
     realTimeChunkInterval: 120, // 2 minutes default
-    realTimeAiInstruction: 'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
+    realTimeAiInstruction:
+      'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
   });
 
   const [isTesting, setIsTesting] = useState(false);
@@ -183,7 +210,7 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/settings', {
         headers: {
           ...(sessionToken && { 'x-session-token': sessionToken }),
@@ -193,7 +220,10 @@ export default function SettingsPage() {
         const data = await response.json();
 
         if (data.transcription) {
-          setTranscriptionSettings(prev => ({ ...prev, ...data.transcription }));
+          setTranscriptionSettings(prev => ({
+            ...prev,
+            ...data.transcription,
+          }));
         }
         if (data.ai) {
           setAISettings(prev => ({ ...prev, ...data.ai }));
@@ -202,7 +232,6 @@ export default function SettingsPage() {
           setRealTimeSettings(prev => ({ ...prev, ...data.realTime }));
         }
       }
-
     } catch (error) {
       console.error('Failed to load settings:', error);
     }
@@ -221,7 +250,7 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/settings', {
         method: 'POST',
         headers: {
@@ -262,7 +291,8 @@ export default function SettingsPage() {
         if (!url.protocol.startsWith('http')) {
           errors.customAiBaseUrl = 'Base URL must use HTTP or HTTPS protocol';
         } else if (!aiSettings.customAiBaseUrl.includes('/v1')) {
-          errors.customAiBaseUrl = 'Base URL should include /v1 endpoint (e.g., https://api.openai.com/v1)';
+          errors.customAiBaseUrl =
+            'Base URL should include /v1 endpoint (e.g., https://api.openai.com/v1)';
         }
       } catch {
         errors.customAiBaseUrl = 'Please enter a valid URL';
@@ -292,10 +322,13 @@ export default function SettingsPage() {
     const hasApiKey = !!aiSettings.customAiApiKey;
     const hasModel = !!aiSettings.customAiModel;
 
-    if ((hasBaseUrl || hasApiKey || hasModel) && (!hasBaseUrl || !hasApiKey || !hasModel)) {
-      if (!hasBaseUrl) errors.customAiBaseUrl = 'Base URL is required when using custom AI';
-      if (!hasApiKey) errors.customAiApiKey = 'API key is required when using custom AI';
-      if (!hasModel) errors.customAiModel = 'Model name is required when using custom AI';
+    if (
+      (hasBaseUrl || hasApiKey || hasModel) &&
+      (!hasBaseUrl || !hasApiKey || !hasModel)
+    ) {
+      if (!hasBaseUrl) {errors.customAiBaseUrl = 'Base URL is required when using custom AI';}
+      if (!hasApiKey) {errors.customAiApiKey = 'API key is required when using custom AI';}
+      if (!hasModel) {errors.customAiModel = 'Model name is required when using custom AI';}
     }
 
     setValidationErrors(errors);
@@ -306,7 +339,7 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/summarization-prompts', {
         headers: {
           ...(sessionToken && { 'x-session-token': sessionToken }),
@@ -365,7 +398,9 @@ export default function SettingsPage() {
       });
 
       if (response.ok) {
-        toast.success(`Template ${editingTemplate ? 'updated' : 'created'} successfully`);
+        toast.success(
+          `Template ${editingTemplate ? 'updated' : 'created'} successfully`,
+        );
         setIsTemplateDialogOpen(false);
         loadTemplates();
       } else {
@@ -385,7 +420,7 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch(`/api/summarization-prompts?id=${id}`, {
         method: 'DELETE',
         headers: {
@@ -410,7 +445,7 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/telegram/settings', {
         headers: {
           ...(sessionToken && { 'x-session-token': sessionToken }),
@@ -429,10 +464,10 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/telegram/settings', {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(sessionToken && { 'x-session-token': sessionToken }),
         },
@@ -500,10 +535,10 @@ export default function SettingsPage() {
     try {
       const { getSessionToken } = await import('@/lib/auth-client');
       const sessionToken = getSessionToken();
-      
+
       const response = await fetch('/api/telegram/settings', {
         method: 'PUT',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           ...(sessionToken && { 'x-session-token': sessionToken }),
         },
@@ -527,11 +562,13 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="standard-page-bg min-h-screen overflow-y-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+    <div className="standard-page-bg min-h-screen space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6">
       {/* Header - Now part of scrollable content */}
-      <div className="space-y-2 buzz-header-desktop">
+      <div className="buzz-header-desktop space-y-2">
         <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
-        <p className="text-muted-foreground text-base">Configure your transcription preferences</p>
+        <p className="text-base text-muted-foreground">
+          Configure your transcription preferences
+        </p>
       </div>
       <Tabs defaultValue="essential" className="space-y-4 sm:space-y-6">
         <TabsList>
@@ -546,15 +583,22 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Basic Transcription</CardTitle>
-              <CardDescription>Essential settings for speech-to-text transcription</CardDescription>
+              <CardDescription>
+                Essential settings for speech-to-text transcription
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="modelSize">Model Size</Label>
                   <Select
                     value={transcriptionSettings.modelSize}
-                    onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, modelSize: value }))}
+                    onValueChange={value =>
+                      setTranscriptionSettings(prev => ({
+                        ...prev,
+                        modelSize: value,
+                      }))
+                    }
                   >
                     <SelectTrigger id="modelSize">
                       <SelectValue />
@@ -573,7 +617,12 @@ export default function SettingsPage() {
                   <Label htmlFor="language">Language</Label>
                   <Select
                     value={transcriptionSettings.language}
-                    onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, language: value }))}
+                    onValueChange={value =>
+                      setTranscriptionSettings(prev => ({
+                        ...prev,
+                        language: value,
+                      }))
+                    }
                   >
                     <SelectTrigger id="language">
                       <SelectValue />
@@ -594,33 +643,45 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Speaker Detection</CardTitle>
-              <CardDescription>Identify different speakers in conversations</CardDescription>
+              <CardDescription>
+                Identify different speakers in conversations
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
                   <Label htmlFor="diarization">Enable Speaker Detection</Label>
                   <p className="text-sm text-muted-foreground">
-                      Automatically identify different speakers
+                    Automatically identify different speakers
                   </p>
                 </div>
                 <Switch
                   id="diarization"
                   checked={transcriptionSettings.enableSpeakerDiarization}
-                  onCheckedChange={(checked) => setTranscriptionSettings(prev => ({ ...prev, enableSpeakerDiarization: checked }))}
+                  onCheckedChange={checked =>
+                    setTranscriptionSettings(prev => ({
+                      ...prev,
+                      enableSpeakerDiarization: checked,
+                    }))
+                  }
                 />
               </div>
 
               {transcriptionSettings.enableSpeakerDiarization && (
                 <div className="space-y-2">
                   <Label htmlFor="huggingfaceToken">HuggingFace Token</Label>
-                  <div className="flex gap-2 min-w-0">
+                  <div className="flex min-w-0 gap-2">
                     <Input
-                      className="flex-1 min-w-0"
+                      className="min-w-0 flex-1"
                       id="huggingfaceToken"
                       type={showTokens.huggingfaceToken ? 'text' : 'password'}
                       value={transcriptionSettings.huggingfaceToken}
-                      onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, huggingfaceToken: e.target.value }))}
+                      onChange={e =>
+                        setTranscriptionSettings(prev => ({
+                          ...prev,
+                          huggingfaceToken: e.target.value,
+                        }))
+                      }
                       placeholder="hf_..."
                     />
                     <Button
@@ -628,11 +689,15 @@ export default function SettingsPage() {
                       size="icon"
                       onClick={() => toggleTokenVisibility('huggingfaceToken')}
                     >
-                      {showTokens.huggingfaceToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showTokens.huggingfaceToken ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                      Required for speaker detection. Get one from huggingface.co
+                    Required for speaker detection. Get one from huggingface.co
                   </p>
                 </div>
               )}
@@ -642,19 +707,31 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>OpenAI-Compatible AI API</CardTitle>
-              <CardDescription>Configure any OpenAI-compatible AI service for summarization and note extraction</CardDescription>
+              <CardDescription>
+                Configure any OpenAI-compatible AI service for summarization and
+                note extraction
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="standard-card p-4 bg-muted/20">
-                <h4 className="font-medium mb-2">Supported Providers</h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                  <div className="break-all"><strong>OpenAI:</strong> https://api.openai.com/v1</div>
-                  <div className="break-all"><strong>Anthropic:</strong> https://api.anthropic.com/v1</div>
-                  <div className="break-all"><strong>OpenRouter:</strong> https://openrouter.ai/api/v1</div>
-                  <div className="break-all"><strong>Local (LM Studio):</strong> http://localhost:1234/v1</div>
+              <div className="standard-card bg-muted/20 p-4">
+                <h4 className="mb-2 font-medium">Supported Providers</h4>
+                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                  <div className="break-all">
+                    <strong>OpenAI:</strong> https://api.openai.com/v1
+                  </div>
+                  <div className="break-all">
+                    <strong>Anthropic:</strong> https://api.anthropic.com/v1
+                  </div>
+                  <div className="break-all">
+                    <strong>OpenRouter:</strong> https://openrouter.ai/api/v1
+                  </div>
+                  <div className="break-all">
+                    <strong>Local (LM Studio):</strong> http://localhost:1234/v1
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2">
-                    All providers must support OpenAI's /chat/completions API format
+                <p className="mt-2 text-xs text-muted-foreground">
+                  All providers must support OpenAI's /chat/completions API
+                  format
                 </p>
               </div>
 
@@ -664,37 +741,54 @@ export default function SettingsPage() {
                   id="customAiBaseUrl"
                   type="url"
                   value={aiSettings.customAiBaseUrl}
-                  onChange={(e) => {
-                    setAISettings(prev => ({ ...prev, customAiBaseUrl: e.target.value }));
+                  onChange={e => {
+                    setAISettings(prev => ({
+                      ...prev,
+                      customAiBaseUrl: e.target.value,
+                    }));
                     // Clear validation error when user starts typing
                     if (validationErrors.customAiBaseUrl) {
-                      setValidationErrors(prev => ({ ...prev, customAiBaseUrl: '' }));
+                      setValidationErrors(prev => ({
+                        ...prev,
+                        customAiBaseUrl: '',
+                      }));
                     }
                   }}
                   placeholder="https://api.openai.com/v1"
-                  className={validationErrors.customAiBaseUrl ? 'border-red-500' : ''}
+                  className={
+                    validationErrors.customAiBaseUrl ? 'border-red-500' : ''
+                  }
                 />
                 {validationErrors.customAiBaseUrl && (
-                  <p className="text-sm text-red-500">{validationErrors.customAiBaseUrl}</p>
+                  <p className="text-sm text-red-500">
+                    {validationErrors.customAiBaseUrl}
+                  </p>
                 )}
                 <p className="text-sm text-muted-foreground">
-                    Complete base URL including /v1 endpoint (must support OpenAI chat/completions format)
+                  Complete base URL including /v1 endpoint (must support OpenAI
+                  chat/completions format)
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="customAiApiKey">API Key</Label>
-                <div className="flex gap-2 min-w-0">
+                <div className="flex min-w-0 gap-2">
                   <Input
-                    className={`flex-1 min-w-0 ${validationErrors.customAiApiKey ? 'border-red-500' : ''}`}
+                    className={`min-w-0 flex-1 ${validationErrors.customAiApiKey ? 'border-red-500' : ''}`}
                     id="customAiApiKey"
                     type={showTokens.customAiApiKey ? 'text' : 'password'}
                     value={aiSettings.customAiApiKey}
-                    onChange={(e) => {
-                      setAISettings(prev => ({ ...prev, customAiApiKey: e.target.value }));
+                    onChange={e => {
+                      setAISettings(prev => ({
+                        ...prev,
+                        customAiApiKey: e.target.value,
+                      }));
                       // Clear validation error when user starts typing
                       if (validationErrors.customAiApiKey) {
-                        setValidationErrors(prev => ({ ...prev, customAiApiKey: '' }));
+                        setValidationErrors(prev => ({
+                          ...prev,
+                          customAiApiKey: '',
+                        }));
                       }
                     }}
                     placeholder="sk-... (OpenAI) or claude-... (Anthropic)"
@@ -704,14 +798,21 @@ export default function SettingsPage() {
                     size="icon"
                     onClick={() => toggleTokenVisibility('customAiApiKey')}
                   >
-                    {showTokens.customAiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showTokens.customAiApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
                 {validationErrors.customAiApiKey && (
-                  <p className="text-sm text-red-500">{validationErrors.customAiApiKey}</p>
+                  <p className="text-sm text-red-500">
+                    {validationErrors.customAiApiKey}
+                  </p>
                 )}
                 <p className="text-sm text-muted-foreground">
-                    API key from your chosen provider (get from provider's dashboard)
+                  API key from your chosen provider (get from provider's
+                  dashboard)
                 </p>
               </div>
 
@@ -721,32 +822,52 @@ export default function SettingsPage() {
                   id="customAiModel"
                   type="text"
                   value={aiSettings.customAiModel}
-                  onChange={(e) => {
-                    setAISettings(prev => ({ ...prev, customAiModel: e.target.value }));
+                  onChange={e => {
+                    setAISettings(prev => ({
+                      ...prev,
+                      customAiModel: e.target.value,
+                    }));
                     // Clear validation error when user starts typing
                     if (validationErrors.customAiModel) {
-                      setValidationErrors(prev => ({ ...prev, customAiModel: '' }));
+                      setValidationErrors(prev => ({
+                        ...prev,
+                        customAiModel: '',
+                      }));
                     }
                   }}
                   placeholder="gpt-3.5-turbo"
-                  className={validationErrors.customAiModel ? 'border-red-500' : ''}
+                  className={
+                    validationErrors.customAiModel ? 'border-red-500' : ''
+                  }
                 />
                 {validationErrors.customAiModel && (
-                  <p className="text-sm text-red-500">{validationErrors.customAiModel}</p>
+                  <p className="text-sm text-red-500">
+                    {validationErrors.customAiModel}
+                  </p>
                 )}
                 <div className="text-sm text-muted-foreground">
                   <p>Common models by provider:</p>
                   <div className="mt-1 grid grid-cols-1 gap-1 text-xs">
-                    <div><strong>OpenAI:</strong> gpt-3.5-turbo, gpt-4, gpt-4-turbo</div>
-                    <div><strong>Anthropic:</strong> claude-3-sonnet-20240229, claude-3-haiku-20240307</div>
-                    <div><strong>OpenRouter:</strong> anthropic/claude-3-sonnet, openai/gpt-4</div>
-                    <div><strong>Local:</strong> llama-3.1-8b, mixtral-8x7b-instruct</div>
+                    <div>
+                      <strong>OpenAI:</strong> gpt-3.5-turbo, gpt-4, gpt-4-turbo
+                    </div>
+                    <div>
+                      <strong>Anthropic:</strong> claude-3-sonnet-20240229,
+                      claude-3-haiku-20240307
+                    </div>
+                    <div>
+                      <strong>OpenRouter:</strong> anthropic/claude-3-sonnet,
+                      openai/gpt-4
+                    </div>
+                    <div>
+                      <strong>Local:</strong> llama-3.1-8b,
+                      mixtral-8x7b-instruct
+                    </div>
                   </div>
                 </div>
               </div>
             </CardContent>
           </Card>
-
         </TabsContent>
 
         <TabsContent value="templates" className="space-y-4 sm:space-y-6">
@@ -754,43 +875,53 @@ export default function SettingsPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Summary Templates</CardTitle>
-                <CardDescription>Create and manage custom templates for AI summarization</CardDescription>
+                <CardDescription>
+                  Create and manage custom templates for AI summarization
+                </CardDescription>
               </div>
-              <Button onClick={() => openTemplateDialog()} className="flex items-center gap-2">
+              <Button
+                onClick={() => openTemplateDialog()}
+                className="flex items-center gap-2"
+              >
                 <Plus className="h-4 w-4" />
                 New Template
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
               {templates.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   <p>No templates created yet.</p>
-                  <p className="text-sm">Create your first template to get started.</p>
+                  <p className="text-sm">
+                    Create your first template to get started.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {templates.map((template) => (
-                    <div key={template.id} className="border rounded-lg p-4 space-y-2">
+                  {templates.map(template => (
+                    <div
+                      key={template.id}
+                      className="space-y-2 rounded-lg border p-4"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">{template.name}</h4>
                             {template.isDefault && (
-                              <span className="px-2 py-1 text-xs bg-primary/20 text-primary rounded">
+                              <span className="rounded bg-primary/20 px-2 py-1 text-xs text-primary">
                                 Default
                               </span>
                             )}
                           </div>
                           {template.description && (
-                            <p className="text-sm text-muted-foreground mt-1">
+                            <p className="mt-1 text-sm text-muted-foreground">
                               {template.description}
                             </p>
                           )}
-                          <div className="mt-2 text-xs text-muted-foreground bg-muted/50 p-2 rounded">
+                          <div className="mt-2 rounded bg-muted/50 p-2 text-xs text-muted-foreground">
                             <p className="line-clamp-2">{template.prompt}</p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="ml-4 flex items-center gap-2">
                           <Button
                             variant="outline"
                             size="icon"
@@ -820,12 +951,16 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Telegram Integration</CardTitle>
-              <CardDescription>Configure Telegram bot and chat settings for sharing summaries</CardDescription>
+              <CardDescription>
+                Configure Telegram bot and chat settings for sharing summaries
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="telegramEnabled">Enable Telegram Integration</Label>
+                  <Label htmlFor="telegramEnabled">
+                    Enable Telegram Integration
+                  </Label>
                   <p className="text-sm text-muted-foreground">
                     Allow sharing summaries to Telegram chats
                   </p>
@@ -833,52 +968,80 @@ export default function SettingsPage() {
                 <Switch
                   id="telegramEnabled"
                   checked={telegramSettings.isEnabled}
-                  onCheckedChange={(checked) => setTelegramSettings(prev => ({ ...prev, isEnabled: checked }))}
+                  onCheckedChange={checked =>
+                    setTelegramSettings(prev => ({
+                      ...prev,
+                      isEnabled: checked,
+                    }))
+                  }
                 />
               </div>
 
               {telegramSettings.isEnabled && (
                 <>
-                  <div className="standard-card p-4 bg-muted/20">
-                    <h4 className="font-medium mb-2">Bot Configuration</h4>
-                    <p className="text-sm text-muted-foreground mb-2">
-                      Current bot token source: <strong>{telegramSettings.botTokenSource}</strong>
-                      {telegramSettings.botTokenSource === 'environment' && ' (from .env file)'}
+                  <div className="standard-card bg-muted/20 p-4">
+                    <h4 className="mb-2 font-medium">Bot Configuration</h4>
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Current bot token source:{' '}
+                      <strong>{telegramSettings.botTokenSource}</strong>
+                      {telegramSettings.botTokenSource === 'environment' &&
+                        ' (from .env file)'}
                     </p>
                     {telegramSettings.hasBotToken ? (
                       <>
-                        <p className="text-sm text-green-600 mb-2">✓ Bot token is configured</p>
+                        <p className="mb-2 text-sm text-green-600">
+                          ✓ Bot token is configured
+                        </p>
                         {telegramSettings.botInfo && (
-                          <div className="mt-3 p-3 bg-background rounded-lg space-y-1">
+                          <div className="mt-3 space-y-1 rounded-lg bg-background p-3">
                             <p className="text-sm">
-                              <span className="text-muted-foreground">Bot Name:</span> {' '}
+                              <span className="text-muted-foreground">
+                                Bot Name:
+                              </span>{' '}
                               <strong>{telegramSettings.botInfo.name}</strong>
                             </p>
                             <p className="text-sm">
-                              <span className="text-muted-foreground">Username:</span> {' '}
-                              <strong>@{telegramSettings.botInfo.username}</strong>
+                              <span className="text-muted-foreground">
+                                Username:
+                              </span>{' '}
+                              <strong>
+                                @{telegramSettings.botInfo.username}
+                              </strong>
                             </p>
                             <p className="text-sm">
-                              <span className="text-muted-foreground">Features:</span> {' '}
-                              {telegramSettings.botInfo.canJoinGroups && '✓ Groups'} {' '}
-                              {telegramSettings.botInfo.canReadAllGroupMessages && '✓ All Messages'}
+                              <span className="text-muted-foreground">
+                                Features:
+                              </span>{' '}
+                              {telegramSettings.botInfo.canJoinGroups &&
+                                '✓ Groups'}{' '}
+                              {telegramSettings.botInfo
+                                .canReadAllGroupMessages && '✓ All Messages'}
                             </p>
                           </div>
                         )}
                       </>
                     ) : (
-                      <p className="text-sm text-yellow-600">⚠ No bot token found in environment or database</p>
+                      <p className="text-sm text-yellow-600">
+                        ⚠ No bot token found in environment or database
+                      </p>
                     )}
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="botToken">Override Bot Token (Optional)</Label>
+                    <Label htmlFor="botToken">
+                      Override Bot Token (Optional)
+                    </Label>
                     <div className="flex gap-2">
                       <Input
                         id="botToken"
                         type="password"
                         value={telegramForm.botToken}
-                        onChange={(e) => setTelegramForm(prev => ({ ...prev, botToken: e.target.value }))}
+                        onChange={e =>
+                          setTelegramForm(prev => ({
+                            ...prev,
+                            botToken: e.target.value,
+                          }))
+                        }
                         placeholder="Bot token (leave empty to use environment variable)"
                         className="flex-1"
                       />
@@ -893,53 +1056,82 @@ export default function SettingsPage() {
                     <h4 className="font-medium">Chat Configurations</h4>
 
                     {telegramSettings.chatConfigurations.length === 0 ? (
-                      <div className="text-center py-4 text-muted-foreground border rounded-lg">
+                      <div className="rounded-lg border py-4 text-center text-muted-foreground">
                         <p>No chat configurations added yet.</p>
-                        <p className="text-sm">Add chats below to enable targeted sharing.</p>
+                        <p className="text-sm">
+                          Add chats below to enable targeted sharing.
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        {telegramSettings.chatConfigurations.map((chat, index) => (
-                          <div key={index} className="flex items-center justify-between p-3 border rounded-lg">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium">{chat.name}</span>
-                                <span className="px-2 py-1 text-xs bg-muted rounded">{chat.type}</span>
+                        {telegramSettings.chatConfigurations.map(
+                          (chat, index) => (
+                            <div
+                              key={index}
+                              className="flex items-center justify-between rounded-lg border p-3"
+                            >
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium">
+                                    {chat.name}
+                                  </span>
+                                  <span className="rounded bg-muted px-2 py-1 text-xs">
+                                    {chat.type}
+                                  </span>
+                                </div>
+                                <p className="text-sm text-muted-foreground">
+                                  {chat.chatId}
+                                </p>
                               </div>
-                              <p className="text-sm text-muted-foreground">{chat.chatId}</p>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() =>
+                                    setTelegramSettings(prev => ({
+                                      ...prev,
+                                      defaultChatId: chat.chatId,
+                                    }))
+                                  }
+                                  disabled={
+                                    telegramSettings.defaultChatId ===
+                                    chat.chatId
+                                  }
+                                >
+                                  {telegramSettings.defaultChatId ===
+                                  chat.chatId
+                                    ? 'Default'
+                                    : 'Set Default'}
+                                </Button>
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  onClick={() => removeChatConfiguration(index)}
+                                  className="text-destructive hover:text-destructive"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setTelegramSettings(prev => ({ ...prev, defaultChatId: chat.chatId }))}
-                                disabled={telegramSettings.defaultChatId === chat.chatId}
-                              >
-                                {telegramSettings.defaultChatId === chat.chatId ? 'Default' : 'Set Default'}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon"
-                                onClick={() => removeChatConfiguration(index)}
-                                className="text-destructive hover:text-destructive"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          </div>
-                        ))}
+                          ),
+                        )}
                       </div>
                     )}
 
-                    <div className="border rounded-lg p-4 space-y-4">
+                    <div className="space-y-4 rounded-lg border p-4">
                       <h5 className="font-medium">Add New Chat</h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                         <div className="space-y-2">
                           <Label htmlFor="newChatName">Chat Name</Label>
                           <Input
                             id="newChatName"
                             value={telegramForm.newChatName}
-                            onChange={(e) => setTelegramForm(prev => ({ ...prev, newChatName: e.target.value }))}
+                            onChange={e =>
+                              setTelegramForm(prev => ({
+                                ...prev,
+                                newChatName: e.target.value,
+                              }))
+                            }
                             placeholder="e.g., Family Group"
                           />
                         </div>
@@ -948,7 +1140,12 @@ export default function SettingsPage() {
                           <Input
                             id="newChatId"
                             value={telegramForm.newChatId}
-                            onChange={(e) => setTelegramForm(prev => ({ ...prev, newChatId: e.target.value }))}
+                            onChange={e =>
+                              setTelegramForm(prev => ({
+                                ...prev,
+                                newChatId: e.target.value,
+                              }))
+                            }
                             placeholder="e.g., -123456789"
                           />
                         </div>
@@ -956,8 +1153,13 @@ export default function SettingsPage() {
                           <Label htmlFor="newChatType">Type</Label>
                           <Select
                             value={telegramForm.newChatType}
-                            onValueChange={(value: 'user' | 'group' | 'channel') =>
-                              setTelegramForm(prev => ({ ...prev, newChatType: value }))
+                            onValueChange={(
+                              value: 'user' | 'group' | 'channel',
+                            ) =>
+                              setTelegramForm(prev => ({
+                                ...prev,
+                                newChatType: value,
+                              }))
                             }
                           >
                             <SelectTrigger id="newChatType">
@@ -972,17 +1174,22 @@ export default function SettingsPage() {
                         </div>
                       </div>
                       <Button onClick={addChatConfiguration} className="w-full">
-                        <Plus className="h-4 w-4 mr-2" />
+                        <Plus className="mr-2 h-4 w-4" />
                         Add Chat Configuration
                       </Button>
                     </div>
 
-                    <div className="border rounded-lg p-4 space-y-4">
+                    <div className="space-y-4 rounded-lg border p-4">
                       <h5 className="font-medium">Test Connection</h5>
                       <div className="flex gap-2">
                         <Input
                           value={telegramForm.testChatId}
-                          onChange={(e) => setTelegramForm(prev => ({ ...prev, testChatId: e.target.value }))}
+                          onChange={e =>
+                            setTelegramForm(prev => ({
+                              ...prev,
+                              testChatId: e.target.value,
+                            }))
+                          }
                           placeholder="Enter chat ID to test (e.g., -123456789)"
                           className="flex-1"
                         />
@@ -991,17 +1198,22 @@ export default function SettingsPage() {
                           disabled={isTesting}
                           variant="outline"
                         >
-                          {isTesting ? <RefreshCw className="h-4 w-4 animate-spin mr-2" /> : <TestTube className="h-4 w-4 mr-2" />}
+                          {isTesting ? (
+                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          ) : (
+                            <TestTube className="mr-2 h-4 w-4" />
+                          )}
                           {isTesting ? 'Testing...' : 'Test'}
                         </Button>
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        This will send a test message to verify your bot configuration.
+                        This will send a test message to verify your bot
+                        configuration.
                       </p>
                     </div>
 
                     <Button onClick={saveTelegramSettings} className="w-full">
-                      <Save className="h-4 w-4 mr-2" />
+                      <Save className="mr-2 h-4 w-4" />
                       Save Telegram Settings
                     </Button>
                   </div>
@@ -1015,30 +1227,47 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Real-time Thoughts</CardTitle>
-              <CardDescription>Configure AI analysis during recording with chunked processing</CardDescription>
+              <CardDescription>
+                Configure AI analysis during recording with chunked processing
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label htmlFor="realTimeEnabled">Enable Real-time Thoughts</Label>
+                  <Label htmlFor="realTimeEnabled">
+                    Enable Real-time Thoughts
+                  </Label>
                   <p className="text-sm text-muted-foreground">
-                    Process audio chunks during recording and generate AI insights
+                    Process audio chunks during recording and generate AI
+                    insights
                   </p>
                 </div>
                 <Switch
                   id="realTimeEnabled"
                   checked={realTimeSettings.realTimeEnabled}
-                  onCheckedChange={(checked) => setRealTimeSettings(prev => ({ ...prev, realTimeEnabled: checked }))}
+                  onCheckedChange={checked =>
+                    setRealTimeSettings(prev => ({
+                      ...prev,
+                      realTimeEnabled: checked,
+                    }))
+                  }
                 />
               </div>
 
               {realTimeSettings.realTimeEnabled && (
                 <>
                   <div className="space-y-2">
-                    <Label htmlFor="chunkInterval">Chunk Processing Interval</Label>
+                    <Label htmlFor="chunkInterval">
+                      Chunk Processing Interval
+                    </Label>
                     <Select
                       value={realTimeSettings.realTimeChunkInterval.toString()}
-                      onValueChange={(value) => setRealTimeSettings(prev => ({ ...prev, realTimeChunkInterval: parseInt(value) }))}
+                      onValueChange={value =>
+                        setRealTimeSettings(prev => ({
+                          ...prev,
+                          realTimeChunkInterval: parseInt(value),
+                        }))
+                      }
                     >
                       <SelectTrigger id="chunkInterval">
                         <SelectValue />
@@ -1052,34 +1281,59 @@ export default function SettingsPage() {
                       </SelectContent>
                     </Select>
                     <p className="text-sm text-muted-foreground">
-                      How often to process audio chunks and generate thoughts during recording
+                      How often to process audio chunks and generate thoughts
+                      during recording
                     </p>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="aiInstruction">AI Analysis Instruction</Label>
+                    <Label htmlFor="aiInstruction">
+                      AI Analysis Instruction
+                    </Label>
                     <Textarea
                       id="aiInstruction"
                       value={realTimeSettings.realTimeAiInstruction}
-                      onChange={(e) => setRealTimeSettings(prev => ({ ...prev, realTimeAiInstruction: e.target.value }))}
+                      onChange={e =>
+                        setRealTimeSettings(prev => ({
+                          ...prev,
+                          realTimeAiInstruction: e.target.value,
+                        }))
+                      }
                       placeholder="Enter instructions for how the AI should analyze each audio chunk..."
                       rows={4}
                       className="min-h-24"
                     />
                     <p className="text-sm text-muted-foreground">
-                      This instruction will be sent to the AI with each transcribed chunk. 
-                      Be specific about what insights, decisions, or actionable items you want extracted.
+                      This instruction will be sent to the AI with each
+                      transcribed chunk. Be specific about what insights,
+                      decisions, or actionable items you want extracted.
                     </p>
                   </div>
 
-                  <div className="standard-card p-4 bg-muted/20">
-                    <h4 className="font-medium mb-2">How Real-time Thoughts Work</h4>
-                    <ul className="text-sm text-muted-foreground space-y-1">
-                      <li>• Recording continues uninterrupted while chunks are processed in the background</li>
-                      <li>• Each chunk is transcribed and sent to AI with your custom instruction</li>
-                      <li>• Thoughts appear in real-time on the recording page "Thoughts" tab</li>
-                      <li>• All thoughts are saved to database and linked to the recording session</li>
-                      <li>• Uses the same AI configuration from Essential settings</li>
+                  <div className="standard-card bg-muted/20 p-4">
+                    <h4 className="mb-2 font-medium">
+                      How Real-time Thoughts Work
+                    </h4>
+                    <ul className="space-y-1 text-sm text-muted-foreground">
+                      <li>
+                        • Recording continues uninterrupted while chunks are
+                        processed in the background
+                      </li>
+                      <li>
+                        • Each chunk is transcribed and sent to AI with your
+                        custom instruction
+                      </li>
+                      <li>
+                        • Thoughts appear in real-time on the recording page
+                        "Thoughts" tab
+                      </li>
+                      <li>
+                        • All thoughts are saved to database and linked to the
+                        recording session
+                      </li>
+                      <li>
+                        • Uses the same AI configuration from Essential settings
+                      </li>
                     </ul>
                   </div>
                 </>
@@ -1092,34 +1346,48 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>Advanced Transcription</CardTitle>
-              <CardDescription>Fine-tune transcription performance and processing</CardDescription>
+              <CardDescription>
+                Fine-tune transcription performance and processing
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="device">Processing Device</Label>
                 <Select
                   value={transcriptionSettings.preferredDevice}
-                  onValueChange={(value) => setTranscriptionSettings(prev => ({ ...prev, preferredDevice: value }))}
+                  onValueChange={value =>
+                    setTranscriptionSettings(prev => ({
+                      ...prev,
+                      preferredDevice: value,
+                    }))
+                  }
                 >
                   <SelectTrigger id="device">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">Auto (GPU with CPU fallback)</SelectItem>
+                    <SelectItem value="auto">
+                      Auto (GPU with CPU fallback)
+                    </SelectItem>
                     <SelectItem value="cuda">GPU Only</SelectItem>
                     <SelectItem value="cpu">CPU Only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="batchSize">Batch Size</Label>
                   <Input
                     id="batchSize"
                     type="number"
                     value={transcriptionSettings.batchSize}
-                    onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, batchSize: parseInt(e.target.value) || 16 }))}
+                    onChange={e =>
+                      setTranscriptionSettings(prev => ({
+                        ...prev,
+                        batchSize: parseInt(e.target.value) || 16,
+                      }))
+                    }
                   />
                 </div>
 
@@ -1129,28 +1397,39 @@ export default function SettingsPage() {
                     id="threads"
                     type="number"
                     value={transcriptionSettings.threads}
-                    onChange={(e) => setTranscriptionSettings(prev => ({ ...prev, threads: parseInt(e.target.value) || 4 }))}
+                    onChange={e =>
+                      setTranscriptionSettings(prev => ({
+                        ...prev,
+                        threads: parseInt(e.target.value) || 4,
+                      }))
+                    }
                   />
                 </div>
               </div>
 
               {transcriptionSettings.enableSpeakerDiarization && (
                 <div className="space-y-2">
-                  <Label htmlFor="speakerCount">Number of Speakers (optional)</Label>
+                  <Label htmlFor="speakerCount">
+                    Number of Speakers (optional)
+                  </Label>
                   <Input
                     id="speakerCount"
                     type="number"
                     min="2"
                     max="20"
                     value={transcriptionSettings.speakerCount || ''}
-                    onChange={(e) => setTranscriptionSettings(prev => ({
-                      ...prev,
-                      speakerCount: e.target.value ? parseInt(e.target.value) : undefined,
-                    }))}
+                    onChange={e =>
+                      setTranscriptionSettings(prev => ({
+                        ...prev,
+                        speakerCount: e.target.value
+                          ? parseInt(e.target.value)
+                          : undefined,
+                      }))
+                    }
                     placeholder="Auto-detect"
                   />
                   <p className="text-sm text-muted-foreground">
-                      Specify exact number if known. Leave empty to auto-detect.
+                    Specify exact number if known. Leave empty to auto-detect.
                   </p>
                 </div>
               )}
@@ -1160,7 +1439,9 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle>AI Models & Prompts</CardTitle>
-              <CardDescription>Configure AI model selection and default prompts</CardDescription>
+              <CardDescription>
+                Configure AI model selection and default prompts
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -1169,23 +1450,33 @@ export default function SettingsPage() {
                   id="aiModel"
                   type="text"
                   value={aiSettings.aiExtractModel}
-                  onChange={(e) => setAISettings(prev => ({ ...prev, aiExtractModel: e.target.value }))}
+                  onChange={e =>
+                    setAISettings(prev => ({
+                      ...prev,
+                      aiExtractModel: e.target.value,
+                    }))
+                  }
                   placeholder="e.g. anthropic/claude-sonnet-4"
                 />
                 <p className="text-sm text-muted-foreground">
-                    Enter any valid OpenRouter model ID.
+                  Enter any valid OpenRouter model ID.
                 </p>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
-                <div className="flex gap-2 min-w-0">
+                <div className="flex min-w-0 gap-2">
                   <Input
-                    className="flex-1 min-w-0"
+                    className="min-w-0 flex-1"
                     id="openaiKey"
                     type={showTokens.openaiApiKey ? 'text' : 'password'}
                     value={aiSettings.openaiApiKey}
-                    onChange={(e) => setAISettings(prev => ({ ...prev, openaiApiKey: e.target.value }))}
+                    onChange={e =>
+                      setAISettings(prev => ({
+                        ...prev,
+                        openaiApiKey: e.target.value,
+                      }))
+                    }
                     placeholder="sk-..."
                   />
                   <Button
@@ -1193,13 +1484,16 @@ export default function SettingsPage() {
                     size="icon"
                     onClick={() => toggleTokenVisibility('openaiApiKey')}
                   >
-                    {showTokens.openaiApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showTokens.openaiApiKey ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </Button>
                 </div>
               </div>
             </CardContent>
           </Card>
-
         </TabsContent>
       </Tabs>
 
@@ -1207,10 +1501,12 @@ export default function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Account & System</CardTitle>
-          <CardDescription>User account and application information</CardDescription>
+          <CardDescription>
+            User account and application information
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex items-center justify-between p-4 bg-muted/50 rounded-xl">
+          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-4">
             <div>
               <p className="text-sm font-medium">Application Version</p>
               <p className="text-xs text-muted-foreground">v1.0.0</p>
@@ -1219,7 +1515,9 @@ export default function SettingsPage() {
               variant="destructive"
               onClick={async () => {
                 try {
-                  const response = await fetch('/api/auth/logout', { method: 'POST' });
+                  const response = await fetch('/api/auth/logout', {
+                    method: 'POST',
+                  });
                   if (response.ok) {
                     toast.success('Logged out successfully');
                     window.location.href = '/login';
@@ -1231,25 +1529,28 @@ export default function SettingsPage() {
               }}
               className="touch-target-44"
             >
-                Logout
+              Logout
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="flex justify-end gap-4 mt-6">
+      <div className="mt-6 flex justify-end gap-4">
         <Button variant="outline" onClick={loadSettings}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-            Reset
+          <RefreshCw className="mr-2 h-4 w-4" />
+          Reset
         </Button>
         <Button onClick={saveSettings} disabled={isSaving}>
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="mr-2 h-4 w-4" />
           {isSaving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
 
       {/* Template Creation/Edit Dialog */}
-      <Dialog open={isTemplateDialogOpen} onOpenChange={setIsTemplateDialogOpen}>
+      <Dialog
+        open={isTemplateDialogOpen}
+        onOpenChange={setIsTemplateDialogOpen}
+      >
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>
@@ -1258,8 +1559,7 @@ export default function SettingsPage() {
             <DialogDescription>
               {editingTemplate
                 ? 'Update your summary template settings'
-                : 'Create a custom template for AI summarization'
-              }
+                : 'Create a custom template for AI summarization'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -1268,17 +1568,26 @@ export default function SettingsPage() {
               <Input
                 id="templateName"
                 value={templateForm.name}
-                onChange={(e) => setTemplateForm(prev => ({ ...prev, name: e.target.value }))}
+                onChange={e =>
+                  setTemplateForm(prev => ({ ...prev, name: e.target.value }))
+                }
                 placeholder="e.g., Meeting Summary, Interview Notes"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="templateDescription">Description (Optional)</Label>
+              <Label htmlFor="templateDescription">
+                Description (Optional)
+              </Label>
               <Input
                 id="templateDescription"
                 value={templateForm.description}
-                onChange={(e) => setTemplateForm(prev => ({ ...prev, description: e.target.value }))}
+                onChange={e =>
+                  setTemplateForm(prev => ({
+                    ...prev,
+                    description: e.target.value,
+                  }))
+                }
                 placeholder="Brief description of when to use this template"
               />
             </div>
@@ -1288,14 +1597,17 @@ export default function SettingsPage() {
               <Textarea
                 id="templatePrompt"
                 value={templateForm.prompt}
-                onChange={(e) => setTemplateForm(prev => ({ ...prev, prompt: e.target.value }))}
+                onChange={e =>
+                  setTemplateForm(prev => ({ ...prev, prompt: e.target.value }))
+                }
                 placeholder="Enter your custom prompt for summarization..."
                 rows={8}
                 className="min-h-32"
               />
               <p className="text-xs text-muted-foreground">
-                This prompt will be used to instruct the AI on how to summarize transcriptions.
-                Be specific about the format and content you want.
+                This prompt will be used to instruct the AI on how to summarize
+                transcriptions. Be specific about the format and content you
+                want.
               </p>
             </div>
 
@@ -1303,13 +1615,15 @@ export default function SettingsPage() {
               <Switch
                 id="templateDefault"
                 checked={templateForm.isDefault}
-                onCheckedChange={(checked) => setTemplateForm(prev => ({ ...prev, isDefault: checked }))}
+                onCheckedChange={checked =>
+                  setTemplateForm(prev => ({ ...prev, isDefault: checked }))
+                }
               />
               <Label htmlFor="templateDefault">Set as default template</Label>
             </div>
           </div>
 
-          <div className="flex justify-end gap-2 mt-6">
+          <div className="mt-6 flex justify-end gap-2">
             <Button
               variant="outline"
               onClick={() => setIsTemplateDialogOpen(false)}

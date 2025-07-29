@@ -3,7 +3,10 @@ import { extractions, Extraction, NewExtraction } from '../schema';
 import { getDb } from '../client';
 import { eq, and, desc, asc } from 'drizzle-orm';
 
-export class ExtractionRepository extends BaseRepository<Extraction, NewExtraction> {
+export class ExtractionRepository extends BaseRepository<
+  Extraction,
+  NewExtraction
+> {
   constructor() {
     super(extractions);
   }
@@ -64,20 +67,27 @@ export class ExtractionRepository extends BaseRepository<Extraction, NewExtracti
     }
   }
 
-  async findByFileAndTemplate(fileId: number, templateId: string): Promise<Extraction[]> {
+  async findByFileAndTemplate(
+    fileId: number,
+    templateId: string,
+  ): Promise<Extraction[]> {
     try {
       const db = getDb();
       const result = await db
         .select()
         .from(this.table)
-        .where(and(
-          eq(this.table.fileId, fileId),
-          eq(this.table.templateId, templateId),
-        ))
+        .where(
+          and(
+            eq(this.table.fileId, fileId),
+            eq(this.table.templateId, templateId),
+          ),
+        )
         .orderBy(desc(this.table.createdAt));
       return result as Extraction[];
     } catch (error) {
-      throw new Error(`Failed to find extractions by file and template: ${error}`);
+      throw new Error(
+        `Failed to find extractions by file and template: ${error}`,
+      );
     }
   }
 

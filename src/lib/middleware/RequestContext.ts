@@ -39,11 +39,16 @@ export class RequestContextBuilder {
 
     // Create logger with request context
     const logger: Logger = {
-      info: (msg: string, ...args: any[]) => console.log(`[INFO] [${requestId}] ${msg}`, ...args),
-      warn: (msg: string, ...args: any[]) => console.warn(`[WARN] [${requestId}] ${msg}`, ...args),
-      error: (msg: string, ...args: any[]) => console.error(`[ERROR] [${requestId}] ${msg}`, ...args),
-      debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] [${requestId}] ${msg}`, ...args),
-      fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] [${requestId}] ${msg}`, ...args),
+      info: (msg: string, ...args: any[]) =>
+        console.log(`[INFO] [${requestId}] ${msg}`, ...args),
+      warn: (msg: string, ...args: any[]) =>
+        console.warn(`[WARN] [${requestId}] ${msg}`, ...args),
+      error: (msg: string, ...args: any[]) =>
+        console.error(`[ERROR] [${requestId}] ${msg}`, ...args),
+      debug: (msg: string, ...args: any[]) =>
+        console.debug(`[DEBUG] [${requestId}] ${msg}`, ...args),
+      fatal: (msg: string, ...args: any[]) =>
+        console.error(`[FATAL] [${requestId}] ${msg}`, ...args),
     };
 
     return {
@@ -102,7 +107,10 @@ export class RequestContextBuilder {
     return headers;
   }
 
-  private extractUserId(request: NextRequest, headers: Record<string, string>): string | undefined {
+  private extractUserId(
+    request: NextRequest,
+    headers: Record<string, string>,
+  ): string | undefined {
     // Try to extract user ID from various sources
 
     // From Authorization header (JWT)
@@ -128,7 +136,10 @@ export class RequestContextBuilder {
     return cookies['userId'] || cookies['user_id'];
   }
 
-  private extractSessionId(request: NextRequest, headers: Record<string, string>): string | undefined {
+  private extractSessionId(
+    request: NextRequest,
+    headers: Record<string, string>,
+  ): string | undefined {
     // From custom headers
     const sessionHeader = headers['x-session-id'] || headers['x-sessionid'];
     if (sessionHeader) {
@@ -137,10 +148,15 @@ export class RequestContextBuilder {
 
     // From cookies
     const cookies = this.parseCookies(headers['cookie'] || '');
-    return cookies['sessionId'] || cookies['session_id'] || cookies['JSESSIONID'];
+    return (
+      cookies['sessionId'] || cookies['session_id'] || cookies['JSESSIONID']
+    );
   }
 
-  private extractClientIp(request: NextRequest, headers: Record<string, string>): string | undefined {
+  private extractClientIp(
+    request: NextRequest,
+    headers: Record<string, string>,
+  ): string | undefined {
     // Try various headers for client IP
     const ipHeaders = [
       'x-forwarded-for',
@@ -199,7 +215,10 @@ export class RequestContextBuilder {
       }
 
       if (contentType.includes('multipart/form-data')) {
-        return { _type: 'multipart/form-data', _note: 'Body not logged for multipart data' };
+        return {
+          _type: 'multipart/form-data',
+          _note: 'Body not logged for multipart data',
+        };
       }
 
       // For other content types, just log the size
@@ -214,7 +233,11 @@ export class RequestContextBuilder {
     if (value.length <= 10) {
       return '*'.repeat(value.length);
     }
-    return value.substring(0, 4) + '*'.repeat(value.length - 8) + value.substring(value.length - 4);
+    return (
+      value.substring(0, 4) +
+      '*'.repeat(value.length - 8) +
+      value.substring(value.length - 4)
+    );
   }
 
   private sanitizeBody(body: any): any {
@@ -255,7 +278,11 @@ export class RequestContextBuilder {
     if (value.length <= 4) {
       return '*'.repeat(value.length);
     }
-    return value.substring(0, 2) + '*'.repeat(value.length - 4) + value.substring(value.length - 2);
+    return (
+      value.substring(0, 2) +
+      '*'.repeat(value.length - 4) +
+      value.substring(value.length - 2)
+    );
   }
 
   private decodeJwtPayload(token: string): any {

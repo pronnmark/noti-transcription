@@ -2,7 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '../../../../lib/database/client';
 import { audioFiles } from '../../../../lib/database/schema/audio';
 import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
-import { summarizations, summarizationPrompts } from '../../../../lib/database/schema';
+import {
+  summarizations,
+  summarizationPrompts,
+} from '../../../../lib/database/schema';
 import { eq, desc } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -16,7 +19,11 @@ export async function GET(
     const db = getDb();
 
     // Get file
-    const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
+    const file = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileIdInt))
+      .limit(1);
 
     if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
@@ -37,7 +44,10 @@ export async function GET(
         templateIsDefault: summarizationPrompts.isDefault,
       })
       .from(summarizations)
-      .leftJoin(summarizationPrompts, eq(summarizations.templateId, summarizationPrompts.id))
+      .leftJoin(
+        summarizationPrompts,
+        eq(summarizations.templateId, summarizationPrompts.id),
+      )
       .where(eq(summarizations.fileId, fileIdInt))
       .orderBy(desc(summarizations.createdAt));
 
@@ -49,12 +59,14 @@ export async function GET(
       prompt: summary.prompt,
       createdAt: summary.createdAt,
       updatedAt: summary.updatedAt,
-      template: summary.templateId ? {
-        id: summary.templateId,
-        name: summary.templateName,
-        description: summary.templateDescription,
-        isDefault: summary.templateIsDefault,
-      } : null,
+      template: summary.templateId
+        ? {
+          id: summary.templateId,
+          name: summary.templateName,
+          description: summary.templateDescription,
+          isDefault: summary.templateIsDefault,
+        }
+        : null,
     }));
 
     return NextResponse.json({
@@ -68,7 +80,10 @@ export async function GET(
     });
   } catch (error) {
     console.error('Error fetching summarization:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -84,7 +99,11 @@ export async function POST(
     const db = getDb();
 
     // Get file
-    const file = await db.select().from(audioFiles).where(eq(audioFiles.id, fileIdInt)).limit(1);
+    const file = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileIdInt))
+      .limit(1);
 
     if (!file.length) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
@@ -98,7 +117,10 @@ export async function POST(
       .limit(1);
 
     if (!transcription.length || !transcription[0].transcript) {
-      return NextResponse.json({ error: 'File not transcribed yet' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'File not transcribed yet' },
+        { status: 400 },
+      );
     }
 
     // Get template if provided
@@ -116,7 +138,10 @@ export async function POST(
     }
 
     // Use template prompt or custom prompt or default
-    const prompt = customPrompt || template?.prompt || `
+    const prompt =
+      customPrompt ||
+      template?.prompt ||
+      `
       Please provide a comprehensive summary of the following transcript:
       
       Guidelines:
@@ -140,9 +165,12 @@ export async function POST(
       }
 
       const transcriptText = Array.isArray(transcriptData)
-        ? transcriptData.map((segment: any) =>
-          `${segment.speaker || 'Speaker'}: ${segment.text}`,
-        ).join('\n')
+        ? transcriptData
+          .map(
+            (segment: any) =>
+              `${segment.speaker || 'Speaker'}: ${segment.text}`,
+          )
+          .join('\n')
         : String(transcriptData);
 
       // Try to use AI service for real summarization
@@ -160,12 +188,12 @@ export async function POST(
 
         const modelInfo = customAIService.getModelInfo();
         model = modelInfo.name || 'unknown-model';
-
       } catch (aiError) {
         console.error('AI summarization failed:', aiError);
 
         // Fallback to informative message when AI is not configured
-        summary = `Summary of ${file[0].originalFileName}:\n\n` +
+        summary =
+          `Summary of ${file[0].originalFileName}:\n\n` +
           `AI summarization is not available. Error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}\n\n` +
           `To enable AI summarization, please:\n` +
           `1. Set CUSTOM_AI_BASE_URL, CUSTOM_AI_API_KEY, and CUSTOM_AI_MODEL environment variables, OR\n` +
@@ -198,17 +226,21 @@ export async function POST(
         summary: summary,
         status: 'completed',
       });
-
     } catch (aiError) {
       console.error('Summarization error:', aiError);
-      return NextResponse.json({
-        error: 'Failed to generate summary',
-        details: String(aiError),
-      }, { status: 500 });
+      return NextResponse.json(
+        {
+          error: 'Failed to generate summary',
+          details: String(aiError),
+        },
+        { status: 500 },
+      );
     }
-
   } catch (error) {
     console.error('Error generating summarization:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

@@ -69,10 +69,12 @@ ${template.up}
 
 `;
 
-    const downSection = template.down ? `-- DOWN Migration (for rollback)
+    const downSection = template.down
+      ? `-- DOWN Migration (for rollback)
 -- ${template.down}
 
-` : `-- DOWN Migration (for rollback)
+`
+      : `-- DOWN Migration (for rollback)
 -- TODO: Add rollback statements
 
 `;
@@ -137,7 +139,10 @@ async function main() {
       case 'create':
         if (!templateName) {
           console.log('❌ Template name required');
-          console.log('Available templates:', Object.keys(MigrationGenerator.getTemplates()).join(', '));
+          console.log(
+            'Available templates:',
+            Object.keys(MigrationGenerator.getTemplates()).join(', '),
+          );
           process.exit(1);
         }
 
@@ -146,7 +151,10 @@ async function main() {
 
         if (!template) {
           console.log(`❌ Unknown template: ${templateName}`);
-          console.log('Available templates:', Object.keys(templates).join(', '));
+          console.log(
+            'Available templates:',
+            Object.keys(templates).join(', '),
+          );
           process.exit(1);
         }
 
@@ -184,9 +192,15 @@ async function main() {
 
       default:
         console.log('📖 Usage:');
-        console.log('  npm run migration create <template> [name] - Create migration from template');
-        console.log('  npm run migration custom <name>          - Create custom migration');
-        console.log('  npm run migration list                   - List available templates');
+        console.log(
+          '  npm run migration create <template> [name] - Create migration from template',
+        );
+        console.log(
+          '  npm run migration custom <name>          - Create custom migration',
+        );
+        console.log(
+          '  npm run migration list                   - List available templates',
+        );
         console.log('');
         console.log('Examples:');
         console.log('  npm run migration create add-table users');
@@ -196,7 +210,6 @@ async function main() {
     }
 
     process.exit(0);
-
   } catch (error) {
     console.error('💥 Migration generation failed:', error);
     process.exit(1);

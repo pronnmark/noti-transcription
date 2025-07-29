@@ -11,9 +11,12 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(result);
   } catch (error: any) {
     console.error('Worker error:', error);
-    return NextResponse.json({
-      error: error.message || 'Worker failed',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message || 'Worker failed',
+      },
+      { status: 500 },
+    );
   }
 }
 
@@ -28,10 +31,12 @@ export async function POST(request: NextRequest) {
 
     // Trigger processing by calling GET
     return GET(request);
-
   } catch (error: any) {
-    return NextResponse.json({
-      error: error.message || 'Failed to trigger worker',
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: error.message || 'Failed to trigger worker',
+      },
+      { status: 500 },
+    );
   }
 }

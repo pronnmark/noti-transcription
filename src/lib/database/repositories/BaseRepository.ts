@@ -80,7 +80,10 @@ implements IRepository<T, CreateT> {
   async create(data: CreateT): Promise<T> {
     try {
       const db = getDb();
-      const [result] = await getDb().insert(this.table).values(data as any).returning();
+      const [result] = await getDb()
+        .insert(this.table)
+        .values(data as any)
+        .returning();
       return result as T;
     } catch (error) {
       throw new Error(`Failed to create record: ${error}`);
@@ -145,9 +148,7 @@ implements IRepository<T, CreateT> {
   async deleteMany(where: SQL): Promise<number> {
     try {
       const db = getDb();
-      const result = await db
-        .delete(this.table)
-        .where(where);
+      const result = await db.delete(this.table).where(where);
       return result.changes;
     } catch (error) {
       throw new Error(`Failed to delete records: ${error}`);

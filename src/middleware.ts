@@ -20,13 +20,16 @@ export async function middleware(request: NextRequest) {
   }
 
   // Check for authentication token in various places
-  const sessionToken = request.cookies.get('noti-session')?.value ||
-                      request.headers.get('x-session-token') ||
-                      request.headers.get('authorization')?.replace('Bearer ', '');
+  const sessionToken =
+    request.cookies.get('noti-session')?.value ||
+    request.headers.get('x-session-token') ||
+    request.headers.get('authorization')?.replace('Bearer ', '');
 
   // Skip auth check for certain API endpoints that might be called before auth
   const publicApiEndpoints = ['/api/health', '/api/auth'];
-  const isPublicApi = publicApiEndpoints.some(endpoint => pathname.startsWith(endpoint));
+  const isPublicApi = publicApiEndpoints.some(endpoint =>
+    pathname.startsWith(endpoint),
+  );
 
   if (isPublicApi) {
     return NextResponse.next();

@@ -99,14 +99,17 @@ async function tryTranscription(
     debugLog(`  LD_LIBRARY_PATH: ${envVars.LD_LIBRARY_PATH}`);
   }
 
-  return new Promise((resolve) => {
-    const timeout = setTimeout(() => {
-      console.error(
-        `❌ ${device.toUpperCase()} transcription timed out after 10 minutes`,
-      );
-      pythonProcess.kill('SIGTERM');
-      resolve(false);
-    }, 10 * 60 * 1000); // 10 minute timeout
+  return new Promise(resolve => {
+    const timeout = setTimeout(
+      () => {
+        console.error(
+          `❌ ${device.toUpperCase()} transcription timed out after 10 minutes`,
+        );
+        pythonProcess.kill('SIGTERM');
+        resolve(false);
+      },
+      10 * 60 * 1000,
+    ); // 10 minute timeout
 
     const pythonProcess = spawn(pythonPath, args, {
       cwd: process.cwd(),
@@ -116,13 +119,13 @@ async function tryTranscription(
     let stderrOutput = '';
     let stdoutOutput = '';
 
-    pythonProcess.stdout.on('data', (data) => {
+    pythonProcess.stdout.on('data', data => {
       const output = data.toString();
       stdoutOutput += output;
       debugLog(`${device.toUpperCase()} stdout:`, output.trim());
     });
 
-    pythonProcess.stderr.on('data', (data) => {
+    pythonProcess.stderr.on('data', data => {
       const output = data.toString();
       stderrOutput += output;
       // Only log important stderr messages, not warnings
@@ -135,7 +138,7 @@ async function tryTranscription(
       }
     });
 
-    pythonProcess.on('close', (code) => {
+    pythonProcess.on('close', code => {
       clearTimeout(timeout);
 
       if (code === 0) {
@@ -158,7 +161,7 @@ async function tryTranscription(
             stderrOutput
               .split('\n')
               .filter(
-                (line) =>
+                line =>
                   line.includes('Error') ||
                   line.includes('Exception') ||
                   line.includes('Traceback'),
@@ -185,7 +188,7 @@ async function tryTranscription(
       }
     });
 
-    pythonProcess.on('error', (err) => {
+    pythonProcess.on('error', err => {
       clearTimeout(timeout);
       console.error(`${device.toUpperCase()} process error:`, err);
       resolve(false);
@@ -211,7 +214,8 @@ export async function startTranscription(
     // Note: Speaker count will be read from database job or fallback to parameter
 
     // Get the transcription job
-    const jobs = await db.select()
+    const jobs = await db
+      .select()
       .from(transcriptionJobs)
       .where(eq(transcriptionJobs.fileId, fileId))
       .orderBy(transcriptionJobs.createdAt)
@@ -226,13 +230,16 @@ export async function startTranscription(
     // Use speaker count from database (user-specified) or fallback to parameter
     const finalSpeakerCount = job.speakerCount || speakerCount;
     if (finalSpeakerCount) {
-      debugLog(`Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`);
+      debugLog(
+        `Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`,
+      );
     } else {
       debugLog('No speaker count specified - will auto-detect');
     }
 
     // Update job to processing status
-    await db.update(transcriptionJobs)
+    await db
+      .update(transcriptionJobs)
       .set({
         status: 'processing',
         startedAt: new Date(),
@@ -245,7 +252,8 @@ export async function startTranscription(
     try {
       await readFile(audioPath);
     } catch (_error) {
-      await db.update(transcriptionJobs)
+      await db
+        .update(transcriptionJobs)
         .set({
           status: 'failed',
           lastError: `Audio file not found: ${audioPath}`,
@@ -272,7 +280,8 @@ export async function startTranscription(
     }
 
     // Update progress
-    await db.update(transcriptionJobs)
+    await db
+      .update(transcriptionJobs)
       .set({ progress: 20 })
       .where(eq(transcriptionJobs.id, job.id));
 
@@ -290,7 +299,8 @@ export async function startTranscription(
     if (!success) {
       debugLog('🔄 GPU transcription failed, falling back to CPU...');
       // Update progress
-      await db.update(transcriptionJobs)
+      await db
+        .update(transcriptionJobs)
         .set({ progress: 50 })
         .where(eq(transcriptionJobs.id, job.id));
 
@@ -304,7 +314,8 @@ export async function startTranscription(
 
     if (success) {
       // Update progress
-      await db.update(transcriptionJobs)
+      await db
+        .update(transcriptionJobs)
         .set({ progress: 80 })
         .where(eq(transcriptionJobs.id, job.id));
 
@@ -322,7 +333,8 @@ export async function startTranscription(
           parseError instanceof Error ? parseError.message : 'Unknown error'
         }`;
 
-        await db.update(transcriptionJobs)
+        await db
+          .update(transcriptionJobs)
           .set({
             status: 'failed',
             lastError: errorMsg,
@@ -338,7 +350,8 @@ export async function startTranscription(
       );
 
       // Read metadata file to get diarization and format conversion status
-      let diarizationStatus: 'success' | 'no_speakers_detected' | 'failed' = 'no_speakers_detected';
+      let diarizationStatus: 'success' | 'no_speakers_detected' | 'failed' =
+        'no_speakers_detected';
       let diarizationError: string | null = null;
 
       try {
@@ -351,9 +364,13 @@ export async function startTranscription(
         // Log format conversion information
         if (metadata.format_conversion_attempted) {
           if (metadata.format_conversion_success) {
-            debugLog(`🔄 Audio format converted successfully for diarization compatibility`);
+            debugLog(
+              `🔄 Audio format converted successfully for diarization compatibility`,
+            );
           } else if (metadata.format_conversion_error) {
-            debugLog(`⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`);
+            debugLog(
+              `⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`,
+            );
             debugLog(`📝 Continuing with original file format...`);
           }
         }
@@ -361,32 +378,41 @@ export async function startTranscription(
         if (metadata.diarization_attempted) {
           if (metadata.diarization_success) {
             diarizationStatus = 'success';
-            debugLog(`✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`);
+            debugLog(
+              `✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`,
+            );
           } else if (metadata.diarization_error) {
             diarizationStatus = 'failed';
             diarizationError = metadata.diarization_error;
 
             // Enhanced error message if format conversion was attempted but failed
-            if (metadata.format_conversion_attempted && !metadata.format_conversion_success) {
+            if (
+              metadata.format_conversion_attempted &&
+              !metadata.format_conversion_success
+            ) {
               diarizationError = `Format conversion failed (${metadata.format_conversion_error}), then diarization failed: ${metadata.diarization_error}`;
-              debugLog(`⚠️ Both format conversion and diarization failed: ${diarizationError}`);
+              debugLog(
+                `⚠️ Both format conversion and diarization failed: ${diarizationError}`,
+              );
             } else {
               debugLog(`⚠️ Speaker diarization failed: ${diarizationError}`);
             }
           }
         }
       } catch (metadataError) {
-        debugLog('Could not read diarization metadata, falling back to segment analysis');
+        debugLog(
+          'Could not read diarization metadata, falling back to segment analysis',
+        );
         if (metadataError instanceof Error) {
           debugLog('Metadata error details:', metadataError.message);
         }
 
         // Fallback: Check if speaker diarization worked by analyzing segments
-        const hasSpeakers = result.segments.some((s) => s.speaker);
+        const hasSpeakers = result.segments.some(s => s.speaker);
 
         if (hasSpeakers) {
           const uniqueSpeakers = new Set(
-            result.segments.map((s) => s.speaker).filter(Boolean),
+            result.segments.map(s => s.speaker).filter(Boolean),
           );
           debugLog(
             `✅ Speaker diarization successful! Found ${uniqueSpeakers.size} speakers`,
@@ -404,20 +430,32 @@ export async function startTranscription(
       if (diarizationStatus === 'success') {
         try {
           debugLog(`🎯 Starting speaker name detection for file ${fileId}...`);
-          const speakerResult = await detectAndApplySpeakerNames(result.segments);
+          const speakerResult = await detectAndApplySpeakerNames(
+            result.segments,
+          );
 
           if (speakerResult.success && speakerResult.updatedTranscript) {
             finalSegments = speakerResult.updatedTranscript;
-            debugLog(`✅ Speaker detection completed for file ${fileId}:`, speakerResult.stats);
+            debugLog(
+              `✅ Speaker detection completed for file ${fileId}:`,
+              speakerResult.stats,
+            );
           } else {
-            debugLog(`ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`);
+            debugLog(
+              `ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`,
+            );
           }
         } catch (speakerError) {
-          console.error(`⚠️ Speaker detection failed for file ${fileId}:`, speakerError);
+          console.error(
+            `⚠️ Speaker detection failed for file ${fileId}:`,
+            speakerError,
+          );
           // Continue with original segments - don't fail transcription
         }
       } else {
-        debugLog(`ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`);
+        debugLog(
+          `ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`,
+        );
       }
 
       // Calculate duration from transcript segments
@@ -430,11 +468,14 @@ export async function startTranscription(
           return segmentEnd > latestEnd ? segment : latest;
         });
         calculatedDuration = lastSegment.end || 0;
-        debugLog(`📏 Calculated duration from transcript: ${calculatedDuration} seconds`);
+        debugLog(
+          `📏 Calculated duration from transcript: ${calculatedDuration} seconds`,
+        );
       }
 
       // Update job as completed with the transcript (potentially with updated speaker names)
-      await db.update(transcriptionJobs)
+      await db
+        .update(transcriptionJobs)
         .set({
           status: 'completed',
           progress: 100,
@@ -449,15 +490,21 @@ export async function startTranscription(
       if (calculatedDuration > 0) {
         try {
           const { audioFiles } = await import('../database/schema/audio');
-          await db.update(audioFiles)
+          await db
+            .update(audioFiles)
             .set({
               duration: calculatedDuration,
               updatedAt: new Date(),
             })
             .where(eq(audioFiles.id, fileId));
-          debugLog(`📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`);
+          debugLog(
+            `📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`,
+          );
         } catch (durationError) {
-          console.error(`⚠️ Failed to update duration for file ${fileId}:`, durationError);
+          console.error(
+            `⚠️ Failed to update duration for file ${fileId}:`,
+            durationError,
+          );
           // Don't fail the transcription for duration update issues
         }
       }
@@ -469,12 +516,14 @@ export async function startTranscription(
       debugLog(`✅ Transcription completed successfully for file ${fileId}`);
       // Note: Auto-extraction system has been removed for simplicity
     } else {
-      await db.update(transcriptionJobs)
+      await db
+        .update(transcriptionJobs)
         .set({
           status: 'failed',
           lastError: 'Transcription failed on both GPU and CPU',
           diarizationStatus: 'failed',
-          diarizationError: 'Transcription failed before diarization could be attempted',
+          diarizationError:
+            'Transcription failed before diarization could be attempted',
           completedAt: new Date(),
         })
         .where(eq(transcriptionJobs.id, job.id));
@@ -490,19 +539,22 @@ export async function startTranscription(
 
     // Update job as failed if not already updated
     try {
-      const jobs = await db.select()
+      const jobs = await db
+        .select()
         .from(transcriptionJobs)
         .where(eq(transcriptionJobs.fileId, fileId))
         .orderBy(transcriptionJobs.createdAt)
         .limit(1);
 
       if (jobs.length > 0) {
-        await db.update(transcriptionJobs)
+        await db
+          .update(transcriptionJobs)
           .set({
             status: 'failed',
             lastError: error instanceof Error ? error.message : 'Unknown error',
             diarizationStatus: 'failed',
-            diarizationError: error instanceof Error ? error.message : 'Unknown error',
+            diarizationError:
+              error instanceof Error ? error.message : 'Unknown error',
             completedAt: new Date(),
           })
           .where(eq(transcriptionJobs.id, jobs[0].id));

@@ -8,14 +8,16 @@ interface SpeakerMapping {
 /**
  * Smart sampling: Get optimal number of segments for name detection
  */
-function getSampleSegments(transcript: TranscriptSegment[]): TranscriptSegment[] {
+function getSampleSegments(
+  transcript: TranscriptSegment[],
+): TranscriptSegment[] {
   const percentage = 25; // First 25% of transcript
-  const minSegments = 5;  // Always get at least 5 segments
+  const minSegments = 5; // Always get at least 5 segments
   const maxSegments = 30; // Cap at 30 segments for efficiency
 
   const targetCount = Math.max(
     minSegments,
-    Math.min(maxSegments, Math.floor(transcript.length * percentage / 100)),
+    Math.min(maxSegments, Math.floor((transcript.length * percentage) / 100)),
   );
 
   return transcript.slice(0, targetCount);
@@ -28,7 +30,9 @@ export async function detectSpeakerNames(
   transcript: TranscriptSegment[],
 ): Promise<{ success: boolean; mappings?: SpeakerMapping; error?: string }> {
   try {
-    console.log(`🎯 Starting speaker name detection for ${transcript.length} segments...`);
+    console.log(
+      `🎯 Starting speaker name detection for ${transcript.length} segments...`,
+    );
 
     if (!transcript || transcript.length === 0) {
       return { success: false, error: 'No transcript segments provided' };
@@ -36,20 +40,26 @@ export async function detectSpeakerNames(
 
     // Get smart sample of segments
     const sampleSegments = getSampleSegments(transcript);
-    const samplePercentage = Math.round((sampleSegments.length / transcript.length) * 100);
+    const samplePercentage = Math.round(
+      (sampleSegments.length / transcript.length) * 100,
+    );
 
-    console.log(`📊 Analyzing ${sampleSegments.length} segments (${samplePercentage}%) for name detection`);
+    console.log(
+      `📊 Analyzing ${sampleSegments.length} segments (${samplePercentage}%) for name detection`,
+    );
 
     // Convert segments to text format for LLM
     const transcriptText = sampleSegments
-      .map((segment) => {
+      .map(segment => {
         const timestamp = `[${formatTime(segment.start)}]`;
         const speaker = segment.speaker || 'SPEAKER';
         return `${timestamp} ${speaker}: ${segment.text}`;
       })
       .join('\n');
 
-    console.log(`📝 Sample transcript length: ${transcriptText.length} characters`);
+    console.log(
+      `📝 Sample transcript length: ${transcriptText.length} characters`,
+    );
 
     // Prepare LLM prompt for name detection
     const prompt = `Analyze this transcript sample and identify when speakers introduce themselves with their real names.
@@ -80,16 +90,23 @@ ${transcriptText}`;
       model: 'claude-sonnet-4-20250514',
       temperature: 0.1,
       maxTokens: 500,
-      systemPrompt: 'You are an expert at identifying speaker names from transcript introductions. Return only valid JSON.',
+      systemPrompt:
+        'You are an expert at identifying speaker names from transcript introductions. Return only valid JSON.',
     });
 
-    console.log(`📥 LLM response received:`, response.substring(0, 200) + '...');
+    console.log(
+      `📥 LLM response received:`,
+      response.substring(0, 200) + '...',
+    );
 
     // Parse JSON response
     let mappings: SpeakerMapping;
     try {
       // Clean response and extract JSON
-      const cleanResponse = response.trim().replace(/```json\n?/g, '').replace(/```\n?/g, '');
+      const cleanResponse = response
+        .trim()
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '');
       const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
 
       if (!jsonMatch) {
@@ -98,7 +115,6 @@ ${transcriptText}`;
 
       mappings = JSON.parse(jsonMatch[0]);
       console.log(`✅ Parsed speaker mappings:`, mappings);
-
     } catch (parseError) {
       console.error('❌ Failed to parse LLM response:', parseError);
       return {
@@ -109,12 +125,19 @@ ${transcriptText}`;
 
     // Validate mappings format
     if (typeof mappings !== 'object' || mappings === null) {
-      return { success: false, error: 'Invalid mappings format - expected object' };
+      return {
+        success: false,
+        error: 'Invalid mappings format - expected object',
+      };
     }
 
     // Count detected names
-    const detectedNames = Object.entries(mappings).filter(([_, name]) => name !== null);
-    console.log(`🎉 Speaker detection completed: ${detectedNames.length} names detected`);
+    const detectedNames = Object.entries(mappings).filter(
+      ([_, name]) => name !== null,
+    );
+    console.log(
+      `🎉 Speaker detection completed: ${detectedNames.length} names detected`,
+    );
 
     if (detectedNames.length > 0) {
       detectedNames.forEach(([speakerId, name]) => {
@@ -125,12 +148,14 @@ ${transcriptText}`;
     }
 
     return { success: true, mappings };
-
   } catch (error) {
     console.error('❌ Speaker name detection error:', error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error during speaker detection',
+      error:
+        error instanceof Error
+          ? error.message
+          : 'Unknown error during speaker detection',
     };
   }
 }
@@ -146,7 +171,7 @@ export function applySpeakerNames(
 
   let updatedCount = 0;
 
-  const updatedTranscript = transcript.map((segment) => {
+  const updatedTranscript = transcript.map(segment => {
     const originalSpeaker = segment.speaker;
     const newName = originalSpeaker ? mappings[originalSpeaker] : null;
 
@@ -179,7 +204,12 @@ function formatTime(seconds: number): string {
  */
 export async function detectAndApplySpeakerNames(
   transcript: TranscriptSegment[],
-): Promise<{ success: boolean; updatedTranscript?: TranscriptSegment[]; error?: string; stats?: any }> {
+): Promise<{
+  success: boolean;
+  updatedTranscript?: TranscriptSegment[];
+  error?: string;
+  stats?: any;
+}> {
   try {
     // Step 1: Detect names
     const detectionResult = await detectSpeakerNames(transcript);
@@ -192,14 +222,22 @@ export async function detectAndApplySpeakerNames(
     }
 
     // Step 2: Apply names to transcript
-    const updatedTranscript = applySpeakerNames(transcript, detectionResult.mappings);
+    const updatedTranscript = applySpeakerNames(
+      transcript,
+      detectionResult.mappings,
+    );
 
     // Generate stats
-    const detectedNames = Object.entries(detectionResult.mappings).filter(([_, name]) => name !== null);
+    const detectedNames = Object.entries(detectionResult.mappings).filter(
+      ([_, name]) => name !== null,
+    );
     const stats = {
       totalSegments: transcript.length,
       detectedNames: detectedNames.length,
-      namesFound: detectedNames.map(([speakerId, name]) => ({ speakerId, name })),
+      namesFound: detectedNames.map(([speakerId, name]) => ({
+        speakerId,
+        name,
+      })),
     };
 
     return {
@@ -207,7 +245,6 @@ export async function detectAndApplySpeakerNames(
       updatedTranscript,
       stats,
     };
-
   } catch (error) {
     console.error('❌ Speaker detection pipeline error:', error);
     return {

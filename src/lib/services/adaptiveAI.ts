@@ -73,20 +73,24 @@ export class AdaptiveAIService {
       const { getDb } = await import('@/lib/database/client');
       const { summarizationPrompts } = await import('@/lib/database/schema');
       const { eq, and } = await import('drizzle-orm');
-      
+
       const result = await getDb()
         .select()
         .from(summarizationPrompts)
-        .where(and(
-          eq(summarizationPrompts.id, templateId),
-          eq(summarizationPrompts.isActive, true)
-        ))
+        .where(
+          and(
+            eq(summarizationPrompts.id, templateId),
+            eq(summarizationPrompts.isActive, true),
+          ),
+        )
         .limit(1);
-      
+
       template = result[0] || null;
 
       if (!template) {
-        console.warn(`⚠️ Invalid template ID provided: ${templateId}. Falling back to default summarization.`);
+        console.warn(
+          `⚠️ Invalid template ID provided: ${templateId}. Falling back to default summarization.`,
+        );
         validatedTemplateId = null; // Use null instead of invalid ID
       } else {
         validatedTemplateId = templateId;
@@ -97,7 +101,10 @@ export class AdaptiveAIService {
     const transcriptText = this.formatTranscriptForAI(transcript);
 
     // Use template prompt or custom prompt or default
-    const prompt = customPrompt || template?.prompt || `
+    const prompt =
+      customPrompt ||
+      template?.prompt ||
+      `
       Please provide a comprehensive summary of the following transcript:
       
       Guidelines:
@@ -119,20 +126,24 @@ export class AdaptiveAIService {
       model: options?.model,
       temperature: this.defaultTemperature,
       maxTokens: this.calculateMaxTokens(transcriptText),
-      systemPrompt: 'You are an AI assistant specialized in creating clear, structured summaries of audio transcripts. Focus on accuracy and relevance.',
+      systemPrompt:
+        'You are an AI assistant specialized in creating clear, structured summaries of audio transcripts. Focus on accuracy and relevance.',
     });
 
     // Store in database using validated template ID
     const { summarizations } = await import('@/lib/database/schema');
     const db = await import('@/lib/database/client').then(m => m.getDb());
-    
-    const [summarization] = await db.insert(summarizations).values({
-      fileId: fileId,
-      templateId: validatedTemplateId,
-      model: model,
-      prompt: finalPrompt,
-      content: summary,
-    }).returning();
+
+    const [summarization] = await db
+      .insert(summarizations)
+      .values({
+        fileId: fileId,
+        templateId: validatedTemplateId,
+        model: model,
+        prompt: finalPrompt,
+        content: summary,
+      })
+      .returning();
 
     return {
       id: summarization.id,
@@ -152,13 +163,14 @@ export class AdaptiveAIService {
     templateIds: string[],
     options: ProcessingOptions = {},
   ): Promise<ExtractionResult[]> {
-    const { model = this.defaultModel, temperature = this.defaultTemperature } = options;
+    const { model = this.defaultModel, temperature = this.defaultTemperature } =
+      options;
 
     // Get templates
     const { extractionTemplates } = await import('@/lib/database/schema');
     const { inArray } = await import('drizzle-orm');
     const db = await import('@/lib/database/client').then(m => m.getDb());
-    
+
     const templates = await db
       .select()
       .from(extractionTemplates)
@@ -177,34 +189,46 @@ export class AdaptiveAIService {
         console.log(`🔍 Processing extraction template: ${template.name}`);
 
         // Replace transcript placeholder in prompt
-        const finalPrompt = template.prompt.replace('{transcript}', transcriptText);
+        const finalPrompt = template.prompt.replace(
+          '{transcript}',
+          transcriptText,
+        );
 
         // Generate extraction using AI
-        const extractionContent = await customAIService.generateText(finalPrompt, {
-          model: options?.model,
-          temperature,
-          maxTokens: this.calculateMaxTokens(transcriptText, 0.3),
-          systemPrompt: `You are an AI assistant specialized in extracting specific information from transcripts. Follow the provided instructions exactly and return results in the requested format.`,
-        });
+        const extractionContent = await customAIService.generateText(
+          finalPrompt,
+          {
+            model: options?.model,
+            temperature,
+            maxTokens: this.calculateMaxTokens(transcriptText, 0.3),
+            systemPrompt: `You are an AI assistant specialized in extracting specific information from transcripts. Follow the provided instructions exactly and return results in the requested format.`,
+          },
+        );
 
         // Parse the extraction results
-        const parsedResults = this.parseExtractionResults(extractionContent, template);
+        const parsedResults = this.parseExtractionResults(
+          extractionContent,
+          template,
+        );
 
         // Store each extracted item in the database
         for (const item of parsedResults) {
           const { extractions } = await import('@/lib/database/schema');
-          const [extraction] = await db.insert(extractions).values({
-            fileId: fileId,
-            templateId: template.id,
-            content: item.content,
-            context: item.context || null,
-            speaker: item.speaker || null,
-            timestamp: item.timestamp || null,
-            priority: item.priority || 'medium',
-            status: 'active',
-            metadata: JSON.stringify(item.metadata || {}),
-            comments: null,
-          }).returning();
+          const [extraction] = await db
+            .insert(extractions)
+            .values({
+              fileId: fileId,
+              templateId: template.id,
+              content: item.content,
+              context: item.context || null,
+              speaker: item.speaker || null,
+              timestamp: item.timestamp || null,
+              priority: item.priority || 'medium',
+              status: 'active',
+              metadata: JSON.stringify(item.metadata || {}),
+              comments: null,
+            })
+            .returning();
 
           results.push({
             id: extraction.id,
@@ -218,7 +242,9 @@ export class AdaptiveAIService {
           });
         }
 
-        console.log(`✅ Extracted ${parsedResults.length} items using template: ${template.name}`);
+        console.log(
+          `✅ Extracted ${parsedResults.length} items using template: ${template.name}`,
+        );
       } catch (error) {
         console.error(`❌ Error processing template ${template.name}:`, error);
         if (!options.retryOnFailure) {
@@ -245,7 +271,7 @@ export class AdaptiveAIService {
     const { dataPointTemplates } = await import('@/lib/database/schema');
     const { inArray } = await import('drizzle-orm');
     const db = await import('@/lib/database/client').then(m => m.getDb());
-    
+
     const templates = await db
       .select()
       .from(dataPointTemplates)
@@ -264,27 +290,39 @@ export class AdaptiveAIService {
         console.log(`📊 Processing data point template: ${template.name}`);
 
         // Replace transcript placeholder in prompt
-        const finalPrompt = template.analysisPrompt.replace('{transcript}', transcriptText);
+        const finalPrompt = template.analysisPrompt.replace(
+          '{transcript}',
+          transcriptText,
+        );
 
         // Generate analysis using AI
-        const analysisContent = await customAIService.generateText(finalPrompt, {
-          model: options?.model,
-          temperature,
-          maxTokens: this.calculateMaxTokens(transcriptText, 0.2),
-          systemPrompt: `You are an AI assistant specialized in analyzing transcripts and generating structured data points. Follow the provided schema exactly and return valid JSON.`,
-        });
+        const analysisContent = await customAIService.generateText(
+          finalPrompt,
+          {
+            model: options?.model,
+            temperature,
+            maxTokens: this.calculateMaxTokens(transcriptText, 0.2),
+            systemPrompt: `You are an AI assistant specialized in analyzing transcripts and generating structured data points. Follow the provided schema exactly and return valid JSON.`,
+          },
+        );
 
         // Parse and validate the analysis results
-        const analysisResults = this.parseDataPointResults(analysisContent, template);
+        const analysisResults = this.parseDataPointResults(
+          analysisContent,
+          template,
+        );
 
         // Store in database
         const { dataPoints } = await import('@/lib/database/schema');
-        const [dataPoint] = await db.insert(dataPoints).values({
-          fileId: fileId,
-          templateId: template.id,
-          analysisResults: JSON.stringify(analysisResults),
-          model: model,
-        }).returning();
+        const [dataPoint] = await db
+          .insert(dataPoints)
+          .values({
+            fileId: fileId,
+            templateId: template.id,
+            analysisResults: JSON.stringify(analysisResults),
+            model: model,
+          })
+          .returning();
 
         results.push({
           id: dataPoint.id,
@@ -293,7 +331,9 @@ export class AdaptiveAIService {
           model,
         });
 
-        console.log(`✅ Generated data points using template: ${template.name}`);
+        console.log(
+          `✅ Generated data points using template: ${template.name}`,
+        );
       } catch (error) {
         console.error(`❌ Error processing template ${template.name}:`, error);
         if (!options.retryOnFailure) {
@@ -321,14 +361,14 @@ export class AdaptiveAIService {
     const { extractionTemplates } = await import('@/lib/database/schema');
     const { eq } = await import('drizzle-orm');
     const db = await import('@/lib/database/client').then(m => m.getDb());
-    
+
     const defaultExtractionTemplates = await db
       .select()
       .from(extractionTemplates)
       .where(eq(extractionTemplates.isDefault, true));
 
     const { dataPointTemplates } = await import('@/lib/database/schema');
-    
+
     const defaultDataPointTemplates = await db
       .select()
       .from(dataPointTemplates)
@@ -342,7 +382,11 @@ export class AdaptiveAIService {
     // Generate default summarization
     let summarization: SummarizationResult | undefined;
     try {
-      summarization = await this.generateSummarization(fileId, transcript, options);
+      summarization = await this.generateSummarization(
+        fileId,
+        transcript,
+        options,
+      );
     } catch (error) {
       console.error('Error generating default summarization:', error);
     }
@@ -381,22 +425,29 @@ export class AdaptiveAIService {
   /**
    * Helper: Format transcript for AI processing
    */
-  private formatTranscriptForAI(transcript: string | TranscriptSegment[]): string {
+  private formatTranscriptForAI(
+    transcript: string | TranscriptSegment[],
+  ): string {
     if (typeof transcript === 'string') {
       return transcript;
     }
 
-    return transcript.map(segment => {
-      const speaker = segment.speaker ? `${segment.speaker}: ` : '';
-      const timestamp = `[${Math.floor(segment.start / 60)}:${String(Math.floor(segment.start % 60)).padStart(2, '0')}] `;
-      return `${timestamp}${speaker}${segment.text}`;
-    }).join('\n');
+    return transcript
+      .map(segment => {
+        const speaker = segment.speaker ? `${segment.speaker}: ` : '';
+        const timestamp = `[${Math.floor(segment.start / 60)}:${String(Math.floor(segment.start % 60)).padStart(2, '0')}] `;
+        return `${timestamp}${speaker}${segment.text}`;
+      })
+      .join('\n');
   }
 
   /**
    * Helper: Calculate appropriate max tokens based on transcript length
    */
-  private calculateMaxTokens(transcript: string, outputRatio: number = 0.25): number {
+  private calculateMaxTokens(
+    transcript: string,
+    outputRatio: number = 0.25,
+  ): number {
     const transcriptTokens = Math.ceil(transcript.length / 4);
     return Math.min(
       Math.max(500, Math.ceil(transcriptTokens * outputRatio)),
@@ -437,7 +488,10 @@ export class AdaptiveAIService {
       // Try parsing the entire content as JSON
       return JSON.parse(content);
     } catch (error) {
-      console.warn(`Failed to parse data point results for template ${template.name}:`, error);
+      console.warn(
+        `Failed to parse data point results for template ${template.name}:`,
+        error,
+      );
       // Return a fallback structure
       return {
         error: 'Failed to parse analysis results',

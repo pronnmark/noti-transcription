@@ -9,8 +9,16 @@ import {
 } from './types';
 import { RequestContextBuilder } from './RequestContext';
 import { ErrorMiddleware } from './ErrorMiddleware';
-import { RequestLoggingMiddleware, ResponseLoggingMiddleware, PerformanceLoggingMiddleware } from './LoggingMiddleware';
-import { ResponseFormattingMiddleware, PaginationMiddleware, CacheControlMiddleware } from './ResponseMiddleware';
+import {
+  RequestLoggingMiddleware,
+  ResponseLoggingMiddleware,
+  PerformanceLoggingMiddleware,
+} from './LoggingMiddleware';
+import {
+  ResponseFormattingMiddleware,
+  PaginationMiddleware,
+  CacheControlMiddleware,
+} from './ResponseMiddleware';
 
 export class MiddlewareOrchestrator {
   private config: MiddlewareConfig;
@@ -27,7 +35,10 @@ export class MiddlewareOrchestrator {
 
   async execute(
     request: NextRequest,
-    handler: (request: NextRequest, context: RequestContext) => Promise<NextResponse>,
+    handler: (
+      request: NextRequest,
+      context: RequestContext
+    ) => Promise<NextResponse>,
   ): Promise<NextResponse> {
     let context: RequestContext;
 
@@ -36,16 +47,25 @@ export class MiddlewareOrchestrator {
       context = await this.contextBuilder.build(request);
 
       // Execute request middleware chain
-      const response = await this.executeRequestChain(request, context, async () => {
-        return await handler(request, context);
-      });
+      const response = await this.executeRequestChain(
+        request,
+        context,
+        async () => {
+          return await handler(request, context);
+        },
+      );
 
       // Build response context
-      const responseContext = await this.buildResponseContext(response, context);
+      const responseContext = await this.buildResponseContext(
+        response,
+        context,
+      );
 
       // Execute response middleware chain
-      return await this.executeResponseChain(response, { ...context, ...responseContext });
-
+      return await this.executeResponseChain(response, {
+        ...context,
+        ...responseContext,
+      });
     } catch (error) {
       // If context is not available, create a minimal one
       if (!context!) {
@@ -109,7 +129,10 @@ export class MiddlewareOrchestrator {
       try {
         currentResponse = await handler.execute(currentResponse, context);
       } catch (error) {
-        context.logger.warn(`Response handler '${handler.name}' failed`, error instanceof Error ? error : new Error(String(error)));
+        context.logger.warn(
+          `Response handler '${handler.name}' failed`,
+          error instanceof Error ? error : new Error(String(error)),
+        );
         // Continue with other handlers even if one fails
       }
     }
@@ -142,7 +165,9 @@ export class MiddlewareOrchestrator {
     };
   }
 
-  private async createFallbackContext(request: NextRequest): Promise<RequestContext> {
+  private async createFallbackContext(
+    request: NextRequest,
+  ): Promise<RequestContext> {
     return {
       requestId: `fallback_${Date.now()}`,
       startTime: Date.now(),
@@ -152,11 +177,16 @@ export class MiddlewareOrchestrator {
       query: {},
       headers: {},
       logger: {
-        info: (msg: string, ...args: any[]) => console.log(`[INFO] ${msg}`, ...args),
-        warn: (msg: string, ...args: any[]) => console.warn(`[WARN] ${msg}`, ...args),
-        error: (msg: string, ...args: any[]) => console.error(`[ERROR] ${msg}`, ...args),
-        debug: (msg: string, ...args: any[]) => console.debug(`[DEBUG] ${msg}`, ...args),
-        fatal: (msg: string, ...args: any[]) => console.error(`[FATAL] ${msg}`, ...args),
+        info: (msg: string, ...args: any[]) =>
+          console.log(`[INFO] ${msg}`, ...args),
+        warn: (msg: string, ...args: any[]) =>
+          console.warn(`[WARN] ${msg}`, ...args),
+        error: (msg: string, ...args: any[]) =>
+          console.error(`[ERROR] ${msg}`, ...args),
+        debug: (msg: string, ...args: any[]) =>
+          console.debug(`[DEBUG] ${msg}`, ...args),
+        fatal: (msg: string, ...args: any[]) =>
+          console.error(`[FATAL] ${msg}`, ...args),
       },
     };
   }
@@ -164,11 +194,15 @@ export class MiddlewareOrchestrator {
   private setupDefaultHandlers(): void {
     // Request handlers (executed in order)
     if (this.config.performance?.enabled !== false) {
-      this.requestHandlers.push(new PerformanceLoggingMiddleware(this.config.performance));
+      this.requestHandlers.push(
+        new PerformanceLoggingMiddleware(this.config.performance),
+      );
     }
 
     if (this.config.logging?.logRequests !== false) {
-      this.requestHandlers.push(new RequestLoggingMiddleware(this.config.logging));
+      this.requestHandlers.push(
+        new RequestLoggingMiddleware(this.config.logging),
+      );
     }
 
     // Error handlers (tried in order until one handles the error)
@@ -176,7 +210,9 @@ export class MiddlewareOrchestrator {
 
     // Response handlers (executed in order)
     if (this.config.logging?.logResponses !== false) {
-      this.responseHandlers.push(new ResponseLoggingMiddleware(this.config.logging));
+      this.responseHandlers.push(
+        new ResponseLoggingMiddleware(this.config.logging),
+      );
     }
 
     // Add response handlers based on configuration
@@ -216,7 +252,13 @@ export class MiddlewareOrchestrator {
   }
 
   // Get handler by name
-  getHandler(name: string): MiddlewareHandler | ErrorMiddlewareHandler | ResponseMiddlewareHandler | undefined {
+  getHandler(
+    name: string,
+  ):
+    | MiddlewareHandler
+    | ErrorMiddlewareHandler
+    | ResponseMiddlewareHandler
+    | undefined {
     return [
       ...this.requestHandlers,
       ...this.errorHandlers,
@@ -282,11 +324,15 @@ let defaultOrchestrator: MiddlewareOrchestrator | undefined;
 
 export function getDefaultOrchestrator(): MiddlewareOrchestrator {
   if (!defaultOrchestrator) {
-    defaultOrchestrator = new MiddlewareOrchestrator(createDefaultMiddlewareConfig());
+    defaultOrchestrator = new MiddlewareOrchestrator(
+      createDefaultMiddlewareConfig(),
+    );
   }
   return defaultOrchestrator;
 }
 
-export function setDefaultOrchestrator(orchestrator: MiddlewareOrchestrator): void {
+export function setDefaultOrchestrator(
+  orchestrator: MiddlewareOrchestrator,
+): void {
   defaultOrchestrator = orchestrator;
 }

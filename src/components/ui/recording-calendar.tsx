@@ -12,7 +12,12 @@ interface RecordingCalendarProps {
   className?: string;
 }
 
-export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect, className }: RecordingCalendarProps) {
+export function RecordingCalendar({
+  recordingDates,
+  dateFileCounts,
+  onDateSelect,
+  className,
+}: RecordingCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Get current month and year
@@ -20,7 +25,10 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
   const currentMonth = currentDate.getMonth();
 
   // Create a Set for faster lookup of recording dates
-  const recordingDateSet = useMemo(() => new Set(recordingDates), [recordingDates]);
+  const recordingDateSet = useMemo(
+    () => new Set(recordingDates),
+    [recordingDates],
+  );
 
   // Get first day of month and number of days in month
   const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
@@ -74,7 +82,9 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
   };
 
   // Get month name
-  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
+  const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
+    currentDate,
+  );
 
   // Day names
   const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
@@ -95,7 +105,7 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
   return (
     <div className={cn('standard-card overflow-hidden', className)}>
       {/* Calendar Header */}
-      <div className="px-4 py-3 border-b border-border bg-secondary">
+      <div className="border-b border-border bg-secondary px-4 py-3">
         <div className="flex items-center justify-between">
           <Button
             variant="ghost"
@@ -124,7 +134,10 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
       {/* Day Names Header */}
       <div className="grid grid-cols-7 border-b border-border">
         {dayNames.map((dayName, index) => (
-          <div key={`day-${index}`} className="p-2 text-center text-xs font-medium text-muted-foreground">
+          <div
+            key={`day-${index}`}
+            className="p-2 text-center text-xs font-medium text-muted-foreground"
+          >
             {dayName}
           </div>
         ))}
@@ -134,12 +147,19 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
       <div className="grid grid-cols-7">
         {calendarDays.map((day, index) => {
           if (day === null) {
-            return <div key={`empty-${index}`} className="h-12 border-r border-b border-border/30" />;
+            return (
+              <div
+                key={`empty-${index}`}
+                className="h-12 border-b border-r border-border/30"
+              />
+            );
           }
 
           const hasRecording = hasRecordings(currentYear, currentMonth, day);
           const fileCount = getFileCount(currentYear, currentMonth, day);
-          const isToday = new Date().toDateString() === new Date(currentYear, currentMonth, day).toDateString();
+          const isToday =
+            new Date().toDateString() ===
+            new Date(currentYear, currentMonth, day).toDateString();
           const isFuture = isFutureDate(currentYear, currentMonth, day);
 
           return (
@@ -149,63 +169,61 @@ export function RecordingCalendar({ recordingDates, dateFileCounts, onDateSelect
               disabled={isFuture}
               className={cn(
                 // Base styles - 44px+ touch target
-                'h-12 border-r border-b border-gray-300 relative flex items-center justify-center',
+                'relative flex h-12 items-center justify-center border-b border-r border-gray-300',
                 'text-sm font-medium transition-all duration-200',
                 // Square background colors
                 !isFuture && hasRecording
-                  ? 'bg-green-500 hover:bg-green-600 text-white'
+                  ? 'bg-green-500 text-white hover:bg-green-600'
                   : !isFuture
-                    ? 'bg-red-500 hover:bg-red-600 text-white'
-                    : 'bg-gray-100 text-gray-300 cursor-not-allowed',
+                    ? 'bg-red-500 text-white hover:bg-red-600'
+                    : 'cursor-not-allowed bg-gray-100 text-gray-300',
                 // Today indicator - black border
-                isToday && !isFuture && 'ring-2 ring-black ring-inset',
+                isToday && !isFuture && 'ring-2 ring-inset ring-black',
               )}
             >
               {/* Day number */}
-              <span className={cn(
-                'relative z-10 font-semibold',
-                isToday && !isFuture && 'font-bold',
-              )}>
+              <span
+                className={cn(
+                  'relative z-10 font-semibold',
+                  isToday && !isFuture && 'font-bold',
+                )}
+              >
                 {day}
               </span>
 
               {/* File count dots - only show for past/present dates with recordings */}
               {!isFuture && fileCount > 0 && (
-                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
+                <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 transform gap-0.5">
                   {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => (
-                    <div
-                      key={i}
-                      className="w-1 h-1 bg-black rounded-full"
-                    />
+                    <div key={i} className="h-1 w-1 rounded-full bg-black" />
                   ))}
                   {fileCount > 5 && (
-                    <div className="text-[8px] font-bold text-black ml-0.5">
+                    <div className="ml-0.5 text-[8px] font-bold text-black">
                       +{fileCount - 5}
                     </div>
                   )}
                 </div>
               )}
-
             </button>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-300">
+      <div className="border-t border-gray-300 bg-gray-50 px-4 py-3">
         <div className="flex items-center justify-center gap-6 text-xs">
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 bg-green-500 rounded flex items-center justify-center">
-              <div className="w-1 h-1 bg-black rounded-full"></div>
+            <div className="flex h-4 w-4 items-center justify-center rounded bg-green-500">
+              <div className="h-1 w-1 rounded-full bg-black"></div>
             </div>
             <span className="text-gray-700">Has recordings</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-4 h-4 bg-red-500 rounded"></div>
+            <div className="h-4 w-4 rounded bg-red-500"></div>
             <span className="text-gray-700">No recordings</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-1 h-1 bg-black rounded-full"></div>
+            <div className="h-1 w-1 rounded-full bg-black"></div>
             <span className="text-gray-700">= 1 file</span>
           </div>
         </div>

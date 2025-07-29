@@ -1,7 +1,22 @@
 'use client';
 
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { format } from 'date-fns';
 
 interface MoodData {
@@ -24,7 +39,6 @@ export function MoodTrendChart({
   description = 'Daily mood patterns over time',
   height = 400,
 }: MoodTrendChartProps) {
-
   // Process data for chart
   const chartData = data.map(item => ({
     date: format(new Date(item.date), 'MMM dd'),
@@ -38,7 +52,7 @@ export function MoodTrendChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
+        <div className="rounded-lg border bg-white p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           <p className="text-sm">
             <span className="text-blue-600">Mood: </span>
@@ -95,10 +109,17 @@ export function MoodTrendChart({
         </ResponsiveContainer>
 
         {/* Summary statistics */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {data.length > 0 ? (data.reduce((sum, item) => sum + (item.averageMood || 0), 0) / data.length).toFixed(1) : '0.0'}
+              {data.length > 0
+                ? (
+                  data.reduce(
+                    (sum, item) => sum + (item.averageMood || 0),
+                    0,
+                  ) / data.length
+                ).toFixed(1)
+                : '0.0'}
             </div>
             <div className="text-sm text-gray-600">Average Mood</div>
           </div>

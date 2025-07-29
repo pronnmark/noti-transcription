@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, dataPoints, dataPointTemplates, audioFiles, eq, and, inArray } from '@/lib/database';
+import {
+  db,
+  dataPoints,
+  dataPointTemplates,
+  audioFiles,
+  eq,
+  and,
+  inArray,
+} from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 import { debugLog } from '@/lib/utils';
 
@@ -25,29 +33,43 @@ export async function GET(request: NextRequest) {
     }
 
     // Get data points with template information
-    const dataPointsResult = await db.select()
+    const dataPointsResult = await db
+      .select()
       .from(dataPoints)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(dataPoints.createdAt);
 
     // Get template names for display
-    const templateIds = Array.from(new Set(dataPointsResult.map((dp: typeof dataPoints.$inferSelect) => dp.templateId))) as string[];
-    const templates = templateIds.length > 0
-      ? await db.select().from(dataPointTemplates).where(inArray(dataPointTemplates.id, templateIds))
-      : [];
+    const templateIds = Array.from(
+      new Set(
+        dataPointsResult.map(
+          (dp: typeof dataPoints.$inferSelect) => dp.templateId,
+        ),
+      ),
+    ) as string[];
+    const templates =
+      templateIds.length > 0
+        ? await db
+          .select()
+          .from(dataPointTemplates)
+          .where(inArray(dataPointTemplates.id, templateIds))
+        : [];
 
     const templateMap = Object.fromEntries(
       templates.map((t: typeof dataPointTemplates.$inferSelect) => [t.id, t]),
     );
 
     // Enrich data points with template information
-    const enrichedDataPoints = dataPointsResult.map((dataPoint: typeof dataPoints.$inferSelect) => ({
-      ...dataPoint,
-      template: templateMap[dataPoint.templateId] || null,
-      analysis_results: typeof dataPoint.analysisResults === 'string'
-        ? JSON.parse(dataPoint.analysisResults)
-        : dataPoint.analysisResults,
-    }));
+    const enrichedDataPoints = dataPointsResult.map(
+      (dataPoint: typeof dataPoints.$inferSelect) => ({
+        ...dataPoint,
+        template: templateMap[dataPoint.templateId] || null,
+        analysis_results:
+          typeof dataPoint.analysisResults === 'string'
+            ? JSON.parse(dataPoint.analysisResults)
+            : dataPoint.analysisResults,
+      }),
+    );
 
     return NextResponse.json({
       dataPoints: enrichedDataPoints,
@@ -55,7 +77,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     debugLog('api', 'Error fetching data points:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -77,13 +102,20 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!fileId || !templateId || !analysisResults) {
-      return NextResponse.json({
-        error: 'Missing required fields: fileId, templateId, analysisResults',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: fileId, templateId, analysisResults',
+        },
+        { status: 400 },
+      );
     }
 
     // Verify file exists
-    const fileResult = await db.select().from(audioFiles).where(eq(audioFiles.id, parseInt(fileId))).limit(1);
+    const fileResult = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, parseInt(fileId)))
+      .limit(1);
     const file = fileResult[0];
 
     if (!file) {
@@ -91,20 +123,30 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify template exists
-    const templateResult = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, templateId)).limit(1);
+    const templateResult = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(eq(dataPointTemplates.id, templateId))
+      .limit(1);
     const template = templateResult[0];
 
     if (!template) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 },
+      );
     }
 
     // Create data point
-    const [dataPoint] = await db.insert(dataPoints).values({
-      fileId: parseInt(fileId),
-      templateId: templateId,
-      analysisResults: JSON.stringify(analysisResults),
-      model: model,
-    }).returning();
+    const [dataPoint] = await db
+      .insert(dataPoints)
+      .values({
+        fileId: parseInt(fileId),
+        templateId: templateId,
+        analysisResults: JSON.stringify(analysisResults),
+        model: model,
+      })
+      .returning();
 
     // Data point already returned from insert, no need to fetch again
 
@@ -112,14 +154,17 @@ export async function POST(request: NextRequest) {
       success: true,
       dataPoint: {
         ...dataPoint,
-        analysis_results: typeof dataPoint?.analysisResults === 'string'
-          ? JSON.parse(dataPoint.analysisResults)
-          : dataPoint?.analysisResults,
+        analysis_results:
+          typeof dataPoint?.analysisResults === 'string'
+            ? JSON.parse(dataPoint.analysisResults)
+            : dataPoint?.analysisResults,
       },
     });
-
   } catch (error) {
     debugLog('api', 'Error creating data point:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

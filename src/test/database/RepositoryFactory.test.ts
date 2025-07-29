@@ -4,7 +4,10 @@ import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
 import { TranscriptionRepository } from '@/lib/database/repositories/TranscriptRepository';
 import { ExtractionRepository } from '@/lib/database/repositories/ExtractionRepository';
 import { SummarizationRepository } from '@/lib/database/repositories/SummarizationRepository';
-import { ExtractionTemplateRepository, SummarizationTemplateRepository } from '@/lib/database/repositories/TemplateRepository';
+import {
+  ExtractionTemplateRepository,
+  SummarizationTemplateRepository,
+} from '@/lib/database/repositories/TemplateRepository';
 
 describe('RepositoryFactory', () => {
   beforeEach(() => {
@@ -109,8 +112,10 @@ describe('RepositoryFactory', () => {
       const transcription1 = RepositoryFactory.transcriptionRepository;
       const extraction1 = RepositoryFactory.extractionRepository;
       const summarization1 = RepositoryFactory.summarizationRepository;
-      const extractionTemplate1 = RepositoryFactory.extractionTemplateRepository;
-      const summarizationTemplate1 = RepositoryFactory.summarizationTemplateRepository;
+      const extractionTemplate1 =
+        RepositoryFactory.extractionTemplateRepository;
+      const summarizationTemplate1 =
+        RepositoryFactory.summarizationTemplateRepository;
 
       // Reset factory
       RepositoryFactory.reset();
@@ -120,8 +125,10 @@ describe('RepositoryFactory', () => {
       const transcription2 = RepositoryFactory.transcriptionRepository;
       const extraction2 = RepositoryFactory.extractionRepository;
       const summarization2 = RepositoryFactory.summarizationRepository;
-      const extractionTemplate2 = RepositoryFactory.extractionTemplateRepository;
-      const summarizationTemplate2 = RepositoryFactory.summarizationTemplateRepository;
+      const extractionTemplate2 =
+        RepositoryFactory.extractionTemplateRepository;
+      const summarizationTemplate2 =
+        RepositoryFactory.summarizationTemplateRepository;
 
       // All should be different instances
       expect(audio1).not.toBe(audio2);

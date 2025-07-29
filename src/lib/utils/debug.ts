@@ -14,12 +14,18 @@ export type DebugContext = 'api' | 'worker' | 'services' | 'general';
  * @param context - The context of the debug message (api, worker, services, general)
  * @param args - Arguments to log
  */
-export function debugLog(context: DebugContext = 'general', ...args: unknown[]): void {
-  const shouldLog = 
-    context === 'api' ? DEBUG_API :
-    context === 'worker' ? DEBUG_WORKER :
-    context === 'services' ? DEBUG_SERVICES :
-    true; // general context always logs in debug mode
+export function debugLog(
+  context: DebugContext = 'general',
+  ...args: unknown[]
+): void {
+  const shouldLog =
+    context === 'api'
+      ? DEBUG_API
+      : context === 'worker'
+        ? DEBUG_WORKER
+        : context === 'services'
+          ? DEBUG_SERVICES
+          : true; // general context always logs in debug mode
 
   if (shouldLog) {
     const prefix = `[${context.toUpperCase()}]`;
@@ -48,9 +54,9 @@ export const servicesDebug = createDebugLogger('services');
  * @param context - Debug context
  */
 export function debugPerformance(
-  operation: string, 
-  startTime: number, 
-  context: DebugContext = 'general'
+  operation: string,
+  startTime: number,
+  context: DebugContext = 'general',
 ): void {
   const duration = Date.now() - startTime;
   debugLog(context, `⏱️ ${operation} completed in ${duration}ms`);
@@ -63,9 +69,9 @@ export function debugPerformance(
  * @param additionalInfo - Any additional information
  */
 export function debugError(
-  error: unknown, 
+  error: unknown,
   context: DebugContext = 'general',
-  additionalInfo?: Record<string, unknown>
+  additionalInfo?: Record<string, unknown>,
 ): void {
   if (error instanceof Error) {
     debugLog(context, '❌ Error:', error.message);
@@ -73,7 +79,7 @@ export function debugError(
   } else {
     debugLog(context, '❌ Error:', error);
   }
-  
+
   if (additionalInfo) {
     debugLog(context, 'Additional Info:', additionalInfo);
   }

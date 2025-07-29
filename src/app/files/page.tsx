@@ -24,7 +24,12 @@ interface AudioFile {
   duration?: number;
   labels?: string[];
   speakerCount?: number;
-  diarizationStatus?: 'not_attempted' | 'in_progress' | 'success' | 'failed' | 'no_speakers_detected';
+  diarizationStatus?:
+    | 'not_attempted'
+    | 'in_progress'
+    | 'success'
+    | 'failed'
+    | 'no_speakers_detected';
   hasSpeakers?: boolean;
 }
 
@@ -39,7 +44,7 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
     return (
       <div className="flex items-center gap-1">
         <div
-          className="w-2 h-2 rounded-full border border-gray-400 bg-transparent"
+          className="h-2 w-2 rounded-full border border-gray-400 bg-transparent"
           title="No summaries generated"
         />
       </div>
@@ -52,12 +57,12 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
       {Array.from({ length: Math.min(extractCount, 5) }, (_, i) => (
         <div
           key={i}
-          className="w-2 h-2 rounded-full bg-gray-800"
+          className="h-2 w-2 rounded-full bg-gray-800"
           title={`${extractCount} ${extractCount === 1 ? 'summary' : 'summaries'} generated`}
         />
       ))}
       {extractCount > 5 && (
-        <span className="text-xs text-gray-600 ml-1">+{extractCount - 5}</span>
+        <span className="ml-1 text-xs text-gray-600">+{extractCount - 5}</span>
       )}
     </div>
   );
@@ -132,7 +137,9 @@ export default function FilesPage() {
       toast.success(`${file.name} uploaded successfully`);
       await loadFiles();
     } catch (error) {
-      toast.error(`Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      toast.error(
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     } finally {
       setUploading(false);
     }
@@ -143,7 +150,9 @@ export default function FilesPage() {
 
     setDeletingId(fileId);
     try {
-      const response = await fetch(`/api/files/${fileId}`, { method: 'DELETE' });
+      const response = await fetch(`/api/files/${fileId}`, {
+        method: 'DELETE',
+      });
       if (!response.ok) throw new Error('Delete failed');
 
       toast.success('File deleted');
@@ -166,7 +175,11 @@ export default function FilesPage() {
     const date = new Date(dateString);
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const fileDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const fileDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
 
     if (fileDate.getTime() === today.getTime()) {
       return date.toLocaleTimeString('en-US', {
@@ -189,7 +202,11 @@ export default function FilesPage() {
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
-    const fileDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const fileDate = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate(),
+    );
 
     if (fileDate.getTime() === today.getTime()) {
       return 'Today';
@@ -206,14 +223,17 @@ export default function FilesPage() {
   };
 
   // Group files by date
-  const groupedFiles = files.reduce((groups: Record<string, AudioFile[]>, file) => {
-    const dateGroup = getDateGroup(file.recordedAt || file.createdAt);
-    if (!groups[dateGroup]) {
-      groups[dateGroup] = [];
-    }
-    groups[dateGroup].push(file);
-    return groups;
-  }, {});
+  const groupedFiles = files.reduce(
+    (groups: Record<string, AudioFile[]>, file) => {
+      const dateGroup = getDateGroup(file.recordedAt || file.createdAt);
+      if (!groups[dateGroup]) {
+        groups[dateGroup] = [];
+      }
+      groups[dateGroup].push(file);
+      return groups;
+    },
+    {},
+  );
 
   // Sort date groups (Today first, then Yesterday, then chronological)
   const sortedDateGroups = Object.keys(groupedFiles).sort((a, b) => {
@@ -237,7 +257,7 @@ export default function FilesPage() {
       <div className="safe-area-inset">
         {/* Header */}
         <div className="standard-section-bg">
-          <div className="px-4 pt-6 pb-4">
+          <div className="px-4 pb-4 pt-6">
             <h1 className="text-2xl font-semibold text-gray-900">Files</h1>
           </div>
         </div>
@@ -247,7 +267,7 @@ export default function FilesPage() {
           {/* Multi-file Upload Component */}
           <div className="mb-6">
             <MultiFileUpload
-              onUploadComplete={(results) => {
+              onUploadComplete={results => {
                 // Reload files after successful uploads
                 const successCount = results.filter(r => r.success).length;
                 if (successCount > 0) {
@@ -259,29 +279,39 @@ export default function FilesPage() {
 
           {files.length === 0 ? (
             /* Empty State */
-            <div className="text-center py-20">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="py-20 text-center">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                 <FileAudio className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No files yet</h3>
-              <p className="text-gray-500 mb-6">Upload your first audio file to get started</p>
+              <h3 className="mb-2 text-lg font-medium text-gray-900">
+                No files yet
+              </h3>
+              <p className="mb-6 text-gray-500">
+                Upload your first audio file to get started
+              </p>
             </div>
           ) : (
             /* Files List - Grouped by Date */
             <div className="space-y-6">
-              {sortedDateGroups.map((dateGroup) => (
+              {sortedDateGroups.map(dateGroup => (
                 <div key={dateGroup}>
                   {/* Date Header */}
-                  <div className="flex items-center mb-3">
-                    <h2 className="text-sm font-medium text-gray-600">{dateGroup}</h2>
-                    <div className="flex-1 ml-3 border-t border-gray-200" />
+                  <div className="mb-3 flex items-center">
+                    <h2 className="text-sm font-medium text-gray-600">
+                      {dateGroup}
+                    </h2>
+                    <div className="ml-3 flex-1 border-t border-gray-200" />
                   </div>
 
                   {/* Files for this date */}
                   <div className="space-y-2">
                     {groupedFiles[dateGroup]
-                      .sort((a, b) => new Date(b.recordedAt || b.createdAt).getTime() - new Date(a.recordedAt || a.createdAt).getTime())
-                      .map((file) => (
+                      .sort(
+                        (a, b) =>
+                          new Date(b.recordedAt || b.createdAt).getTime() -
+                          new Date(a.recordedAt || a.createdAt).getTime(),
+                      )
+                      .map(file => (
                         <div
                           key={file.id}
                           className={cn(
@@ -297,9 +327,9 @@ export default function FilesPage() {
                           }}
                         >
                           <div className="flex items-center justify-between">
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-2">
-                                <p className="text-sm font-medium text-gray-900 truncate">
+                                <p className="truncate text-sm font-medium text-gray-900">
                                   {file.originalName}
                                 </p>
                                 <SummaryStatus
@@ -307,9 +337,11 @@ export default function FilesPage() {
                                   extractCount={file.extractCount || 0}
                                 />
                               </div>
-                              <div className="flex items-center gap-3 mt-1">
+                              <div className="mt-1 flex items-center gap-3">
                                 <span className="text-xs text-gray-500">
-                                  {formatDate(file.recordedAt || file.createdAt)}
+                                  {formatDate(
+                                    file.recordedAt || file.createdAt,
+                                  )}
                                 </span>
                                 {file.duration && (
                                   <span className="text-xs text-gray-500">
@@ -317,15 +349,17 @@ export default function FilesPage() {
                                   </span>
                                 )}
                                 {file.transcriptionStatus === 'processing' && (
-                                  <span className="text-xs text-blue-600">Processing...</span>
+                                  <span className="text-xs text-blue-600">
+                                    Processing...
+                                  </span>
                                 )}
                               </div>
                             </div>
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="w-8 h-8 p-0 text-gray-400 hover:text-red-600"
-                              onClick={(e) => {
+                              className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+                              onClick={e => {
                                 e.stopPropagation();
                                 handleDeleteFile(file.id, file.originalName);
                               }}
@@ -352,13 +386,13 @@ export default function FilesPage() {
       </div>
 
       {/* Floating Upload Button */}
-      <div className="fixed bottom-20 md:bottom-6 right-4 z-50">
+      <div className="fixed bottom-20 right-4 z-50 md:bottom-6">
         <label className="relative block">
           <Button
             size="icon"
             className={cn(
-              'w-14 h-14 rounded-full shadow-lg hover:shadow-xl',
-              'bg-blue-600 hover:bg-blue-700 text-white',
+              'h-14 w-14 rounded-full shadow-lg hover:shadow-xl',
+              'bg-blue-600 text-white hover:bg-blue-700',
               'transition-all duration-200 active:scale-95',
               'flex items-center justify-center',
               uploading && 'pointer-events-none opacity-75',
@@ -377,14 +411,14 @@ export default function FilesPage() {
           <input
             type="file"
             accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac"
-            onChange={(e) => {
+            onChange={e => {
               const file = e.target.files?.[0];
               if (file) {
                 handleFileUpload(file);
                 e.target.value = '';
               }
             }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
             disabled={uploading}
           />
         </label>

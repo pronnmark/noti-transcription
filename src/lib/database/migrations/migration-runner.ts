@@ -23,7 +23,9 @@ export class MigrationRunner {
     try {
       // Check if migrations folder exists
       if (!existsSync(this.migrationsFolder)) {
-        throw new Error(`Migrations folder not found: ${this.migrationsFolder}`);
+        throw new Error(
+          `Migrations folder not found: ${this.migrationsFolder}`,
+        );
       }
 
       // Get migration info before running
@@ -40,8 +42,9 @@ export class MigrationRunner {
       const appliedCount = migrationsAfter.filter(m => m.applied).length;
 
       console.log(`✅ Migrations completed successfully in ${duration}ms`);
-      console.log(`📈 Applied migrations: ${appliedCount}/${migrationsAfter.length}`);
-
+      console.log(
+        `📈 Applied migrations: ${appliedCount}/${migrationsAfter.length}`,
+      );
     } catch (error) {
       console.error('❌ Error running migrations:', error);
       throw error;
@@ -53,20 +56,23 @@ export class MigrationRunner {
       const journalPath = join(this.migrationsFolder, 'meta', '_journal.json');
 
       if (!existsSync(journalPath)) {
-        console.log('📝 No migration journal found, this appears to be a fresh database');
+        console.log(
+          '📝 No migration journal found, this appears to be a fresh database',
+        );
         return [];
       }
 
       const journalContent = readFileSync(journalPath, 'utf-8');
       const journal = JSON.parse(journalContent);
 
-      return journal.entries?.map((entry: any) => ({
-        version: entry.tag,
-        name: entry.tag,
-        timestamp: entry.when,
-        applied: true, // If it's in the journal, it's been applied
-      })) || [];
-
+      return (
+        journal.entries?.map((entry: any) => ({
+          version: entry.tag,
+          name: entry.tag,
+          timestamp: entry.when,
+          applied: true, // If it's in the journal, it's been applied
+        })) || []
+      );
     } catch (error) {
       console.warn('⚠️ Could not read migration journal:', error);
       return [];
@@ -94,7 +100,6 @@ export class MigrationRunner {
       });
 
       console.log('─'.repeat(60));
-
     } catch (error) {
       console.error('❌ Error checking migration status:', error);
       throw error;
@@ -106,12 +111,20 @@ export class MigrationRunner {
 
     try {
       // Basic validation - check if we can query the database using SQLite system tables
-      const result = getSqlite().prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+      const result = getSqlite()
+        .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+        .all();
 
       // Check if core tables exist
       const tableNames = result.map((row: any) => row.name);
-      const requiredTables = ['audio_files', 'transcription_jobs', 'extractions'];
-      const missingTables = requiredTables.filter(table => !tableNames.includes(table));
+      const requiredTables = [
+        'audio_files',
+        'transcription_jobs',
+        'extractions',
+      ];
+      const missingTables = requiredTables.filter(
+        table => !tableNames.includes(table),
+      );
 
       if (missingTables.length > 0) {
         console.warn(`⚠️ Missing tables: ${missingTables.join(', ')}`);
@@ -119,7 +132,6 @@ export class MigrationRunner {
 
       console.log('✅ Database schema validation passed');
       return true;
-
     } catch (error) {
       console.error('❌ Database schema validation failed:', error);
       return false;
@@ -154,7 +166,6 @@ async function main() {
     }
 
     process.exit(0);
-
   } catch (error) {
     console.error('💥 Migration failed:', error);
     process.exit(1);

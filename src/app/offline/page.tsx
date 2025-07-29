@@ -34,26 +34,27 @@ export default function OfflinePage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="max-w-md w-full space-y-6">
-        <UnibodyCard className="text-center py-8">
-          <div className="flex justify-center mb-6">
-            <div className="p-4 bg-muted rounded-full">
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md space-y-6">
+        <UnibodyCard className="py-8 text-center">
+          <div className="mb-6 flex justify-center">
+            <div className="rounded-full bg-muted p-4">
               <WifiOff className="h-12 w-12 text-muted-foreground" />
             </div>
           </div>
 
-          <h1 className="text-2xl font-semibold text-foreground mb-3">
+          <h1 className="mb-3 text-2xl font-semibold text-foreground">
             You're Offline
           </h1>
 
-          <p className="text-muted-foreground mb-8 leading-relaxed">
-            It looks like you've lost your internet connection. Some features may not be available while offline.
+          <p className="mb-8 leading-relaxed text-muted-foreground">
+            It looks like you've lost your internet connection. Some features
+            may not be available while offline.
           </p>
 
           {isOnline && (
-            <div className="mb-6 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800 text-sm font-medium">
+            <div className="mb-6 rounded-lg border border-green-200 bg-green-50 p-3">
+              <p className="text-sm font-medium text-green-800">
                 ✅ Connection restored! You can now continue using Noti.
               </p>
             </div>
@@ -62,7 +63,7 @@ export default function OfflinePage() {
           <div className="space-y-3">
             <Button
               onClick={handleRetry}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
+              className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
               size="lg"
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -83,25 +84,25 @@ export default function OfflinePage() {
 
         <UnibodyCard className="py-4">
           <div className="space-y-3">
-            <h2 className="font-medium text-foreground flex items-center gap-2">
+            <h2 className="flex items-center gap-2 font-medium text-foreground">
               <FileAudio className="h-4 w-4" />
               While Offline
             </h2>
-            <ul className="text-sm text-muted-foreground space-y-2">
+            <ul className="space-y-2 text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold">✓</span>
+                <span className="font-bold text-green-600">✓</span>
                 View previously loaded transcripts
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-green-600 font-bold">✓</span>
+                <span className="font-bold text-green-600">✓</span>
                 Access cached files and recordings
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-amber-600 font-bold">⚠</span>
+                <span className="font-bold text-amber-600">⚠</span>
                 File uploads will resume when back online
               </li>
               <li className="flex items-start gap-2">
-                <span className="text-red-600 font-bold">✗</span>
+                <span className="font-bold text-red-600">✗</span>
                 AI processing requires internet connection
               </li>
             </ul>

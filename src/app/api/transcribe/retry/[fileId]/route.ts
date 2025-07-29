@@ -65,13 +65,19 @@ export async function POST(
         })
         .where(eq(transcriptionJobs.id, existingJob[0].id));
 
-      debugLog('api', `Reset transcription job ${existingJob[0].id} for file ${fileIdInt}`);
+      debugLog(
+        'api',
+        `Reset transcription job ${existingJob[0].id} for file ${fileIdInt}`,
+      );
     }
 
     // Trigger transcription worker asynchronously
     setImmediate(async () => {
       try {
-        debugLog('api', `Starting transcription retry for file ${fileIdInt}...`);
+        debugLog(
+          'api',
+          `Starting transcription retry for file ${fileIdInt}...`,
+        );
         const result = await processTranscriptionJobs();
         debugLog('api', 'Transcription worker completed:', result);
       } catch (error) {
@@ -104,7 +110,6 @@ export async function POST(
         originalFileName: file[0].originalFileName,
       },
     });
-
   } catch (error) {
     console.error('Retry transcription error:', error);
     return NextResponse.json(

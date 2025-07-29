@@ -27,7 +27,12 @@ interface AudioFile {
   notesStatus?: 'pending' | 'processing' | 'completed' | 'failed';
   notesCount?: any;
   speakerCount?: number;
-  diarizationStatus?: 'not_attempted' | 'in_progress' | 'success' | 'failed' | 'no_speakers_detected';
+  diarizationStatus?:
+    | 'not_attempted'
+    | 'in_progress'
+    | 'success'
+    | 'failed'
+    | 'no_speakers_detected';
   hasSpeakers?: boolean;
   diarizationError?: string;
 }
@@ -42,7 +47,9 @@ interface DashboardStats {
 
 export default function DashboardPage() {
   const [recordingDates, setRecordingDates] = useState<string[]>([]);
-  const [dateFileCounts, setDateFileCounts] = useState<Record<string, number>>({});
+  const [dateFileCounts, setDateFileCounts] = useState<Record<string, number>>(
+    {},
+  );
   const [selectedDateFiles, setSelectedDateFiles] = useState<AudioFile[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -65,15 +72,23 @@ export default function DashboardPage() {
 
         // Calculate stats (currently unused but available for future dashboard widgets)
         const _totalFiles = files.length;
-        const _totalDuration = files.reduce((sum, file) => sum + (file.duration || 0), 0);
-        const _completedTranscriptions = files.filter(file => file.transcriptionStatus === 'completed').length;
+        const _totalDuration = files.reduce(
+          (sum, file) => sum + (file.duration || 0),
+          0,
+        );
+        const _completedTranscriptions = files.filter(
+          file => file.transcriptionStatus === 'completed',
+        ).length;
 
         // Files from this month
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         const _thisMonthFiles = files.filter(file => {
           const fileDate = new Date(file.recordedAt || file.createdAt);
-          return fileDate.getMonth() === currentMonth && fileDate.getFullYear() === currentYear;
+          return (
+            fileDate.getMonth() === currentMonth &&
+            fileDate.getFullYear() === currentYear
+          );
         }).length;
 
         // Dashboard stats calculated (reserved for future dashboard widgets)
@@ -95,7 +110,6 @@ export default function DashboardPage() {
 
         setRecordingDates(Array.from(dateSet));
         setDateFileCounts(fileCounts);
-
       } else {
         toast.error('Failed to load dashboard data');
       }
@@ -158,24 +172,31 @@ export default function DashboardPage() {
   return (
     <>
       <div className="min-h-full">
-        <div className={cn(
-          'overflow-y-auto min-h-screen',
-          isMobile ? 'px-4 py-6 space-y-6' : 'p-6 space-y-6',
-        )}>
+        <div
+          className={cn(
+            'min-h-screen overflow-y-auto',
+            isMobile ? 'space-y-6 px-4 py-6' : 'space-y-6 p-6',
+          )}
+        >
           {/* Header - Now part of scrollable content */}
-          <div className={cn(
-            'space-y-2 mb-8',
-            !isMobile && 'buzz-header-desktop',
-          )}>
-            <h1 className="text-3xl font-semibold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground text-base">Recording calendar</p>
+          <div
+            className={cn('mb-8 space-y-2', !isMobile && 'buzz-header-desktop')}
+          >
+            <h1 className="text-3xl font-semibold text-foreground">
+              Dashboard
+            </h1>
+            <p className="text-base text-muted-foreground">
+              Recording calendar
+            </p>
           </div>
 
           {/* Calendar Section */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
               <Calendar className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">Recording Calendar</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                Recording Calendar
+              </h3>
             </div>
 
             <RecordingCalendar
@@ -184,27 +205,27 @@ export default function DashboardPage() {
               onDateSelect={handleDateSelect}
             />
           </div>
-
         </div>
       </div>
 
       {/* Date Files Modal */}
       {showDateModal && selectedDate && (
-        <div className="fixed inset-0 bg-black/50 flex items-end justify-center p-0 z-50 sm:items-center sm:p-4">
-          <div className={cn(
-            'bg-white w-full max-h-[80vh] overflow-hidden flex flex-col',
-            isMobile
-              ? 'rounded-t-2xl'
-              : 'standard-modal max-w-2xl',
-          )}>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+          <div
+            className={cn(
+              'flex max-h-[80vh] w-full flex-col overflow-hidden bg-white',
+              isMobile ? 'rounded-t-2xl' : 'standard-modal max-w-2xl',
+            )}
+          >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex items-center justify-between border-b border-gray-200 p-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">
                   {formatDate(selectedDate)}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {selectedDateFiles.length} recording{selectedDateFiles.length !== 1 ? 's' : ''}
+                  {selectedDateFiles.length} recording
+                  {selectedDateFiles.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <Button
@@ -220,13 +241,15 @@ export default function DashboardPage() {
             {/* Files List */}
             <div className="flex-1 overflow-y-auto p-4">
               {selectedDateFiles.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileAudio className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-                  <p className="text-gray-500">No recordings found for this date</p>
+                <div className="py-8 text-center">
+                  <FileAudio className="mx-auto mb-4 h-12 w-12 text-gray-300" />
+                  <p className="text-gray-500">
+                    No recordings found for this date
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  {selectedDateFiles.map((file) => (
+                  {selectedDateFiles.map(file => (
                     <MobileFileCard
                       key={file.id}
                       file={file}

@@ -1,8 +1,7 @@
 // File Upload Service - Single Responsibility Principle
 // Handles all file upload logic in one place (DRY principle)
 
-import { BaseService, ValidationRules } from './BaseService';
-import { createError, ValidationError } from '../../errors';
+import { ValidationError } from '../../errors';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
@@ -10,6 +9,7 @@ import { promises as fs } from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 import { servicesDebug, debugPerformance, debugError } from '../../utils';
+import { RepositoryFactory } from '../../database/repositories';
 
 const execAsync = promisify(exec);
 
@@ -34,37 +34,47 @@ export interface UploadResult {
   transcriptionStarted: boolean;
 }
 
-export class FileUploadService extends BaseService {
+export class FileUploadService {
   private readonly VALID_MIME_TYPES = [
-    'audio/mpeg', 'audio/wav', 'audio/mp3', 'audio/mp4',
-    'audio/webm', 'audio/ogg', 'audio/m4a', 'audio/x-m4a',
-    'audio/flac', 'audio/x-flac', 'audio/aac', 'audio/x-aac',
+    'audio/mpeg',
+    'audio/wav',
+    'audio/mp3',
+    'audio/mp4',
+    'audio/webm',
+    'audio/ogg',
+    'audio/m4a',
+    'audio/x-m4a',
+    'audio/flac',
+    'audio/x-flac',
+    'audio/aac',
+    'audio/x-aac',
   ];
 
   private readonly VALID_EXTENSIONS = [
-    'mp3', 'wav', 'm4a', 'mp4', 'webm', 'ogg', 'flac', 'aac',
+    'mp3',
+    'wav',
+    'm4a',
+    'mp4',
+    'webm',
+    'ogg',
+    'flac',
+    'aac',
   ];
 
   private readonly MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
   private readonly SUPABASE_BUCKET = 'audio-files';
 
   constructor() {
-    super('FileUploadService');
+    console.log('[FileUploadService] Initialized with Supabase Storage');
   }
 
-  protected async onInitialize(): Promise<void> {
-    // Supabase Storage service will handle bucket creation
-    this._logger.info('File upload service initialized with Supabase Storage');
-  }
-
-  protected async onDestroy(): Promise<void> {
-    this._logger.info('File upload service destroyed');
-  }
-
-  async uploadFile(file: File, options: UploadOptions = {}): Promise<UploadResult> {
-    return this.executeWithErrorHandling('uploadFile', async () => {
+  async uploadFile(
+    file: File,
+    options: UploadOptions = {},
+  ): Promise<UploadResult> {
+    try {
       const startTime = Date.now();
-      
+
       // Log file details for debugging
       servicesDebug('Upload file called with:', {
         hasFile: !!file,
@@ -96,11 +106,16 @@ export class FileUploadService extends BaseService {
           }
           buffer = Buffer.concat(chunks.map(chunk => Buffer.from(chunk)));
         } else {
-          throw new Error('Unable to read file data - no arrayBuffer or stream method available');
+          throw new Error(
+            'Unable to read file data - no arrayBuffer or stream method available',
+          );
         }
       } catch (error) {
-        debugError(error, 'services', { operation: 'readFileBuffer', fileName: file.name });
-        throw createError.internal('Failed to read file data');
+        debugError(error, 'services', {
+          operation: 'readFileBuffer',
+          fileName: file.name,
+        });
+        throw new Error('Failed to read file data');
       }
 
       // Generate file hash for duplicate detection
@@ -112,18 +127,35 @@ export class FileUploadService extends BaseService {
       }
 
       // Save file to Supabase Storage
-      const { fileName, storagePath } = await this.saveFileToSupabase(file, buffer);
+      const { fileName, storagePath } = await this.saveFileToSupabase(
+        file,
+        buffer,
+      );
 
       // Extract audio metadata (download temporarily for ffprobe)
-      const duration = await this.extractDurationFromSupabase(storagePath, fileName);
+      const duration = await this.extractDurationFromSupabase(
+        storagePath,
+        fileName,
+      );
 
       // Create database record with Supabase path
-      const audioFile = await this.createDatabaseRecord(file, fileName, storagePath, fileHash, duration, options.location);
+      const audioFile = await this.createDatabaseRecord(
+        file,
+        fileName,
+        storagePath,
+        fileHash,
+        duration,
+        options.location,
+      );
 
       // Start transcription if not a draft
       let transcriptionStarted = false;
       if (!options.isDraft) {
-        transcriptionStarted = await this.startTranscription(audioFile.id, storagePath, options.speakerCount);
+        transcriptionStarted = await this.startTranscription(
+          audioFile.id,
+          storagePath,
+          options.speakerCount,
+        );
       }
 
       debugPerformance('File upload completed', startTime, 'services');
@@ -137,41 +169,49 @@ export class FileUploadService extends BaseService {
         duration,
         transcriptionStarted,
       };
-    });
+    } catch (error) {
+      console.error('[FileUploadService] Upload failed:', error);
+      throw error;
+    }
   }
 
   private validateFile(file: File): void {
     // Check if file is a valid File object
     // In Next.js, the File might be a special object, so check for essential properties
     if (!file) {
-      throw createError.validation('No file provided');
+      throw new ValidationError('No file provided');
     }
 
     // Check if it has the essential File properties
     if (typeof file.size !== 'number' || typeof file.name !== 'string') {
-      throw createError.validation('Invalid file object - missing required properties');
+      throw new ValidationError(
+        'Invalid file object - missing required properties',
+      );
     }
 
     // Check file size
     if (file.size === 0) {
-      throw createError.validation('File is empty');
+      throw new ValidationError('File is empty');
     }
 
     if (file.size > this.MAX_FILE_SIZE) {
-      throw createError.validation(`File size exceeds maximum limit of ${this.MAX_FILE_SIZE / 1024 / 1024}MB`);
+      throw new ValidationError(
+        `File size exceeds maximum limit of ${this.MAX_FILE_SIZE / 1024 / 1024}MB`,
+      );
     }
 
     // Validate file type
     const fileExtension = file.name.split('.').pop()?.toLowerCase();
     const baseMimeType = file.type.split(';')[0].trim();
 
-    const isValidType = this.VALID_MIME_TYPES.includes(baseMimeType) ||
-                       this.VALID_MIME_TYPES.includes(file.type) ||
-                       (file.type === 'application/octet-stream' &&
-                        this.VALID_EXTENSIONS.includes(fileExtension || ''));
+    const isValidType =
+      this.VALID_MIME_TYPES.includes(baseMimeType) ||
+      this.VALID_MIME_TYPES.includes(file.type) ||
+      (file.type === 'application/octet-stream' &&
+        this.VALID_EXTENSIONS.includes(fileExtension || ''));
 
     if (!isValidType) {
-      throw createError.validation(
+      throw new ValidationError(
         `Invalid file type: ${file.type}. Supported formats: ${this.VALID_EXTENSIONS.join(', ')}`,
       );
     }
@@ -179,31 +219,40 @@ export class FileUploadService extends BaseService {
 
   private validateOptions(options: UploadOptions): void {
     if (options.speakerCount !== undefined) {
-      this.validateInput(options.speakerCount, [
-        ValidationRules.isNumber('speakerCount'),
-        ValidationRules.custom('speakerCount', (val) => val >= 1 && val <= 10, 'must be between 1 and 10'),
-      ]);
+      if (
+        typeof options.speakerCount !== 'number' ||
+        options.speakerCount < 1 ||
+        options.speakerCount > 10
+      ) {
+        throw new ValidationError(
+          'Speaker count must be a number between 1 and 10',
+        );
+      }
     }
 
     if (options.location) {
       const { latitude, longitude, accuracy, provider } = options.location;
-      
+
       if (latitude < -90 || latitude > 90) {
-        throw createError.validation('Invalid latitude: must be between -90 and 90');
+        throw new ValidationError(
+          'Invalid latitude: must be between -90 and 90',
+        );
       }
-      
+
       if (longitude < -180 || longitude > 180) {
-        throw createError.validation('Invalid longitude: must be between -180 and 180');
+        throw new ValidationError(
+          'Invalid longitude: must be between -180 and 180',
+        );
       }
-      
+
       if (accuracy !== undefined && accuracy < 0) {
-        throw createError.validation('Invalid accuracy: must be positive');
+        throw new ValidationError('Invalid accuracy: must be positive');
       }
-      
+
       if (provider && !['gps', 'network', 'passive'].includes(provider)) {
-        throw createError.validation('Invalid location provider');
+        throw new ValidationError('Invalid location provider');
       }
-      
+
       servicesDebug('📍 Location data validated:', options.location);
     }
   }
@@ -212,9 +261,11 @@ export class FileUploadService extends BaseService {
     return crypto.createHash('sha256').update(buffer).digest('hex');
   }
 
-  private async checkForDuplicates(file: File, fileHash: string): Promise<void> {
-    const { getServiceLocator } = await import('../ServiceLocator');
-    const { audioService } = getServiceLocator();
+  private async checkForDuplicates(
+    file: File,
+    fileHash: string,
+  ): Promise<void> {
+    const audioService = new (await import('./AudioService')).AudioService();
 
     const duplicateCheck = await audioService.checkForDuplicates({
       fileHash,
@@ -226,37 +277,44 @@ export class FileUploadService extends BaseService {
       const metadata = {
         duplicateType: duplicateCheck.duplicateType,
         message: duplicateCheck.message,
-        existingFile: duplicateCheck.existingFile ? {
-          id: duplicateCheck.existingFile.id,
-          originalFileName: duplicateCheck.existingFile.originalFileName,
-          uploadedAt: duplicateCheck.existingFile.uploadedAt,
-          duration: duplicateCheck.existingFile.duration,
-        } : null,
+        existingFile: duplicateCheck.existingFile
+          ? {
+            id: duplicateCheck.existingFile.id,
+            originalFileName: duplicateCheck.existingFile.originalFileName,
+            uploadedAt: duplicateCheck.existingFile.uploadedAt,
+            duration: duplicateCheck.existingFile.duration,
+          }
+          : null,
       };
-      
+
       const error = new ValidationError(
         'Duplicate file detected',
         'file',
         undefined,
         [],
-        metadata
+        metadata,
       );
       throw error;
     }
   }
 
-  private async saveFileToSupabase(file: File, buffer: Buffer): Promise<{ fileName: string; storagePath: string }> {
+  private async saveFileToSupabase(
+    file: File,
+    buffer: Buffer,
+  ): Promise<{ fileName: string; storagePath: string }> {
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'mp3';
     const fileName = `${uuidv4()}.${fileExtension}`;
-    
+
     // Generate unique storage path: uploads/{timestamp}/{fileName}
     const timestamp = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const storagePath = `uploads/${timestamp}/${fileName}`;
 
     try {
       // Get Supabase Storage service
-      const { getServiceLocator } = await import('../ServiceLocator');
-      const { supabaseStorageService } = getServiceLocator();
+      const { SupabaseStorageService } = await import(
+        './SupabaseStorageService'
+      );
+      const supabaseStorageService = new SupabaseStorageService();
 
       // Upload to Supabase Storage
       const uploadResult = await supabaseStorageService.uploadFile({
@@ -276,63 +334,75 @@ export class FileUploadService extends BaseService {
       });
 
       return { fileName, storagePath: uploadResult.path };
-
     } catch (error) {
-      debugError(error, 'services', { operation: 'saveFileToSupabase', fileName });
-      throw createError.internal('Failed to save file to storage');
+      debugError(error, 'services', {
+        operation: 'saveFileToSupabase',
+        fileName,
+      });
+      throw new Error('Failed to save file to storage');
     }
   }
 
-  private async extractDurationFromSupabase(storagePath: string, fileName: string): Promise<number> {
+  private async extractDurationFromSupabase(
+    storagePath: string,
+    fileName: string,
+  ): Promise<number> {
     try {
       // Download file temporarily for ffprobe analysis
-      const { getServiceLocator } = await import('../ServiceLocator');
-      const { supabaseStorageService } = getServiceLocator();
-      
-      const fileBuffer = await supabaseStorageService.downloadFile(this.SUPABASE_BUCKET, storagePath);
-      
+      const { SupabaseStorageService } = await import(
+        './SupabaseStorageService'
+      );
+      const supabaseStorageService = new SupabaseStorageService();
+
+      const fileBuffer = await supabaseStorageService.downloadFile(
+        this.SUPABASE_BUCKET,
+        storagePath,
+      );
+
       // Create temporary file for ffprobe
       const tempDir = '/tmp';
       const tempPath = join(tempDir, `temp_${fileName}`);
-      
+
       try {
         await fs.writeFile(tempPath, fileBuffer);
-        
+
         const { stdout } = await execAsync(
           `ffprobe -v quiet -show_entries format=duration -of csv=p=0 "${tempPath}"`,
         );
         const duration = Math.round(parseFloat(stdout.trim()) || 0);
-        
+
         // Clean up temp file
         await fs.unlink(tempPath).catch(() => {});
-        
-        this._logger.debug('Extracted audio duration from Supabase file', { storagePath, duration });
+
+        console.log(
+          `[FileUploadService] Extracted audio duration from Supabase file: ${duration}s`,
+        );
         return duration;
-        
       } catch (ffprobeError) {
         // Clean up temp file on error
         await fs.unlink(tempPath).catch(() => {});
         throw ffprobeError;
       }
-      
     } catch (error) {
-      this._logger.warn('Failed to extract duration from Supabase file', error instanceof Error ? error : new Error(String(error)));
+      console.warn(
+        '[FileUploadService] Failed to extract duration from Supabase file:',
+        error,
+      );
       return 0;
     }
   }
 
   private async createDatabaseRecord(
-    file: File, 
-    fileName: string, 
+    file: File,
+    fileName: string,
     storagePath: string,
-    fileHash: string, 
+    fileHash: string,
     duration: number,
-    location?: UploadOptions['location']
+    location?: UploadOptions['location'],
   ) {
-    const { getServiceLocator } = await import('../ServiceLocator');
-    const { audioService } = getServiceLocator();
+    const audioRepository = RepositoryFactory.audioRepository;
 
-    return await audioService.createFile({
+    return await audioRepository.create({
       fileName: storagePath, // Store the Supabase storage path as fileName
       originalFileName: file.name,
       originalFileType: file.type || 'audio/mpeg',
@@ -343,22 +413,27 @@ export class FileUploadService extends BaseService {
       latitude: location?.latitude || null,
       longitude: location?.longitude || null,
       locationAccuracy: location?.accuracy || null,
-      locationTimestamp: location?.timestamp ? new Date(location.timestamp) : null,
+      locationTimestamp: location?.timestamp
+        ? new Date(location.timestamp)
+        : null,
       locationProvider: location?.provider || null,
     });
   }
 
-  private async startTranscription(fileId: number, storagePath: string, speakerCount?: number): Promise<boolean> {
+  private async startTranscription(
+    fileId: number,
+    storagePath: string,
+    speakerCount?: number,
+  ): Promise<boolean> {
     try {
       // Convert to WAV if needed (download from Supabase temporarily)
       const wavPath = await this.ensureWavFormatFromSupabase(storagePath);
 
-      // Start transcription through service
-      const { getServiceLocator } = await import('../ServiceLocator');
-      const { transcriptionService } = getServiceLocator();
+      // Start transcription through repository
+      const transcriptionRepository = RepositoryFactory.transcriptionRepository;
 
       // Create transcription job
-      const job = await transcriptionService.createJob({
+      const job = await transcriptionRepository.create({
         fileId,
         language: 'auto',
         modelSize: 'large-v3',
@@ -367,69 +442,88 @@ export class FileUploadService extends BaseService {
       });
 
       // Start background transcription (don't await)
-      this.startBackgroundTranscription(job.id, wavPath, speakerCount).catch(error => {
-        this._logger.error('Background transcription failed', error instanceof Error ? error : new Error(String(error)));
-      });
+      this.startBackgroundTranscription(job.id, wavPath, speakerCount).catch(
+        error => {
+          console.error(
+            '[FileUploadService] Background transcription failed:',
+            error,
+          );
+        },
+      );
 
       return true;
     } catch (error) {
-      this._logger.error('Failed to start transcription', error instanceof Error ? error : new Error(String(error)));
+      console.error(
+        '[FileUploadService] Failed to start transcription:',
+        error,
+      );
       return false;
     }
   }
 
-  private async ensureWavFormatFromSupabase(storagePath: string): Promise<string> {
+  private async ensureWavFormatFromSupabase(
+    storagePath: string,
+  ): Promise<string> {
     try {
       // Download file from Supabase
-      const { getServiceLocator } = await import('../ServiceLocator');
-      const { supabaseStorageService } = getServiceLocator();
-      
-      const fileBuffer = await supabaseStorageService.downloadFile(this.SUPABASE_BUCKET, storagePath);
-      
+      const { SupabaseStorageService } = await import(
+        './SupabaseStorageService'
+      );
+      const supabaseStorageService = new SupabaseStorageService();
+
+      const fileBuffer = await supabaseStorageService.downloadFile(
+        this.SUPABASE_BUCKET,
+        storagePath,
+      );
+
       // Create temporary files
       const tempDir = '/tmp';
       const originalExt = storagePath.split('.').pop()?.toLowerCase() || 'mp3';
       const tempFileName = `temp_${uuidv4()}`;
       const originalPath = join(tempDir, `${tempFileName}.${originalExt}`);
       const wavPath = join(tempDir, `${tempFileName}.wav`);
-      
+
       try {
         // Write original file
         await fs.writeFile(originalPath, fileBuffer);
-        
+
         // Convert to WAV if not already WAV
         if (originalExt === 'wav') {
           return originalPath; // Already WAV format
         }
-        
+
         await execAsync(
           `ffmpeg -i "${originalPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`,
         );
-        
+
         // Clean up original temp file
         await fs.unlink(originalPath).catch(() => {});
-        
-        this._logger.info('Converted Supabase audio to WAV format', { 
-          storagePath, 
-          tempWavPath: wavPath 
-        });
-        
+
+        console.log(
+          `[FileUploadService] Converted Supabase audio to WAV format: ${wavPath}`,
+        );
+
         return wavPath;
-        
       } catch (conversionError) {
         // Clean up temp files on error
         await fs.unlink(originalPath).catch(() => {});
         await fs.unlink(wavPath).catch(() => {});
         throw conversionError;
       }
-      
     } catch (error) {
-      this._logger.warn('Failed to convert Supabase file to WAV', error instanceof Error ? error : new Error(String(error)));
+      console.warn(
+        '[FileUploadService] Failed to convert Supabase file to WAV:',
+        error,
+      );
       throw error;
     }
   }
 
-  private async startBackgroundTranscription(jobId: number, wavPath: string, speakerCount?: number): Promise<void> {
+  private async startBackgroundTranscription(
+    jobId: number,
+    wavPath: string,
+    speakerCount?: number,
+  ): Promise<void> {
     // Import transcription logic
     const { startTranscription } = await import('../transcription');
     await startTranscription(jobId, wavPath, speakerCount);

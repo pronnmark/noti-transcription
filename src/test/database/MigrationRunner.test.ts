@@ -70,12 +70,16 @@ describe('MigrationRunner', () => {
 
   describe('checkMigrationStatus', () => {
     it('should check migration status without errors', async () => {
-      await expect(migrationRunner.checkMigrationStatus()).resolves.not.toThrow();
+      await expect(
+        migrationRunner.checkMigrationStatus(),
+      ).resolves.not.toThrow();
     });
 
     it('should show migration status after running migrations', async () => {
       await migrationRunner.runMigrations();
-      await expect(migrationRunner.checkMigrationStatus()).resolves.not.toThrow();
+      await expect(
+        migrationRunner.checkMigrationStatus(),
+      ).resolves.not.toThrow();
     });
   });
 

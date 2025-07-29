@@ -1,9 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/database';
-import { telegramShares, audioFiles, transcriptionJobs } from '@/lib/database/schema';
+import {
+  telegramShares,
+  audioFiles,
+  transcriptionJobs,
+} from '@/lib/database/schema';
 import { eq } from 'drizzle-orm';
 import { telegramMCP } from '@/lib/services/telegram-mcp-client';
-import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
+import {
+  getSessionTokenFromRequest,
+  unauthorizedResponse,
+} from '@/lib/auth-server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,7 +19,13 @@ export async function POST(request: NextRequest) {
     if (!sessionToken) {
       return unauthorizedResponse();
     }
-    const { fileId, chatId, username, groupName, includeTimestamps = false } = await request.json();
+    const {
+      fileId,
+      chatId,
+      username,
+      groupName,
+      includeTimestamps = false,
+    } = await request.json();
 
     if (!fileId) {
       return NextResponse.json(
@@ -22,7 +35,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Get file and transcript information
-    const fileData = await db.select().from(audioFiles).where(eq(audioFiles.id, fileId)).limit(1);
+    const fileData = await db
+      .select()
+      .from(audioFiles)
+      .where(eq(audioFiles.id, fileId))
+      .limit(1);
     if (!fileData.length) {
       return NextResponse.json(
         { success: false, error: 'File not found' },
@@ -30,7 +47,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const transcriptData = await db.select()
+    const transcriptData = await db
+      .select()
       .from(transcriptionJobs)
       .where(eq(transcriptionJobs.fileId, fileId))
       .limit(1);
@@ -45,30 +63,32 @@ export async function POST(request: NextRequest) {
     const file = fileData[0];
     const transcript = transcriptData[0].transcript as any;
     // Transcript is stored as an array directly, not as {segments: [...]}
-    const segments = Array.isArray(transcript) ? transcript : (transcript.segments || []);
+    const segments = Array.isArray(transcript)
+      ? transcript
+      : transcript.segments || [];
 
     // Format transcript for Telegram
     let transcriptText = '';
-    
+
     // Function to escape markdown characters for Telegram
     const escapeMarkdown = (text: string): string => {
       return text
         .replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')
         .replace(/\n/g, '\\n');
     };
-    
+
     // Group segments by speaker if available
     const hasSpeakers = segments.some((s: any) => s.speaker);
-    
+
     if (hasSpeakers && !includeTimestamps) {
       // Group consecutive segments by speaker
       let currentSpeaker = '';
       let currentText = '';
-      
+
       segments.forEach((segment: any) => {
         const speaker = segment.displayName || segment.speaker || 'Unknown';
         const cleanText = escapeMarkdown(segment.text || '');
-        
+
         if (speaker !== currentSpeaker) {
           if (currentText) {
             transcriptText += `*${escapeMarkdown(currentSpeaker)}:* ${currentText.trim()}\n\n`;
@@ -79,7 +99,7 @@ export async function POST(request: NextRequest) {
           currentText += cleanText + ' ';
         }
       });
-      
+
       // Add the last speaker's text
       if (currentText) {
         transcriptText += `*${escapeMarkdown(currentSpeaker)}:* ${currentText.trim()}\n\n`;
@@ -88,7 +108,7 @@ export async function POST(request: NextRequest) {
       // Include timestamps or no speaker info
       segments.forEach((segment: any) => {
         const cleanText = escapeMarkdown(segment.text || '');
-        
+
         if (includeTimestamps) {
           const timestamp = formatTime(segment.start);
           if (segment.speaker) {
@@ -106,13 +126,14 @@ export async function POST(request: NextRequest) {
     // Truncate if too long (Telegram limit is 4096 characters)
     const maxLength = 3800; // Leave room for header/footer
     if (transcriptText.length > maxLength) {
-      transcriptText = transcriptText.substring(0, maxLength) + '\n\n... (truncated)';
+      transcriptText =
+        transcriptText.substring(0, maxLength) + '\n\n... (truncated)';
     }
 
     // Format the complete message
     const fileName = file.originalFileName || file.fileName;
     const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
-    
+
     const message = telegramMCP.formatMessage(transcriptText, {
       title: 'Audio Transcript',
       fileName: `${fileName} (${duration})`,
@@ -123,40 +144,53 @@ export async function POST(request: NextRequest) {
     // Send message based on provided target
     let result;
     let targetIdentifier = '';
-    
+
     if (chatId) {
       result = await telegramMCP.sendMessage(chatId, message, sessionToken);
       targetIdentifier = chatId.toString();
     } else if (username) {
-      result = await telegramMCP.sendMessageToUser(username, message, sessionToken);
+      result = await telegramMCP.sendMessageToUser(
+        username,
+        message,
+        sessionToken,
+      );
       targetIdentifier = username;
     } else if (groupName) {
-      result = await telegramMCP.sendMessageToGroup(groupName, message, sessionToken);
+      result = await telegramMCP.sendMessageToGroup(
+        groupName,
+        message,
+        sessionToken,
+      );
       targetIdentifier = groupName;
     } else {
       // Default to group chat if no target specified (so both users can see it)
-      const defaultChatId = process.env.TELEGRAM_DEFAULT_CHAT_ID || '-4924104491'; // Group chat
-      result = await telegramMCP.sendMessage(defaultChatId, message, sessionToken);
+      const defaultChatId =
+        process.env.TELEGRAM_DEFAULT_CHAT_ID || '-4924104491'; // Group chat
+      result = await telegramMCP.sendMessage(
+        defaultChatId,
+        message,
+        sessionToken,
+      );
       targetIdentifier = defaultChatId;
     }
 
     if (!result.success) {
       // If the error is about chat not found, provide helpful instructions
       let errorMessage = result.error || 'Failed to send message';
-      
+
       if (errorMessage.includes('chat not found')) {
         const botUsername = 'devdashbotBot'; // Get from bot info if needed
         errorMessage += `\n\nTo fix this:\n1. Send /start to @${botUsername} in Telegram\n2. Or add the bot to your group\n3. Or use the Telegram setup page to configure chats`;
       }
-      
+
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: errorMessage,
           setup_help: {
             bot_username: 'devdashbotBot',
-            instructions: 'Visit /api/telegram/setup for configuration help'
-          }
+            instructions: 'Visit /api/telegram/setup for configuration help',
+          },
         },
         { status: 500 },
       );
@@ -167,7 +201,10 @@ export async function POST(request: NextRequest) {
     await db.insert(telegramShares).values({
       fileId,
       chatId: telegramMessage?.chat?.id?.toString() || targetIdentifier,
-      chatName: telegramMessage?.chat?.title || telegramMessage?.chat?.username || targetIdentifier,
+      chatName:
+        telegramMessage?.chat?.title ||
+        telegramMessage?.chat?.username ||
+        targetIdentifier,
       messageText: message,
       status: 'sent',
       telegramMessageId: telegramMessage?.message_id?.toString() || 'sent',
@@ -183,11 +220,13 @@ export async function POST(request: NextRequest) {
         username: telegramMessage?.chat?.username,
       },
     });
-
   } catch (error) {
     console.error('Telegram transcript share error:', error);
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Internal server error' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
       { status: 500 },
     );
   }

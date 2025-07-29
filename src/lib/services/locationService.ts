@@ -64,8 +64,8 @@ export class LocationService {
 
       // Start continuous tracking
       this.watchId = navigator.geolocation.watchPosition(
-        (position) => this.handleLocationSuccess(position),
-        (error) => this.handleLocationError(error),
+        position => this.handleLocationSuccess(position),
+        error => this.handleLocationError(error),
         {
           enableHighAccuracy: finalOptions.enableHighAccuracy,
           timeout: finalOptions.timeout,
@@ -75,9 +75,11 @@ export class LocationService {
 
       this.isTracking = true;
       console.log('✅ Location tracking started successfully');
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to start location tracking';
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Failed to start location tracking';
       onError(errorMessage);
     }
   }
@@ -115,14 +117,16 @@ export class LocationService {
   /**
    * Get current position once (not continuous)
    */
-  private getCurrentPosition(options: Required<LocationServiceOptions>): Promise<LocationData> {
+  private getCurrentPosition(
+    options: Required<LocationServiceOptions>,
+  ): Promise<LocationData> {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
-        (position) => {
+        position => {
           const locationData = this.processPosition(position);
           resolve(locationData);
         },
-        (error) => {
+        error => {
           reject(new Error(this.getErrorMessage(error)));
         },
         {

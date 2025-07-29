@@ -14,7 +14,12 @@ interface CommentFormProps {
   className?: string;
 }
 
-export function CommentForm({ noteId, initialComment = '', onSave, className }: CommentFormProps) {
+export function CommentForm({
+  noteId,
+  initialComment = '',
+  onSave,
+  className,
+}: CommentFormProps) {
   const [comment, setComment] = useState(initialComment);
   const [isEditing, setIsEditing] = useState(!initialComment);
   const [isSaving, setIsSaving] = useState(false);
@@ -51,7 +56,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
         onClick={() => setIsEditing(true)}
         className={cn('text-muted-foreground hover:text-foreground', className)}
       >
-        <MessageCircle className="h-4 w-4 mr-2" />
+        <MessageCircle className="mr-2 h-4 w-4" />
         Add comment
       </Button>
     );
@@ -72,7 +77,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
             <Edit3 className="h-3 w-3" />
           </Button>
         </div>
-        <div className="pl-6 text-sm text-muted-foreground border-l-2 border-muted">
+        <div className="border-l-2 border-muted pl-6 text-sm text-muted-foreground">
           {initialComment}
         </div>
       </div>
@@ -89,7 +94,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
       </div>
       <Textarea
         value={comment}
-        onChange={(e) => setComment(e.target.value)}
+        onChange={e => setComment(e.target.value)}
         placeholder="Add your notes, observations, or updates..."
         className="min-h-[80px] resize-none"
         disabled={isSaving}
@@ -100,7 +105,7 @@ export function CommentForm({ noteId, initialComment = '', onSave, className }: 
           disabled={isSaving || !comment.trim()}
           size="sm"
         >
-          <Save className="h-4 w-4 mr-2" />
+          <Save className="mr-2 h-4 w-4" />
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
         <Button

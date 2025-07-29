@@ -1,7 +1,11 @@
 import { relations } from 'drizzle-orm';
 import { audioFiles, speakerLabels, fileLabels } from './audio';
 import { transcriptionJobs } from './transcripts';
-import { summarizationTemplates, extractionTemplates, aiExtracts } from './extractions';
+import {
+  summarizationTemplates,
+  extractionTemplates,
+  aiExtracts,
+} from './extractions';
 import {
   dataPointTemplates,
   extractions,
@@ -51,23 +55,32 @@ export const fileLabelsRelations = relations(fileLabels, ({ one }) => ({
 }));
 
 // Transcription relations
-export const transcriptionJobsRelations = relations(transcriptionJobs, ({ one }) => ({
-  audioFile: one(audioFiles, {
-    fields: [transcriptionJobs.fileId],
-    references: [audioFiles.id],
+export const transcriptionJobsRelations = relations(
+  transcriptionJobs,
+  ({ one }) => ({
+    audioFile: one(audioFiles, {
+      fields: [transcriptionJobs.fileId],
+      references: [audioFiles.id],
+    }),
   }),
-}));
+);
 
 // Extraction template relations
-export const extractionTemplatesRelations = relations(extractionTemplates, ({ many }) => ({
-  extractions: many(extractions),
-  aiExtracts: many(aiExtracts),
-}));
+export const extractionTemplatesRelations = relations(
+  extractionTemplates,
+  ({ many }) => ({
+    extractions: many(extractions),
+    aiExtracts: many(aiExtracts),
+  }),
+);
 
-export const summarizationTemplatesRelations = relations(summarizationTemplates, ({ many }) => ({
-  aiExtracts: many(aiExtracts),
-  summarizations: many(summarizations),
-}));
+export const summarizationTemplatesRelations = relations(
+  summarizationTemplates,
+  ({ many }) => ({
+    aiExtracts: many(aiExtracts),
+    summarizations: many(summarizations),
+  }),
+);
 
 // AI extract relations
 export const aiExtractsRelations = relations(aiExtracts, ({ one }) => ({
@@ -82,9 +95,12 @@ export const aiExtractsRelations = relations(aiExtracts, ({ one }) => ({
 }));
 
 // System relations
-export const dataPointTemplatesRelations = relations(dataPointTemplates, ({ many }) => ({
-  dataPoints: many(dataPoints),
-}));
+export const dataPointTemplatesRelations = relations(
+  dataPointTemplates,
+  ({ many }) => ({
+    dataPoints: many(dataPoints),
+  }),
+);
 
 export const extractionsRelations = relations(extractions, ({ one }) => ({
   audioFile: one(audioFiles, {
@@ -120,57 +136,78 @@ export const summarizationsRelations = relations(summarizations, ({ one }) => ({
 }));
 
 // Dynamic extraction system relations
-export const summarizationPromptsRelations = relations(summarizationPrompts, ({ many }) => ({
-  summarizations: many(summarizations),
-  aiProcessingSessions: many(aiProcessingSessions),
-}));
+export const summarizationPromptsRelations = relations(
+  summarizationPrompts,
+  ({ many }) => ({
+    summarizations: many(summarizations),
+    aiProcessingSessions: many(aiProcessingSessions),
+  }),
+);
 
-export const extractionDefinitionsRelations = relations(extractionDefinitions, ({ many }) => ({
-  extractionResults: many(extractionResults),
-}));
+export const extractionDefinitionsRelations = relations(
+  extractionDefinitions,
+  ({ many }) => ({
+    extractionResults: many(extractionResults),
+  }),
+);
 
-export const extractionResultsRelations = relations(extractionResults, ({ one }) => ({
-  audioFile: one(audioFiles, {
-    fields: [extractionResults.fileId],
-    references: [audioFiles.id],
+export const extractionResultsRelations = relations(
+  extractionResults,
+  ({ one }) => ({
+    audioFile: one(audioFiles, {
+      fields: [extractionResults.fileId],
+      references: [audioFiles.id],
+    }),
+    definition: one(extractionDefinitions, {
+      fields: [extractionResults.definitionId],
+      references: [extractionDefinitions.id],
+    }),
   }),
-  definition: one(extractionDefinitions, {
-    fields: [extractionResults.definitionId],
-    references: [extractionDefinitions.id],
-  }),
-}));
+);
 
-export const aiProcessingSessionsRelations = relations(aiProcessingSessions, ({ one }) => ({
-  audioFile: one(audioFiles, {
-    fields: [aiProcessingSessions.fileId],
-    references: [audioFiles.id],
+export const aiProcessingSessionsRelations = relations(
+  aiProcessingSessions,
+  ({ one }) => ({
+    audioFile: one(audioFiles, {
+      fields: [aiProcessingSessions.fileId],
+      references: [audioFiles.id],
+    }),
+    summarizationPrompt: one(summarizationPrompts, {
+      fields: [aiProcessingSessions.summarizationPromptId],
+      references: [summarizationPrompts.id],
+    }),
   }),
-  summarizationPrompt: one(summarizationPrompts, {
-    fields: [aiProcessingSessions.summarizationPromptId],
-    references: [summarizationPrompts.id],
-  }),
-}));
+);
 
 // Psychology relations
-export const psychologicalEvaluationsRelations = relations(psychologicalEvaluations, ({ one }) => ({
-  audioFile: one(audioFiles, {
-    fields: [psychologicalEvaluations.fileId],
-    references: [audioFiles.id],
+export const psychologicalEvaluationsRelations = relations(
+  psychologicalEvaluations,
+  ({ one }) => ({
+    audioFile: one(audioFiles, {
+      fields: [psychologicalEvaluations.fileId],
+      references: [audioFiles.id],
+    }),
   }),
-}));
+);
 
 // Real-time thoughts relations
-export const realTimeSessionsRelations = relations(realTimeSessions, ({ one, many }) => ({
-  audioFile: one(audioFiles, {
-    fields: [realTimeSessions.fileId],
-    references: [audioFiles.id],
+export const realTimeSessionsRelations = relations(
+  realTimeSessions,
+  ({ one, many }) => ({
+    audioFile: one(audioFiles, {
+      fields: [realTimeSessions.fileId],
+      references: [audioFiles.id],
+    }),
+    thoughts: many(realTimeThoughts),
   }),
-  thoughts: many(realTimeThoughts),
-}));
+);
 
-export const realTimeThoughtsRelations = relations(realTimeThoughts, ({ one }) => ({
-  session: one(realTimeSessions, {
-    fields: [realTimeThoughts.sessionId],
-    references: [realTimeSessions.id],
+export const realTimeThoughtsRelations = relations(
+  realTimeThoughts,
+  ({ one }) => ({
+    session: one(realTimeSessions, {
+      fields: [realTimeThoughts.sessionId],
+      references: [realTimeSessions.id],
+    }),
   }),
-}));
+);

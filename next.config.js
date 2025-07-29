@@ -38,15 +38,15 @@ const nextConfig = {
   },
   // Configure allowed dev origins for Next.js development
   allowedDevOrigins: ['noti.se', '*.noti.se', 'localhost:5173'],
-  
+
   experimental: {
     serverActions: {
-      bodySizeLimit: '100mb'
+      bodySizeLimit: '100mb',
     },
     // Enable experimental features for better development stability
-    optimizePackageImports: ['@radix-ui/react-icons']
+    optimizePackageImports: ['@radix-ui/react-icons'],
   },
-  
+
   // Webpack configuration for better chunk loading
   webpack: (config, { dev, isServer }) => {
     if (dev && !isServer) {
@@ -60,30 +60,30 @@ const nextConfig = {
             default: {
               minChunks: 2,
               priority: -20,
-              reuseExistingChunk: true
+              reuseExistingChunk: true,
             },
             vendor: {
               test: /[\/]node_modules[\/]/,
               name: 'vendors',
               priority: -10,
-              reuseExistingChunk: true
-            }
-          }
-        }
+              reuseExistingChunk: true,
+            },
+          },
+        },
       };
-      
+
       // Add development middleware configuration
       config.devServer = {
         ...config.devServer,
         hot: true,
         liveReload: true,
-        watchFiles: ['src/**/*']
+        watchFiles: ['src/**/*'],
       };
     }
-    
+
     return config;
   },
-  
+
   // Allow cross-origin requests and configure for reverse proxy
   async headers() {
     return [
@@ -92,32 +92,34 @@ const nextConfig = {
         headers: [
           {
             key: 'Access-Control-Allow-Origin',
-            value: process.env.NODE_ENV === 'development' ? '*' : 'https://noti.se'
+            value:
+              process.env.NODE_ENV === 'development' ? '*' : 'https://noti.se',
           },
           {
             key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS'
+            value: 'GET, POST, PUT, DELETE, OPTIONS',
           },
           {
             key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host'
+            value:
+              'Content-Type, Authorization, X-Real-IP, X-Forwarded-For, X-Forwarded-Proto, X-Forwarded-Host',
           },
           {
             key: 'X-Frame-Options',
-            value: 'SAMEORIGIN'
-          }
-        ]
-      }
-    ]
+            value: 'SAMEORIGIN',
+          },
+        ],
+      },
+    ];
   },
-  
+
   // Configure for reverse proxy environment
   trailingSlash: false,
-  
+
   // Ensure proper hostname handling behind proxy
   async rewrites() {
-    return []
-  }
-}
+    return [];
+  },
+};
 
-module.exports = withPWA(nextConfig)
+module.exports = withPWA(nextConfig);

@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuthMiddleware, createApiResponse, createErrorResponse } from '@/lib/middleware';
+import {
+  withAuthMiddleware,
+  createApiResponse,
+  createErrorResponse,
+} from '@/lib/middleware';
 import { RepositoryFactory } from '@/lib/database/repositories';
 import { debugLog } from '@/lib/utils/debug';
 import { exec } from 'child_process';
@@ -11,98 +15,109 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
-  return withAuthMiddleware(async (req: NextRequest, context) => {
-    const startTime = Date.now();
-    
-    try {
-      const resolvedParams = await params;
-      const fileId = parseInt(resolvedParams.id);
-      
-      if (isNaN(fileId)) {
+  return withAuthMiddleware(
+    async (req: NextRequest, context) => {
+      const startTime = Date.now();
+
+      try {
+        const resolvedParams = await params;
+        const fileId = parseInt(resolvedParams.id);
+
+        if (isNaN(fileId)) {
+          return NextResponse.json(
+            createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
+            { status: 400 },
+          );
+        }
+
+        debugLog('api', 'Starting transcription for file', {
+          fileId,
+          requestId: context.requestId,
+        });
+
+        // Get repositories
+        const audioRepo = RepositoryFactory.audioRepository;
+        const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+
+        // Get file from database using repository
+        const file = await audioRepo.findById(fileId);
+        if (!file) {
+          return NextResponse.json(
+            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
+            { status: 404 },
+          );
+        }
+
+        // Check if transcription job already exists
+        const existingJob = await transcriptionRepo.findLatestByFileId(fileId);
+        if (existingJob && existingJob.status !== 'failed') {
+          return NextResponse.json(
+            createApiResponse(
+              {
+                message: 'Transcription already exists',
+                job: existingJob,
+              },
+              {
+                meta: {
+                  requestId: context.requestId,
+                  duration: Date.now() - startTime,
+                },
+              },
+            ),
+          );
+        }
+
+        // Create transcription job using repository
+        const job = await transcriptionRepo.create({
+          fileId: fileId,
+          language: 'auto',
+          modelSize: 'large-v3',
+          diarization: true,
+          speakerCount: undefined,
+          status: 'processing',
+          progress: 0,
+          startedAt: new Date(),
+        });
+
+        // Start transcription in background (fire and forget)
+        transcribeInBackground(file, job.id).catch(error => {
+          debugLog('api', 'Background transcription failed:', error);
+        });
+
         return NextResponse.json(
-          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-          { status: 400 }
+          createApiResponse(
+            {
+              success: true,
+              message: 'Transcription started',
+              jobId: job.id,
+            },
+            {
+              meta: {
+                requestId: context.requestId,
+                duration: Date.now() - startTime,
+              },
+            },
+          ),
         );
+      } catch (error: any) {
+        debugLog('api', 'Transcribe error:', error);
+        throw error; // Let middleware handle the error
       }
-
-      debugLog('api', 'Starting transcription for file', { fileId, requestId: context.requestId });
-
-      // Get repositories
-      const audioRepo = RepositoryFactory.audioRepository;
-      const transcriptionRepo = RepositoryFactory.transcriptionRepository;
-
-      // Get file from database using repository
-      const file = await audioRepo.findById(fileId);
-      if (!file) {
-        return NextResponse.json(
-          createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-          { status: 404 }
-        );
-      }
-
-      // Check if transcription job already exists
-      const existingJob = await transcriptionRepo.findLatestByFileId(fileId);
-      if (existingJob && existingJob.status !== 'failed') {
-        return NextResponse.json(
-          createApiResponse({
-            message: 'Transcription already exists',
-            job: existingJob,
-          }, {
-            meta: {
-              requestId: context.requestId,
-              duration: Date.now() - startTime,
-            }
-          })
-        );
-      }
-
-      // Create transcription job using repository
-      const job = await transcriptionRepo.create({
-        fileId: fileId,
-        language: 'auto',
-        modelSize: 'large-v3',
-        diarization: true,
-        speakerCount: undefined,
-        status: 'processing',
-        progress: 0,
-        startedAt: new Date(),
-      });
-
-      // Start transcription in background (fire and forget)
-      transcribeInBackground(file, job.id).catch(error => {
-        debugLog('api', 'Background transcription failed:', error);
-      });
-
-      return NextResponse.json(
-        createApiResponse({
-          success: true,
-          message: 'Transcription started',
-          jobId: job.id,
-        }, {
-          meta: {
-            requestId: context.requestId,
-            duration: Date.now() - startTime,
-          }
-        })
-      );
-
-    } catch (error: any) {
-      debugLog('api', 'Transcribe error:', error);
-      throw error; // Let middleware handle the error
-    }
-  }, {
-    logging: {
-      enabled: true,
-      logRequests: true,
-      logResponses: true,
     },
-    errorHandling: {
-      enabled: true,
-      sanitizeErrors: true,
+    {
+      logging: {
+        enabled: true,
+        logRequests: true,
+        logResponses: true,
+      },
+      errorHandling: {
+        enabled: true,
+        sanitizeErrors: true,
+      },
     },
-  })(request);
+  )(request);
 }
 
 async function transcribeInBackground(file: any, jobId: number) {
@@ -122,7 +137,9 @@ async function transcribeInBackground(file: any, jobId: number) {
     const wavPath = audioPath.replace(/\.[^/.]+$/, '.wav');
     if (!audioPath.endsWith('.wav')) {
       debugLog('worker', 'Converting to WAV...', { audioPath, wavPath });
-      await execAsync(`ffmpeg -i "${audioPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`);
+      await execAsync(
+        `ffmpeg -i "${audioPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`,
+      );
     }
 
     // Update progress
@@ -151,11 +168,13 @@ async function transcribeInBackground(file: any, jobId: number) {
     }
 
     // Update job with results using repository
-    const transcriptSegments = transcript.segments || [{ 
-      text: transcript.text || stdout.trim(), 
-      start: 0, 
-      end: 0 
-    }];
+    const transcriptSegments = transcript.segments || [
+      {
+        text: transcript.text || stdout.trim(),
+        start: 0,
+        end: 0,
+      },
+    ];
 
     await transcriptionRepo.updateWithResults(jobId, {
       status: 'completed',
@@ -170,7 +189,6 @@ async function transcribeInBackground(file: any, jobId: number) {
     if (!audioPath.endsWith('.wav')) {
       await fs.unlink(wavPath).catch(() => {});
     }
-
   } catch (error) {
     debugLog('worker', 'Transcription error:', error);
 

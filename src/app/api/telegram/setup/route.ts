@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSessionTokenFromRequest, unauthorizedResponse } from '@/lib/auth-server';
+import {
+  getSessionTokenFromRequest,
+  unauthorizedResponse,
+} from '@/lib/auth-server';
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,25 +16,29 @@ export async function GET(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Get bot info
-    const botResponse = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    const botResponse = await fetch(
+      `https://api.telegram.org/bot${botToken}/getMe`,
+    );
     const botData = await botResponse.json();
 
     if (!botData.ok) {
       return NextResponse.json(
         { error: `Failed to get bot info: ${botData.description}` },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     const bot = botData.result;
 
     // Get recent updates to see what chats the bot has access to
-    const updatesResponse = await fetch(`https://api.telegram.org/bot${botToken}/getUpdates?limit=100`);
+    const updatesResponse = await fetch(
+      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100`,
+    );
     const updatesData = await updatesResponse.json();
 
     const availableChats: any[] = [];
@@ -42,13 +49,15 @@ export async function GET(request: NextRequest) {
         if (update.message && update.message.chat) {
           const chat = update.message.chat;
           const chatKey = `${chat.id}`;
-          
+
           if (!seenChats.has(chatKey)) {
             seenChats.add(chatKey);
             availableChats.push({
               id: chat.id,
               type: chat.type,
-              title: chat.title || `${chat.first_name || ''} ${chat.last_name || ''}`.trim(),
+              title:
+                chat.title ||
+                `${chat.first_name || ''} ${chat.last_name || ''}`.trim(),
               username: chat.username,
               first_name: chat.first_name,
               last_name: chat.last_name,
@@ -73,12 +82,13 @@ export async function GET(request: NextRequest) {
         bot_url: `https://t.me/${bot.username}`,
       },
     });
-
   } catch (error) {
     console.error('Telegram setup error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 },
     );
   }
 }
@@ -96,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!chatId || !message) {
       return NextResponse.json(
         { error: 'Chat ID and message are required' },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -104,33 +114,36 @@ export async function POST(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 }
+        { status: 500 },
       );
     }
 
     // Test sending a message to the specified chat
-    const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    const response = await fetch(
+      `https://api.telegram.org/bot${botToken}/sendMessage`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: message,
+          parse_mode: 'Markdown',
+        }),
       },
-      body: JSON.stringify({
-        chat_id: chatId,
-        text: message,
-        parse_mode: 'Markdown'
-      }),
-    });
+    );
 
     const data = await response.json();
 
     if (!data.ok) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: data.description,
-          chat_id: chatId 
+          chat_id: chatId,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -140,12 +153,13 @@ export async function POST(request: NextRequest) {
       chat: data.result.chat,
       chat_id: chatId,
     });
-
   } catch (error) {
     console.error('Telegram test message error:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
-      { status: 500 }
+      {
+        error: error instanceof Error ? error.message : 'Internal server error',
+      },
+      { status: 500 },
     );
   }
 }

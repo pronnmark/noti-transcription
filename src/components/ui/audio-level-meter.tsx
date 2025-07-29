@@ -8,11 +8,14 @@ interface AudioLevelMeterProps {
   className?: string;
 }
 
-export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelMeterProps) {
-  
+export function AudioLevelMeter({
+  audioLevel,
+  isActive,
+  className,
+}: AudioLevelMeterProps) {
   // Normalize audio level to 0-100 range
   const normalizedLevel = Math.max(0, Math.min(100, audioLevel));
-  
+
   // Determine color based on audio level
   const getBarColor = (level: number) => {
     if (level === 0) return 'bg-gray-400'; // No signal (gray instead of red)
@@ -36,36 +39,41 @@ export function AudioLevelMeter({ audioLevel, isActive, className }: AudioLevelM
 
   return (
     <div className={cn('flex flex-col items-center gap-2', className)}>
-      <div className="text-xs text-muted-foreground font-medium">
+      <div className="text-xs font-medium text-muted-foreground">
         Audio Level
       </div>
-      
+
       {/* Audio level bar */}
-      <div className="w-full max-w-xs h-8 bg-gray-200 rounded-full overflow-hidden border-2 border-gray-300">
+      <div className="h-8 w-full max-w-xs overflow-hidden rounded-full border-2 border-gray-300 bg-gray-200">
         <div
           className={cn(
-            'h-full transition-all duration-100 ease-out rounded-full bg-gradient-to-r',
-            getBarGradient(normalizedLevel)
+            'h-full rounded-full bg-gradient-to-r transition-all duration-100 ease-out',
+            getBarGradient(normalizedLevel),
           )}
           style={{ width: `${Math.max(0, normalizedLevel)}%` }}
         />
       </div>
-      
+
       {/* Level indicator text */}
       <div className="flex items-center gap-2 text-xs">
         <div
           className={cn(
-            'w-2 h-2 rounded-full transition-colors duration-200',
-            normalizedLevel === 0 ? 'bg-gray-400' : getBarColor(normalizedLevel)
+            'h-2 w-2 rounded-full transition-colors duration-200',
+            normalizedLevel === 0 ? 'bg-gray-400' : getBarColor(normalizedLevel),
           )}
         />
         <span className="text-muted-foreground">
-          {normalizedLevel === 0 ? 'Silent' :
-           normalizedLevel < 5 ? 'Very Low' : 
-           normalizedLevel < 25 ? 'Low' : 
-           normalizedLevel < 75 ? 'Good' : 'High'}
+          {normalizedLevel === 0
+            ? 'Silent'
+            : normalizedLevel < 5
+              ? 'Very Low'
+              : normalizedLevel < 25
+                ? 'Low'
+                : normalizedLevel < 75
+                  ? 'Good'
+                  : 'High'}
         </span>
-        <span className="text-xs font-mono text-muted-foreground ml-2">
+        <span className="ml-2 font-mono text-xs text-muted-foreground">
           {normalizedLevel.toFixed(0)}%
         </span>
       </div>

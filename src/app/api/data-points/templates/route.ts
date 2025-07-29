@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, dataPointTemplates, dataPoints, eq, and, desc, asc } from '@/lib/database';
+import {
+  db,
+  dataPointTemplates,
+  dataPoints,
+  eq,
+  and,
+  desc,
+  asc,
+} from '@/lib/database';
 import { requireAuth } from '@/lib/auth';
 import { debugLog } from '@/lib/utils';
 
@@ -23,7 +31,9 @@ export async function GET(request: NextRequest) {
       whereConditions.push(eq(dataPointTemplates.isDefault, true));
     }
 
-    const templates = await db.select().from(dataPointTemplates)
+    const templates = await db
+      .select()
+      .from(dataPointTemplates)
       .where(whereConditions.length > 0 ? and(...whereConditions) : undefined)
       .orderBy(
         desc(dataPointTemplates.isDefault),
@@ -36,7 +46,10 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     debugLog('api', 'Error fetching data point templates:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -61,21 +74,27 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!name || !analysisPrompt) {
-      return NextResponse.json({
-        error: 'Missing required fields: name, analysisPrompt',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required fields: name, analysisPrompt',
+        },
+        { status: 400 },
+      );
     }
 
     // Create template
-    const [template] = await db.insert(dataPointTemplates).values({
-      name: name,
-      description: description || null,
-      analysisPrompt: analysisPrompt,
-      outputSchema: outputSchema || null,
-      visualizationType: visualizationType,
-      isActive: isActive,
-      isDefault: isDefault,
-    }).returning();
+    const [template] = await db
+      .insert(dataPointTemplates)
+      .values({
+        name: name,
+        description: description || null,
+        analysisPrompt: analysisPrompt,
+        outputSchema: outputSchema || null,
+        visualizationType: visualizationType,
+        isActive: isActive,
+        isDefault: isDefault,
+      })
+      .returning();
 
     // Template already returned from insert, no need to fetch again
 
@@ -83,10 +102,12 @@ export async function POST(request: NextRequest) {
       success: true,
       template: template,
     });
-
   } catch (error) {
     debugLog('api', 'Error creating data point template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -112,16 +133,26 @@ export async function PUT(request: NextRequest) {
 
     // Validate required fields
     if (!id) {
-      return NextResponse.json({
-        error: 'Missing required field: id',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required field: id',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if template exists
-    const existingTemplate = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
+    const existingTemplate = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(eq(dataPointTemplates.id, id))
+      .limit(1);
 
     if (!existingTemplate || existingTemplate.length === 0) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 },
+      );
     }
 
     // Update template
@@ -131,27 +162,34 @@ export async function PUT(request: NextRequest) {
 
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (analysisPrompt !== undefined) updateData.analysisPrompt = analysisPrompt;
+    if (analysisPrompt !== undefined) {updateData.analysisPrompt = analysisPrompt;}
     if (outputSchema !== undefined) updateData.outputSchema = outputSchema;
-    if (visualizationType !== undefined) updateData.visualizationType = visualizationType;
+    if (visualizationType !== undefined) {updateData.visualizationType = visualizationType;}
     if (isActive !== undefined) updateData.isActive = isActive;
     if (isDefault !== undefined) updateData.isDefault = isDefault;
 
-    await db.update(dataPointTemplates)
+    await db
+      .update(dataPointTemplates)
       .set(updateData)
       .where(eq(dataPointTemplates.id, id));
 
     // Get the updated template
-    const template = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
+    const template = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(eq(dataPointTemplates.id, id))
+      .limit(1);
 
     return NextResponse.json({
       success: true,
       template: template,
     });
-
   } catch (error) {
     debugLog('api', 'Error updating data point template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -167,38 +205,56 @@ export async function DELETE(request: NextRequest) {
     const id = url.searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({
-        error: 'Missing required parameter: id',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'Missing required parameter: id',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if template exists
-    const existingTemplate = await db.select().from(dataPointTemplates).where(eq(dataPointTemplates.id, id)).limit(1);
+    const existingTemplate = await db
+      .select()
+      .from(dataPointTemplates)
+      .where(eq(dataPointTemplates.id, id))
+      .limit(1);
 
     if (!existingTemplate || existingTemplate.length === 0) {
-      return NextResponse.json({ error: 'Template not found' }, { status: 404 });
+      return NextResponse.json(
+        { error: 'Template not found' },
+        { status: 404 },
+      );
     }
 
     // Check if template is in use
-    const dataPointsCount = await db.select().from(dataPoints).where(eq(dataPoints.templateId, id));
+    const dataPointsCount = await db
+      .select()
+      .from(dataPoints)
+      .where(eq(dataPoints.templateId, id));
 
     if (dataPointsCount && dataPointsCount.length > 0) {
-      return NextResponse.json({
-        error: 'Cannot delete template that is in use. Deactivate it instead.',
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error:
+            'Cannot delete template that is in use. Deactivate it instead.',
+        },
+        { status: 400 },
+      );
     }
 
     // Delete template
-    await db.delete(dataPointTemplates)
-      .where(eq(dataPointTemplates.id, id));
+    await db.delete(dataPointTemplates).where(eq(dataPointTemplates.id, id));
 
     return NextResponse.json({
       success: true,
       message: 'Template deleted successfully',
     });
-
   } catch (error) {
     debugLog('api', 'Error deleting data point template:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

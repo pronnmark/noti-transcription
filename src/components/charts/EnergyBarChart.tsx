@@ -1,7 +1,22 @@
 'use client';
 
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from 'recharts';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { format } from 'date-fns';
 
 interface EnergyData {
@@ -24,7 +39,6 @@ export function EnergyBarChart({
   description = 'Daily energy and stress patterns',
   height = 400,
 }: EnergyBarChartProps) {
-
   // Process data for chart
   const chartData = data.map(item => ({
     date: format(new Date(item.date), 'MMM dd'),
@@ -38,7 +52,7 @@ export function EnergyBarChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="bg-white p-3 border rounded-lg shadow-lg">
+        <div className="rounded-lg border bg-white p-3 shadow-lg">
           <p className="font-medium">{label}</p>
           <p className="text-sm">
             <span className="text-green-600">Energy: </span>
@@ -98,28 +112,46 @@ export function EnergyBarChart({
         </ResponsiveContainer>
 
         {/* Summary statistics */}
-        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
-              {data.length > 0 ? (data.reduce((sum, item) => sum + (item.averageEnergy || 0), 0) / data.length).toFixed(1) : '0.0'}
+              {data.length > 0
+                ? (
+                  data.reduce(
+                    (sum, item) => sum + (item.averageEnergy || 0),
+                    0,
+                  ) / data.length
+                ).toFixed(1)
+                : '0.0'}
             </div>
             <div className="text-sm text-gray-600">Avg Energy</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">
-              {data.length > 0 ? (data.reduce((sum, item) => sum + (item.averageStress || 0), 0) / data.length).toFixed(1) : '0.0'}
+              {data.length > 0
+                ? (
+                  data.reduce(
+                    (sum, item) => sum + (item.averageStress || 0),
+                    0,
+                  ) / data.length
+                ).toFixed(1)
+                : '0.0'}
             </div>
             <div className="text-sm text-gray-600">Avg Stress</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
-              {Math.max(...data.map(item => item.averageEnergy || 0)).toFixed(1)}
+              {Math.max(...data.map(item => item.averageEnergy || 0)).toFixed(
+                1,
+              )}
             </div>
             <div className="text-sm text-gray-600">Peak Energy</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
-              {Math.min(...data.map(item => item.averageStress || 0)).toFixed(1)}
+              {Math.min(...data.map(item => item.averageStress || 0)).toFixed(
+                1,
+              )}
             </div>
             <div className="text-sm text-gray-600">Min Stress</div>
           </div>

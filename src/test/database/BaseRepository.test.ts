@@ -143,7 +143,9 @@ describe('BaseRepository', () => {
     });
 
     it('should throw error for non-existent record', async () => {
-      await expect(repository.update(99999, { title: 'Test' })).rejects.toThrow();
+      await expect(
+        repository.update(99999, { title: 'Test' }),
+      ).rejects.toThrow();
     });
   });
 
@@ -214,7 +216,9 @@ describe('BaseRepository', () => {
         fileHash: 'test-hash-2',
       });
 
-      const mp3Count = await repository.count(eq(audioFiles.originalFileType, 'audio/mpeg'));
+      const mp3Count = await repository.count(
+        eq(audioFiles.originalFileType, 'audio/mpeg'),
+      );
       expect(mp3Count).toBe(1);
     });
   });

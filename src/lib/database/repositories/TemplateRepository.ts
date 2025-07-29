@@ -10,7 +10,10 @@ import {
 import { getDb } from '../client';
 import { eq, desc, and, inArray } from 'drizzle-orm';
 
-export class ExtractionTemplateRepository extends BaseRepository<ExtractionTemplate, NewExtractionTemplate> {
+export class ExtractionTemplateRepository extends BaseRepository<
+  ExtractionTemplate,
+  NewExtractionTemplate
+> {
   constructor() {
     super(extractionTemplates);
   }
@@ -101,12 +104,17 @@ export class ExtractionTemplateRepository extends BaseRepository<ExtractionTempl
 
       return result as ExtractionTemplate;
     } catch (error) {
-      throw new Error(`Failed to toggle extraction template active state: ${error}`);
+      throw new Error(
+        `Failed to toggle extraction template active state: ${error}`,
+      );
     }
   }
 }
 
-export class SummarizationTemplateRepository extends BaseRepository<SummarizationTemplate, NewSummarizationTemplate> {
+export class SummarizationTemplateRepository extends BaseRepository<
+  SummarizationTemplate,
+  NewSummarizationTemplate
+> {
   constructor() {
     super(summarizationTemplates);
   }
@@ -120,7 +128,9 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
         .limit(1);
       return (result[0] as SummarizationTemplate) || null;
     } catch (error) {
-      throw new Error(`Failed to find summarization template by title: ${error}`);
+      throw new Error(
+        `Failed to find summarization template by title: ${error}`,
+      );
     }
   }
 
@@ -133,7 +143,9 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
         .limit(limit);
       return result as SummarizationTemplate[];
     } catch (error) {
-      throw new Error(`Failed to find recent summarization templates: ${error}`);
+      throw new Error(
+        `Failed to find recent summarization templates: ${error}`,
+      );
     }
   }
 
@@ -142,13 +154,12 @@ export class SummarizationTemplateRepository extends BaseRepository<Summarizatio
       const result = await getDb()
         .select()
         .from(this.table)
-        .where(and(
-          eq(this.table.isActive, true),
-          inArray(this.table.id, ids)
-        ));
+        .where(and(eq(this.table.isActive, true), inArray(this.table.id, ids)));
       return result as SummarizationTemplate[];
     } catch (error) {
-      throw new Error(`Failed to find active summarization templates by IDs: ${error}`);
+      throw new Error(
+        `Failed to find active summarization templates by IDs: ${error}`,
+      );
     }
   }
 }

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ResponseMiddlewareHandler, RequestContext, ResponseContext, ApiResponse, PaginatedApiResponse } from './types';
+import {
+  ResponseMiddlewareHandler,
+  RequestContext,
+  ResponseContext,
+  ApiResponse,
+  PaginatedApiResponse,
+} from './types';
 
 export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
   public readonly name = 'response-formatting';
@@ -76,7 +82,10 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
     );
   }
 
-  private wrapResponse(data: any, context: RequestContext & ResponseContext): ApiResponse {
+  private wrapResponse(
+    data: any,
+    context: RequestContext & ResponseContext,
+  ): ApiResponse {
     const response: ApiResponse = {
       success: true,
       data,
@@ -97,13 +106,19 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
     return response;
   }
 
-  private addHeaders(response: NextResponse, context: RequestContext & ResponseContext): NextResponse {
+  private addHeaders(
+    response: NextResponse,
+    context: RequestContext & ResponseContext,
+  ): NextResponse {
     // Add standard headers
     response.headers.set('X-Request-ID', context.requestId);
     response.headers.set('X-Response-Time', `${context.duration}ms`);
 
     // Add CORS headers if needed
-    response.headers.set('Access-Control-Expose-Headers', 'X-Request-ID, X-Response-Time');
+    response.headers.set(
+      'Access-Control-Expose-Headers',
+      'X-Request-ID, X-Response-Time',
+    );
 
     return response;
   }
@@ -118,7 +133,10 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
   ): Promise<NextResponse> {
     // Only process successful JSON responses
     const contentType = response.headers.get('content-type') || '';
-    if (!contentType.includes('application/json') || context.statusCode >= 400) {
+    if (
+      !contentType.includes('application/json') ||
+      context.statusCode >= 400
+    ) {
       return response;
     }
 
@@ -137,7 +155,13 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
       }
 
       const data = Array.isArray(body) ? body : body.data;
-      const paginatedResponse = this.createPaginatedResponse(data, page, limit, total, context);
+      const paginatedResponse = this.createPaginatedResponse(
+        data,
+        page,
+        limit,
+        total,
+        context,
+      );
 
       return NextResponse.json(paginatedResponse, {
         status: response.status,
@@ -154,9 +178,15 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
     limit?: number;
     total?: number;
   } {
-    const page = context.query.page ? parseInt(context.query.page, 10) : undefined;
-    const limit = context.query.limit ? parseInt(context.query.limit, 10) : undefined;
-    const total = context.query.total ? parseInt(context.query.total, 10) : undefined;
+    const page = context.query.page
+      ? parseInt(context.query.page, 10)
+      : undefined;
+    const limit = context.query.limit
+      ? parseInt(context.query.limit, 10)
+      : undefined;
+    const total = context.query.total
+      ? parseInt(context.query.total, 10)
+      : undefined;
 
     return { page, limit, total };
   }
@@ -204,7 +234,13 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
     this.options = {
       threshold: 1024, // 1KB
       level: 6, // Default compression level
-      types: ['application/json', 'text/plain', 'text/html', 'text/css', 'application/javascript'],
+      types: [
+        'application/json',
+        'text/plain',
+        'text/html',
+        'text/css',
+        'application/javascript',
+      ],
       ...options,
     };
   }
@@ -217,13 +253,19 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
     const contentLength = context.size || 0;
 
     // Skip compression for small responses or unsupported types
-    if (contentLength < this.options.threshold! || !this.shouldCompress(contentType)) {
+    if (
+      contentLength < this.options.threshold! ||
+      !this.shouldCompress(contentType)
+    ) {
       return response;
     }
 
     // Check if client accepts compression
     const acceptEncoding = context.headers['accept-encoding'] || '';
-    if (!acceptEncoding.includes('gzip') && !acceptEncoding.includes('deflate')) {
+    if (
+      !acceptEncoding.includes('gzip') &&
+      !acceptEncoding.includes('deflate')
+    ) {
       return response;
     }
 
@@ -234,7 +276,10 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
 
       return response;
     } catch (error) {
-      context.logger.warn('Failed to compress response', error instanceof Error ? error : new Error(String(error)));
+      context.logger.warn(
+        'Failed to compress response',
+        error instanceof Error ? error : new Error(String(error)),
+      );
       return response;
     }
   }
@@ -283,7 +328,9 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
     return response;
   }
 
-  private getCacheControl(context: RequestContext & ResponseContext): string | null {
+  private getCacheControl(
+    context: RequestContext & ResponseContext,
+  ): string | null {
     const path = context.path;
 
     // No cache for specific paths
@@ -298,7 +345,9 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
 
     // API endpoints
     if (path.startsWith('/api/')) {
-      const mustRevalidate = this.options.mustRevalidate!.some(pattern => path.startsWith(pattern));
+      const mustRevalidate = this.options.mustRevalidate!.some(pattern =>
+        path.startsWith(pattern),
+      );
       const maxAge = this.options.apiMaxAge;
 
       return mustRevalidate

@@ -11,7 +11,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   cyan: '\x1b[36m',
-  reset: '\x1b[0m'
+  reset: '\x1b[0m',
 };
 
 function log(message, color = 'reset') {
@@ -20,17 +20,19 @@ function log(message, color = 'reset') {
 
 async function testEdgeCases() {
   log('🧪 Testing Edge Cases for Speaker Diarization', 'cyan');
-  log('=' .repeat(60), 'cyan');
-  
+  log('='.repeat(60), 'cyan');
+
   const dbPath = path.join(process.cwd(), 'sqlite.db');
   const db = new Database(dbPath);
-  
+
   try {
     // Test 1: Check for missing HUGGINGFACE_TOKEN scenario
     log('\n📋 Test 1: Missing HUGGINGFACE_TOKEN', 'blue');
-    
+
     // Look for jobs where diarization was enabled but failed due to missing token
-    const tokenErrors = db.prepare(`
+    const tokenErrors = db
+      .prepare(
+        `
       SELECT 
         tj.file_id,
         tj.diarization_error,
@@ -39,8 +41,10 @@ async function testEdgeCases() {
       JOIN audio_files af ON tj.file_id = af.id
       WHERE tj.diarization_error LIKE '%HUGGINGFACE_TOKEN%'
       OR tj.diarization_error LIKE '%HuggingFace%'
-    `).all();
-    
+    `
+      )
+      .all();
+
     if (tokenErrors.length > 0) {
       log(`  ❌ Found ${tokenErrors.length} files with token errors:`, 'red');
       tokenErrors.forEach(job => {
@@ -50,11 +54,13 @@ async function testEdgeCases() {
     } else {
       log('  ✅ No HUGGINGFACE_TOKEN errors found', 'green');
     }
-    
+
     // Test 2: Check for format-specific failures
     log('\n📋 Test 2: Format-Specific Failures', 'blue');
-    
-    const formatErrors = db.prepare(`
+
+    const formatErrors = db
+      .prepare(
+        `
       SELECT 
         tj.file_id,
         tj.diarization_error,
@@ -64,8 +70,10 @@ async function testEdgeCases() {
       JOIN audio_files af ON tj.file_id = af.id
       WHERE tj.diarization_error LIKE '%Format not recognised%'
       OR tj.diarization_error LIKE '%format%'
-    `).all();
-    
+    `
+      )
+      .all();
+
     if (formatErrors.length > 0) {
       log(`  ❌ Found ${formatErrors.length} files with format errors:`, 'red');
       const formats = {};
@@ -81,11 +89,13 @@ async function testEdgeCases() {
     } else {
       log('  ✅ No format-specific errors found', 'green');
     }
-    
+
     // Test 3: Check metadata file consistency
     log('\n📋 Test 3: Metadata File Consistency', 'blue');
-    
-    const completedJobs = db.prepare(`
+
+    const completedJobs = db
+      .prepare(
+        `
       SELECT 
         tj.file_id,
         tj.status,
@@ -94,97 +104,152 @@ async function testEdgeCases() {
       FROM transcription_jobs tj
       JOIN audio_files af ON tj.file_id = af.id
       WHERE tj.status = 'completed'
-    `).all();
-    
+    `
+      )
+      .all();
+
     let metadataIssues = 0;
     completedJobs.forEach(job => {
-      const transcriptPath = path.join(process.cwd(), 'data', 'transcripts', `${job.file_id}.json`);
-      const metadataPath = path.join(process.cwd(), 'data', 'transcripts', `${job.file_id}_metadata.json`);
-      
+      const transcriptPath = path.join(
+        process.cwd(),
+        'data',
+        'transcripts',
+        `${job.file_id}.json`
+      );
+      const metadataPath = path.join(
+        process.cwd(),
+        'data',
+        'transcripts',
+        `${job.file_id}_metadata.json`
+      );
+
       if (fs.existsSync(transcriptPath) && !fs.existsSync(metadataPath)) {
         metadataIssues++;
         log(`  ⚠️  File ${job.file_id} missing metadata file`, 'yellow');
       }
     });
-    
+
     if (metadataIssues === 0) {
       log('  ✅ All recent transcriptions have metadata files', 'green');
     } else {
       log(`  ❌ ${metadataIssues} files missing metadata`, 'red');
     }
-    
+
     // Test 4: Check for single-speaker files
     log('\n📋 Test 4: Single-Speaker Detection', 'blue');
-    
-    const noSpeakersDetected = db.prepare(`
+
+    const noSpeakersDetected = db
+      .prepare(
+        `
       SELECT 
         COUNT(*) as count
       FROM transcription_jobs
       WHERE diarization_status = 'no_speakers_detected'
-    `).get();
-    
-    log(`  📊 Files with no speakers detected: ${noSpeakersDetected.count}`, 'yellow');
-    log('  💡 These might be single-speaker recordings or have diarization issues', 'yellow');
-    
+    `
+      )
+      .get();
+
+    log(
+      `  📊 Files with no speakers detected: ${noSpeakersDetected.count}`,
+      'yellow'
+    );
+    log(
+      '  💡 These might be single-speaker recordings or have diarization issues',
+      'yellow'
+    );
+
     // Test 5: Check diarization status distribution
     log('\n📋 Test 5: Diarization Status Distribution', 'blue');
-    
-    const statusDist = db.prepare(`
+
+    const statusDist = db
+      .prepare(
+        `
       SELECT 
         diarization_status,
         COUNT(*) as count
       FROM transcription_jobs
       WHERE status = 'completed'
       GROUP BY diarization_status
-    `).all();
-    
+    `
+      )
+      .all();
+
     log('  Status distribution:', 'blue');
     statusDist.forEach(row => {
       const status = row.diarization_status || 'null/legacy';
-      const color = status === 'success' ? 'green' : 
-                   status === 'failed' ? 'red' : 'yellow';
+      const color =
+        status === 'success' ? 'green' : status === 'failed' ? 'red' : 'yellow';
       log(`    ${status}: ${row.count} files`, color);
     });
-    
+
     // Test 6: Performance check
     log('\n📋 Test 6: Performance Analysis', 'blue');
-    
-    const transcriptSizes = completedJobs.map(job => {
-      const transcriptPath = path.join(process.cwd(), 'data', 'transcripts', `${job.file_id}.json`);
-      if (fs.existsSync(transcriptPath)) {
-        const stats = fs.statSync(transcriptPath);
-        return {
-          fileId: job.file_id,
-          fileName: job.original_file_name,
-          size: stats.size
-        };
-      }
-      return null;
-    }).filter(Boolean);
-    
+
+    const transcriptSizes = completedJobs
+      .map(job => {
+        const transcriptPath = path.join(
+          process.cwd(),
+          'data',
+          'transcripts',
+          `${job.file_id}.json`
+        );
+        if (fs.existsSync(transcriptPath)) {
+          const stats = fs.statSync(transcriptPath);
+          return {
+            fileId: job.file_id,
+            fileName: job.original_file_name,
+            size: stats.size,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+
     if (transcriptSizes.length > 0) {
       transcriptSizes.sort((a, b) => b.size - a.size);
       log('  Largest transcript files:', 'blue');
       transcriptSizes.slice(0, 3).forEach(file => {
-        log(`    File ${file.fileId}: ${(file.size / 1024).toFixed(1)}KB - ${file.fileName}`, 'blue');
+        log(
+          `    File ${file.fileId}: ${(file.size / 1024).toFixed(1)}KB - ${file.fileName}`,
+          'blue'
+        );
       });
     }
-    
+
     // Summary
     log('\n' + '='.repeat(60), 'cyan');
     log('📊 Edge Case Test Summary:', 'cyan');
-    
-    const totalFiles = db.prepare('SELECT COUNT(*) as count FROM audio_files').get().count;
-    const successfulDiarization = db.prepare("SELECT COUNT(*) as count FROM transcription_jobs WHERE diarization_status = 'success'").get().count;
-    const failedDiarization = db.prepare("SELECT COUNT(*) as count FROM transcription_jobs WHERE diarization_status = 'failed'").get().count;
-    
+
+    const totalFiles = db
+      .prepare('SELECT COUNT(*) as count FROM audio_files')
+      .get().count;
+    const successfulDiarization = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM transcription_jobs WHERE diarization_status = 'success'"
+      )
+      .get().count;
+    const failedDiarization = db
+      .prepare(
+        "SELECT COUNT(*) as count FROM transcription_jobs WHERE diarization_status = 'failed'"
+      )
+      .get().count;
+
     log(`  Total files: ${totalFiles}`, 'blue');
-    log(`  Successful diarization: ${successfulDiarization} (${(successfulDiarization/totalFiles*100).toFixed(1)}%)`, 'green');
-    log(`  Failed diarization: ${failedDiarization} (${(failedDiarization/totalFiles*100).toFixed(1)}%)`, 'red');
-    
+    log(
+      `  Successful diarization: ${successfulDiarization} (${((successfulDiarization / totalFiles) * 100).toFixed(1)}%)`,
+      'green'
+    );
+    log(
+      `  Failed diarization: ${failedDiarization} (${((failedDiarization / totalFiles) * 100).toFixed(1)}%)`,
+      'red'
+    );
+
     log('\n💡 Recommendations:', 'cyan');
     if (formatErrors.length > 0) {
-      log('  - Consider converting m4a files to mp3 before processing', 'yellow');
+      log(
+        '  - Consider converting m4a files to mp3 before processing',
+        'yellow'
+      );
     }
     if (tokenErrors.length > 0) {
       log('  - Ensure HUGGINGFACE_TOKEN is set in environment', 'yellow');
@@ -192,7 +257,6 @@ async function testEdgeCases() {
     if (metadataIssues > 0) {
       log('  - Re-transcribe older files to generate metadata', 'yellow');
     }
-    
   } catch (error) {
     log(`\n❌ Error: ${error.message}`, 'red');
   } finally {

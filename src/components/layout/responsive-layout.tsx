@@ -21,7 +21,9 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
   const pathname = usePathname();
 
   return (
-    <ClientOnly fallback={<div className="flex h-full bg-background">{children}</div>}>
+    <ClientOnly
+      fallback={<div className="flex h-full bg-background">{children}</div>}
+    >
       <ResponsiveLayoutInner
         pathname={pathname}
         isTemplateModalOpen={isTemplateModalOpen}
@@ -122,21 +124,25 @@ function ResponsiveLayoutInner({
     <div className="flex min-h-full">
       {/* Desktop Sidebar - only show when authenticated and not on login page */}
       {showNavigation && (
-        <div className={cn(
-          'hidden md:flex md:flex-shrink-0',
-          'transition-all duration-300',
-        )}>
+        <div
+          className={cn(
+            'hidden md:flex md:flex-shrink-0',
+            'transition-all duration-300',
+          )}
+        >
           <Sidebar />
         </div>
       )}
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-y-auto">
+      <div className="flex flex-1 flex-col overflow-y-auto">
         {/* Page Content */}
-        <main className={cn(
-          'flex-1 overflow-auto',
-          isMobile && showNavigation && 'pb-16 safe-area-inset-bottom', // Add bottom padding for mobile navigation
-        )}>
+        <main
+          className={cn(
+            'flex-1 overflow-auto',
+            isMobile && showNavigation && 'safe-area-inset-bottom pb-16', // Add bottom padding for mobile navigation
+          )}
+        >
           {children}
         </main>
       </div>

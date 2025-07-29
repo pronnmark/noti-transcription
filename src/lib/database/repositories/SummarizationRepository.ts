@@ -3,7 +3,10 @@ import { summarizations, Summarization, NewSummarization } from '../schema';
 import { getDb } from '../client';
 import { eq, desc } from 'drizzle-orm';
 
-export class SummarizationRepository extends BaseRepository<Summarization, NewSummarization> {
+export class SummarizationRepository extends BaseRepository<
+  Summarization,
+  NewSummarization
+> {
   constructor() {
     super(summarizations);
   }

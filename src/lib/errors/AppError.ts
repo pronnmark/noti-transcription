@@ -128,11 +128,13 @@ export class AppError extends Error {
       statusCode: this.statusCode,
       isOperational: this.isOperational,
       metadata: this.metadata,
-      cause: this.cause ? {
-        name: this.cause.name,
-        message: this.cause.message,
-        stack: this.cause.stack,
-      } : undefined,
+      cause: this.cause
+        ? {
+          name: this.cause.name,
+          message: this.cause.message,
+          stack: this.cause.stack,
+        }
+        : undefined,
     };
   }
 
@@ -153,7 +155,9 @@ export class AppError extends Error {
   }
 
   static notFound(resource: string, id?: string | number): AppError {
-    const message = id ? `${resource} with id '${id}' not found` : `${resource} not found`;
+    const message = id
+      ? `${resource} with id '${id}' not found`
+      : `${resource} not found`;
     return new AppError(
       message,
       ErrorCode.NOT_FOUND,
@@ -195,7 +199,11 @@ export class AppError extends Error {
     );
   }
 
-  static internal(message: string, cause?: Error, context?: ErrorContext): AppError {
+  static internal(
+    message: string,
+    cause?: Error,
+    context?: ErrorContext,
+  ): AppError {
     return new AppError(
       message,
       ErrorCode.INTERNAL_SERVER_ERROR,
@@ -207,7 +215,11 @@ export class AppError extends Error {
     );
   }
 
-  static database(message: string, cause?: Error, context?: ErrorContext): AppError {
+  static database(
+    message: string,
+    cause?: Error,
+    context?: ErrorContext,
+  ): AppError {
     return new AppError(
       message,
       ErrorCode.DATABASE_ERROR,
@@ -219,7 +231,11 @@ export class AppError extends Error {
     );
   }
 
-  static aiService(message: string, cause?: Error, context?: ErrorContext): AppError {
+  static aiService(
+    message: string,
+    cause?: Error,
+    context?: ErrorContext,
+  ): AppError {
     return new AppError(
       message,
       ErrorCode.AI_SERVICE_ERROR,

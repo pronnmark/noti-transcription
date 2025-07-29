@@ -56,16 +56,16 @@ export default function RecordPage() {
     speakerCount,
     lastAutoSave,
     autoSaveCounter,
-    
+
     // Audio level monitoring
     audioLevel,
     audioAnalyser,
     levelAnimationFrame,
-    
+
     // Location tracking
     locationData,
     isLocationTracking,
-    
+
     // Workflow states
     workflowPhase,
     uploadProgress,
@@ -73,7 +73,7 @@ export default function RecordPage() {
     fileId,
     transcript,
     error: workflowError,
-    
+
     // Actions
     setRecordingState,
     setRecordingTime,
@@ -100,16 +100,16 @@ export default function RecordPage() {
 
   // Local state for upload status
   const [isUploading, setIsUploading] = useState(false);
-  
+
   // Location error state (local since it's just for logging)
   const [_locationError, setLocationError] = useState<string | null>(null);
-  
+
   // Ref to store the cloned audio stream for the analyser
   const analyserStreamRef = useRef<MediaStream | null>(null);
-  
+
   // Ref to store the animation frame ID
   const animationFrameRef = useRef<number | null>(null);
-  
+
   // Ref to store the last known location to ensure it persists through upload
   const lastLocationRef = useRef<LocationData | null>(null);
 
@@ -117,7 +117,10 @@ export default function RecordPage() {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log('MediaDevices API not available');
-        setRecordingSupport(false, 'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.');
+        setRecordingSupport(
+          false,
+          'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.',
+        );
         return;
       }
 
@@ -132,7 +135,11 @@ export default function RecordPage() {
 
       if (audioInputs.length === 0) {
         console.log('No audio input devices found');
-        setRecordingSupport(false, 'No microphone detected. Please connect a microphone and refresh the page.', deviceDebug);
+        setRecordingSupport(
+          false,
+          'No microphone detected. Please connect a microphone and refresh the page.',
+          deviceDebug,
+        );
         return;
       }
 
@@ -162,21 +169,25 @@ export default function RecordPage() {
     } catch (error) {
       console.error('Recording not supported:', error);
       let errorMessage = 'Recording setup failed. ';
-      
+
       if (error instanceof Error) {
         if (error.name === 'NotFoundError') {
-          errorMessage = 'No microphone found. Please connect a microphone and refresh the page.';
+          errorMessage =
+            'No microphone found. Please connect a microphone and refresh the page.';
         } else if (error.name === 'NotAllowedError') {
-          errorMessage = 'Microphone access denied. Please click the microphone icon in your browser\'s address bar and allow access, then refresh the page.';
+          errorMessage =
+            "Microphone access denied. Please click the microphone icon in your browser's address bar and allow access, then refresh the page.";
         } else if (error.name === 'NotReadableError') {
-          errorMessage = 'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
+          errorMessage =
+            'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
         } else if (error.name === 'OverconstrainedError') {
-          errorMessage = 'Your microphone doesn\'t support the required settings. Try using a different microphone or browser.';
+          errorMessage =
+            "Your microphone doesn't support the required settings. Try using a different microphone or browser.";
         } else {
           errorMessage = `Recording error: ${error.message}. Please check your microphone permissions and try again.`;
         }
       }
-      
+
       setRecordingSupport(false, errorMessage);
     }
   }, [isMobile]);
@@ -403,44 +414,47 @@ export default function RecordPage() {
   async function startAudioLevelMonitoring(stream: MediaStream) {
     try {
       console.log('🎵 Starting audio level monitoring...');
-      
+
       // Debug: Check stream tracks
       const audioTracks = stream.getAudioTracks();
       console.log(`🎵 Stream has ${audioTracks.length} audio tracks`);
       audioTracks.forEach((track, index) => {
-        console.log(`🎵 Track ${index}: ${track.label}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`);
+        console.log(
+          `🎵 Track ${index}: ${track.label}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`,
+        );
       });
-      
+
       // Create Web Audio API context
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
       // Resume audio context if suspended (required by Chrome)
       if (audioContext.state === 'suspended') {
         await audioContext.resume();
       }
-      
+
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
       const gainNode = audioContext.createGain();
-      
+
       // Configure analyser with better settings for voice
       analyser.fftSize = 2048; // Good frequency resolution
       analyser.smoothingTimeConstant = 0.2; // Less smoothing for more responsive readings
       analyser.minDecibels = -90; // Less sensitive to very quiet sounds
       analyser.maxDecibels = -30; // Better range for voice
-      
+
       // Mute the gain node so we don't hear the audio
       gainNode.gain.value = 0;
-      
+
       // Connect nodes in a complete audio graph
       // Source → Analyser → Gain (muted) → Destination
       source.connect(analyser);
       analyser.connect(gainNode);
       gainNode.connect(audioContext.destination);
-      
+
       setAudioAnalyser(analyser);
-      
+
       let isMonitoringActive = true;
-      
+
       // Enhanced audio level monitoring with improved sensitivity
       const monitorAudioLevel = () => {
         try {
@@ -448,96 +462,89 @@ export default function RecordPage() {
           if (!isMonitoringActive) {
             return;
           }
-          
-          
+
           // Try float data for better precision if available
           let rms = 0;
           let peak = 0;
           let minValue = 1;
           let maxValue = -1;
           const noiseFloor = 0.01;
-          
+
           try {
-          // Try getFloatTimeDomainData for better precision
-          const floatData = new Float32Array(analyser.fftSize);
-          analyser.getFloatTimeDomainData(floatData);
-          
-          
-          // Calculate RMS and peak from float data
-          let sum = 0;
-          for (let i = 0; i < floatData.length; i++) {
-            const sample = floatData[i];
-            minValue = Math.min(minValue, sample);
-            maxValue = Math.max(maxValue, sample);
-            sum += sample * sample;
-            peak = Math.max(peak, Math.abs(sample));
+            // Try getFloatTimeDomainData for better precision
+            const floatData = new Float32Array(analyser.fftSize);
+            analyser.getFloatTimeDomainData(floatData);
+
+            // Calculate RMS and peak from float data
+            let sum = 0;
+            for (let i = 0; i < floatData.length; i++) {
+              const sample = floatData[i];
+              minValue = Math.min(minValue, sample);
+              maxValue = Math.max(maxValue, sample);
+              sum += sample * sample;
+              peak = Math.max(peak, Math.abs(sample));
+            }
+            rms = Math.sqrt(sum / floatData.length);
+          } catch (e) {
+            // Fallback to byte data if float is not supported
+            const timeData = new Uint8Array(analyser.fftSize);
+            analyser.getByteTimeDomainData(timeData);
+
+            // Calculate RMS and peak from byte data
+            let sum = 0;
+            minValue = 255;
+            maxValue = 0;
+            for (let i = 0; i < timeData.length; i++) {
+              minValue = Math.min(minValue, timeData[i]);
+              maxValue = Math.max(maxValue, timeData[i]);
+              const sample = (timeData[i] - 128) / 128;
+              const absSample = Math.abs(sample);
+              sum += sample * sample;
+              peak = Math.max(peak, absSample);
+            }
+            rms = Math.sqrt(sum / timeData.length);
           }
-          rms = Math.sqrt(sum / floatData.length);
-          
-        } catch (e) {
-          // Fallback to byte data if float is not supported
-          const timeData = new Uint8Array(analyser.fftSize);
-          analyser.getByteTimeDomainData(timeData);
-          
-          
-          // Calculate RMS and peak from byte data
-          let sum = 0;
-          minValue = 255;
-          maxValue = 0;
-          for (let i = 0; i < timeData.length; i++) {
-            minValue = Math.min(minValue, timeData[i]);
-            maxValue = Math.max(maxValue, timeData[i]);
-            const sample = (timeData[i] - 128) / 128;
-            const absSample = Math.abs(sample);
-            sum += sample * sample;
-            peak = Math.max(peak, absSample);
+
+          // Enhanced level calculation with logarithmic scaling and noise floor
+          let level = 0;
+          if (rms > noiseFloor) {
+            // Use logarithmic scaling for better visual representation
+            const logLevel = Math.log10(rms / noiseFloor + 1) * 50; // Logarithmic scaling
+            const linearLevel = rms * 100 * 15; // 15x multiplier for speech sensitivity
+
+            // Combine logarithmic and linear scaling for optimal response
+            level = Math.max(logLevel, linearLevel);
+
+            // Use peak detection as fallback for very quiet audio
+            if (level < 5 && peak > noiseFloor) {
+              level = Math.max(level, peak * 100 * 8); // Peak-based fallback
+            }
           }
-          rms = Math.sqrt(sum / timeData.length);
-        }
-        
-        // Enhanced level calculation with logarithmic scaling and noise floor
-        let level = 0;
-        if (rms > noiseFloor) {
-          // Use logarithmic scaling for better visual representation
-          const logLevel = Math.log10(rms / noiseFloor + 1) * 50; // Logarithmic scaling
-          const linearLevel = rms * 100 * 15; // 15x multiplier for speech sensitivity
-          
-          // Combine logarithmic and linear scaling for optimal response
-          level = Math.max(logLevel, linearLevel);
-          
-          // Use peak detection as fallback for very quiet audio
-          if (level < 5 && peak > noiseFloor) {
-            level = Math.max(level, peak * 100 * 8); // Peak-based fallback
+
+          // Clamp to 0-100 range with smooth ceiling
+          level = Math.min(100, Math.max(0, level));
+
+          setAudioLevel(level);
+
+          // Check and resume AudioContext if suspended (Chrome auto-suspends after ~30s)
+          if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(err => {
+              console.error('Failed to resume AudioContext:', err);
+            });
           }
+
+          // Continue monitoring
+          const frameId = requestAnimationFrame(monitorAudioLevel);
+          animationFrameRef.current = frameId; // Store in ref instead of state
+        } catch (error) {
+          console.error(`❌ Error in monitorAudioLevel:`, error);
+          console.error('Stack trace:', (error as any).stack);
+          // Try to recover by scheduling next frame anyway
+          const frameId = requestAnimationFrame(monitorAudioLevel);
+          animationFrameRef.current = frameId; // Store in ref instead of state
         }
-        
-        // Clamp to 0-100 range with smooth ceiling
-        level = Math.min(100, Math.max(0, level));
-        
-        
-        setAudioLevel(level);
-        
-        // Check and resume AudioContext if suspended (Chrome auto-suspends after ~30s)
-        if (audioContext.state === 'suspended') {
-          audioContext.resume().catch(err => {
-            console.error('Failed to resume AudioContext:', err);
-          });
-        }
-        
-        // Continue monitoring
-        const frameId = requestAnimationFrame(monitorAudioLevel);
-        animationFrameRef.current = frameId; // Store in ref instead of state
-        
-        
-      } catch (error) {
-        console.error(`❌ Error in monitorAudioLevel:`, error);
-        console.error('Stack trace:', (error as any).stack);
-        // Try to recover by scheduling next frame anyway
-        const frameId = requestAnimationFrame(monitorAudioLevel);
-        animationFrameRef.current = frameId; // Store in ref instead of state
-      }
-    };
-      
+      };
+
       // Store cleanup function to stop monitoring
       (window as any).stopAudioMonitoring = () => {
         isMonitoringActive = false;
@@ -546,7 +553,7 @@ export default function RecordPage() {
           animationFrameRef.current = null;
         }
       };
-      
+
       // Start the monitoring loop
       monitorAudioLevel();
     } catch (error) {
@@ -561,34 +568,37 @@ export default function RecordPage() {
       (window as any).stopAudioMonitoring();
       delete (window as any).stopAudioMonitoring;
     }
-    
+
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     }
-    
+
     // Clear the state too (though it's not used for the loop anymore)
     if (levelAnimationFrame) {
       setLevelAnimationFrame(null);
     }
-    
+
     if (audioAnalyser) {
       audioAnalyser.disconnect();
       setAudioAnalyser(null);
     }
-    
+
     // TEST: Not using cloned stream
     // if (analyserStreamRef.current) {
     //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
     //   analyserStreamRef.current = null;
     //   console.log('🔇 Stopped analyser stream tracks');
     // }
-    
+
     setAudioLevel(0);
   }
 
   async function startRecording() {
-    console.log('🎙️ startRecording called, recordingSupported:', recordingSupported);
+    console.log(
+      '🎙️ startRecording called, recordingSupported:',
+      recordingSupported,
+    );
     try {
       if (!recordingSupported) {
         console.error('❌ Recording not supported on this device');
@@ -689,7 +699,7 @@ export default function RecordPage() {
 
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
-        
+
         // TEST: Not using cloned stream
         // if (analyserStreamRef.current) {
         //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
@@ -836,7 +846,7 @@ export default function RecordPage() {
     setIsUploading(true);
     setWorkflowPhase('uploading');
     setUploadProgress(0);
-    
+
     try {
       console.log('Starting upload:', {
         size: audioBlob.size,
@@ -880,19 +890,24 @@ export default function RecordPage() {
       console.log('📤 Creating FormData with blob:', {
         size: audioBlob.size,
         type: audioBlob.type,
-        filename
+        filename,
       });
-      
+
       formData.append('audio', audioBlob, filename);
       formData.append('speakerCount', speakerCount.toString());
       if (isDraft) {
         formData.append('isDraft', 'true');
       }
-      
+
       // Debug FormData contents
       console.log('📤 FormData entries:');
       Array.from(formData.entries()).forEach(([key, value]) => {
-        console.log(`  ${key}:`, value instanceof File ? `File(${value.name}, ${value.size} bytes)` : value);
+        console.log(
+          `  ${key}:`,
+          value instanceof File
+            ? `File(${value.name}, ${value.size} bytes)`
+            : value,
+        );
       });
 
       // Include location data if available (check both store and ref)
@@ -900,8 +915,14 @@ export default function RecordPage() {
       if (locationToUpload) {
         formData.append('latitude', locationToUpload.latitude.toString());
         formData.append('longitude', locationToUpload.longitude.toString());
-        formData.append('locationAccuracy', locationToUpload.accuracy.toString());
-        formData.append('locationTimestamp', locationToUpload.timestamp.toString());
+        formData.append(
+          'locationAccuracy',
+          locationToUpload.accuracy.toString(),
+        );
+        formData.append(
+          'locationTimestamp',
+          locationToUpload.timestamp.toString(),
+        );
         formData.append('locationProvider', locationToUpload.provider);
         console.log('📍 Including location data in upload:', locationToUpload);
       } else {
@@ -926,25 +947,27 @@ export default function RecordPage() {
 
       const result = await response.json();
       console.log('Upload result:', result);
-      
+
       setUploadProgress(100);
-      
+
       if (isDraft) {
         toast.success('Draft recording saved!');
         setWorkflowPhase('idle'); // Return to idle for drafts
       } else {
         toast.success('Recording uploaded successfully!');
-        
+
         // Extract fileId from the results array
-        const successfulFile = result.results?.find((r: any) => r.success && r.fileId);
+        const successfulFile = result.results?.find(
+          (r: any) => r.success && r.fileId,
+        );
         const fileId = successfulFile?.fileId;
-        
+
         if (fileId) {
           setFileId(fileId);
           setWorkflowPhase('transcribing');
           setUploadProgress(100);
           console.log(`✅ File uploaded successfully with ID: ${fileId}`);
-          
+
           // Auto-trigger transcription worker
           try {
             const workerResponse = await fetch('/api/worker/transcribe', {
@@ -952,7 +975,7 @@ export default function RecordPage() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ fileId }),
             });
-            
+
             if (workerResponse.ok) {
               console.log('🚀 Transcription worker triggered successfully');
               // Start polling for transcription status
@@ -1074,17 +1097,17 @@ export default function RecordPage() {
                         )}
                       </div>
                     )}
-                    
+
                     {/* Audio Level Meter */}
                     {isRecording && (
                       <div className="mt-4">
                         <AudioLevelMeter
                           audioLevel={isPaused ? 0 : audioLevel}
                           isActive={isRecording}
-                          className="max-w-sm mx-auto"
+                          className="mx-auto max-w-sm"
                         />
                         {isPaused && (
-                          <div className="text-center text-xs text-muted-foreground mt-1">
+                          <div className="mt-1 text-center text-xs text-muted-foreground">
                             Audio monitoring paused
                           </div>
                         )}
@@ -1179,9 +1202,7 @@ export default function RecordPage() {
                   </div>
                   {supportError && (
                     <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-                      <div className="text-sm text-red-700">
-                        {supportError}
-                      </div>
+                      <div className="text-sm text-red-700">{supportError}</div>
                     </div>
                   )}
                 </div>
@@ -1190,7 +1211,10 @@ export default function RecordPage() {
           </Card>
 
           {/* Workflow Status */}
-          {(workflowPhase === 'uploading' || workflowPhase === 'transcribing' || workflowPhase === 'completed' || workflowPhase === 'error') && (
+          {(workflowPhase === 'uploading' ||
+            workflowPhase === 'transcribing' ||
+            workflowPhase === 'completed' ||
+            workflowPhase === 'error') && (
             <WorkflowStatus
               phase={workflowPhase}
               uploadProgress={uploadProgress}

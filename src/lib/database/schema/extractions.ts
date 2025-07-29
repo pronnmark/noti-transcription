@@ -25,7 +25,7 @@ export const summarizationTemplates = sqliteTable(
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => ({
+  table => ({
     titleIdx: index('title_idx').on(table.title),
   }),
 );
@@ -53,7 +53,7 @@ export const extractionTemplates = sqliteTable(
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => ({
+  table => ({
     nameIdx: index('extraction_templates_name_idx').on(table.name),
     activeIdx: index('extraction_templates_active_idx').on(table.isActive),
   }),
@@ -69,10 +69,9 @@ export const aiExtracts = sqliteTable(
     fileId: integer('file_id')
       .notNull()
       .references(() => audioFiles.id, { onDelete: 'cascade' }),
-    templateId: text('template_id').references(
-      () => extractionTemplates.id,
-      { onDelete: 'set null' },
-    ),
+    templateId: text('template_id').references(() => extractionTemplates.id, {
+      onDelete: 'set null',
+    }),
     model: text('model').notNull(),
     prompt: text('prompt').notNull(),
     content: text('content').notNull(),
@@ -80,7 +79,7 @@ export const aiExtracts = sqliteTable(
       .notNull()
       .default(sql`CURRENT_TIMESTAMP`),
   },
-  (table) => ({
+  table => ({
     fileIdIdx: index('ai_extracts_file_id_idx').on(table.fileId),
     createdAtIdx: index('ai_extracts_created_at_idx').on(table.createdAt),
   }),
@@ -88,7 +87,8 @@ export const aiExtracts = sqliteTable(
 
 // Type exports
 export type SummarizationTemplate = typeof summarizationTemplates.$inferSelect;
-export type NewSummarizationTemplate = typeof summarizationTemplates.$inferInsert;
+export type NewSummarizationTemplate =
+  typeof summarizationTemplates.$inferInsert;
 export type AIExtract = typeof aiExtracts.$inferSelect;
 export type NewAIExtract = typeof aiExtracts.$inferInsert;
 export type ExtractionTemplate = typeof extractionTemplates.$inferSelect;

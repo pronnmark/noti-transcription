@@ -6,12 +6,12 @@ export { CustomAIService, customAIService } from '../customAI';
 // Gemini service removed - using flexible custom AI endpoints
 
 // AI provider factory
-import type { IAIProvider, AIProviderConfig } from '../core/interfaces';
+import type { AIProviderConfig, AIProvider } from './AIProvider';
 import { CustomAIService } from '../customAI';
 export type AIProviderType = 'custom';
 
 export class AIProviderFactory {
-  static create(type: AIProviderType, config?: AIProviderConfig): IAIProvider {
+  static create(type: AIProviderType, config?: AIProviderConfig): AIProvider {
     switch (type) {
       case 'custom':
         return new CustomAIService(config);
@@ -30,7 +30,8 @@ export class AIProviderFactory {
       {
         type: 'custom',
         name: 'Custom AI Endpoint',
-        description: 'Configurable AI endpoint supporting OpenAI-compatible APIs',
+        description:
+          'Configurable AI endpoint supporting OpenAI-compatible APIs',
         models: ['gpt-3.5-turbo', 'gpt-4', 'claude-3-sonnet', 'llama-3.1-70b'],
       },
     ];

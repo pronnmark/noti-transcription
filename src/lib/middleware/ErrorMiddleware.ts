@@ -22,16 +22,23 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
 
     try {
       // Handle the error using the centralized error handler
-      const errorResponse = await errorHandler.handleError(error, context.requestId);
+      const errorResponse = await errorHandler.handleError(
+        error,
+        context.requestId,
+      );
 
       // Log the error
-      context.logger.error('Request failed with error', error instanceof Error ? error : new Error(String(error)), {
-        method: context.method,
-        path: context.path,
-        statusCode: errorResponse.error.statusCode,
-        errorCode: errorResponse.error.code,
-        duration: Date.now() - context.startTime,
-      });
+      context.logger.error(
+        'Request failed with error',
+        error instanceof Error ? error : new Error(String(error)),
+        {
+          method: context.method,
+          path: context.path,
+          statusCode: errorResponse.error.statusCode,
+          errorCode: errorResponse.error.code,
+          duration: Date.now() - context.startTime,
+        },
+      );
 
       // Create API response
       const apiResponse: ApiResponse = {
@@ -71,7 +78,12 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
       return response;
     } catch (handlerError) {
       // Fallback error handling if the error handler itself fails
-      context.logger.fatal('Error handler failed', handlerError instanceof Error ? handlerError : new Error(String(handlerError)));
+      context.logger.fatal(
+        'Error handler failed',
+        handlerError instanceof Error
+          ? handlerError
+          : new Error(String(handlerError)),
+      );
 
       const fallbackResponse: ApiResponse = {
         success: false,
@@ -208,7 +220,10 @@ export class RateLimitErrorMiddleware implements ErrorMiddlewareHandler {
     request: NextRequest,
     context: RequestContext,
   ): Promise<NextResponse> {
-    if (!(error instanceof AppError) || error.code !== ErrorCode.RATE_LIMIT_EXCEEDED) {
+    if (
+      !(error instanceof AppError) ||
+      error.code !== ErrorCode.RATE_LIMIT_EXCEEDED
+    ) {
       throw error; // Re-throw if not a rate limit error
     }
 
