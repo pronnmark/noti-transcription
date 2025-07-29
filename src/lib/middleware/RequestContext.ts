@@ -192,8 +192,11 @@ export class RequestContextBuilder {
     const maxBodySize = this.config.logging?.maxBodySize || 10000; // 10KB default
 
     try {
+      // Clone the request to avoid consuming the original ReadableStream
+      const clonedRequest = request.clone();
+
       if (contentType.includes('application/json')) {
-        const text = await request.text();
+        const text = await clonedRequest.text();
 
         if (text.length > maxBodySize) {
           return { _truncated: true, _size: text.length };
@@ -204,7 +207,7 @@ export class RequestContextBuilder {
       }
 
       if (contentType.includes('application/x-www-form-urlencoded')) {
-        const formData = await request.formData();
+        const formData = await clonedRequest.formData();
         const body: Record<string, any> = {};
 
         for (const [key, value] of Array.from(formData.entries())) {
@@ -222,7 +225,7 @@ export class RequestContextBuilder {
       }
 
       // For other content types, just log the size
-      const text = await request.text();
+      const text = await clonedRequest.text();
       return { _type: contentType, _size: text.length };
     } catch (error) {
       return { _error: 'Failed to parse body', _type: contentType };
