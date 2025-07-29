@@ -100,6 +100,7 @@ export function withAuthMiddleware(
     request: import('next/server').NextRequest,
     context: import('./types').RequestContext,
   ) => {
+
     // Import dynamically to avoid circular dependencies
     const { cookies } = await import('next/headers');
     const { validateSession } = await import('../auth');

@@ -1,184 +1,220 @@
 import { BaseRepository } from './BaseRepository';
-import { audioFiles, AudioFile, NewAudioFile } from '../schema';
-import { getDb } from '../client';
-import {
-  eq,
-  desc,
-  asc,
-  and,
-  gte,
-  lte,
-  SQL,
-  sum,
-  avg,
-  count,
-} from 'drizzle-orm';
+import { AudioFile } from '../client';
+import { getSupabase } from '../client';
 
-export class AudioRepository extends BaseRepository<AudioFile, NewAudioFile> {
-  constructor() {
-    super(audioFiles);
-  }
-
+export class AudioRepository extends BaseRepository {
   async findByHash(hash: string): Promise<AudioFile | null> {
     try {
-      const db = getDb();
-      const result = await db
-        .select()
-        .from(this.table)
-        .where(eq(this.table.fileHash, hash))
-        .limit(1);
-      return (result[0] as AudioFile) || null;
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('audio_files')
+        .select('*')
+        .eq('file_hash', hash)
+        .limit(1)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No rows found
+          return null;
+        }
+        throw new Error(`Supabase error: ${error.message || JSON.stringify(error)}`);
+      }
+      
+      return data as AudioFile;
     } catch (error) {
-      throw new Error(`Failed to find audio file by hash: ${error}`);
+      if (error instanceof Error) {
+        throw error;
+      }
+      throw new Error(`Failed to find audio file by hash: ${JSON.stringify(error)}`);
     }
   }
 
-  async findByFileName(fileName: string): Promise<AudioFile | null> {
+  async findAll(options?: {
+    limit?: number;
+    offset?: number;
+    sortBy?: 'uploaded_at' | 'updated_at' | 'file_name';
+    sortOrder?: 'asc' | 'desc';
+  }): Promise<AudioFile[]> {
     try {
-      const db = getDb();
-      const result = await db
-        .select()
-        .from(this.table)
-        .where(eq(this.table.fileName, fileName))
-        .limit(1);
-      return (result[0] as AudioFile) || null;
+      const supabase = getSupabase();
+      let query = supabase.from('audio_files').select('*');
+      
+      // Apply sorting
+      const sortBy = options?.sortBy || 'uploaded_at';
+      const sortOrder = options?.sortOrder || 'desc';
+      query = query.order(sortBy, { ascending: sortOrder === 'asc' });
+      
+      // Apply pagination
+      if (options?.limit) {
+        query = query.limit(options.limit);
+      }
+      if (options?.offset) {
+        query = query.range(options.offset, (options.offset + (options.limit || 50)) - 1);
+      }
+      
+      const { data, error } = await query;
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data as AudioFile[];
     } catch (error) {
-      throw new Error(`Failed to find audio file by filename: ${error}`);
+      throw new Error(`Failed to find all audio files: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async findRecent(limit: number = 10): Promise<AudioFile[]> {
+  async findById(id: number): Promise<AudioFile | null> {
     try {
-      const db = getDb();
-      const result = await db
-        .select()
-        .from(this.table)
-        .orderBy(desc(this.table.uploadedAt))
-        .limit(limit);
-      return result as AudioFile[];
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('audio_files')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+      
+      return data as AudioFile;
     } catch (error) {
-      throw new Error(`Failed to find recent audio files: ${error}`);
+      throw new Error(`Failed to find audio file by ID: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async findByDateRange(startDate: Date, endDate: Date): Promise<AudioFile[]> {
+  async create(data: Omit<AudioFile, 'id' | 'uploaded_at' | 'updated_at'>): Promise<AudioFile> {
     try {
-      const db = getDb();
-      const result = await db
+      const supabase = getSupabase();
+      const { data: newFile, error } = await supabase
+        .from('audio_files')
+        .insert(data)
         .select()
-        .from(this.table)
-        .where(
-          and(
-            gte(this.table.uploadedAt, Math.floor(startDate.getTime() / 1000)),
-            lte(this.table.uploadedAt, Math.floor(endDate.getTime() / 1000)),
-          ),
-        )
-        .orderBy(desc(this.table.uploadedAt));
-      return result as AudioFile[];
+        .single();
+      
+      if (error) {
+        console.error('Supabase create error:', error);
+        throw error;
+      }
+      
+      return newFile as AudioFile;
     } catch (error) {
-      throw new Error(`Failed to find audio files by date range: ${error}`);
+      console.error('AudioRepository.create error:', error);
+      throw new Error(`Failed to create audio file: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   }
 
-  async findByFileType(fileType: string): Promise<AudioFile[]> {
+  async update(id: number, data: Partial<Omit<AudioFile, 'id' | 'uploaded_at' | 'updated_at'>>): Promise<AudioFile> {
     try {
-      const db = getDb();
-      const result = await db
+      const supabase = getSupabase();
+      const { data: updatedFile, error } = await supabase
+        .from('audio_files')
+        .update({
+          ...data,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
         .select()
-        .from(this.table)
-        .where(eq(this.table.originalFileType, fileType))
-        .orderBy(desc(this.table.uploadedAt));
-      return result as AudioFile[];
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      return updatedFile as AudioFile;
     } catch (error) {
-      throw new Error(`Failed to find audio files by file type: ${error}`);
+      throw new Error(`Failed to update audio file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async getTotalSize(): Promise<number> {
+  async delete(id: number): Promise<boolean> {
     try {
-      const db = getDb();
-      const result = await db
-        .select({ totalSize: sum(this.table.fileSize) })
-        .from(this.table);
-      return Number(result[0]?.totalSize) || 0;
+      const supabase = getSupabase();
+      const { error } = await supabase
+        .from('audio_files')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return true;
     } catch (error) {
-      throw new Error(`Failed to get total file size: ${error}`);
+      throw new Error(`Failed to delete audio file: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async getStatistics(): Promise<{
+  async checkForDuplicates(data: { fileHash: string; fileSize: number; originalFileName: string }): Promise<AudioFile[]> {
+    try {
+      const supabase = getSupabase();
+      const { data: duplicates, error } = await supabase
+        .from('audio_files')
+        .select('*')
+        .or(`file_hash.eq.${data.fileHash},and(file_size.eq.${data.fileSize},original_file_name.eq.${data.originalFileName})`);
+      
+      if (error) {
+        throw error;
+      }
+      
+      return duplicates as AudioFile[];
+    } catch (error) {
+      throw new Error(`Failed to check for duplicates: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async count(): Promise<number> {
+    try {
+      const supabase = getSupabase();
+      const { count, error } = await supabase
+        .from('audio_files')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return count || 0;
+    } catch (error) {
+      throw new Error(`Failed to count audio files: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async getStorageStats(): Promise<{
     totalFiles: number;
     totalSize: number;
     averageSize: number;
-    averageDuration: number;
+    totalDuration: number;
   }> {
     try {
-      const db = getDb();
-      const result = await db
-        .select({
-          totalFiles: count(),
-          totalSize: sum(this.table.fileSize),
-          averageSize: avg(this.table.fileSize),
-          averageDuration: avg(this.table.duration),
-        })
-        .from(this.table);
-
-      const stats = result[0];
+      const supabase = getSupabase();
+      
+      // Get count and sum in separate queries since Supabase doesn't support aggregate functions the same way
+      const { count } = await supabase
+        .from('audio_files')
+        .select('*', { count: 'exact', head: true });
+      
+      const { data: sizeData } = await supabase
+        .from('audio_files')
+        .select('file_size, duration');
+      
+      const totalFiles = count || 0;
+      const totalSize = sizeData?.reduce((sum, file) => sum + (file.file_size || 0), 0) || 0;
+      const totalDuration = sizeData?.reduce((sum, file) => sum + (file.duration || 0), 0) || 0;
+      const averageSize = totalFiles > 0 ? totalSize / totalFiles : 0;
+      
       return {
-        totalFiles: Number(stats?.totalFiles) || 0,
-        totalSize: Number(stats?.totalSize) || 0,
-        averageSize: Number(stats?.averageSize) || 0,
-        averageDuration: Number(stats?.averageDuration) || 0,
+        totalFiles,
+        totalSize,
+        averageSize,
+        totalDuration,
       };
     } catch (error) {
-      throw new Error(`Failed to get audio file statistics: ${error}`);
-    }
-  }
-
-  async getUniqueDates(): Promise<string[]> {
-    try {
-      const db = getDb();
-      // This is a simplified version - in production, you'd want to use SQL functions
-      // to extract unique dates from the uploadedAt timestamp
-      const files = await db
-        .select({
-          uploadedAt: this.table.uploadedAt,
-        })
-        .from(this.table)
-        .orderBy(desc(this.table.uploadedAt));
-
-      const uniqueDates = new Set<string>();
-      files.forEach(file => {
-        if (file.uploadedAt) {
-          const date = new Date(file.uploadedAt).toISOString().split('T')[0];
-          uniqueDates.add(date);
-        }
-      });
-
-      return Array.from(uniqueDates).sort().reverse();
-    } catch (error) {
-      throw new Error(`Failed to get unique dates: ${error}`);
-    }
-  }
-
-  async updateTimestamp(id: number): Promise<AudioFile> {
-    try {
-      const db = getDb();
-      const [result] = await db
-        .update(this.table)
-        .set({
-          updatedAt: new Date(),
-        })
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Audio file with id ${id} not found`);
-      }
-
-      return result as AudioFile;
-    } catch (error) {
-      throw new Error(`Failed to update timestamp: ${error}`);
+      throw new Error(`Failed to get storage stats: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

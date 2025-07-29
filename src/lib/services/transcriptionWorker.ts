@@ -1,6 +1,4 @@
-import { getDb } from '../database/client';
-import { audioFiles, transcriptionJobs } from '../database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '../database/client';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { startTranscription } from './transcription';
@@ -29,19 +27,22 @@ function createTimeoutPromise(timeoutMs: number): Promise<never> {
 }
 
 export async function processTranscriptionJobs(): Promise<WorkerResult> {
-  const db = getDb();
+  const supabase = getSupabase();
 
   try {
-    // Get pending or stuck processing jobs
-    const jobs = await db
-      .select({
-        job: transcriptionJobs,
-        file: audioFiles,
-      })
-      .from(transcriptionJobs)
-      .innerJoin(audioFiles, eq(transcriptionJobs.fileId, audioFiles.id))
-      .where(eq(transcriptionJobs.status, 'pending'))
+    // Get pending or stuck processing jobs with file info
+    const { data: jobs, error } = await supabase
+      .from('transcription_jobs')
+      .select(`
+        *,
+        audio_files (*)
+      `)
+      .eq('status', 'pending')
       .limit(5);
+
+    if (error) {
+      throw new Error(`Failed to fetch pending jobs: ${error.message}`);
+    }
 
     if (jobs.length === 0) {
       return {
@@ -59,39 +60,50 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
       error?: string;
     }[] = [];
 
-    for (const { job, file } of jobs) {
+    for (const job of jobs) {
+      const file = job.audio_files;
+      if (!file) {
+        console.error(`No audio file found for job ${job.id}`);
+        continue;
+      }
+
       try {
         console.log(
-          `Processing transcription job ${job.id} for file: ${file.originalFileName}`,
+          `Processing transcription job ${job.id} for file: ${file.original_file_name}`,
         );
 
         // Update status to processing
-        await db
-          .update(transcriptionJobs)
-          .set({
+        const { error: updateError } = await supabase
+          .from('transcription_jobs')
+          .update({
             status: 'processing',
-            startedAt: new Date(),
+            started_at: new Date().toISOString(),
             progress: 10,
+            updated_at: new Date().toISOString(),
           })
-          .where(eq(transcriptionJobs.id, job.id));
+          .eq('id', job.id);
+
+        if (updateError) {
+          throw new Error(`Failed to update job status: ${updateError.message}`);
+        }
 
         // Check if file exists
         const audioPath = join(
           process.cwd(),
           'data',
           'audio_files',
-          file.fileName,
+          file.file_name,
         );
         try {
           await fs.access(audioPath);
         } catch (_e) {
           console.log('File not found at:', audioPath);
           console.log('File object:', file);
-          throw new Error(`Audio file not found: ${file.fileName}`);
+          throw new Error(`Audio file not found: ${file.file_name}`);
         }
 
         // Add file size validation
-        const fileSizeMB = file.fileSize / (1024 * 1024);
+        const fileSizeMB = file.file_size / (1024 * 1024);
         console.log(`File size: ${fileSizeMB.toFixed(2)}MB`);
 
         if (fileSizeMB > 100) {
@@ -102,7 +114,7 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
 
         // Start real transcription with timeout protection
         console.log(
-          `Starting real transcription for job ${job.id}, file: ${file.originalFileName}`,
+          `Starting real transcription for job ${job.id}, file: ${file.original_file_name}`,
         );
 
         try {
@@ -114,17 +126,21 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           ]);
 
           // After transcription completes, read the result from the database
-          const updatedJob = await db
-            .select()
-            .from(transcriptionJobs)
-            .where(eq(transcriptionJobs.id, job.id))
+          const { data: updatedJobs, error: fetchError } = await supabase
+            .from('transcription_jobs')
+            .select('*')
+            .eq('id', job.id)
             .limit(1);
 
-          if (updatedJob.length === 0) {
+          if (fetchError) {
+            throw new Error(`Failed to fetch updated job: ${fetchError.message}`);
+          }
+
+          if (!updatedJobs || updatedJobs.length === 0) {
             throw new Error('Job not found after transcription');
           }
 
-          const transcriptionResult = updatedJob[0];
+          const transcriptionResult = updatedJobs[0];
 
           // Check if transcription was successful
           if (transcriptionResult.status !== 'completed') {
@@ -143,18 +159,19 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           );
 
           // Update job as failed
-          await db
-            .update(transcriptionJobs)
-            .set({
+          await supabase
+            .from('transcription_jobs')
+            .update({
               status: 'failed',
               progress: 0,
-              lastError:
+              last_error:
                 transcriptionError instanceof Error
                   ? transcriptionError.message
                   : 'Unknown transcription error',
-              completedAt: new Date(),
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             })
-            .where(eq(transcriptionJobs.id, job.id));
+            .eq('id', job.id);
 
           throw transcriptionError;
         }
@@ -162,7 +179,7 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
         results.push({
           jobId: job.id,
           fileId: file.id,
-          fileName: file.originalFileName,
+          fileName: file.original_file_name,
           status: 'completed',
         });
       } catch (error) {
@@ -170,15 +187,16 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
 
         // Mark job as failed if not already updated
         try {
-          await db
-            .update(transcriptionJobs)
-            .set({
+          await supabase
+            .from('transcription_jobs')
+            .update({
               status: 'failed',
-              lastError:
+              last_error:
                 error instanceof Error ? error.message : 'Unknown error',
-              completedAt: new Date(),
+              completed_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
             })
-            .where(eq(transcriptionJobs.id, job.id));
+            .eq('id', job.id);
         } catch (dbError) {
           console.error(`Failed to update job ${job.id} status:`, dbError);
         }
@@ -186,7 +204,7 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
         results.push({
           jobId: job.id,
           fileId: file.id,
-          fileName: file.originalFileName,
+          fileName: file.original_file_name,
           status: 'failed',
           error: error instanceof Error ? error.message : 'Unknown error',
         });

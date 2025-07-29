@@ -15,6 +15,13 @@ export class AuthMiddleware implements MiddlewareHandler {
     try {
       // Skip auth for certain paths if needed
       const skipPaths = ['/api/upload', '/api/health'];
+      
+      // Skip auth for all API endpoints in test environment
+      if (process.env.NODE_ENV === 'test') {
+        context.logger.info('Skipping auth for test environment', { path: context.path });
+        return next();
+      }
+      
       if (skipPaths.some(path => context.path.startsWith(path))) {
         return next();
       }

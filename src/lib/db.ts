@@ -1,60 +1,33 @@
 // Legacy database exports for backward compatibility
-// This file provides the old interface while using the new database structure
+// This file provides the old interface while using the new Supabase-based structure
 
 import {
-  db,
   AudioRepository,
   ExtractionRepository,
   SummarizationRepository,
   ExtractionTemplateRepository,
   SummarizationTemplateRepository,
-  audioFiles,
-  extractions,
-  summarizations,
-  extractionTemplates,
-  summarizationTemplates,
-  transcriptionJobs,
-  systemSettings,
-  psychologicalEvaluations,
-  dataPoints,
-  dataPointTemplates,
-  summarizationPrompts,
-  extractionDefinitions,
-  extractionResults,
-  aiProcessingSessions,
-  eq,
-  and,
-  or,
-  desc,
-  asc,
-  count,
-  sql,
-  inArray,
+  getSupabase,
 } from './database';
 
-// Export the database connection
-export { db };
+// Export the Supabase client as db for backward compatibility
+export const db = getSupabase();
 
-// Export schema tables
-export {
-  audioFiles,
-  extractions,
-  summarizations,
-  extractionTemplates,
-  summarizationTemplates,
-  transcriptionJobs,
-  systemSettings,
-  psychologicalEvaluations,
-  dataPoints,
-  dataPointTemplates,
-  summarizationPrompts,
-  extractionDefinitions,
-  extractionResults,
-  aiProcessingSessions,
-};
-
-// Export query operators
-export { eq, and, or, desc, asc, count, sql, inArray };
+// Legacy table name exports (these are now just string references for table names)
+export const audioFiles = 'audio_files';
+export const extractions = 'extractions';
+export const summarizations = 'summarizations';
+export const extractionTemplates = 'extraction_templates';
+export const summarizationTemplates = 'summarization_templates';
+export const transcriptionJobs = 'transcription_jobs';
+export const systemSettings = 'system_settings';
+export const psychologicalEvaluations = 'psychological_evaluations';
+export const dataPoints = 'data_points';
+export const dataPointTemplates = 'data_point_templates';
+export const summarizationPrompts = 'summarization_prompts';
+export const extractionDefinitions = 'extraction_definitions';
+export const extractionResults = 'extraction_results';
+export const aiProcessingSessions = 'ai_processing_sessions';
 
 // Legacy aliases for backward compatibility
 export const settings = systemSettings;
@@ -76,8 +49,17 @@ export const summarizationTemplatesService =
 export const settingsService = {
   async get() {
     try {
-      const result = await db.select().from(systemSettings).limit(1);
-      return result[0] || null;
+      const { data, error } = await db
+        .from('system_settings')
+        .select('*')
+        .limit(1)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+      
+      return data || null;
     } catch (error) {
       console.error('Failed to get settings:', error);
       return null;
@@ -87,12 +69,18 @@ export const settingsService = {
     try {
       const existing = await this.get();
       if (existing) {
-        await db
-          .update(systemSettings)
-          .set(data)
-          .where(eq(systemSettings.id, existing.id));
+        const { error } = await db
+          .from('system_settings')
+          .update({ ...data, updated_at: new Date().toISOString() })
+          .eq('id', existing.id);
+        
+        if (error) throw error;
       } else {
-        await db.insert(systemSettings).values({ id: 1, ...data });
+        const { error } = await db
+          .from('system_settings')
+          .insert({ id: 1, ...data, created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+        
+        if (error) throw error;
       }
     } catch (error) {
       console.error('Failed to update settings:', error);
@@ -111,7 +99,7 @@ export const parseAudioFile = async (filePath: string) => {
   return { duration: 0, peaks: [] };
 };
 
-// Export additional schema items
+// Export additional schema items (now just table name strings)
 export const schema = {
   audioFiles,
   extractions,
@@ -129,17 +117,29 @@ export const schema = {
   aiProcessingSessions,
 };
 
-// Export types for backward compatibility
-export type {
-  AudioFile,
-  NewAudioFile,
-  Extraction,
-  NewExtraction,
-  ExtractionTemplate,
-  NewExtractionTemplate,
-  Summarization,
-  NewSummarization,
-  TranscriptionJob,
-  NewTranscriptionJob,
-  TranscriptSegment,
-} from './database';
+// Basic TypeScript types for backward compatibility
+export interface AudioFile {
+  id: number;
+  file_name: string;
+  original_file_name: string;
+  file_size: number;
+  duration?: number;
+  uploaded_at: string;
+  updated_at: string;
+}
+
+export interface TranscriptionJob {
+  id: number;
+  file_id: number;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  transcript?: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: string;
+}

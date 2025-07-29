@@ -3,10 +3,14 @@ import { join } from 'path';
 import { readFile } from 'fs/promises';
 import { AudioService } from './core/AudioService';
 import { detectAndApplySpeakerNames } from './speakerDetectionService';
-import type { TranscriptSegment } from '../database/schema';
-import { getDb } from '../database/client';
-import { transcriptionJobs } from '../database/schema/transcripts';
-import { eq, desc } from 'drizzle-orm';
+import { getSupabase } from '../database/client';
+
+export interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: string;
+}
 
 const _audioService = new AudioService();
 
@@ -201,7 +205,7 @@ export async function startTranscription(
   audioPath: string,
   speakerCount?: number,
 ): Promise<void> {
-  const db = getDb();
+  const supabase = getSupabase();
 
   try {
     debugLog(
@@ -214,14 +218,18 @@ export async function startTranscription(
     // Note: Speaker count will be read from database job or fallback to parameter
 
     // Get the transcription job
-    const jobs = await db
-      .select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileId))
-      .orderBy(transcriptionJobs.createdAt)
+    const { data: jobs, error: jobError } = await supabase
+      .from('transcription_jobs')
+      .select('*')
+      .eq('file_id', fileId)
+      .order('created_at', { ascending: true })
       .limit(1);
 
-    if (jobs.length === 0) {
+    if (jobError) {
+      throw new Error(`Failed to fetch transcription job: ${jobError.message}`);
+    }
+
+    if (!jobs || jobs.length === 0) {
       throw new Error(`No transcription job found for file ${fileId}`);
     }
 
@@ -238,28 +246,34 @@ export async function startTranscription(
     }
 
     // Update job to processing status
-    await db
-      .update(transcriptionJobs)
-      .set({
+    const { error: updateError1 } = await supabase
+      .from('transcription_jobs')
+      .update({
         status: 'processing',
-        startedAt: new Date(),
+        started_at: new Date().toISOString(),
         progress: 10,
-        diarizationStatus: 'in_progress',
+        diarization_status: 'in_progress',
+        updated_at: new Date().toISOString(),
       })
-      .where(eq(transcriptionJobs.id, job.id));
+      .eq('id', job.id);
+
+    if (updateError1) {
+      throw new Error(`Failed to update job status: ${updateError1.message}`);
+    }
 
     // Validate audio file exists
     try {
       await readFile(audioPath);
     } catch (_error) {
-      await db
-        .update(transcriptionJobs)
-        .set({
+      await supabase
+        .from('transcription_jobs')
+        .update({
           status: 'failed',
-          lastError: `Audio file not found: ${audioPath}`,
-          completedAt: new Date(),
+          last_error: `Audio file not found: ${audioPath}`,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(transcriptionJobs.id, job.id));
+        .eq('id', job.id);
       throw new Error(`Audio file not found: ${audioPath}`);
     }
 
@@ -280,10 +294,13 @@ export async function startTranscription(
     }
 
     // Update progress
-    await db
-      .update(transcriptionJobs)
-      .set({ progress: 20 })
-      .where(eq(transcriptionJobs.id, job.id));
+    await supabase
+      .from('transcription_jobs')
+      .update({ 
+        progress: 20,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', job.id);
 
     // Try GPU first, then fallback to CPU
     let success = false;
@@ -299,10 +316,13 @@ export async function startTranscription(
     if (!success) {
       debugLog('🔄 GPU transcription failed, falling back to CPU...');
       // Update progress
-      await db
-        .update(transcriptionJobs)
-        .set({ progress: 50 })
-        .where(eq(transcriptionJobs.id, job.id));
+      await supabase
+        .from('transcription_jobs')
+        .update({ 
+          progress: 50,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', job.id);
 
       success = await tryTranscription(
         audioPath,
@@ -314,10 +334,13 @@ export async function startTranscription(
 
     if (success) {
       // Update progress
-      await db
-        .update(transcriptionJobs)
-        .set({ progress: 80 })
-        .where(eq(transcriptionJobs.id, job.id));
+      await supabase
+        .from('transcription_jobs')
+        .update({ 
+          progress: 80,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', job.id);
 
       // Verify the output file exists and is valid
       let result: TranscriptionResult;
@@ -333,14 +356,15 @@ export async function startTranscription(
           parseError instanceof Error ? parseError.message : 'Unknown error'
         }`;
 
-        await db
-          .update(transcriptionJobs)
-          .set({
+        await supabase
+          .from('transcription_jobs')
+          .update({
             status: 'failed',
-            lastError: errorMsg,
-            completedAt: new Date(),
+            last_error: errorMsg,
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
-          .where(eq(transcriptionJobs.id, job.id));
+          .eq('id', job.id);
 
         throw new Error(errorMsg);
       }
@@ -474,32 +498,44 @@ export async function startTranscription(
       }
 
       // Update job as completed with the transcript (potentially with updated speaker names)
-      await db
-        .update(transcriptionJobs)
-        .set({
+      const { error: completeError } = await supabase
+        .from('transcription_jobs')
+        .update({
           status: 'completed',
           progress: 100,
           transcript: finalSegments,
-          diarizationStatus: diarizationStatus,
-          diarizationError: diarizationError,
-          completedAt: new Date(),
+          diarization_status: diarizationStatus,
+          diarization_error: diarizationError,
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(transcriptionJobs.id, job.id));
+        .eq('id', job.id);
+
+      if (completeError) {
+        throw new Error(`Failed to complete job: ${completeError.message}`);
+      }
 
       // Update audioFiles table with calculated duration
       if (calculatedDuration > 0) {
         try {
-          const { audioFiles } = await import('../database/schema/audio');
-          await db
-            .update(audioFiles)
-            .set({
-              duration: calculatedDuration,
-              updatedAt: new Date(),
+          const { error: durationError } = await supabase
+            .from('audio_files')
+            .update({
+              duration: Math.round(calculatedDuration),
+              updated_at: new Date().toISOString(),
             })
-            .where(eq(audioFiles.id, fileId));
-          debugLog(
-            `📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`,
-          );
+            .eq('id', fileId);
+
+          if (durationError) {
+            console.error(
+              `⚠️ Failed to update duration for file ${fileId}:`,
+              durationError.message,
+            );
+          } else {
+            debugLog(
+              `📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`,
+            );
+          }
         } catch (durationError) {
           console.error(
             `⚠️ Failed to update duration for file ${fileId}:`,
@@ -516,17 +552,18 @@ export async function startTranscription(
       debugLog(`✅ Transcription completed successfully for file ${fileId}`);
       // Note: Auto-extraction system has been removed for simplicity
     } else {
-      await db
-        .update(transcriptionJobs)
-        .set({
+      await supabase
+        .from('transcription_jobs')
+        .update({
           status: 'failed',
-          lastError: 'Transcription failed on both GPU and CPU',
-          diarizationStatus: 'failed',
-          diarizationError:
+          last_error: 'Transcription failed on both GPU and CPU',
+          diarization_status: 'failed',
+          diarization_error:
             'Transcription failed before diarization could be attempted',
-          completedAt: new Date(),
+          completed_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(transcriptionJobs.id, job.id));
+        .eq('id', job.id);
 
       console.error(`❌ Transcription failed for file ${fileId}`);
       throw new Error('Transcription failed on both GPU and CPU');
@@ -539,25 +576,26 @@ export async function startTranscription(
 
     // Update job as failed if not already updated
     try {
-      const jobs = await db
-        .select()
-        .from(transcriptionJobs)
-        .where(eq(transcriptionJobs.fileId, fileId))
-        .orderBy(transcriptionJobs.createdAt)
+      const { data: jobs, error: jobError } = await supabase
+        .from('transcription_jobs')
+        .select('*')
+        .eq('file_id', fileId)
+        .order('created_at', { ascending: true })
         .limit(1);
 
-      if (jobs.length > 0) {
-        await db
-          .update(transcriptionJobs)
-          .set({
+      if (!jobError && jobs && jobs.length > 0) {
+        await supabase
+          .from('transcription_jobs')
+          .update({
             status: 'failed',
-            lastError: error instanceof Error ? error.message : 'Unknown error',
-            diarizationStatus: 'failed',
-            diarizationError:
+            last_error: error instanceof Error ? error.message : 'Unknown error',
+            diarization_status: 'failed',
+            diarization_error:
               error instanceof Error ? error.message : 'Unknown error',
-            completedAt: new Date(),
+            completed_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
           })
-          .where(eq(transcriptionJobs.id, jobs[0].id));
+          .eq('id', jobs[0].id);
       }
     } catch (dbError) {
       console.error('Failed to update job status:', dbError);
@@ -571,24 +609,29 @@ export async function getTranscript(
   fileId: number,
 ): Promise<TranscriptionResult | null> {
   try {
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Query transcription job for this file
-    const transcriptionJob = await db
-      .select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileId))
-      .orderBy(desc(transcriptionJobs.createdAt))
+    const { data: transcriptionJobs, error } = await supabase
+      .from('transcription_jobs')
+      .select('*')
+      .eq('file_id', fileId)
+      .order('created_at', { ascending: false })
       .limit(1);
 
-    if (!transcriptionJob.length || !transcriptionJob[0].transcript) {
+    if (error) {
+      console.error(`Error fetching transcript for file ${fileId}:`, error);
+      return null;
+    }
+
+    if (!transcriptionJobs || transcriptionJobs.length === 0 || !transcriptionJobs[0].transcript) {
       debugLog(`No transcript found for file ${fileId}`);
       return null;
     }
 
     // Return transcript in expected format
     return {
-      segments: transcriptionJob[0].transcript,
+      segments: transcriptionJobs[0].transcript,
     };
   } catch (error) {
     console.error(`Error getting transcript for file ${fileId}:`, error);

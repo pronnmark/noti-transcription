@@ -1,211 +1,166 @@
 import { BaseRepository } from './BaseRepository';
-import {
-  transcriptionJobs,
-  TranscriptionJob,
-  NewTranscriptionJob,
-  TranscriptSegment,
-} from '../schema';
-import { getDb } from '../client';
-import { eq, and, desc } from 'drizzle-orm';
+import { TranscriptionJob } from '../client';
+import { getSupabase } from '../client';
 
-export class TranscriptionRepository extends BaseRepository<
-  TranscriptionJob,
-  NewTranscriptionJob
-> {
-  constructor() {
-    super(transcriptionJobs);
-  }
-
-  async findByFileId(fileId: number): Promise<TranscriptionJob[]> {
+export class TranscriptionRepository extends BaseRepository {
+  async create(data: Omit<TranscriptionJob, 'id' | 'created_at' | 'updated_at'>): Promise<TranscriptionJob> {
     try {
-      const result = await getDb()
+      const supabase = getSupabase();
+      const { data: newJob, error } = await supabase
+        .from('transcription_jobs')
+        .insert(data)
         .select()
-        .from(this.table)
-        .where(eq(this.table.fileId, fileId))
-        .orderBy(desc(this.table.createdAt));
-      return result as TranscriptionJob[];
+        .single();
+      
+      if (error) {
+        console.error('Supabase transcription create error:', error);
+        throw error;
+      }
+      
+      return newJob as TranscriptionJob;
     } catch (error) {
-      throw new Error(`Failed to find transcription jobs by file ID: ${error}`);
+      console.error('TranscriptionRepository.create error:', error);
+      throw new Error(`Failed to create transcription job: ${error instanceof Error ? error.message : JSON.stringify(error)}`);
     }
   }
 
   async findLatestByFileId(fileId: number): Promise<TranscriptionJob | null> {
     try {
-      const result = await getDb()
-        .select()
-        .from(this.table)
-        .where(eq(this.table.fileId, fileId))
-        .orderBy(desc(this.table.createdAt))
-        .limit(1);
-      return (result[0] as TranscriptionJob) || null;
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('transcription_jobs')
+        .select('*')
+        .eq('file_id', fileId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+      
+      return data as TranscriptionJob;
     } catch (error) {
-      throw new Error(`Failed to find latest transcription job: ${error}`);
+      throw new Error(`Failed to find latest transcription job: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async findByStatus(status: string): Promise<TranscriptionJob[]> {
+  async findById(id: number): Promise<TranscriptionJob | null> {
     try {
-      const result = await getDb()
-        .select()
-        .from(this.table)
-        .where(eq(this.table.status, status))
-        .orderBy(desc(this.table.createdAt));
-      return result as TranscriptionJob[];
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('transcription_jobs')
+        .select('*')
+        .eq('id', id)
+        .single();
+      
+      if (error) {
+        if (error.code === 'PGRST116') {
+          return null;
+        }
+        throw error;
+      }
+      
+      return data as TranscriptionJob;
     } catch (error) {
-      throw new Error(`Failed to find transcription jobs by status: ${error}`);
+      throw new Error(`Failed to find transcription job by ID: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateStatus(
-    id: number,
-    status: string,
-    error?: string,
-  ): Promise<TranscriptionJob> {
+  async findByFileId(fileId: number): Promise<TranscriptionJob[]> {
     try {
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('transcription_jobs')
+        .select('*')
+        .eq('file_id', fileId)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        throw error;
+      }
+      
+      return data as TranscriptionJob[];
+    } catch (error) {
+      throw new Error(`Failed to find transcription jobs by file ID: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  async updateStatus(id: number, status: TranscriptionJob['status'], options?: {
+    progress?: number;
+    lastError?: string;
+    startedAt?: string;
+    completedAt?: string;
+    transcript?: any;
+  }): Promise<TranscriptionJob> {
+    try {
+      const supabase = getSupabase();
       const updateData: any = {
         status,
-        updatedAt: new Date(),
+        updated_at: new Date().toISOString(),
       };
-
-      if (status === 'processing') {
-        updateData.startedAt = new Date();
-      } else if (status === 'completed') {
-        updateData.completedAt = new Date();
-      } else if (status === 'failed' && error) {
-        updateData.lastError = error;
+      
+      if (options?.progress !== undefined) updateData.progress = options.progress;
+      if (options?.lastError) updateData.last_error = options.lastError;
+      if (options?.startedAt) updateData.started_at = options.startedAt;
+      if (options?.completedAt) updateData.completed_at = options.completedAt;
+      if (options?.transcript) updateData.transcript = JSON.stringify(options.transcript);
+      
+      const { data: updatedJob, error } = await supabase
+        .from('transcription_jobs')
+        .update(updateData)
+        .eq('id', id)
+        .select()
+        .single();
+      
+      if (error) {
+        throw error;
       }
-
-      const [result] = await getDb()
-        .update(this.table)
-        .set(updateData)
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Transcription job with id ${id} not found`);
-      }
-
-      return result as TranscriptionJob;
+      
+      return updatedJob as TranscriptionJob;
     } catch (error) {
-      throw new Error(`Failed to update transcription job status: ${error}`);
+      throw new Error(`Failed to update transcription job status: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async updateProgress(
-    id: number,
-    progress: number,
-    status?: string,
-  ): Promise<TranscriptionJob> {
+  async findPendingJobs(limit: number = 10): Promise<TranscriptionJob[]> {
     try {
-      const updateData: any = {
-        progress,
-        updatedAt: new Date(),
-      };
-
-      if (status) {
-        updateData.status = status;
-        if (status === 'processing') {
-          updateData.startedAt = new Date();
-        }
+      const supabase = getSupabase();
+      const { data, error } = await supabase
+        .from('transcription_jobs')
+        .select('*')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: true })
+        .limit(limit);
+      
+      if (error) {
+        throw error;
       }
-
-      const [result] = await getDb()
-        .update(this.table)
-        .set(updateData)
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Transcription job with id ${id} not found`);
-      }
-
-      return result as TranscriptionJob;
+      
+      return data as TranscriptionJob[];
     } catch (error) {
-      throw new Error(`Failed to update transcription progress: ${error}`);
+      throw new Error(`Failed to find pending transcription jobs: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
-  async completeTranscription(
-    id: number,
-    transcript: TranscriptSegment[],
-  ): Promise<TranscriptionJob> {
+  async delete(id: number): Promise<boolean> {
     try {
-      const [result] = await getDb()
-        .update(this.table)
-        .set({
-          transcript,
-          status: 'completed',
-          progress: 100,
-          completedAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Transcription job with id ${id} not found`);
+      const supabase = getSupabase();
+      const { error } = await supabase
+        .from('transcription_jobs')
+        .delete()
+        .eq('id', id);
+      
+      if (error) {
+        throw error;
       }
-
-      return result as TranscriptionJob;
+      
+      return true;
     } catch (error) {
-      throw new Error(`Failed to complete transcription: ${error}`);
-    }
-  }
-
-  async updateWithResults(
-    id: number,
-    updates: {
-      status: string;
-      progress: number;
-      transcript: TranscriptSegment[];
-      completedAt: Date;
-    },
-  ): Promise<TranscriptionJob> {
-    try {
-      const [result] = await getDb()
-        .update(this.table)
-        .set({
-          ...updates,
-          updatedAt: new Date(),
-        })
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Transcription job with id ${id} not found`);
-      }
-
-      return result as TranscriptionJob;
-    } catch (error) {
-      throw new Error(`Failed to update transcription with results: ${error}`);
-    }
-  }
-
-  async updateWithError(
-    id: number,
-    updates: {
-      status: string;
-      lastError: string;
-      completedAt: Date;
-    },
-  ): Promise<TranscriptionJob> {
-    try {
-      const [result] = await getDb()
-        .update(this.table)
-        .set({
-          ...updates,
-          updatedAt: new Date(),
-        })
-        .where(eq(this.table.id, id))
-        .returning();
-
-      if (!result) {
-        throw new Error(`Transcription job with id ${id} not found`);
-      }
-
-      return result as TranscriptionJob;
-    } catch (error) {
-      throw new Error(`Failed to update transcription with error: ${error}`);
+      throw new Error(`Failed to delete transcription job: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 }

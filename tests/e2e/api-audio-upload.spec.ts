@@ -268,18 +268,12 @@ test.describe('Audio Upload API Tests', () => {
       multipart: formData,
     });
 
-    expect(response.ok()).toBeTruthy(); // API returns 200 but with error in results
+    expect(response.status()).toBe(400); // Should return 400 for invalid file type
     const responseData = await response.json();
 
-    expect(responseData.success).toBe(true);
-    expect(responseData.data.totalFiles).toBe(1);
-    expect(responseData.data.successCount).toBe(0);
-    expect(responseData.data.failureCount).toBe(1);
-    
-    const result = responseData.data.results[0];
-    expect(result.success).toBe(false);
-    expect(result.error).toBeDefined();
-    expect(result.error).toContain('Invalid file type');
+    expect(responseData.success).toBe(false);
+    expect(responseData.error).toBeDefined();
+    expect(responseData.error.message).toContain('Invalid file type');
 
     console.log(`✅ Successfully rejected invalid file type: ${invalidFile.name}`);
   });
