@@ -165,6 +165,24 @@ export const POST = withMiddleware(
 
       debugPerformance('Upload endpoint', startTime, 'api');
 
+      // If all files failed, return 400 status
+      if (successCount === 0 && failureCount > 0) {
+        const firstError = results.find(r => !r.success)?.error;
+        return NextResponse.json(
+          createErrorResponse(
+            firstError || 'All files failed validation',
+            'VALIDATION_ERROR',
+            400,
+            {
+              totalFiles: files.length,
+              failureCount,
+              results,
+            }
+          ),
+          { status: 400 }
+        );
+      }
+
       return NextResponse.json(
         createApiResponse(
           {
