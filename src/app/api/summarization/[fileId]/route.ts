@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '../../../../lib/database/client';
-import { audioFiles } from '../../../../lib/database/schema/audio';
-import { transcriptionJobs } from '../../../../lib/database/schema/transcripts';
-import {
-  summarizations,
-  summarizationPrompts,
-} from '../../../../lib/database/schema';
-import { eq, desc } from 'drizzle-orm';
+import { getSupabase } from '../../../../lib/database/client';
 import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
@@ -16,55 +9,58 @@ export async function GET(
   try {
     const { fileId } = await params;
     const fileIdInt = parseInt(fileId);
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Get file
-    const file = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileIdInt))
+    const { data: file, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileIdInt)
       .limit(1);
 
-    if (!file.length) {
+    if (fileError || !file || file.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     // Get summarizations for this file with template details
-    const summaries = await db
-      .select({
-        id: summarizations.id,
-        content: summarizations.content,
-        model: summarizations.model,
-        prompt: summarizations.prompt,
-        createdAt: summarizations.createdAt,
-        updatedAt: summarizations.updatedAt,
-        templateId: summarizations.templateId,
-        templateName: summarizationPrompts.name,
-        templateDescription: summarizationPrompts.description,
-        templateIsDefault: summarizationPrompts.isDefault,
-      })
-      .from(summarizations)
-      .leftJoin(
-        summarizationPrompts,
-        eq(summarizations.templateId, summarizationPrompts.id),
-      )
-      .where(eq(summarizations.fileId, fileIdInt))
-      .orderBy(desc(summarizations.createdAt));
+    const { data: summaries, error: summariesError } = await supabase
+      .from('summarizations')
+      .select(`
+        id,
+        content,
+        model,
+        prompt,
+        created_at,
+        updated_at,
+        template_id,
+        summarization_prompts (
+          id,
+          name,
+          description,
+          is_default
+        )
+      `)
+      .eq('file_id', fileIdInt)
+      .order('created_at', { ascending: false });
+
+    if (summariesError) {
+      throw summariesError;
+    }
 
     // Restructure summaries to include nested template objects
-    const formattedSummaries = summaries.map(summary => ({
+    const formattedSummaries = (summaries || []).map(summary => ({
       id: summary.id,
       content: summary.content,
       model: summary.model,
       prompt: summary.prompt,
-      createdAt: summary.createdAt,
-      updatedAt: summary.updatedAt,
-      template: summary.templateId
+      createdAt: summary.created_at,
+      updatedAt: summary.updated_at,
+      template: summary.template_id && summary.summarization_prompts
         ? {
-          id: summary.templateId,
-          name: summary.templateName,
-          description: summary.templateDescription,
-          isDefault: summary.templateIsDefault,
+          id: summary.template_id,
+          name: summary.summarization_prompts.name,
+          description: summary.summarization_prompts.description,
+          isDefault: summary.summarization_prompts.is_default,
         }
         : null,
     }));
@@ -72,8 +68,8 @@ export async function GET(
     return NextResponse.json({
       file: {
         id: file[0].id,
-        fileName: file[0].fileName,
-        originalFileName: file[0].originalFileName,
+        fileName: file[0].file_name,
+        originalFileName: file[0].original_file_name,
       },
       summarizations: formattedSummaries,
       totalSummaries: formattedSummaries.length,
@@ -96,27 +92,27 @@ export async function POST(
     const fileIdInt = parseInt(fileId);
     const body = await request.json();
     const { templateId, customPrompt } = body;
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Get file
-    const file = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileIdInt))
+    const { data: file, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileIdInt)
       .limit(1);
 
-    if (!file.length) {
+    if (fileError || !file || file.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
     // Get transcript
-    const transcription = await db
-      .select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileIdInt))
+    const { data: transcription, error: transcriptionError } = await supabase
+      .from('transcription_jobs')
+      .select('*')
+      .eq('file_id', fileIdInt)
       .limit(1);
 
-    if (!transcription.length || !transcription[0].transcript) {
+    if (transcriptionError || !transcription || transcription.length === 0 || !transcription[0].transcript) {
       return NextResponse.json(
         { error: 'File not transcribed yet' },
         { status: 400 },
@@ -126,13 +122,13 @@ export async function POST(
     // Get template if provided
     let template = null;
     if (templateId) {
-      const templates = await db
-        .select()
-        .from(summarizationPrompts)
-        .where(eq(summarizationPrompts.id, templateId))
+      const { data: templates, error: templateError } = await supabase
+        .from('summarization_prompts')
+        .select('*')
+        .eq('id', templateId)
         .limit(1);
 
-      if (templates.length) {
+      if (!templateError && templates && templates.length > 0) {
         template = templates[0];
       }
     }
@@ -193,7 +189,7 @@ export async function POST(
 
         // Fallback to informative message when AI is not configured
         summary =
-          `Summary of ${file[0].originalFileName}:\n\n` +
+          `Summary of ${file[0].original_file_name}:\n\n` +
           `AI summarization is not available. Error: ${aiError instanceof Error ? aiError.message : 'Unknown error'}\n\n` +
           `To enable AI summarization, please:\n` +
           `1. Set CUSTOM_AI_BASE_URL, CUSTOM_AI_API_KEY, and CUSTOM_AI_MODEL environment variables, OR\n` +
@@ -212,14 +208,20 @@ export async function POST(
 
       // Store in summarizations table
       const summaryId = uuidv4();
-      await db.insert(summarizations).values({
-        id: summaryId,
-        fileId: fileIdInt,
-        templateId: templateId || null,
-        model: model,
-        prompt: prompt.substring(0, 1000),
-        content: summary,
-      });
+      const { error: insertError } = await supabase
+        .from('summarizations')
+        .insert({
+          id: summaryId,
+          file_id: fileIdInt,
+          template_id: templateId || null,
+          model: model,
+          prompt: prompt.substring(0, 1000),
+          content: summary,
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
 
       return NextResponse.json({
         success: true,

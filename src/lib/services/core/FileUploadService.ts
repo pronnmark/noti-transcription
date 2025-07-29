@@ -152,13 +152,11 @@ export class FileUploadService {
       // Start transcription if not a draft
       let transcriptionStarted = false;
       if (!options.isDraft) {
-        // Disabled for testing
-        // transcriptionStarted = await this.startTranscription(
-        //   audioFile.id,
-        //   storagePath,
-        //   options.speakerCount,
-        // );
-        transcriptionStarted = false;
+        transcriptionStarted = await this.startTranscription(
+          audioFile.id,
+          storagePath,
+          options.speakerCount,
+        );
       }
 
       debugPerformance('File upload completed', startTime, 'services');

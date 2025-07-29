@@ -3,7 +3,6 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "kill-port": "node scripts/kill-port.js 5173",
     "dev": "next dev -p 5173",
     "dev:https": "next dev --experimental-https",
     "build": "next build",

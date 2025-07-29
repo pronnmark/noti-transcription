@@ -1,71 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '../../../lib/database/client';
-import { fileLabels } from '../../../lib/database/schema/audio';
-import { sql } from 'drizzle-orm';
+import { getSupabase } from '../../../lib/database/client';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const db = getDb();
+    const supabase = getSupabase();
 
-    // Get all labels across all files
-    const labelRecords = await db
-      .select({
-        labels: fileLabels.labels,
-      })
-      .from(fileLabels);
+    // Get unique labels from file_labels table
+    const { data: results, error } = await supabase
+      .from('file_labels')
+      .select('labels')
+      .not('labels', 'is', null);
 
-    // Flatten all labels and count frequency
-    const labelCounts: Record<string, number> = {};
+    if (error) {
+      console.error('Error fetching labels:', error);
+      return NextResponse.json({ error: 'Failed to fetch labels' }, { status: 500 });
+    }
 
-    labelRecords.forEach(record => {
+    // Flatten and deduplicate labels
+    const allLabels = new Set<string>();
+    results?.forEach(record => {
       if (Array.isArray(record.labels)) {
-        record.labels.forEach(label => {
+        record.labels.forEach((label: string) => {
           if (typeof label === 'string' && label.trim()) {
-            const normalizedLabel = label.trim().toLowerCase();
-            labelCounts[normalizedLabel] =
-              (labelCounts[normalizedLabel] || 0) + 1;
+            allLabels.add(label.trim());
           }
         });
       }
     });
 
-    // Convert to array and filter by query if provided
-    let allLabels = Object.entries(labelCounts).map(([label, count]) => ({
-      label: label.charAt(0).toUpperCase() + label.slice(1), // Capitalize first letter
-      count,
-    }));
-
-    // Filter by query if provided
-    if (query) {
-      const queryLower = query.toLowerCase();
-      allLabels = allLabels.filter(item =>
-        item.label.toLowerCase().includes(queryLower),
-      );
-    }
-
-    // Sort by frequency (most used first), then alphabetically
-    allLabels.sort((a, b) => {
-      if (b.count !== a.count) {
-        return b.count - a.count;
-      }
-      return a.label.localeCompare(b.label);
-    });
-
-    // Limit results for autocomplete
-    const limit = parseInt(searchParams.get('limit') || '20');
-    if (limit > 0) {
-      allLabels = allLabels.slice(0, limit);
-    }
+    // Filter labels based on query
+    const filteredLabels = Array.from(allLabels).filter(label =>
+      query ? label.toLowerCase().includes(query.toLowerCase()) : true
+    );
 
     return NextResponse.json({
-      labels: allLabels,
-      total: Object.keys(labelCounts).length,
-      success: true,
+      labels: filteredLabels.sort(),
+      total: filteredLabels.length,
     });
   } catch (error) {
-    console.error('Error fetching labels:', error);
+    console.error('Labels API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 },

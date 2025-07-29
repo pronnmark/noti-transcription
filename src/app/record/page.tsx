@@ -124,13 +124,22 @@ export default function RecordPage() {
         return;
       }
 
-      // Check if audio devices are available first
+      // Check if MediaRecorder is supported
+      if (typeof MediaRecorder === 'undefined') {
+        setRecordingSupport(
+          false,
+          'MediaRecorder API not supported. Please update your browser.',
+        );
+        return;
+      }
+
+      // Check if audio devices are available (no permission request)
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(
         device => device.kind === 'audioinput',
       );
 
-      const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s): ${audioInputs.map(d => d.label || 'Unknown device').join(', ')}`;
+      const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s)`;
       console.log(deviceDebug);
 
       if (audioInputs.length === 0) {
@@ -143,54 +152,17 @@ export default function RecordPage() {
         return;
       }
 
-      // Test with mobile-optimized constraints
-      const mobileConstraints = {
-        audio: isMobile
-          ? {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 16000, // Lower sample rate for mobile
-            channelCount: 1, // Mono for mobile
-          }
-          : {
-            echoCancellation: false,
-            noiseSuppression: false,
-            autoGainControl: false,
-          },
-      };
-
-      const stream =
-        await navigator.mediaDevices.getUserMedia(mobileConstraints);
-
-      // Clean up test stream
-      stream.getTracks().forEach(track => track.stop());
-      setRecordingSupport(true, '', deviceDebug); // Success with device info
+      // Don't test actual stream access here to avoid permission issues
+      // Permission will be requested when user clicks record
+      setRecordingSupport(true, '', deviceDebug);
     } catch (error) {
-      console.error('Recording not supported:', error);
-      let errorMessage = 'Recording setup failed. ';
-
-      if (error instanceof Error) {
-        if (error.name === 'NotFoundError') {
-          errorMessage =
-            'No microphone found. Please connect a microphone and refresh the page.';
-        } else if (error.name === 'NotAllowedError') {
-          errorMessage =
-            "Microphone access denied. Please click the microphone icon in your browser's address bar and allow access, then refresh the page.";
-        } else if (error.name === 'NotReadableError') {
-          errorMessage =
-            'Microphone is already in use by another application. Please close other apps using the microphone and try again.';
-        } else if (error.name === 'OverconstrainedError') {
-          errorMessage =
-            "Your microphone doesn't support the required settings. Try using a different microphone or browser.";
-        } else {
-          errorMessage = `Recording error: ${error.message}. Please check your microphone permissions and try again.`;
-        }
-      }
-
-      setRecordingSupport(false, errorMessage);
+      console.error('Recording support check failed:', error);
+      setRecordingSupport(
+        false,
+        'Unable to check recording capabilities. Please check your browser permissions.',
+      );
     }
-  }, [isMobile]);
+  }, []);  // Remove isMobile dependency to prevent infinite loops
 
   const performAutoSave = useCallback(async () => {
     if (!mediaRecorder || !audioChunks.length) return;
@@ -264,9 +236,9 @@ export default function RecordPage() {
   }, [mediaRecorder, audioChunks, autoSaveCounter, speakerCount, locationData]);
 
   useEffect(() => {
-    checkRecordingSupport();
-    detectMobile();
-  }, [checkRecordingSupport]);
+    detectMobile(); // Run first to set isMobile
+    checkRecordingSupport(); // Then check recording support
+  }, []); // Run once on mount only
 
   // Clean up wake lock and audio monitoring on unmount
   useEffect(() => {
@@ -427,10 +399,8 @@ export default function RecordPage() {
       // Create Web Audio API context
       const audioContext = new (window.AudioContext ||
         (window as any).webkitAudioContext)();
-      // Resume audio context if suspended (required by Chrome)
-      if (audioContext.state === 'suspended') {
-        await audioContext.resume();
-      }
+      // Note: Don't resume suspended context here - Chrome requires user gesture
+      // It will be resumed in startRecording() with proper user interaction
 
       const source = audioContext.createMediaStreamSource(stream);
       const analyser = audioContext.createAnalyser();
@@ -584,12 +554,12 @@ export default function RecordPage() {
       setAudioAnalyser(null);
     }
 
-    // TEST: Not using cloned stream
-    // if (analyserStreamRef.current) {
-    //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
-    //   analyserStreamRef.current = null;
-    //   console.log('🔇 Stopped analyser stream tracks');
-    // }
+    // Clean up monitoring stream
+    if (analyserStreamRef.current) {
+      analyserStreamRef.current.getTracks().forEach(track => track.stop());
+      analyserStreamRef.current = null;
+      console.log('🔇 Stopped analyser stream tracks');
+    }
 
     setAudioLevel(0);
   }
@@ -604,6 +574,19 @@ export default function RecordPage() {
         console.error('❌ Recording not supported on this device');
         toast.error('Recording not supported on this device');
         return;
+      }
+
+      // Resume any suspended audio context with user gesture
+      try {
+        if (audioAnalyser && (audioAnalyser as any).context) {
+          const ctx = (audioAnalyser as any).context;
+          if (ctx.state === 'suspended') {
+            await ctx.resume();
+            console.log('✅ Audio context resumed with user gesture');
+          }
+        }
+      } catch (error) {
+        console.warn('Could not resume audio context:', error);
       }
 
       // Use mobile-optimized settings
@@ -666,14 +649,14 @@ export default function RecordPage() {
         }
       }
 
-      // TEST: Use original stream instead of cloning to see if that's the issue
-      // const analyserStream = stream.clone();
-      // analyserStreamRef.current = analyserStream; // Store reference for cleanup
-      console.log('🎙️ TEST: Using original stream for audio analyser');
+      // Clone stream for audio monitoring to avoid conflicts with MediaRecorder
+      const monitoringStream = stream.clone();
+      analyserStreamRef.current = monitoringStream; // Store reference for cleanup
+      console.log('🎙️ Using cloned stream for audio monitoring');
 
-      // Start audio level monitoring BEFORE creating MediaRecorder
-      // This ensures the analyser gets proper access to audio data
-      await startAudioLevelMonitoring(stream);
+      // Start audio level monitoring with cloned stream
+      // This prevents conflicts between analyser and MediaRecorder
+      await startAudioLevelMonitoring(monitoringStream);
 
       const recorder = new MediaRecorder(stream, {
         mimeType,
@@ -700,12 +683,12 @@ export default function RecordPage() {
       recorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
 
-        // TEST: Not using cloned stream
-        // if (analyserStreamRef.current) {
-        //   analyserStreamRef.current.getTracks().forEach(track => track.stop());
-        //   analyserStreamRef.current = null;
-        //   console.log('🔇 Stopped analyser stream tracks');
-        // }
+        // Clean up monitoring stream
+        if (analyserStreamRef.current) {
+          analyserStreamRef.current.getTracks().forEach(track => track.stop());
+          analyserStreamRef.current = null;
+          console.log('🔇 Stopped analyser stream tracks');
+        }
 
         console.log('Recording stopped, chunks collected:', chunks.length);
         console.log(
@@ -748,14 +731,10 @@ export default function RecordPage() {
       setRecordingTime(0);
       console.log('✅ Recording state set: isRecording=true, isPaused=false');
 
-      // Start recording with a small delay for mobile compatibility
-      setTimeout(() => {
-        if (recorder.state === 'inactive') {
-          recorder.start(1000); // Collect data every second
-          console.log('MediaRecorder started, MIME type:', mimeType);
-          toast.success('Recording started');
-        }
-      }, 100);
+      // Start recording immediately - no delay needed
+      recorder.start(1000); // Collect data every second
+      console.log('MediaRecorder started, MIME type:', mimeType);
+      toast.success('Recording started');
     } catch (error) {
       console.error('Error starting recording:', error);
 
@@ -956,8 +935,9 @@ export default function RecordPage() {
       } else {
         toast.success('Recording uploaded successfully!');
 
-        // Extract fileId from the results array
-        const successfulFile = result.results?.find(
+        // Extract fileId from the results array (check both response formats)
+        const resultsArray = result.data?.results || result.results;
+        const successfulFile = resultsArray?.find(
           (r: any) => r.success && r.fileId,
         );
         const fileId = successfulFile?.fileId;

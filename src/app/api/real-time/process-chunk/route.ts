@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import {
-  realTimeSessions,
-  realTimeThoughts,
-} from '@/lib/database/schema/system';
-import { systemSettings } from '@/lib/database/schema/users';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { customAIService } from '@/lib/services/customAI';
 import { getTranscript } from '@/lib/services/transcription';
 
@@ -28,17 +22,19 @@ export async function POST(request: NextRequest) {
     }
 
     // Get the session details
-    const session = await db
-      .select()
-      .from(realTimeSessions)
-      .where(eq(realTimeSessions.id, sessionId))
+    const supabase = getSupabase();
+    const { data: sessions, error: sessionError } = await supabase
+      .from('real_time_sessions')
+      .select('*')
+      .eq('id', sessionId)
       .limit(1);
 
-    if (session.length === 0) {
+    if (sessionError || !sessions || sessions.length === 0) {
       return NextResponse.json({ error: 'Session not found' }, { status: 404 });
     }
 
-    if (session[0].status !== 'active') {
+    const session = sessions[0];
+    if (session.status !== 'active') {
       return NextResponse.json(
         { error: 'Session is not active' },
         { status: 400 },
@@ -46,12 +42,17 @@ export async function POST(request: NextRequest) {
     }
 
     // Get AI settings for processing
-    const settings = await db.select().from(systemSettings).limit(1);
+    const { data: settings, error: settingsError } = await supabase
+      .from('system_settings')
+      .select('*')
+      .limit(1);
 
     if (
+      settingsError ||
+      !settings ||
       settings.length === 0 ||
-      !settings[0].customAiBaseUrl ||
-      !settings[0].customAiApiKey
+      !settings[0].custom_ai_base_url ||
+      !settings[0].custom_ai_api_key
     ) {
       return NextResponse.json(
         {
@@ -89,7 +90,7 @@ export async function POST(request: NextRequest) {
       // });
 
       // Generate AI thought using the custom AI service
-      const aiPrompt = `${session[0].aiInstruction}
+      const aiPrompt = `${session.ai_instruction}
 
 Transcript of audio chunk ${chunkNumber} (${chunkStartTime} - ${chunkEndTime}):
 ${transcript}
@@ -99,7 +100,7 @@ Please provide your analysis based on the instruction above:`;
       const thought = await customAIService.extractFromTranscript(
         transcript,
         aiPrompt,
-        aiSettings.customAiModel || 'gpt-3.5-turbo',
+        aiSettings.custom_ai_model || 'gpt-3.5-turbo',
       );
 
       if (!thought) {
@@ -108,25 +109,34 @@ Please provide your analysis based on the instruction above:`;
       const processingTime = Date.now() - startTime;
 
       // Save the thought to database
-      const savedThought = await db
-        .insert(realTimeThoughts)
-        .values({
-          sessionId,
-          chunkNumber,
-          chunkStartTime: chunkStartTime ? parseInt(chunkStartTime) : 0,
-          chunkEndTime: chunkEndTime ? parseInt(chunkEndTime) : 0,
-          transcriptText: transcript,
-          aiThought: thought,
-          processingTimeMs: processingTime,
+      const { data: savedThought, error: thoughtError } = await supabase
+        .from('real_time_thoughts')
+        .insert({
+          session_id: sessionId,
+          chunk_number: chunkNumber,
+          chunk_start_time: chunkStartTime ? parseInt(chunkStartTime) : 0,
+          chunk_end_time: chunkEndTime ? parseInt(chunkEndTime) : 0,
+          transcript_text: transcript,
+          ai_thought: thought,
+          processing_time_ms: processingTime,
           status: 'completed',
         })
-        .returning();
+        .select()
+        .single();
+
+      if (thoughtError) {
+        throw new Error(`Failed to save thought: ${thoughtError.message}`);
+      }
 
       // Update session chunk count
-      await db
-        .update(realTimeSessions)
-        .set({ totalChunks: chunkNumber + 1 })
-        .where(eq(realTimeSessions.id, sessionId));
+      const { error: updateError } = await supabase
+        .from('real_time_sessions')
+        .update({ total_chunks: chunkNumber + 1 })
+        .eq('id', sessionId);
+
+      if (updateError) {
+        console.warn('Failed to update session chunk count:', updateError);
+      }
 
       // Clean up temporary file
       try {
@@ -137,7 +147,7 @@ Please provide your analysis based on the instruction above:`;
 
       return NextResponse.json({
         success: true,
-        thought: savedThought[0],
+        thought: savedThought,
         processingTimeMs: processingTime,
       });
     } catch (processingError) {
@@ -163,14 +173,15 @@ Please provide your analysis based on the instruction above:`;
       const chunkNumber = parseInt(formData.get('chunkNumber') as string);
 
       if (sessionId && chunkNumber !== undefined) {
-        await db.insert(realTimeThoughts).values({
-          sessionId,
-          chunkNumber,
-          chunkStartTime: 0,
-          chunkEndTime: 0,
-          transcriptText: '',
-          aiThought: `Error processing chunk: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          processingTimeMs: processingTime,
+        const supabase = getSupabase();
+        await supabase.from('real_time_thoughts').insert({
+          session_id: sessionId,
+          chunk_number: chunkNumber,
+          chunk_start_time: 0,
+          chunk_end_time: 0,
+          transcript_text: '',
+          ai_thought: `Error processing chunk: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          processing_time_ms: processingTime,
           status: 'failed',
         });
       }

@@ -1,30 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import { realTimeSessions } from '@/lib/database/schema/system';
-import { eq, desc } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { createId } from '@paralleldrive/cuid2';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const fileId = searchParams.get('fileId');
+    const supabase = getSupabase();
 
     if (fileId) {
       // Get sessions for a specific file
-      const sessions = await db
-        .select()
-        .from(realTimeSessions)
-        .where(eq(realTimeSessions.fileId, parseInt(fileId)))
-        .orderBy(desc(realTimeSessions.createdAt));
+      const { data: sessions, error } = await supabase
+        .from('real_time_sessions')
+        .select('*')
+        .eq('file_id', parseInt(fileId))
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
 
       return NextResponse.json({ sessions });
     } else {
       // Get all sessions
-      const sessions = await db
-        .select()
-        .from(realTimeSessions)
-        .orderBy(desc(realTimeSessions.createdAt))
+      const { data: sessions, error } = await supabase
+        .from('real_time_sessions')
+        .select('*')
+        .order('created_at', { ascending: false })
         .limit(50);
+
+      if (error) {
+        throw error;
+      }
 
       return NextResponse.json({ sessions });
     }
@@ -48,15 +55,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const supabase = getSupabase();
+
     // Check if there's already an active session for this file
-    const existingSession = await db
-      .select()
-      .from(realTimeSessions)
-      .where(eq(realTimeSessions.fileId, fileId))
-      .orderBy(desc(realTimeSessions.createdAt))
+    const { data: existingSession, error: checkError } = await supabase
+      .from('real_time_sessions')
+      .select('*')
+      .eq('file_id', fileId)
+      .order('created_at', { ascending: false })
       .limit(1);
 
-    if (existingSession.length > 0 && existingSession[0].status === 'active') {
+    if (checkError) {
+      throw checkError;
+    }
+
+    if (existingSession && existingSession.length > 0 && existingSession[0].status === 'active') {
       return NextResponse.json(
         { error: 'An active real-time session already exists for this file' },
         { status: 409 },
@@ -64,19 +77,24 @@ export async function POST(request: NextRequest) {
     }
 
     const sessionId = createId();
-    const newSession = await db
-      .insert(realTimeSessions)
-      .values({
+    const { data: newSession, error: insertError } = await supabase
+      .from('real_time_sessions')
+      .insert({
         id: sessionId,
-        fileId,
-        chunkIntervalMs,
-        aiInstruction,
+        file_id: fileId,
+        chunk_interval_ms: chunkIntervalMs,
+        ai_instruction: aiInstruction,
         status: 'active',
-        totalChunks: 0,
+        total_chunks: 0,
       })
-      .returning();
+      .select()
+      .single();
 
-    return NextResponse.json({ session: newSession[0] }, { status: 201 });
+    if (insertError) {
+      throw insertError;
+    }
+
+    return NextResponse.json({ session: newSession }, { status: 201 });
   } catch (error) {
     console.error('Error creating real-time session:', error);
     return NextResponse.json(
@@ -97,22 +115,28 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const supabase = getSupabase();
     const updateData: any = {};
     if (status) updateData.status = status;
-    if (endedAt) updateData.endedAt = new Date(endedAt);
-    if (totalChunks !== undefined) updateData.totalChunks = totalChunks;
+    if (endedAt) updateData.ended_at = new Date(endedAt).toISOString();
+    if (totalChunks !== undefined) updateData.total_chunks = totalChunks;
 
-    const updatedSession = await db
-      .update(realTimeSessions)
-      .set(updateData)
-      .where(eq(realTimeSessions.id, sessionId))
-      .returning();
+    const { data: updatedSession, error: updateError } = await supabase
+      .from('real_time_sessions')
+      .update(updateData)
+      .eq('id', sessionId)
+      .select()
+      .single();
 
-    if (updatedSession.length === 0) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+    if (updateError) {
+      if (updateError.code === 'PGRST116') {
+        // No rows updated - session not found
+        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+      }
+      throw updateError;
     }
 
-    return NextResponse.json({ session: updatedSession[0] });
+    return NextResponse.json({ session: updatedSession });
   } catch (error) {
     console.error('Error updating real-time session:', error);
     return NextResponse.json(

@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
-import { summarizationPrompts } from '@/lib/database/schema/system';
-import { eq, desc } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { createId } from '@paralleldrive/cuid2';
 
 type SummarizationPrompt = {
@@ -17,12 +15,16 @@ type SummarizationPrompt = {
 
 export async function GET(_request: NextRequest) {
   try {
-    const db = getDb();
-    const dbPrompts = await db
-      .select()
-      .from(summarizationPrompts)
-      .where(eq(summarizationPrompts.isActive, true))
-      .orderBy(desc(summarizationPrompts.createdAt));
+    const supabase = getSupabase();
+    const { data: dbPrompts, error } = await supabase
+      .from('summarization_prompts')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
 
     // Convert database format to API format
     const prompts = dbPrompts.map(prompt => {
@@ -59,10 +61,10 @@ export async function GET(_request: NextRequest) {
         name: prompt.name,
         description: prompt.description || '',
         prompt: prompt.prompt,
-        isDefault: Boolean(prompt.isDefault),
-        isActive: Boolean(prompt.isActive),
-        createdAt: parseTimestamp(prompt.createdAt),
-        updatedAt: parseTimestamp(prompt.updatedAt),
+        isDefault: Boolean(prompt.is_default),
+        isActive: Boolean(prompt.is_active),
+        createdAt: parseTimestamp(prompt.created_at),
+        updatedAt: parseTimestamp(prompt.updated_at),
       };
     });
 
@@ -93,30 +95,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const db = getDb();
+    const supabase = getSupabase();
 
     // If setting as default, unset other defaults
     if (isDefault) {
-      await db
-        .update(summarizationPrompts)
-        .set({ isDefault: false })
-        .where(eq(summarizationPrompts.isDefault, true));
+      await supabase
+        .from('summarization_prompts')
+        .update({ is_default: false })
+        .eq('is_default', true);
     }
 
     // Create new summarization prompt
     const newPromptId = createId();
-    const now = new Date();
+    const now = new Date().toISOString();
 
-    await db.insert(summarizationPrompts).values({
-      id: newPromptId,
-      name,
-      description: description || null,
-      prompt,
-      isDefault: isDefault || false,
-      isActive: true,
-      createdAt: now,
-      updatedAt: now,
-    });
+    const { error: insertError } = await supabase
+      .from('summarization_prompts')
+      .insert({
+        id: newPromptId,
+        name,
+        description: description || null,
+        prompt,
+        is_default: isDefault || false,
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+      });
+
+    if (insertError) {
+      throw insertError;
+    }
 
     // Format response to match API format
     const newPrompt: SummarizationPrompt = {
@@ -126,8 +134,8 @@ export async function POST(request: NextRequest) {
       prompt,
       isDefault: isDefault || false,
       isActive: true,
-      createdAt: now.toISOString(),
-      updatedAt: now.toISOString(),
+      createdAt: now,
+      updatedAt: now,
     };
 
     return NextResponse.json({
@@ -152,32 +160,42 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Missing prompt ID' }, { status: 400 });
     }
 
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Check if prompt exists
-    const existingPrompt = await db
-      .select()
-      .from(summarizationPrompts)
-      .where(eq(summarizationPrompts.id, id))
+    const { data: existingPrompt, error: checkError } = await supabase
+      .from('summarization_prompts')
+      .select('*')
+      .eq('id', id)
       .limit(1);
 
-    if (existingPrompt.length === 0) {
+    if (checkError || !existingPrompt || existingPrompt.length === 0) {
       return NextResponse.json({ error: 'Prompt not found' }, { status: 404 });
     }
 
     // If setting as default, unset other defaults
     if (updates.isDefault) {
-      await db
-        .update(summarizationPrompts)
-        .set({ isDefault: false })
-        .where(eq(summarizationPrompts.isDefault, true));
+      await supabase
+        .from('summarization_prompts')
+        .update({ is_default: false })
+        .eq('is_default', true);
     }
 
     // Prepare update data
     const updateData = {
       ...updates,
-      updatedAt: new Date(),
+      updated_at: new Date().toISOString(),
     };
+
+    // Convert camelCase to snake_case for database
+    if (updateData.isDefault !== undefined) {
+      updateData.is_default = updateData.isDefault;
+      delete updateData.isDefault;
+    }
+    if (updateData.isActive !== undefined) {
+      updateData.is_active = updateData.isActive;
+      delete updateData.isActive;
+    }
 
     // Remove undefined/null values
     Object.keys(updateData).forEach(key => {
@@ -187,10 +205,14 @@ export async function PUT(request: NextRequest) {
     });
 
     // Update summarization prompt
-    await db
-      .update(summarizationPrompts)
-      .set(updateData)
-      .where(eq(summarizationPrompts.id, id));
+    const { error: updateError } = await supabase
+      .from('summarization_prompts')
+      .update(updateData)
+      .eq('id', id);
+
+    if (updateError) {
+      throw updateError;
+    }
 
     return NextResponse.json({
       success: true,
@@ -213,23 +235,28 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Missing prompt ID' }, { status: 400 });
     }
 
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Check if prompt exists
-    const existingPrompt = await db
-      .select()
-      .from(summarizationPrompts)
-      .where(eq(summarizationPrompts.id, id))
+    const { data: existingPrompt, error: checkError } = await supabase
+      .from('summarization_prompts')
+      .select('*')
+      .eq('id', id)
       .limit(1);
 
-    if (existingPrompt.length === 0) {
+    if (checkError || !existingPrompt || existingPrompt.length === 0) {
       return NextResponse.json({ error: 'Prompt not found' }, { status: 404 });
     }
 
     // Delete the prompt
-    await db
-      .delete(summarizationPrompts)
-      .where(eq(summarizationPrompts.id, id));
+    const { error: deleteError } = await supabase
+      .from('summarization_prompts')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({
       success: true,

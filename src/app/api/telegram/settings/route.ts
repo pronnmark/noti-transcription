@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import { telegramSettings } from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -10,8 +8,9 @@ const execAsync = promisify(exec);
 // GET - Retrieve current Telegram settings
 export async function GET() {
   try {
-    const settings = await db.select().from(telegramSettings).limit(1);
-    const config = settings[0];
+    const supabase = getSupabase();
+    const { data: settings } = await supabase.from('telegram_settings').select('*').limit(1);
+    const config = settings?.[0];
 
     const hasBotToken = !!(config?.botToken || process.env.TELEGRAM_BOT_TOKEN);
     let botInfo = null;

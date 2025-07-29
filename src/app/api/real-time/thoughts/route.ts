@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import { realTimeThoughts } from '@/lib/database/schema/system';
-import { eq, desc, asc } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { createId } from '@paralleldrive/cuid2';
 
 export async function GET(request: NextRequest) {
@@ -19,13 +17,17 @@ export async function GET(request: NextRequest) {
     }
 
     // Get thoughts for a specific session, ordered by chunk number
-    const thoughts = await db
-      .select()
-      .from(realTimeThoughts)
-      .where(eq(realTimeThoughts.sessionId, sessionId))
-      .orderBy(asc(realTimeThoughts.chunkNumber))
-      .limit(limit)
-      .offset(offset);
+    const supabase = getSupabase();
+    const { data: thoughts, error } = await supabase
+      .from('real_time_thoughts')
+      .select('*')
+      .eq('session_id', sessionId)
+      .order('chunk_number', { ascending: true })
+      .range(offset, offset + limit - 1);
+
+    if (error) {
+      throw error;
+    }
 
     return NextResponse.json({ thoughts });
   } catch (error) {
@@ -66,22 +68,28 @@ export async function POST(request: NextRequest) {
     }
 
     const thoughtId = createId();
-    const newThought = await db
-      .insert(realTimeThoughts)
-      .values({
+    const supabase = getSupabase();
+    const { data: newThought, error } = await supabase
+      .from('real_time_thoughts')
+      .insert({
         id: thoughtId,
-        sessionId,
-        chunkNumber,
-        chunkStartTime: chunkStartTime ? parseInt(chunkStartTime) : 0,
-        chunkEndTime: chunkEndTime ? parseInt(chunkEndTime) : 0,
-        transcriptText,
-        aiThought,
-        processingTimeMs,
+        session_id: sessionId,
+        chunk_number: chunkNumber,
+        chunk_start_time: chunkStartTime ? parseInt(chunkStartTime) : 0,
+        chunk_end_time: chunkEndTime ? parseInt(chunkEndTime) : 0,
+        transcript_text: transcriptText,
+        ai_thought: aiThought,
+        processing_time_ms: processingTimeMs,
         status,
       })
-      .returning();
+      .select()
+      .single();
 
-    return NextResponse.json({ thought: newThought[0] }, { status: 201 });
+    if (error) {
+      throw error;
+    }
+
+    return NextResponse.json({ thought: newThought }, { status: 201 });
   } catch (error) {
     console.error('Error creating real-time thought:', error);
     return NextResponse.json(
@@ -103,22 +111,28 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
+    const supabase = getSupabase();
     const updateData: any = {};
     if (status) updateData.status = status;
-    if (aiThought) updateData.aiThought = aiThought;
-    if (processingTimeMs !== undefined) {updateData.processingTimeMs = processingTimeMs;}
+    if (aiThought) updateData.ai_thought = aiThought;
+    if (processingTimeMs !== undefined) updateData.processing_time_ms = processingTimeMs;
 
-    const updatedThought = await db
-      .update(realTimeThoughts)
-      .set(updateData)
-      .where(eq(realTimeThoughts.id, thoughtId))
-      .returning();
+    const { data: updatedThought, error } = await supabase
+      .from('real_time_thoughts')
+      .update(updateData)
+      .eq('id', thoughtId)
+      .select()
+      .single();
 
-    if (updatedThought.length === 0) {
-      return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows updated - thought not found
+        return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+      }
+      throw error;
     }
 
-    return NextResponse.json({ thought: updatedThought[0] });
+    return NextResponse.json({ thought: updatedThought });
   } catch (error) {
     console.error('Error updating real-time thought:', error);
     return NextResponse.json(
@@ -140,13 +154,20 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const deletedThought = await db
-      .delete(realTimeThoughts)
-      .where(eq(realTimeThoughts.id, thoughtId))
-      .returning();
+    const supabase = getSupabase();
+    const { data: deletedThought, error } = await supabase
+      .from('real_time_thoughts')
+      .delete()
+      .eq('id', thoughtId)
+      .select()
+      .single();
 
-    if (deletedThought.length === 0) {
-      return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows deleted - thought not found
+        return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+      }
+      throw error;
     }
 
     return NextResponse.json({ message: 'Thought deleted successfully' });

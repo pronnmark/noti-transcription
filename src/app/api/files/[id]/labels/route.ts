@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '../../../../../lib/database/client';
-import {
-  audioFiles,
-  fileLabels,
-} from '../../../../../lib/database/schema/audio';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '../../../../../lib/database/client';
 
 export async function GET(
   request: NextRequest,
@@ -13,16 +8,24 @@ export async function GET(
   try {
     const { id } = await params;
     const fileId = parseInt(id);
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Get labels for this file
-    const labelRecord = await db
-      .select()
-      .from(fileLabels)
-      .where(eq(fileLabels.fileId, fileId))
+    const { data: labelRecord, error } = await supabase
+      .from('file_labels')
+      .select('labels')
+      .eq('file_id', fileId)
       .limit(1);
 
-    const labels = labelRecord.length > 0 ? labelRecord[0].labels || [] : [];
+    if (error) {
+      console.error('Error fetching file labels:', error);
+      return NextResponse.json(
+        { error: 'Failed to fetch labels' },
+        { status: 500 },
+      );
+    }
+
+    const labels = labelRecord && labelRecord.length > 0 ? labelRecord[0].labels || [] : [];
 
     return NextResponse.json({
       fileId,
@@ -46,15 +49,16 @@ export async function PUT(
     const { id } = await params;
     const fileId = parseInt(id);
     const { labels } = await request.json();
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Validate that file exists
-    const file = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileId))
+    const { data: file, error: fileError } = await supabase
+      .from('audio_files')
+      .select('id')
+      .eq('id', fileId)
       .limit(1);
-    if (!file.length) {
+
+    if (fileError || !file || file.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
@@ -76,29 +80,55 @@ export async function PUT(
     const cleanLabels = Array.from(new Set(processedLabels));
 
     // Check if labels record exists
-    const existingRecord = await db
-      .select()
-      .from(fileLabels)
-      .where(eq(fileLabels.fileId, fileId))
+    const { data: existingRecord, error: checkError } = await supabase
+      .from('file_labels')
+      .select('id')
+      .eq('file_id', fileId)
       .limit(1);
 
-    if (existingRecord.length > 0) {
+    if (checkError) {
+      console.error('Error checking existing labels:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to check existing labels' },
+        { status: 500 },
+      );
+    }
+
+    if (existingRecord && existingRecord.length > 0) {
       // Update existing record
-      await db
-        .update(fileLabels)
-        .set({
+      const { error: updateError } = await supabase
+        .from('file_labels')
+        .update({
           labels: cleanLabels,
-          updatedAt: new Date(),
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(fileLabels.fileId, fileId));
+        .eq('file_id', fileId);
+
+      if (updateError) {
+        console.error('Error updating file labels:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update labels' },
+          { status: 500 },
+        );
+      }
     } else {
       // Create new record
-      await db.insert(fileLabels).values({
-        fileId,
-        labels: cleanLabels,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      });
+      const { error: insertError } = await supabase
+        .from('file_labels')
+        .insert({
+          file_id: fileId,
+          labels: cleanLabels,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        });
+
+      if (insertError) {
+        console.error('Error creating file labels:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to create labels' },
+          { status: 500 },
+        );
+      }
     }
 
     return NextResponse.json({

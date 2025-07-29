@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, speakerLabels } from '@/lib/database';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 
 export async function GET(
   request: NextRequest,
@@ -14,14 +13,24 @@ export async function GET(
       return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
     }
 
+    const supabase = getSupabase();
+
     // Get speaker labels for this file
-    const result = await db
-      .select()
-      .from(speakerLabels)
-      .where(eq(speakerLabels.fileId, fileId))
+    const { data: result, error } = await supabase
+      .from('speaker_labels')
+      .select('labels')
+      .eq('file_id', fileId)
       .limit(1);
 
-    const labels = result[0]?.labels || {};
+    if (error) {
+      console.error('Failed to get speaker labels:', error);
+      return NextResponse.json(
+        { error: 'Failed to get speaker labels' },
+        { status: 500 },
+      );
+    }
+
+    const labels = result && result[0]?.labels || {};
 
     return NextResponse.json({
       fileId,
@@ -71,39 +80,66 @@ export async function PUT(
       }
     }
 
-    const now = new Date();
+    const supabase = getSupabase();
+    const now = new Date().toISOString();
 
     // Check if labels already exist for this file
-    const existing = await db
-      .select()
-      .from(speakerLabels)
-      .where(eq(speakerLabels.fileId, fileId))
+    const { data: existing, error: checkError } = await supabase
+      .from('speaker_labels')
+      .select('file_id')
+      .eq('file_id', fileId)
       .limit(1);
 
-    if (existing.length > 0) {
+    if (checkError) {
+      console.error('Failed to check existing speaker labels:', checkError);
+      return NextResponse.json(
+        { error: 'Failed to check existing labels' },
+        { status: 500 },
+      );
+    }
+
+    if (existing && existing.length > 0) {
       // Update existing labels
-      await db
-        .update(speakerLabels)
-        .set({
+      const { error: updateError } = await supabase
+        .from('speaker_labels')
+        .update({
           labels: labels,
-          updatedAt: now,
+          updated_at: now,
         })
-        .where(eq(speakerLabels.fileId, fileId));
+        .eq('file_id', fileId);
+
+      if (updateError) {
+        console.error('Failed to update speaker labels:', updateError);
+        return NextResponse.json(
+          { error: 'Failed to update speaker labels' },
+          { status: 500 },
+        );
+      }
     } else {
       // Insert new labels
-      await db.insert(speakerLabels).values({
-        fileId,
-        labels: labels,
-        createdAt: now,
-        updatedAt: now,
-      });
+      const { error: insertError } = await supabase
+        .from('speaker_labels')
+        .insert({
+          file_id: fileId,
+          labels: labels,
+          created_at: now,
+          updated_at: now,
+        });
+
+      if (insertError) {
+        console.error('Failed to insert speaker labels:', insertError);
+        return NextResponse.json(
+          { error: 'Failed to save speaker labels' },
+          { status: 500 },
+        );
+      }
     }
 
     return NextResponse.json({
       success: true,
       fileId,
       labels,
-      updatedAt: now.toISOString(),
+      updatedAt: now,
     });
   } catch (error) {
     console.error('Failed to save speaker labels:', error);
@@ -126,8 +162,21 @@ export async function DELETE(
       return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
     }
 
+    const supabase = getSupabase();
+
     // Delete speaker labels for this file
-    await db.delete(speakerLabels).where(eq(speakerLabels.fileId, fileId));
+    const { error } = await supabase
+      .from('speaker_labels')
+      .delete()
+      .eq('file_id', fileId);
+
+    if (error) {
+      console.error('Failed to delete speaker labels:', error);
+      return NextResponse.json(
+        { error: 'Failed to reset speaker labels' },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       success: true,

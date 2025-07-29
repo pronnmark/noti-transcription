@@ -9,9 +9,7 @@ import {
   SummarizationTemplateRepository,
 } from '@/lib/database/repositories';
 import { debugLog } from '@/lib/utils';
-import { getDb } from '@/lib/database/client';
-import { aiProcessingSessions } from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 
 export const POST = withAuthMiddleware(
   async (request: NextRequest, context) => {
@@ -130,19 +128,24 @@ export const POST = withAuthMiddleware(
           transcriptRecord.transcript || [],
         );
 
-        // Create AI processing session record
-        await getDb()
-          .insert(aiProcessingSessions)
-          .values({
+        // Create AI processing session record using Supabase
+        const supabase = getSupabase();
+        const { error: insertError } = await supabase
+          .from('ai_processing_sessions')
+          .insert({
             id: sessionId,
-            fileId: fileIdInt,
-            summarizationPromptId: summarizationPromptId || null,
-            extractionDefinitionIds: extractionDefinitionIds,
-            systemPrompt,
-            aiResponse: '', // Will be updated after AI response
+            file_id: fileIdInt,
+            summarization_prompt_id: summarizationPromptId || null,
+            extraction_definition_ids: extractionDefinitionIds,
+            system_prompt: systemPrompt,
+            ai_response: '', // Will be updated after AI response
             status: 'processing',
             model: configuredModel,
           });
+
+        if (insertError) {
+          throw new Error(`Failed to create processing session: ${insertError.message}`);
+        }
 
         // Call AI with dynamic prompt and structured JSON output
         const aiResponse = await customAIService.generateText(
@@ -164,15 +167,19 @@ export const POST = withAuthMiddleware(
         );
 
         // Update session with AI response
-        await getDb()
-          .update(aiProcessingSessions)
-          .set({
-            aiResponse,
+        const { error: updateError } = await supabase
+          .from('ai_processing_sessions')
+          .update({
+            ai_response: aiResponse,
             status: 'completed',
-            processingTime: Date.now() - startTime,
-            completedAt: new Date(),
+            processing_time: Date.now() - startTime,
+            completed_at: new Date().toISOString(),
           })
-          .where(eq(aiProcessingSessions.id, sessionId));
+          .eq('id', sessionId);
+
+        if (updateError) {
+          console.error('Failed to update processing session:', updateError);
+        }
 
         // Parse and store results
         const { success, extractionResults, error } =
@@ -223,16 +230,17 @@ export const POST = withAuthMiddleware(
             );
 
           // Update session with partial success
-          await getDb()
-            .update(aiProcessingSessions)
-            .set({
+          const supabase = getSupabase();
+          await supabase
+            .from('ai_processing_sessions')
+            .update({
               status: 'completed',
               error: `AI processing failed, fallback applied: ${String(aiError)}`,
-              processingTime: Date.now() - startTime,
-              completedAt: new Date(),
-              aiResponse: 'Fallback response due to AI processing failure',
+              processing_time: Date.now() - startTime,
+              completed_at: new Date().toISOString(),
+              ai_response: 'Fallback response due to AI processing failure',
             })
-            .where(eq(aiProcessingSessions.id, sessionId));
+            .eq('id', sessionId);
 
           // Update file timestamp
           await audioRepo.updateTimestamp(fileIdInt);
@@ -249,15 +257,16 @@ export const POST = withAuthMiddleware(
           debugLog('api', 'Fallback processing also failed:', fallbackError);
 
           // Update session with error
-          await getDb()
-            .update(aiProcessingSessions)
-            .set({
+          const supabase = getSupabase();
+          await supabase
+            .from('ai_processing_sessions')
+            .update({
               status: 'failed',
               error: String(aiError),
-              processingTime: Date.now() - startTime,
-              completedAt: new Date(),
+              processing_time: Date.now() - startTime,
+              completed_at: new Date().toISOString(),
             })
-            .where(eq(aiProcessingSessions.id, sessionId));
+            .eq('id', sessionId);
 
           // Update file timestamp
           await audioRepo.updateTimestamp(fileIdInt);

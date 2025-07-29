@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '../../../../lib/database/client';
-import { audioFiles } from '../../../../lib/database/schema/audio';
-import {
-  summarizations,
-  summarizationPrompts,
-} from '../../../../lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '../../../../lib/database/client';
 
 export async function GET(
   request: NextRequest,
@@ -13,40 +7,35 @@ export async function GET(
 ) {
   try {
     const { summaryId } = await params;
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Get the specific summary with related file and template info
-    const summaryResults = await db
-      .select({
-        // Summary fields
-        id: summarizations.id,
-        content: summarizations.content,
-        model: summarizations.model,
-        prompt: summarizations.prompt,
-        createdAt: summarizations.createdAt,
-        updatedAt: summarizations.updatedAt,
-        fileId: summarizations.fileId,
-        templateId: summarizations.templateId,
-
-        // File fields
-        fileName: audioFiles.fileName,
-        originalFileName: audioFiles.originalFileName,
-
-        // Template fields
-        templateName: summarizationPrompts.name,
-        templateDescription: summarizationPrompts.description,
-        templateIsDefault: summarizationPrompts.isDefault,
-      })
-      .from(summarizations)
-      .innerJoin(audioFiles, eq(summarizations.fileId, audioFiles.id))
-      .leftJoin(
-        summarizationPrompts,
-        eq(summarizations.templateId, summarizationPrompts.id),
-      )
-      .where(eq(summarizations.id, summaryId))
+    const { data: summaryResults, error } = await supabase
+      .from('summarizations')
+      .select(`
+        id,
+        content,
+        model,
+        prompt,
+        created_at,
+        updated_at,
+        file_id,
+        template_id,
+        audio_files (
+          file_name,
+          original_file_name
+        ),
+        summarization_prompts (
+          id,
+          name,
+          description,
+          is_default
+        )
+      `)
+      .eq('id', summaryId)
       .limit(1);
 
-    if (!summaryResults.length) {
+    if (error || !summaryResults || summaryResults.length === 0) {
       return NextResponse.json({ error: 'Summary not found' }, { status: 404 });
     }
 
@@ -58,19 +47,19 @@ export async function GET(
       content: result.content,
       model: result.model,
       prompt: result.prompt,
-      createdAt: result.createdAt,
-      updatedAt: result.updatedAt,
+      createdAt: result.created_at,
+      updatedAt: result.updated_at,
       file: {
-        id: result.fileId,
-        fileName: result.fileName,
-        originalFileName: result.originalFileName,
+        id: result.file_id,
+        fileName: result.audio_files?.file_name,
+        originalFileName: result.audio_files?.original_file_name,
       },
-      template: result.templateId
+      template: result.template_id && result.summarization_prompts
         ? {
-          id: result.templateId,
-          name: result.templateName,
-          description: result.templateDescription,
-          isDefault: result.templateIsDefault,
+          id: result.template_id,
+          name: result.summarization_prompts.name,
+          description: result.summarization_prompts.description,
+          isDefault: result.summarization_prompts.is_default,
         }
         : null,
     };
@@ -94,21 +83,28 @@ export async function DELETE(
 ) {
   try {
     const { summaryId } = await params;
-    const db = getDb();
+    const supabase = getSupabase();
 
     // First check if the summary exists
-    const existingSummary = await db
-      .select({ id: summarizations.id })
-      .from(summarizations)
-      .where(eq(summarizations.id, summaryId))
+    const { data: existingSummary, error: checkError } = await supabase
+      .from('summarizations')
+      .select('id')
+      .eq('id', summaryId)
       .limit(1);
 
-    if (!existingSummary.length) {
+    if (checkError || !existingSummary || existingSummary.length === 0) {
       return NextResponse.json({ error: 'Summary not found' }, { status: 404 });
     }
 
     // Delete the summary
-    await db.delete(summarizations).where(eq(summarizations.id, summaryId));
+    const { error: deleteError } = await supabase
+      .from('summarizations')
+      .delete()
+      .eq('id', summaryId);
+
+    if (deleteError) {
+      throw deleteError;
+    }
 
     return NextResponse.json({
       success: true,

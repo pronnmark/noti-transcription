@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/database';
-import {
-  telegramSettings,
-  transcriptionJobs,
-  audioFiles,
-} from '@/lib/database/schema';
-import { eq } from 'drizzle-orm';
+import { getSupabase } from '@/lib/database/client';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 
@@ -30,10 +24,19 @@ export async function POST(request: NextRequest) {
     const notification: NotificationRequest = await request.json();
 
     // Check if Telegram integration is enabled
-    const settings = await db.select().from(telegramSettings).limit(1);
-    const config = settings[0];
+    const supabase = getSupabase();
+    const { data: settings, error: settingsError } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
+    
+    if (settingsError) {
+      throw settingsError;
+    }
+    
+    const config = settings?.[0];
 
-    if (!config?.isEnabled) {
+    if (!config?.is_enabled) {
       return NextResponse.json({
         success: false,
         error: 'Telegram integration is disabled',
@@ -81,35 +84,39 @@ async function handleTranscriptionComplete(
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
+  const supabase = getSupabase();
+  
   // Get job details
-  const jobResults = await db
-    .select()
-    .from(transcriptionJobs)
-    .where(eq(transcriptionJobs.id, notification.jobId!))
+  const { data: jobResults, error: jobError } = await supabase
+    .from('transcription_jobs')
+    .select('*')
+    .eq('id', notification.jobId!)
     .limit(1);
-  const job = jobResults[0];
-
-  if (!job) {
+    
+  if (jobError || !jobResults || jobResults.length === 0) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
+  
+  const job = jobResults[0];
 
   // Get file details
-  const fileResults = await db
-    .select()
-    .from(audioFiles)
-    .where(eq(audioFiles.id, job.fileId))
+  const { data: fileResults, error: fileError } = await supabase
+    .from('audio_files')
+    .select('*')
+    .eq('id', job.file_id)
     .limit(1);
-  const file = fileResults[0];
-
-  if (!file) {
+    
+  if (fileError || !fileResults || fileResults.length === 0) {
     return NextResponse.json({ success: false, error: 'File not found' });
   }
+  
+  const file = fileResults[0];
 
   // Attach file to job object to maintain compatibility
   (job as any).file = file;
 
   // Determine target chat
-  const chatId = notification.chatId || config.defaultChatId;
+  const chatId = notification.chatId || config.default_chat_id;
 
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
@@ -117,17 +124,17 @@ async function handleTranscriptionComplete(
 
   // Format notification message
   const duration =
-    job.completedAt && job.startedAt
+    job.completed_at && job.started_at
       ? Math.round(
-        (new Date(job.completedAt).getTime() -
-            new Date(job.startedAt).getTime()) /
+        (new Date(job.completed_at).getTime() -
+            new Date(job.started_at).getTime()) /
             1000,
       )
       : null;
 
   const message = `✅ **Transcription Complete!**
 
-📁 File: ${file.originalFileName}
+📁 File: ${file.original_file_name}
 ⏱️ Duration: ${duration ? `${duration}s` : 'N/A'}
 🆔 Job ID: ${job.id}
 
@@ -155,35 +162,39 @@ async function handleTranscriptionFailed(
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
+  const supabase = getSupabase();
+  
   // Get job details
-  const jobResults = await db
-    .select()
-    .from(transcriptionJobs)
-    .where(eq(transcriptionJobs.id, notification.jobId!))
+  const { data: jobResults, error: jobError } = await supabase
+    .from('transcription_jobs')
+    .select('*')
+    .eq('id', notification.jobId!)
     .limit(1);
-  const job = jobResults[0];
-
-  if (!job) {
+    
+  if (jobError || !jobResults || jobResults.length === 0) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
+  
+  const job = jobResults[0];
 
   // Get file details
-  const fileResults = await db
-    .select()
-    .from(audioFiles)
-    .where(eq(audioFiles.id, job.fileId))
+  const { data: fileResults, error: fileError } = await supabase
+    .from('audio_files')
+    .select('*')
+    .eq('id', job.file_id)
     .limit(1);
-  const file = fileResults[0];
-
-  if (!file) {
+    
+  if (fileError || !fileResults || fileResults.length === 0) {
     return NextResponse.json({ success: false, error: 'File not found' });
   }
+  
+  const file = fileResults[0];
 
   // Attach file to job object to maintain compatibility
   (job as any).file = file;
 
   // Determine target chat
-  const chatId = notification.chatId || config.defaultChatId;
+  const chatId = notification.chatId || config.default_chat_id;
 
   if (!chatId) {
     return NextResponse.json({ success: false, error: 'No chat ID specified' });
@@ -192,9 +203,9 @@ async function handleTranscriptionFailed(
   // Format error message
   const message = `❌ **Transcription Failed**
 
-📁 File: ${file.originalFileName}
+📁 File: ${file.original_file_name}
 🆔 Job ID: ${job.id}
-💔 Error: ${job.lastError || 'Unknown error'}
+💔 Error: ${job.last_error || 'Unknown error'}
 
 Please try uploading the file again or contact support if the issue persists.`;
 
@@ -332,14 +343,23 @@ asyncio.run(send())
 // GET endpoint to check notification settings
 export async function GET() {
   try {
-    const settings = await db.select().from(telegramSettings).limit(1);
-    const config = settings[0];
+    const supabase = getSupabase();
+    const { data: settings, error } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
+      
+    if (error) {
+      throw error;
+    }
+    
+    const config = settings?.[0];
 
     return NextResponse.json({
       success: true,
-      enabled: config?.isEnabled || false,
-      hasDefaultChat: !!config?.defaultChatId,
-      chatConfigurations: config?.chatConfigurations?.length || 0,
+      enabled: config?.is_enabled || false,
+      hasDefaultChat: !!config?.default_chat_id,
+      chatConfigurations: config?.chat_configurations?.length || 0,
     });
   } catch (error) {
     console.error('Error fetching notification settings:', error);
