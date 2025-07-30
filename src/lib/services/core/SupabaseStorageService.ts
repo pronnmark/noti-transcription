@@ -31,9 +31,10 @@ export class SupabaseStorageService {
   constructor() {
     // Get environment variables
     this.supabaseUrl = process.env.SUPABASE_URL || 'http://127.0.0.1:54321';
+    // Prioritize service role key for storage operations to bypass RLS
     this.supabaseKey =
-      process.env.SUPABASE_ANON_KEY ||
       process.env.SUPABASE_SERVICE_ROLE_KEY ||
+      process.env.SUPABASE_ANON_KEY ||
       '';
 
     if (!this.supabaseKey) {
