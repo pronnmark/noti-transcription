@@ -8,7 +8,7 @@ VALUES (
   'audio-files', 
   false,
   104857600, -- 100MB
-  ARRAY['audio/webm', 'audio/wav', 'audio/mp3', 'audio/mp4', 'audio/mpeg', 'audio/ogg']
+  ARRAY['audio/webm', 'audio/wav', 'audio/mp3', 'audio/mp4', 'audio/mpeg', 'audio/ogg', 'audio/x-wav', 'audio/wave']
 )
 ON CONFLICT (id) DO NOTHING;
 

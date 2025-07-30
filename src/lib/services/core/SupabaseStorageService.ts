@@ -139,10 +139,15 @@ export class SupabaseStorageService {
     options: SupabaseUploadOptions
   ): Promise<SupabaseUploadResult> {
     try {
+      // Normalize content type by removing codec specifications
+      // Convert "audio/webm;codecs=opus" to "audio/webm"
+      const normalizedContentType = options.contentType?.split(';')[0] || undefined;
+      
       console.log('Uploading file to Supabase Storage', {
         bucket: options.bucket,
         path: options.path,
-        contentType: options.contentType,
+        originalContentType: options.contentType,
+        normalizedContentType,
       });
 
       // Convert File to ArrayBuffer if needed
@@ -160,7 +165,7 @@ export class SupabaseStorageService {
       const { data, error } = await this.client.storage
         .from(options.bucket)
         .upload(options.path, fileData, {
-          contentType: options.contentType,
+          contentType: normalizedContentType,
           cacheControl: options.cacheControl || '3600',
           upsert: options.upsert || false,
         });
