@@ -20,88 +20,42 @@ import {
   AlertCircle,
   Loader2,
 } from 'lucide-react';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-
-interface UploadResult {
-  success: boolean;
-  fileId?: number;
-  fileName?: string;
-  error?: string;
-}
+import { useFileUpload, useFileValidation } from '@/hooks';
+import type { UploadResult } from '@/hooks';
 
 interface MultiFileUploadProps {
   onUploadComplete?: (results: UploadResult[]) => void;
   className?: string;
-}
-
-const SUPPORTED_FORMATS = [
-  'flac',
-  'm4a',
-  'mp3',
-  'mp4',
-  'mpeg',
-  'mpga',
-  'oga',
-  'ogg',
-  'wav',
-  'webm',
-];
-
-function getFileExtension(filename: string): string {
-  return filename.toLowerCase().split('.').pop() || '';
-}
-
-function validateAudioFormat(file: File): { valid: boolean; error?: string } {
-  const extension = getFileExtension(file.name);
-
-  if (!SUPPORTED_FORMATS.includes(extension)) {
-    return {
-      valid: false,
-      error: `Unsupported format: .${extension}`,
-    };
-  }
-
-  return { valid: true };
+  includeLocation?: boolean;
 }
 
 export function MultiFileUpload({
   onUploadComplete,
   className,
+  includeLocation = false,
 }: MultiFileUploadProps) {
-  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
   const [speakerCount, setSpeakerCount] = useState<number>(2);
-  const [uploadResults, setUploadResults] = useState<UploadResult[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Custom hooks for file management and validation
+  const { getFileExtension, getSupportedFormats } = useFileValidation();
+  const {
+    selectedFiles,
+    uploading,
+    uploadProgress,
+    uploadResults,
+    addFiles,
+    removeFile,
+    clearAllFiles,
+    uploadFiles,
+    hasFiles,
+    fileCount,
+  } = useFileUpload();
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
-
-    // Validate all files
-    const validFiles: File[] = [];
-    const invalidFiles: string[] = [];
-
-    files.forEach(file => {
-      const validation = validateAudioFormat(file);
-      if (validation.valid) {
-        validFiles.push(file);
-      } else {
-        invalidFiles.push(`${file.name}: ${validation.error}`);
-      }
-    });
-
-    if (invalidFiles.length > 0) {
-      toast.error(`Invalid files:\n${invalidFiles.join('\n')}`);
-    }
-
-    if (validFiles.length > 0) {
-      setSelectedFiles(prev => [...prev, ...validFiles]);
-      toast.success(
-        `Selected ${validFiles.length} valid audio file${validFiles.length > 1 ? 's' : ''}`
-      );
-    }
+    addFiles(files);
 
     // Reset file input
     if (fileInputRef.current) {
@@ -109,70 +63,14 @@ export function MultiFileUpload({
     }
   };
 
-  const removeFile = (index: number) => {
-    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const clearAllFiles = () => {
-    setSelectedFiles([]);
-    setUploadResults([]);
-  };
-
   const handleUpload = async () => {
-    if (selectedFiles.length === 0) {
-      toast.error('Please select at least one file');
-      return;
-    }
+    const result = await uploadFiles({
+      speakerCount,
+      includeLocation,
+    });
 
-    setUploading(true);
-    setUploadProgress(0);
-    setUploadResults([]);
-
-    try {
-      const formData = new FormData();
-
-      // Add all files
-      selectedFiles.forEach(file => {
-        formData.append('files', file);
-      });
-
-      // Add speaker count
-      formData.append('speakerCount', speakerCount.toString());
-
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error(`Upload failed: ${response.status}`);
-      }
-
-      const result = await response.json();
-
-      if (result.success) {
-        toast.success(
-          `Successfully uploaded ${result.successCount} of ${result.totalFiles} files`
-        );
-        if (result.failureCount > 0) {
-          toast.warning(`${result.failureCount} files failed to upload`);
-        }
-        setUploadResults(result.results || []);
-        onUploadComplete?.(result.results || []);
-
-        // Clear files after successful upload
-        setSelectedFiles([]);
-      } else {
-        throw new Error(result.error || 'Upload failed');
-      }
-    } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(
-        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
+    if (result && onUploadComplete) {
+      onUploadComplete(result.results);
     }
   };
 
@@ -242,16 +140,16 @@ export function MultiFileUpload({
             />
 
             <div className='text-sm text-muted-foreground'>
-              Supported formats: {SUPPORTED_FORMATS.join(', ')}
+              Supported formats: {getSupportedFormats().join(', ')}
             </div>
           </div>
 
           {/* Selected Files */}
-          {selectedFiles.length > 0 && (
+          {hasFiles && (
             <div className='space-y-3'>
               <div className='flex items-center justify-between'>
                 <span className='text-sm font-medium'>
-                  Selected Files ({selectedFiles.length})
+                  Selected Files ({fileCount})
                 </span>
                 <Button
                   variant='ghost'
@@ -340,7 +238,7 @@ export function MultiFileUpload({
           {/* Upload Button */}
           <Button
             onClick={handleUpload}
-            disabled={selectedFiles.length === 0 || uploading}
+            disabled={!hasFiles || uploading}
             className='w-full'
           >
             {uploading ? (
@@ -351,8 +249,7 @@ export function MultiFileUpload({
             ) : (
               <>
                 <Upload className='mr-2 h-4 w-4' />
-                Upload {selectedFiles.length} File
-                {selectedFiles.length !== 1 ? 's' : ''}
+                Upload {fileCount} File{fileCount !== 1 ? 's' : ''}
               </>
             )}
           </Button>
