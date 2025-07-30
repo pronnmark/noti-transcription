@@ -949,12 +949,41 @@ export default function RecordPage() {
       formData.append('deviceType', deviceType);
       console.log('📱 Device type detected:', deviceType);
 
-      console.log('📤 Sending upload request...');
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData,
-        // Don't set Content-Type - let browser set it automatically for FormData
-      });
+      console.log('📤 Sending upload request to:', window.location.origin + '/api/upload');
+      console.log('📤 Current URL:', window.location.href);
+      
+      // Add more detailed error handling for network issues
+      let response;
+      try {
+        response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          // Don't set Content-Type - let browser set it automatically for FormData
+        });
+        console.log('📤 Upload response status:', response.status);
+      } catch (fetchError) {
+        console.error('❌ Network error during upload:', fetchError);
+        console.error('❌ Error details:', {
+          name: fetchError.name,
+          message: fetchError.message,
+          cause: fetchError.cause
+        });
+        
+        // Check if server is reachable
+        try {
+          console.log('🏥 Checking server health...');
+          const healthCheck = await fetch('/api/health');
+          console.log('🏥 Health check status:', healthCheck.status);
+          if (healthCheck.ok) {
+            throw new Error('Upload endpoint failed but server is reachable. Check server logs.');
+          } else {
+            throw new Error('Server is not responding properly. Please check if the development server is running.');
+          }
+        } catch (healthError) {
+          console.error('❌ Health check failed:', healthError);
+          throw new Error('Cannot connect to server. Please ensure the development server is running on the correct port.');
+        }
+      }
 
       if (!response.ok) {
         const errorData = await response
