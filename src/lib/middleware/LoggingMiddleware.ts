@@ -253,10 +253,11 @@ export class PerformanceLoggingMiddleware implements MiddlewareHandler {
       ...options,
     };
 
-    // Start periodic reporting
-    if (this.options.reportInterval) {
-      setInterval(() => this.reportMetrics(), this.options.reportInterval);
-    }
+    // Periodic reporting disabled to reduce console noise
+    // Performance tracking still enabled for slow request detection
+    // if (this.options.reportInterval) {
+    //   setInterval(() => this.reportMetrics(), this.options.reportInterval);
+    // }
   }
 
   async execute(
@@ -320,28 +321,8 @@ export class PerformanceLoggingMiddleware implements MiddlewareHandler {
   }
 
   private reportMetrics(): void {
-    const report: Record<string, any> = {};
-
-    for (const [path, durations] of Array.from(this.metrics.entries())) {
-      if (durations.length === 0) continue;
-
-      const avg = durations.reduce((sum, d) => sum + d, 0) / durations.length;
-      const min = Math.min(...durations);
-      const max = Math.max(...durations);
-      const p95 = this.percentile(durations, 0.95);
-
-      report[path] = {
-        count: durations.length,
-        avg: Math.round(avg),
-        min,
-        max,
-        p95: Math.round(p95),
-      };
-    }
-
-    if (Object.keys(report).length > 0) {
-      console.log('📊 Performance metrics:', report);
-    }
+    // Performance metrics tracking disabled to reduce console noise
+    // Metrics are still collected for slow request detection
   }
 
   private percentile(values: number[], p: number): number {

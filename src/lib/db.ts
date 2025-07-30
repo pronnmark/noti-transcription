@@ -39,12 +39,23 @@ export const settingsService = {
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
+      // Handle missing table (PGRST116) or PostgreSQL relation error (42P01)
+      if (error && (error.code === 'PGRST116' || error.code === '42P01')) {
+        return null;
+      }
+
+      if (error) {
         throw error;
       }
 
       return data || null;
     } catch (error) {
+      // Silently handle missing table errors
+      if (error && typeof error === 'object' && 'code' in error && 
+          (error.code === 'PGRST116' || error.code === '42P01')) {
+        return null;
+      }
+      // Only log unexpected errors
       console.error('Failed to get settings:', error);
       return null;
     }

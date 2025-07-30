@@ -19,20 +19,12 @@ let databaseClient: DatabaseClient | null = null;
 
 function createSupabaseClient(): SupabaseClient {
   try {
-    // Only log in development mode
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`📂 Connecting to Supabase: ${SUPABASE_URL}`);
-    }
-
     const client = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       auth: {
         persistSession: false, // For server-side usage
       },
     });
 
-    if (process.env.NODE_ENV === 'development') {
-      console.log('✅ Supabase client created successfully');
-    }
     return client;
   } catch (error) {
     console.error('❌ Failed to create Supabase client:', error);
@@ -88,7 +80,6 @@ export const supabase = getSupabase();
 // Database health check
 export async function healthCheck(): Promise<boolean> {
   try {
-    console.log('🔍 Performing Supabase health check...');
     const client = getSupabase();
     
     // Try a simple query that should work even with empty database
@@ -98,33 +89,23 @@ export async function healthCheck(): Promise<boolean> {
       .limit(1);
 
     if (error) {
-      console.log('Health check error details:', {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint
-      });
-      
-      if (error.code === 'PGRST116') {
-        // PGRST116 is "relation does not exist" which is expected if table doesn't exist yet
-        console.log('✅ Table does not exist but connection is working');
+      if (error.code === 'PGRST116' || error.code === '42P01') {
+        // Table doesn't exist but connection is working
         return true;
       }
       
-      if (error.code === '42P01') {
-        // PostgreSQL "relation does not exist" error
-        console.log('✅ Table not found but connection is working');
-        return true;
+      // Only log unexpected errors
+      if (process.env.NODE_ENV === 'development') {
+        console.error('❌ Database health check failed:', error);
       }
-      
-      console.error('❌ Database health check failed:', error);
       return false;
     }
 
-    console.log('✅ Database health check successful, data:', data);
     return true;
   } catch (error) {
-    console.error('❌ Database health check failed with exception:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ Database health check failed with exception:', error);
+    }
     return false;
   }
 }
@@ -134,23 +115,23 @@ export async function ensureConnection(): Promise<boolean> {
   try {
     const isHealthy = await healthCheck();
     if (!isHealthy) {
-      console.warn('Database connection unhealthy, attempting to reconnect...');
-
       // Reset connection and try again
       supabaseClient = null;
       const newCheck = await healthCheck();
 
       if (!newCheck) {
-        console.error('Failed to restore database connection');
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Failed to restore database connection');
+        }
         return false;
       }
-
-      console.log('✅ Database connection restored');
     }
 
     return true;
   } catch (error) {
-    console.error('Connection validation failed:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Connection validation failed:', error);
+    }
     return false;
   }
 }
@@ -161,10 +142,11 @@ export function closeDatabase(): void {
     if (supabaseClient) {
       // Supabase client doesn't need explicit closing
       supabaseClient = null;
-      console.log('📂 Supabase client reference cleared');
     }
   } catch (error) {
-    console.error('Error clearing Supabase client:', error);
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error clearing Supabase client:', error);
+    }
   }
 }
 
