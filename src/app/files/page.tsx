@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileAudio, Plus, Loader2, Trash2, Download } from 'lucide-react';
+import { FileAudio, Plus, Loader2, Trash2, Download, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -31,6 +31,10 @@ interface AudioFile {
     | 'failed'
     | 'no_speakers_detected';
   hasSpeakers?: boolean;
+  latitude?: number;
+  longitude?: number;
+  locationAccuracy?: number;
+  locationProvider?: string;
 }
 
 interface SummaryStatusProps {
@@ -205,6 +209,21 @@ export default function FilesPage() {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatLocation = (file: AudioFile) => {
+    if (!file.latitude || !file.longitude) return null;
+    
+    // Format coordinates to reasonable precision
+    const lat = file.latitude.toFixed(4);
+    const lng = file.longitude.toFixed(4);
+    
+    // Add accuracy info if available
+    const accuracy = file.locationAccuracy 
+      ? ` (±${Math.round(file.locationAccuracy)}m)` 
+      : '';
+    
+    return `${lat}, ${lng}${accuracy}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -383,6 +402,14 @@ export default function FilesPage() {
                                   <span className='text-xs text-gray-500'>
                                     {formatDuration(file.duration)}
                                   </span>
+                                )}
+                                {formatLocation(file) && (
+                                  <div className='flex items-center gap-1 text-xs text-gray-500'>
+                                    <MapPin className='h-3 w-3' />
+                                    <span title={`Location: ${formatLocation(file)}\nProvider: ${file.locationProvider || 'unknown'}`}>
+                                      {formatLocation(file)}
+                                    </span>
+                                  </div>
                                 )}
                                 {file.transcriptionStatus === 'processing' && (
                                   <span className='text-xs text-blue-600'>
