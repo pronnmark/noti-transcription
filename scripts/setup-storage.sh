@@ -13,7 +13,7 @@ SERVICE_ROLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZ
 
 # Check if Supabase is running
 echo "📡 Checking Supabase connection..."
-if ! curl -f -s "$SUPABASE_URL/health" > /dev/null; then
+if ! curl -f -s "$SUPABASE_URL/storage/v1/bucket" -H "Authorization: Bearer $SERVICE_ROLE_KEY" > /dev/null; then
     echo "❌ Supabase is not running. Please start it with: npx supabase start"
     exit 1
 fi
