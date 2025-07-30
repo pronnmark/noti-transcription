@@ -4,10 +4,11 @@ import { customAIService } from '@/lib/services/customAI';
 import { createId } from '@paralleldrive/cuid2';
 import { withAuthMiddleware } from '@/lib/middleware';
 import {
-  AudioRepository,
-  TranscriptionRepository,
-  SummarizationTemplateRepository,
-} from '@/lib/database/repositories';
+  getAudioRepository,
+  getTranscriptionRepository,
+  getValidationService,
+  getErrorHandlingService,
+} from '@/lib/di/containerSetup';
 import { debugLog } from '@/lib/utils';
 import { getSupabase } from '@/lib/database/client';
 
@@ -18,23 +19,27 @@ export const POST = withAuthMiddleware(
       const url = new URL(request.url);
       const pathSegments = url.pathname.split('/');
       const fileId = pathSegments[pathSegments.length - 2]; // Get fileId from URL path
-      const fileIdInt = parseInt(fileId);
-      if (isNaN(fileIdInt)) {
-        return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
+      
+      // Use validation service
+      const validationService = getValidationService();
+      const errorHandlingService = getErrorHandlingService();
+      
+      const fileIdValidation = validationService.validateId(fileId, 'File ID');
+      if (!fileIdValidation.isValid) {
+        return errorHandlingService.handleValidationError(fileIdValidation.errors);
       }
+      const fileIdInt = parseInt(fileId);
 
       const body = await request.json();
 
       const {
         summarizationPromptId,
-        extractionDefinitionIds = [],
         customSummarizationPrompt,
       } = body;
 
-      // Get repositories
-      const audioRepo = new AudioRepository();
-      const transcriptRepo = new TranscriptionRepository();
-      const summarizationRepo = new SummarizationTemplateRepository();
+      // Get repositories using DI container
+      const audioRepo = getAudioRepository();
+      const transcriptRepo = getTranscriptionRepository();
 
       // TODO: Re-implement validation once SummarizationTemplateRepository has findById method
       // Validate summarization template ID exists in database before processing
@@ -60,24 +65,18 @@ export const POST = withAuthMiddleware(
       // Get file
       const fileRecord = await audioRepo.findById(fileIdInt);
       if (!fileRecord) {
-        return NextResponse.json({ error: 'File not found' }, { status: 404 });
+        return errorHandlingService.handleApiError('NOT_FOUND', 'File not found');
       }
 
       // Get transcript from transcription jobs
       const transcriptionJobs = await transcriptRepo.findByFileId(fileIdInt);
       if (!transcriptionJobs || transcriptionJobs.length === 0) {
-        return NextResponse.json(
-          { error: 'Transcription job not found' },
-          { status: 404 }
-        );
+        return errorHandlingService.handleApiError('NOT_FOUND', 'Transcription job not found');
       }
 
       const transcriptRecord = transcriptionJobs[0]; // Get the first/latest transcription job
       if (!transcriptRecord.transcript) {
-        return NextResponse.json(
-          { error: 'File not transcribed yet' },
-          { status: 400 }
-        );
+        return errorHandlingService.handleApiError('INVALID_INPUT', 'File not transcribed yet');
       }
 
       debugLog(
@@ -87,10 +86,6 @@ export const POST = withAuthMiddleware(
       debugLog(
         'api',
         `📝 Summarization prompt: ${summarizationPromptId || 'default'}`
-      );
-      debugLog(
-        'api',
-        `🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`
       );
 
       // Create processing session
@@ -103,27 +98,21 @@ export const POST = withAuthMiddleware(
 
       // Get the configured AI model outside try block for error handling access
       const configuredModel = await customAIService.getDefaultModel();
-      let extractionMap: Record<string, unknown> = {};
 
       try {
         // Generate dynamic prompt
         const {
           systemPrompt,
           expectedJsonSchema,
-          extractionMap: generatedExtractionMap,
         } = await dynamicPromptGenerator.generatePrompt({
           summarizationPromptId,
-          extractionDefinitionIds,
           useCustomSummarizationPrompt: customSummarizationPrompt,
         });
-
-        extractionMap = generatedExtractionMap;
 
         debugLog(
           'api',
           `📋 Generated system prompt (${systemPrompt.length} chars)`
         );
-        debugLog('api', `🔧 Extraction map:`, Object.keys(extractionMap));
 
         // Format transcript for AI
         const transcriptText = formatTranscriptForAI(
@@ -138,7 +127,7 @@ export const POST = withAuthMiddleware(
             id: sessionId,
             file_id: fileIdInt,
             summarization_prompt_id: summarizationPromptId || null,
-            extraction_definition_ids: extractionDefinitionIds,
+            extraction_definition_ids: null, // Extraction functionality removed
             system_prompt: systemPrompt,
             ai_response: '', // Will be updated after AI response
             status: 'processing',
@@ -186,11 +175,10 @@ export const POST = withAuthMiddleware(
         }
 
         // Parse and store results
-        const { success, extractionResults, error } =
+        const { success, summarizationResult, error } =
           await dynamicPromptGenerator.parseAndStoreResults(
             fileIdInt,
             aiResponse,
-            extractionMap,
             sessionId,
             configuredModel,
             summarizationPromptId
@@ -208,17 +196,13 @@ export const POST = withAuthMiddleware(
           'api',
           `✅ Dynamic AI processing completed for file ${fileIdInt}`
         );
-        debugLog(
-          'api',
-          `📊 Extracted ${extractionResults.length} result groups`
-        );
 
-        return NextResponse.json({
+        return errorHandlingService.handleSuccess({
           sessionId,
-          extractionResults: extractionResults.length,
+          summarizationResult,
           processingTime: Date.now() - startTime,
           fileId: fileIdInt,
-        });
+        }, 'dynamic-process');
       } catch (aiError) {
         debugLog('api', 'Dynamic AI processing error:', aiError);
 
@@ -228,7 +212,6 @@ export const POST = withAuthMiddleware(
             await dynamicPromptGenerator.parseAndStoreResults(
               fileIdInt,
               '', // Empty response triggers fallback behavior
-              extractionMap,
               sessionId,
               configuredModel,
               summarizationPromptId
@@ -251,14 +234,14 @@ export const POST = withAuthMiddleware(
           // TODO: Re-implement updateTimestamp method in repository
           // await audioRepo.updateTimestamp(fileIdInt);
 
-          return NextResponse.json({
+          return errorHandlingService.handleSuccess({
             sessionId,
-            extractionResults: fallbackResponse.extractionResults.length,
+            summarizationResult: fallbackResponse.summarizationResult,
             processingTime: Date.now() - startTime,
             fileId: fileIdInt,
             warning:
-              'AI processing failed, fallback response created with empty arrays/objects',
-          });
+              'AI processing failed, fallback response created',
+          }, 'dynamic-process', 'Fallback response created');
         } catch (fallbackError) {
           debugLog('api', 'Fallback processing also failed:', fallbackError);
 
@@ -278,22 +261,17 @@ export const POST = withAuthMiddleware(
           // TODO: Re-implement updateTimestamp method in repository
           // await audioRepo.updateTimestamp(fileIdInt);
 
-          return NextResponse.json(
-            {
-              error: 'Failed to process with AI and fallback failed',
-              details: String(aiError),
-              sessionId,
-            },
-            { status: 500 }
+          return errorHandlingService.handleApiError(
+            'INTERNAL_ERROR',
+            'Failed to process with AI and fallback failed',
+            { details: String(aiError), sessionId }
           );
         }
       }
     } catch (error) {
       debugLog('api', 'Unexpected error:', error);
-      return NextResponse.json(
-        { error: 'Internal server error' },
-        { status: 500 }
-      );
+      const errorHandlingService = getErrorHandlingService();
+      return errorHandlingService.handleApiError('INTERNAL_ERROR', 'Internal server error');
     }
   }
 );
@@ -332,30 +310,32 @@ export const GET = withAuthMiddleware(async (request: NextRequest, context) => {
     const url = new URL(request.url);
     const pathSegments = url.pathname.split('/');
     const fileId = pathSegments[pathSegments.length - 2]; // Get fileId from URL path
-    const fileIdInt = parseInt(fileId);
-    if (isNaN(fileIdInt)) {
-      return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
+    
+    // Use validation and error handling services
+    const validationService = getValidationService();
+    const errorHandlingService = getErrorHandlingService();
+    
+    const fileIdValidation = validationService.validateId(fileId, 'File ID');
+    if (!fileIdValidation.isValid) {
+      return errorHandlingService.handleValidationError(fileIdValidation.errors);
     }
+    const fileIdInt = parseInt(fileId);
 
-    // Get extraction results
-    const extractionResults =
-      await dynamicPromptGenerator.getExtractionResults(fileIdInt);
-
-    // Get file info
-    const audioRepo = new AudioRepository();
+    // Get file info using DI container
+    const audioRepo = getAudioRepository();
     const fileInfo = await audioRepo.findById(fileIdInt);
 
-    return NextResponse.json({
+    // TODO: Get summarization results from Supabase
+    const summarization = null; // Would be fetched from summarizations table
+
+    return errorHandlingService.handleSuccess({
       fileId: fileIdInt,
       fileName: fileInfo?.file_name || 'Unknown',
-      summarization: null, // Summarization would be fetched from summarizations table
-      extractionResults,
-    });
+      summarization,
+    }, 'get-dynamic-process-results');
   } catch (error) {
     debugLog('api', 'GET error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    const errorHandlingService = getErrorHandlingService();
+    return errorHandlingService.handleApiError('INTERNAL_ERROR', 'Internal server error');
   }
 });

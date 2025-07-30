@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { DatabaseClient } from './interfaces/DatabaseClient';
+import { SupabaseAdapter } from './adapters/SupabaseAdapter';
 
 // Supabase configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.TEST_SUPABASE_URL;
@@ -11,8 +13,9 @@ if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
   );
 }
 
-// Create Supabase client
+// Singleton instances
 let supabaseClient: SupabaseClient | null = null;
+let databaseClient: DatabaseClient | null = null;
 
 function createSupabaseClient(): SupabaseClient {
   try {
@@ -49,7 +52,20 @@ function createSupabaseClient(): SupabaseClient {
   }
 }
 
-// Get Supabase client instance
+/**
+ * Get the abstracted database client (recommended)
+ */
+export function getDatabaseClient(): DatabaseClient {
+  if (!databaseClient) {
+    databaseClient = new SupabaseAdapter(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+  }
+  return databaseClient;
+}
+
+/**
+ * Get Supabase client instance (legacy - use getDatabaseClient() for new code)
+ * @deprecated Use getDatabaseClient() instead for better abstraction
+ */
 export function getSupabase(): SupabaseClient {
   if (!supabaseClient) {
     supabaseClient = createSupabaseClient();
@@ -57,7 +73,10 @@ export function getSupabase(): SupabaseClient {
   return supabaseClient;
 }
 
-// Export the client directly for convenience
+/**
+ * Export the client directly for convenience (legacy)
+ * @deprecated Use getDatabaseClient() instead for better abstraction
+ */
 export const supabase = getSupabase();
 
 // Database health check

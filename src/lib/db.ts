@@ -2,9 +2,7 @@
 // This file provides the old interface while using the new Supabase-based structure
 
 import {
-  AudioRepository,
-  SummarizationRepository,
-  SummarizationTemplateRepository,
+  RepositoryFactory,
   getSupabase,
 } from './database';
 
@@ -26,10 +24,9 @@ export const settings = systemSettings;
 export const psychologyProfiles = psychologicalEvaluations;
 
 // Legacy service instances for backward compatibility
-export const audioFilesService = new AudioRepository();
-export const summarizationsService = new SummarizationRepository();
-export const summarizationTemplatesService =
-  new SummarizationTemplateRepository();
+export const audioFilesService = RepositoryFactory.audioRepository;
+export const summarizationsService = RepositoryFactory.summarizationRepository;
+export const summarizationTemplatesService = RepositoryFactory.summarizationTemplateRepository;
 
 // Legacy settings service - DEPRECATED: Use repositories instead
 // Keeping minimal implementation for backward compatibility with /api/settings route
@@ -85,9 +82,13 @@ export const settingsService = {
 
 // Legacy services removed - Use repositories instead
 
-// Helper function for parsing audio files (placeholder)
+// TODO: Implement audio file parsing logic
+// Should extract metadata like duration, peaks, format, etc.
 export const parseAudioFile = async (filePath: string) => {
-  // This would contain audio parsing logic
+  // TODO: Add actual audio parsing implementation
+  // - Use ffprobe for metadata extraction
+  // - Generate waveform peaks for visualization
+  // - Extract format information and duration
   return { duration: 0, peaks: [] };
 };
 

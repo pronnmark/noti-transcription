@@ -300,7 +300,7 @@ export class AudioService {
     averageDuration: number;
   }> {
     try {
-      const stats = await this.audioRepository.getStorageStats();
+      const stats = await RepositoryFactory.audioStatsRepository.getStorageStats();
       return {
         totalFiles: stats.totalFiles,
         totalSize: stats.totalSize,

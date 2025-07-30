@@ -1,27 +1,12 @@
 import { BaseRepository } from './BaseRepository';
-import { getSupabase } from '../client';
-
-interface SummarizationCreateData {
-  file_id: number;
-  content: string;
-  model: string;
-  prompt: string;
-  template_id?: string | null;
-}
-
-interface Summarization {
-  id: number;
-  file_id: number;
-  content: string;
-  model: string;
-  prompt: string;
-  template_id?: string | null;
-  created_at: string;
-  updated_at: string;
-}
+import { ISummarizationRepository, SummarizationCreateData, Summarization } from '../interfaces/repositories';
+import { DatabaseClient } from '../interfaces/DatabaseClient';
 
 // Placeholder repository - update with actual Supabase schema when needed
-export class SummarizationRepository extends BaseRepository {
+export class SummarizationRepository extends BaseRepository implements ISummarizationRepository {
+  constructor(db: DatabaseClient) {
+    super(db);
+  }
   // TODO: Implement Supabase-based summarization repository methods
 
   async findActiveByIds(ids: string[]): Promise<any[]> {
@@ -32,19 +17,16 @@ export class SummarizationRepository extends BaseRepository {
   }
 
   async create(data: SummarizationCreateData): Promise<Summarization> {
-    const supabase = getSupabase();
-
-    const { data: result, error } = await supabase
-      .from('summarizations')
-      .insert(data)
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Failed to create summarization:', error);
-      throw new Error(`Failed to create summarization: ${error.message}`);
-    }
-
-    return result;
+    this.validateRequired(data, 'Create summarization');
+    
+    return this.executeQuery<Summarization>(
+      'Create summarization',
+      () => this.db
+        .from<Summarization>('summarizations')
+        .insert(data)
+        .select('*')
+        .single()
+        .execute()
+    );
   }
 }

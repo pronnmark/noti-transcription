@@ -7,7 +7,7 @@ const DEBUG_API = process.env.DEBUG_API !== 'false';
 const DEBUG_WORKER = process.env.DEBUG_WORKER !== 'false';
 const DEBUG_SERVICES = process.env.DEBUG_SERVICES !== 'false';
 
-export type DebugContext = 'api' | 'worker' | 'services' | 'general';
+export type DebugContext = 'api' | 'worker' | 'services' | 'service' | 'dynamicPrompt' | 'general';
 
 /**
  * Debug logger with context-based filtering
@@ -23,7 +23,7 @@ export function debugLog(
       ? DEBUG_API
       : context === 'worker'
         ? DEBUG_WORKER
-        : context === 'services'
+        : context === 'services' || context === 'service' || context === 'dynamicPrompt'
           ? DEBUG_SERVICES
           : true; // general context always logs in debug mode
 
