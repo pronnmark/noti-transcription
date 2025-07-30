@@ -25,9 +25,6 @@ async function loadSettings(): Promise<Settings> {
         dbSettings.customAiProvider ||
         process.env.CUSTOM_AI_PROVIDER ||
         'custom';
-      defaults.ai.openaiApiKey = dbSettings.openaiApiKey || '';
-      defaults.ai.aiExtractEnabled = dbSettings.aiExtractEnabled || false;
-      defaults.ai.aiExtractModel = dbSettings.aiExtractModel || '';
     }
   } catch (error) {
     console.error('Error loading settings from database:', error);
@@ -65,9 +62,6 @@ async function saveSettings(settings: Settings): Promise<void> {
       customAiApiKey: settings.ai.customAiApiKey,
       customAiModel: settings.ai.customAiModel,
       customAiProvider: settings.ai.customAiProvider,
-      openaiApiKey: settings.ai.openaiApiKey,
-      aiExtractEnabled: settings.ai.aiExtractEnabled,
-      aiExtractModel: settings.ai.aiExtractModel,
     };
 
     await settingsService.update(dbSettingsData);
@@ -109,9 +103,6 @@ interface Settings {
     customAiApiKey: string;
     customAiModel: string;
     customAiProvider: string;
-    openaiApiKey: string;
-    aiExtractEnabled: boolean;
-    aiExtractModel: string;
   };
 }
 
@@ -131,9 +122,6 @@ function getDefaultSettings(): Settings {
       customAiApiKey: process.env.CUSTOM_AI_API_KEY || '',
       customAiModel: process.env.CUSTOM_AI_MODEL || '',
       customAiProvider: process.env.CUSTOM_AI_PROVIDER || 'custom',
-      openaiApiKey: '',
-      aiExtractEnabled: false,
-      aiExtractModel: '',
     },
   };
 }

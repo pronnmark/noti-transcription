@@ -58,9 +58,6 @@ interface AISettings {
   customAiApiKey: string;
   customAiModel: string;
   customAiProvider: string;
-  openaiApiKey: string;
-  aiExtractEnabled: boolean;
-  aiExtractModel: string;
 }
 
 interface SummarizationTemplate {
@@ -139,14 +136,10 @@ export default function SettingsPage() {
     customAiApiKey: '',
     customAiModel: '',
     customAiProvider: 'custom',
-    openaiApiKey: '',
-    aiExtractEnabled: false,
-    aiExtractModel: '',
   });
 
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({
     customAiApiKey: false,
-    openaiApiKey: false,
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -1263,64 +1256,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>AI Models & Prompts</CardTitle>
-              <CardDescription>
-                Configure AI model selection and default prompts
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='aiModel'>AI Model (OpenRouter)</Label>
-                <Input
-                  id='aiModel'
-                  type='text'
-                  value={aiSettings.aiExtractModel}
-                  onChange={e =>
-                    setAISettings(prev => ({
-                      ...prev,
-                      aiExtractModel: e.target.value,
-                    }))
-                  }
-                  placeholder='e.g. anthropic/claude-sonnet-4'
-                />
-                <p className='text-sm text-muted-foreground'>
-                  Enter any valid OpenRouter model ID.
-                </p>
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='openaiKey'>OpenAI API Key (Optional)</Label>
-                <div className='flex min-w-0 gap-2'>
-                  <Input
-                    className='min-w-0 flex-1'
-                    id='openaiKey'
-                    type={showTokens.openaiApiKey ? 'text' : 'password'}
-                    value={aiSettings.openaiApiKey}
-                    onChange={e =>
-                      setAISettings(prev => ({
-                        ...prev,
-                        openaiApiKey: e.target.value,
-                      }))
-                    }
-                    placeholder='sk-...'
-                  />
-                  <Button
-                    variant='outline'
-                    size='icon'
-                    onClick={() => toggleTokenVisibility('openaiApiKey')}
-                  >
-                    {showTokens.openaiApiKey ? (
-                      <EyeOff className='h-4 w-4' />
-                    ) : (
-                      <Eye className='h-4 w-4' />
-                    )}
-                  </Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
 
