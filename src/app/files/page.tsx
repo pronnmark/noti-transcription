@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileAudio, Plus, Loader2, Trash2, Download, MapPin } from 'lucide-react';
+import { FileAudio, Plus, Loader2, Trash2, Download, MapPin, Smartphone, Tablet, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -35,6 +35,7 @@ interface AudioFile {
   longitude?: number;
   locationAccuracy?: number;
   locationProvider?: string;
+  deviceType?: string;
 }
 
 interface SummaryStatusProps {
@@ -133,6 +134,35 @@ function LocationDisplay({ file }: { file: AudioFile }) {
   );
 }
 
+function DeviceTypeIcon({ deviceType }: { deviceType?: string }) {
+  if (!deviceType || deviceType === 'unknown') return null;
+
+  const getIcon = () => {
+    switch (deviceType.toLowerCase()) {
+      case 'mobile':
+        return <Smartphone className='h-3 w-3' />;
+      case 'tablet':
+        return <Tablet className='h-3 w-3' />;
+      case 'desktop':
+        return <Monitor className='h-3 w-3' />;
+      default:
+        return null;
+    }
+  };
+
+  const icon = getIcon();
+  if (!icon) return null;
+
+  return (
+    <div className='flex items-center gap-1 text-xs text-gray-500'>
+      {icon}
+      <span title={`Device: ${deviceType}`}>
+        {deviceType}
+      </span>
+    </div>
+  );
+}
+
 export default function FilesPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,6 +202,20 @@ export default function FilesPage() {
     const formData = new FormData();
     formData.append('audio', file);
     formData.append('speakerCount', '2'); // Default speaker count
+
+    // Detect device type
+    const getDeviceType = () => {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+      const isTablet = /ipad|android(?!.*mobile)/i.test(userAgent) || 
+                      (window.screen.width >= 768 && window.screen.width <= 1024);
+      
+      if (isTablet) return 'tablet';
+      if (isMobile) return 'mobile';
+      return 'desktop';
+    };
+
+    formData.append('deviceType', getDeviceType());
 
     try {
       const response = await fetch('/api/upload', {
@@ -451,6 +495,7 @@ export default function FilesPage() {
                                   </span>
                                 )}
                                 <LocationDisplay file={file} />
+                                <DeviceTypeIcon deviceType={file.deviceType} />
                                 {file.transcriptionStatus === 'processing' && (
                                   <span className='text-xs text-blue-600'>
                                     Processing...

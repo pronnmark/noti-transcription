@@ -71,6 +71,7 @@ export async function GET(request: NextRequest) {
       speakerCount: 2, // Default
       diarizationStatus: 'success' as const,
       hasSpeakers: false,
+      deviceType: file.device_type || 'unknown',
       // Include location data if present
       latitude: file.latitude,
       longitude: file.longitude,

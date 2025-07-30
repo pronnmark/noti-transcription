@@ -13,6 +13,7 @@ export interface UploadOptions {
   speakerCount?: number;
   isDraft?: boolean;
   allowDuplicates?: boolean;
+  deviceType?: string;
   location?: {
     latitude: number;
     longitude: number;
@@ -74,7 +75,8 @@ export class FileUploadService {
         storagePath,
         fileHash,
         duration,
-        options.location
+        options.location,
+        options.deviceType
       );
 
       // Start transcription if not a draft
@@ -212,7 +214,8 @@ export class FileUploadService {
     storagePath: string,
     fileHash: string,
     duration: number,
-    location?: UploadOptions['location']
+    location?: UploadOptions['location'],
+    deviceType?: string
   ) {
     const audioRepository = getAudioRepository();
 
@@ -223,6 +226,7 @@ export class FileUploadService {
       file_size: file.size,
       file_hash: fileHash,
       duration,
+      device_type: deviceType || 'unknown',
       // Include location data if provided
       latitude: location?.latitude,
       longitude: location?.longitude,

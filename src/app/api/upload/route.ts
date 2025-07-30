@@ -103,6 +103,10 @@ export async function POST(request: NextRequest) {
         }
       }
 
+      // Extract device type
+      const deviceTypeField = formData.get('deviceType');
+      const deviceType = deviceTypeField ? deviceTypeField.toString() : 'unknown';
+
       // Create FileUploadService instance directly
       const fileUploadService = new FileUploadService();
 
@@ -113,6 +117,7 @@ export async function POST(request: NextRequest) {
             const result = await fileUploadService.uploadFile(file, {
               speakerCount,
               location: locationData.latitude ? locationData : undefined,
+              deviceType,
             });
 
             return {

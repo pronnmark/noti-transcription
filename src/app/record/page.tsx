@@ -933,6 +933,22 @@ export default function RecordPage() {
         console.log('📍 No location data available for upload');
       }
 
+      // Detect device type
+      const getDeviceType = () => {
+        const userAgent = navigator.userAgent.toLowerCase();
+        const isMobile = /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent);
+        const isTablet = /ipad|android(?!.*mobile)/i.test(userAgent) || 
+                        (window.screen.width >= 768 && window.screen.width <= 1024);
+        
+        if (isTablet) return 'tablet';
+        if (isMobile) return 'mobile';
+        return 'desktop';
+      };
+
+      const deviceType = getDeviceType();
+      formData.append('deviceType', deviceType);
+      console.log('📱 Device type detected:', deviceType);
+
       console.log('📤 Sending upload request...');
       const response = await fetch('/api/upload', {
         method: 'POST',
