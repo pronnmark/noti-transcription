@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Mic, Square, Pause, Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Mic, Square, Pause, Play, Loader2, AlertCircle, CheckCircle, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
@@ -1062,6 +1062,43 @@ export default function RecordPage() {
     }
   }
 
+  async function handleDownloadRecording() {
+    if (!fileId) {
+      toast.error('No recording available to download');
+      return;
+    }
+
+    try {
+      toast.info('Preparing download...');
+      
+      // Verify download endpoint is accessible before opening
+      const downloadUrl = `/api/files/${fileId}/download`;
+      const response = await fetch(downloadUrl, { 
+        method: 'HEAD',
+        credentials: 'same-origin'
+      });
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          toast.error('Recording not found or no longer available');
+        } else if (response.status === 500) {
+          toast.error('Server error - unable to generate download link');
+        } else {
+          toast.error('Download failed - please try again');
+        }
+        return;
+      }
+      
+      // Open download endpoint in new window/tab
+      window.open(downloadUrl, '_blank');
+      
+      toast.success('Download started');
+    } catch (error) {
+      toast.error('Failed to initiate download');
+      console.error('Download error:', error);
+    }
+  }
+
   function formatRecordingTime(seconds: number): string {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -1294,6 +1331,42 @@ export default function RecordPage() {
               error={workflowError}
               className='mt-6'
             />
+          )}
+
+          {/* Download Button */}
+          {workflowPhase === 'completed' && fileId && (
+            <Card className='mt-6'>
+              <CardHeader>
+                <CardTitle className='flex items-center gap-2'>
+                  <CheckCircle className='h-5 w-5 text-green-600' />
+                  Recording Complete
+                </CardTitle>
+                <CardDescription>
+                  Your recording has been successfully uploaded and transcribed
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className='flex flex-col gap-3 sm:flex-row'>
+                  <Button
+                    onClick={handleDownloadRecording}
+                    variant='outline'
+                    className='flex items-center gap-2'
+                  >
+                    <Download className='h-4 w-4' />
+                    Download Recording
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      resetWorkflow();
+                      toast.info('Ready for new recording!');
+                    }}
+                    variant='default'
+                  >
+                    Record Another
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {/* Transcript Viewer */}
