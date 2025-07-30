@@ -46,11 +46,6 @@ interface TranscriptionSettings {
   modelSize: string;
   language: string;
   enableSpeakerDiarization: boolean;
-  preferredDevice: string;
-  computeType: string;
-  batchSize: number;
-  threads: number;
-  speakerCount?: number;
 }
 
 interface AISettings {
@@ -124,11 +119,6 @@ export default function SettingsPage() {
       modelSize: 'large-v3',
       language: 'sv',
       enableSpeakerDiarization: true,
-      preferredDevice: 'auto',
-      computeType: 'float32',
-      batchSize: 16,
-      threads: 4,
-      speakerCount: undefined,
     });
 
   const [aiSettings, setAISettings] = useState<AISettings>({
@@ -1163,98 +1153,6 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Advanced Transcription</CardTitle>
-              <CardDescription>
-                Fine-tune transcription performance and processing
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='device'>Processing Device</Label>
-                <Select
-                  value={transcriptionSettings.preferredDevice}
-                  onValueChange={value =>
-                    setTranscriptionSettings(prev => ({
-                      ...prev,
-                      preferredDevice: value,
-                    }))
-                  }
-                >
-                  <SelectTrigger id='device'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value='auto'>
-                      Auto (GPU with CPU fallback)
-                    </SelectItem>
-                    <SelectItem value='cuda'>GPU Only</SelectItem>
-                    <SelectItem value='cpu'>CPU Only</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
-                <div className='space-y-2'>
-                  <Label htmlFor='batchSize'>Batch Size</Label>
-                  <Input
-                    id='batchSize'
-                    type='number'
-                    value={transcriptionSettings.batchSize}
-                    onChange={e =>
-                      setTranscriptionSettings(prev => ({
-                        ...prev,
-                        batchSize: parseInt(e.target.value) || 16,
-                      }))
-                    }
-                  />
-                </div>
-
-                <div className='space-y-2'>
-                  <Label htmlFor='threads'>CPU Threads</Label>
-                  <Input
-                    id='threads'
-                    type='number'
-                    value={transcriptionSettings.threads}
-                    onChange={e =>
-                      setTranscriptionSettings(prev => ({
-                        ...prev,
-                        threads: parseInt(e.target.value) || 4,
-                      }))
-                    }
-                  />
-                </div>
-              </div>
-
-              {transcriptionSettings.enableSpeakerDiarization && (
-                <div className='space-y-2'>
-                  <Label htmlFor='speakerCount'>
-                    Number of Speakers (optional)
-                  </Label>
-                  <Input
-                    id='speakerCount'
-                    type='number'
-                    min='2'
-                    max='20'
-                    value={transcriptionSettings.speakerCount || ''}
-                    onChange={e =>
-                      setTranscriptionSettings(prev => ({
-                        ...prev,
-                        speakerCount: e.target.value
-                          ? parseInt(e.target.value)
-                          : undefined,
-                      }))
-                    }
-                    placeholder='Auto-detect'
-                  />
-                  <p className='text-sm text-muted-foreground'>
-                    Specify exact number if known. Leave empty to auto-detect.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
 
         </TabsContent>
       </Tabs>

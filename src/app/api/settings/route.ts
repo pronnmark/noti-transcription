@@ -93,10 +93,6 @@ interface Settings {
     modelSize: string;
     language: string;
     enableSpeakerDiarization: boolean;
-    preferredDevice: string;
-    computeType: string;
-    batchSize: number;
-    threads: number;
   };
   ai: {
     customAiBaseUrl: string;
@@ -112,10 +108,6 @@ function getDefaultSettings(): Settings {
       modelSize: 'large-v3',
       language: 'sv',
       enableSpeakerDiarization: true,
-      preferredDevice: 'auto',
-      computeType: 'float32',
-      batchSize: 16,
-      threads: 4,
     },
     ai: {
       customAiBaseUrl: process.env.CUSTOM_AI_BASE_URL || '',
