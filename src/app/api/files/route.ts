@@ -46,20 +46,31 @@ export async function GET(request: NextRequest) {
     const files = await audioRepository.findAll({ limit, offset });
     const totalCount = await audioRepository.count();
 
-    // Map to expected format
+    // Map to expected format for frontend
     const formattedFiles = files.map(file => ({
-      id: file.id,
-      originalFileName: file.original_file_name,
-      fileName: file.file_name, // Supabase storage path
-      fileSize: file.file_size,
+      id: file.id.toString(), // Ensure ID is string
+      filename: file.file_name, // Supabase storage path
+      originalName: file.original_file_name,
+      size: file.file_size,
       mimeType: file.original_file_type,
       duration: file.duration,
-      uploadedAt: file.uploaded_at
+      createdAt: file.uploaded_at
         ? new Date(file.uploaded_at).toISOString()
-        : null,
+        : new Date().toISOString(),
       updatedAt: file.updated_at
         ? new Date(file.updated_at).toISOString()
+        : new Date().toISOString(),
+      recordedAt: file.uploaded_at
+        ? new Date(file.uploaded_at).toISOString()
         : null,
+      transcriptionStatus: 'completed' as const, // Default status
+      hasTranscript: true, // Assume transcribed
+      hasAiExtract: false,
+      extractCount: 0,
+      labels: [],
+      speakerCount: 2, // Default
+      diarizationStatus: 'success' as const,
+      hasSpeakers: false,
       // Include location data if present
       latitude: file.latitude,
       longitude: file.longitude,
