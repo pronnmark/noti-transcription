@@ -66,11 +66,11 @@ export function TranscriptionStatus({
   const getStatusIcon = () => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className='h-4 w-4 text-green-500' />;
       case 'processing':
-        return <Loader2 className="h-4 w-4 animate-spin" />;
+        return <Loader2 className='h-4 w-4 animate-spin' />;
       case 'failed':
-        return <XCircle className="h-4 w-4 text-red-500" />;
+        return <XCircle className='h-4 w-4 text-red-500' />;
       default:
         return null;
     }
@@ -92,26 +92,26 @@ export function TranscriptionStatus({
   };
 
   return (
-    <div className="space-y-2">
-      <div className="flex items-center gap-2">
+    <div className='space-y-2'>
+      <div className='flex items-center gap-2'>
         {getStatusIcon()}
-        <span className="text-sm text-muted-foreground">{getStatusText()}</span>
+        <span className='text-sm text-muted-foreground'>{getStatusText()}</span>
 
         {(status === 'none' || status === 'failed') && (
           <Button
-            size="sm"
-            variant="outline"
+            size='sm'
+            variant='outline'
             onClick={startTranscription}
             disabled={loading}
           >
             {loading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Starting...
               </>
             ) : (
               <>
-                <Play className="mr-2 h-4 w-4" />
+                <Play className='mr-2 h-4 w-4' />
                 Transcribe
               </>
             )}
@@ -120,8 +120,8 @@ export function TranscriptionStatus({
       </div>
 
       {transcript && (
-        <div className="mt-2 rounded-md bg-muted p-3">
-          <p className="text-sm">
+        <div className='mt-2 rounded-md bg-muted p-3'>
+          <p className='text-sm'>
             {Array.isArray(transcript)
               ? transcript.map((seg: any) => seg.text).join(' ')
               : transcript}

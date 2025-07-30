@@ -1,6 +1,7 @@
 # E2E Test Suite for Noti Application
 
-This directory contains comprehensive end-to-end tests for the Noti audio transcription platform, focusing on Supabase Storage integration and complete user workflows.
+This directory contains comprehensive end-to-end tests for the Noti audio transcription platform,
+focusing on Supabase Storage integration and complete user workflows.
 
 ## Test Architecture
 
@@ -29,6 +30,7 @@ tests/
 ## Prerequisites
 
 ### 1. Supabase Setup
+
 ```bash
 # Install Supabase CLI
 npm install -g supabase
@@ -39,6 +41,7 @@ supabase start
 ```
 
 ### 2. Environment Variables
+
 Create a `.env.local` file with test Supabase configuration:
 
 ```env
@@ -49,7 +52,9 @@ TEST_SUPABASE_SERVICE_ROLE_KEY=your-test-service-role-key
 ```
 
 ### 3. Application Running
+
 The tests expect the Next.js application to be running:
+
 ```bash
 npm run dev  # Runs on http://localhost:5173
 ```
@@ -57,11 +62,13 @@ npm run dev  # Runs on http://localhost:5173
 ## Running Tests
 
 ### All E2E Tests
+
 ```bash
 npm run test:e2e
 ```
 
 ### Specific Test Suites
+
 ```bash
 # Supabase storage integration
 npm run test:e2e -- tests/e2e/supabase-storage.spec.ts
@@ -80,6 +87,7 @@ npm run test:e2e -- tests/e2e/telegram-integration.spec.ts
 ```
 
 ### Debug Mode
+
 ```bash
 npm run test:e2e:debug    # Run with debugger
 npm run test:e2e:headed   # Run with browser UI visible
@@ -87,6 +95,7 @@ npm run test:e2e:ui       # Run with Playwright UI
 ```
 
 ### Test Reports
+
 ```bash
 npm run test:e2e:report   # View HTML test report
 ```
@@ -94,6 +103,7 @@ npm run test:e2e:report   # View HTML test report
 ## Test Categories
 
 ### 1. Supabase Storage Tests (`supabase-storage.spec.ts`)
+
 - **Binary integrity**: Upload/download cycle maintains file content
 - **Multi-format support**: MP3, WAV, OGG file handling
 - **Signed URLs**: Private bucket access URL generation
@@ -102,6 +112,7 @@ npm run test:e2e:report   # View HTML test report
 - **Concurrency**: Multiple simultaneous uploads
 
 ### 2. API Endpoint Tests (`api-endpoints.spec.ts`)
+
 - **POST /api/upload**: File upload with Supabase storage verification
 - **GET /api/files/[id]**: File metadata retrieval
 - **GET /api/files**: File listing with storage paths
@@ -110,6 +121,7 @@ npm run test:e2e:report   # View HTML test report
 - **File integrity**: End-to-end content verification
 
 ### 3. File Upload UI Tests (`file-upload.spec.ts`)
+
 - **Browser upload**: File input interaction with Supabase storage
 - **Drag & drop**: File drop functionality
 - **Progress feedback**: Upload progress indicators
@@ -119,6 +131,7 @@ npm run test:e2e:report   # View HTML test report
 - **Navigation**: Post-upload redirects
 
 ### 4. Full Workflow Tests (`full-workflow.spec.ts`)
+
 - **Complete journey**: Upload → Transcription → View results
 - **File management**: List, view, navigate between files
 - **Location data**: Geolocation capture and storage
@@ -127,6 +140,7 @@ npm run test:e2e:report   # View HTML test report
 - **Cross-browser**: Multi-browser compatibility
 
 ### 5. Telegram Integration Tests (`telegram-integration.spec.ts`)
+
 - **Voice messages**: Webhook handling with Supabase storage
 - **Audio files**: File attachment processing
 - **Authentication**: Secret token validation
@@ -138,17 +152,20 @@ npm run test:e2e:report   # View HTML test report
 ## Test Data Management
 
 ### Test Files
+
 - **test-audio-small.mp3**: Minimal valid MP3 (46 bytes)
 - **test-audio-medium.wav**: Minimal valid WAV (46 bytes)
 - **test-voice-message.ogg**: Minimal valid OGG (58 bytes)
 - **invalid-file.txt**: Text file for error testing (65 bytes)
 
 ### Cleanup
+
 - Tests automatically clean up uploaded files after completion
 - Failed tests may leave test files in Supabase storage
 - Manual cleanup: Check `test-audio-files` bucket for `e2e-test/` prefix files
 
 ### Isolation
+
 - Each test uses unique file names with timestamps
 - Test buckets are separate from production (`test-audio-files`, `test-transcripts`)
 - Database records use test database path
@@ -158,33 +175,41 @@ npm run test:e2e:report   # View HTML test report
 ### Common Issues
 
 1. **Supabase Connection Failed**
+
    ```
    Error: Supabase key is required for testing
    ```
+
    - Check `.env.local` has correct `TEST_SUPABASE_*` variables
    - Verify Supabase is running locally: `supabase status`
 
 2. **Application Not Running**
+
    ```
    Error: connect ECONNREFUSED 127.0.0.1:5173
    ```
+
    - Start the Next.js app: `npm run dev`
    - Verify it's running on port 5173
 
 3. **Test Files Not Found**
+
    ```
    Error: Test file not found: .../fixtures/test-audio-small.mp3
    ```
+
    - Regenerate test files: `node -r tsx/esm tests/utils/file-generators.ts`
 
 4. **Database Issues**
    ```
    Error: SQLITE_IOERR_FSTAT
    ```
+
    - Reset test database: `rm test-e2e.db`
    - Restart application and tests
 
 ### Debug Commands
+
 ```bash
 # Run single test with debug
 npm run test:e2e:debug -- -g "should upload and retrieve file"
@@ -199,6 +224,7 @@ npm run test:e2e -- --trace on
 ## CI/CD Integration
 
 ### GitHub Actions Example
+
 ```yaml
 - name: Setup Supabase
   run: |
@@ -213,6 +239,7 @@ npm run test:e2e -- --trace on
 ```
 
 ### Test Parallelization
+
 - Tests run in parallel by default
 - Use `--workers=1` for sequential execution if needed
 - API tests are isolated from UI tests
@@ -227,19 +254,23 @@ npm run test:e2e -- --trace on
 ## Extending Tests
 
 ### Adding New Test Cases
+
 1. Create new `.spec.ts` file in `tests/e2e/`
 2. Import test helpers: `import { TestHelpers } from '../utils/test-helpers';`
 3. Add cleanup in `afterAll` hook
 4. Use unique file paths to avoid conflicts
 
 ### New Test Files
+
 1. Add files to `tests/fixtures/`
 2. Update `file-generators.ts` if programmatic generation needed
 3. Update `TestHelpers.getTestFile()` for new file types
 
 ### Custom Utilities
+
 1. Add helper functions to `tests/utils/test-helpers.ts`
 2. Extend `SupabaseTestManager` for storage operations
 3. Create domain-specific helpers in separate utility files
 
-This comprehensive test suite ensures the Noti application's Supabase integration works correctly across all user flows and handles edge cases gracefully.
+This comprehensive test suite ensures the Noti application's Supabase integration works correctly
+across all user flows and handles edge cases gracefully.

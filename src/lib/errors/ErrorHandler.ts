@@ -45,7 +45,7 @@ export class ErrorHandler {
   // Handle error and return formatted response
   async handleError(
     error: unknown,
-    requestId?: string,
+    requestId?: string
   ): Promise<ErrorResponse> {
     const appError = this.normalizeError(error, requestId);
 
@@ -102,7 +102,7 @@ export class ErrorHandler {
       return AppError.internal(
         error.message || 'An unexpected error occurred',
         error,
-        { requestId },
+        { requestId }
       );
     }
 
@@ -230,7 +230,7 @@ export class ErrorHandler {
   // Static method for quick error handling
   static async handle(
     error: unknown,
-    requestId?: string,
+    requestId?: string
   ): Promise<ErrorResponse> {
     const handler = new ErrorHandler();
     return handler.handleError(error, requestId);

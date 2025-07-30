@@ -29,7 +29,7 @@ export function WorkflowStatus({
     switch (phase) {
       case 'uploading':
         return {
-          icon: <Upload className="h-5 w-5" />,
+          icon: <Upload className='h-5 w-5' />,
           title: 'Uploading Recording',
           description: 'Saving your audio file...',
           progress: uploadProgress,
@@ -37,7 +37,7 @@ export function WorkflowStatus({
         };
       case 'transcribing':
         return {
-          icon: <FileText className="h-5 w-5" />,
+          icon: <FileText className='h-5 w-5' />,
           title: 'Transcribing Audio',
           description: 'Converting speech to text...',
           progress: transcriptionProgress,
@@ -45,7 +45,7 @@ export function WorkflowStatus({
         };
       case 'completed':
         return {
-          icon: <CheckCircle className="h-5 w-5" />,
+          icon: <CheckCircle className='h-5 w-5' />,
           title: 'Transcription Complete',
           description: 'Your transcript is ready!',
           progress: 100,
@@ -53,7 +53,7 @@ export function WorkflowStatus({
         };
       case 'error':
         return {
-          icon: <XCircle className="h-5 w-5" />,
+          icon: <XCircle className='h-5 w-5' />,
           title: 'Error Occurred',
           description: error || 'Something went wrong',
           progress: 0,
@@ -79,35 +79,35 @@ export function WorkflowStatus({
   return (
     <div className={cn('space-y-4 rounded-lg border bg-card p-6', className)}>
       {/* Status Header */}
-      <div className="flex items-center gap-3">
+      <div className='flex items-center gap-3'>
         <div
           className={cn(
             'flex h-8 w-8 items-center justify-center rounded-full',
             phase === 'uploading' && 'bg-blue-100 text-blue-600',
             phase === 'transcribing' && 'bg-purple-100 text-purple-600',
             phase === 'completed' && 'bg-green-100 text-green-600',
-            phase === 'error' && 'bg-red-100 text-red-600',
+            phase === 'error' && 'bg-red-100 text-red-600'
           )}
         >
           {phase === 'uploading' || phase === 'transcribing' ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <Loader2 className='h-5 w-5 animate-spin' />
           ) : (
             icon
           )}
         </div>
 
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="text-sm text-muted-foreground">{description}</p>
+        <div className='flex-1'>
+          <h3 className='text-lg font-semibold'>{title}</h3>
+          <p className='text-sm text-muted-foreground'>{description}</p>
         </div>
 
         {(phase === 'uploading' || phase === 'transcribing') && (
-          <div className="text-right">
-            <div className="text-2xl font-bold text-primary">
+          <div className='text-right'>
+            <div className='text-2xl font-bold text-primary'>
               {progress.toFixed(0)}%
             </div>
             {estimatedTimeRemaining && estimatedTimeRemaining > 0 && (
-              <div className="text-xs text-muted-foreground">
+              <div className='text-xs text-muted-foreground'>
                 {formatTimeRemaining(estimatedTimeRemaining)}
               </div>
             )}
@@ -119,21 +119,21 @@ export function WorkflowStatus({
       {(phase === 'uploading' ||
         phase === 'transcribing' ||
         phase === 'completed') && (
-        <div className="space-y-2">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+        <div className='space-y-2'>
+          <div className='h-2 w-full overflow-hidden rounded-full bg-gray-200'>
             <div
               className={cn(
                 'h-full rounded-full transition-all duration-300 ease-out',
                 color === 'blue' && 'bg-blue-500',
                 color === 'purple' && 'bg-purple-500',
-                color === 'green' && 'bg-green-500',
+                color === 'green' && 'bg-green-500'
               )}
               style={{ width: `${progress}%` }}
             />
           </div>
 
           {phase === 'transcribing' && progress > 0 && (
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className='flex justify-between text-xs text-muted-foreground'>
               <span>Processing audio...</span>
               <span>{progress.toFixed(1)}% complete</span>
             </div>
@@ -143,8 +143,8 @@ export function WorkflowStatus({
 
       {/* Error Details */}
       {phase === 'error' && error && (
-        <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3">
-          <p className="text-sm text-red-700">{error}</p>
+        <div className='mt-4 rounded-md border border-red-200 bg-red-50 p-3'>
+          <p className='text-sm text-red-700'>{error}</p>
         </div>
       )}
     </div>

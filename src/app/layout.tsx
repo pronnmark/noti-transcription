@@ -42,45 +42,45 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang='en' className='h-full'>
       <head>
         {/* PWA Meta Tags */}
-        <meta name="application-name" content="Noti" />
-        <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="apple-mobile-web-app-title" content="Noti" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
-        <meta name="msapplication-TileColor" content="#3b82f6" />
-        <meta name="msapplication-tap-highlight" content="no" />
+        <meta name='application-name' content='Noti' />
+        <meta name='apple-mobile-web-app-capable' content='yes' />
+        <meta name='apple-mobile-web-app-status-bar-style' content='default' />
+        <meta name='apple-mobile-web-app-title' content='Noti' />
+        <meta name='mobile-web-app-capable' content='yes' />
+        <meta name='msapplication-config' content='/browserconfig.xml' />
+        <meta name='msapplication-TileColor' content='#3b82f6' />
+        <meta name='msapplication-tap-highlight' content='no' />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+        <link rel='apple-touch-icon' href='/icons/icon-152x152.png' />
         <link
-          rel="apple-touch-icon"
-          sizes="152x152"
-          href="/icons/icon-152x152.png"
+          rel='apple-touch-icon'
+          sizes='152x152'
+          href='/icons/icon-152x152.png'
         />
         <link
-          rel="apple-touch-icon"
-          sizes="180x180"
-          href="/icons/icon-192x192.png"
+          rel='apple-touch-icon'
+          sizes='180x180'
+          href='/icons/icon-192x192.png'
         />
 
         {/* Favicons */}
         <link
-          rel="icon"
-          type="image/png"
-          sizes="32x32"
-          href="/icons/icon-32x32.png"
+          rel='icon'
+          type='image/png'
+          sizes='32x32'
+          href='/icons/icon-32x32.png'
         />
         <link
-          rel="icon"
-          type="image/png"
-          sizes="16x16"
-          href="/icons/icon-16x16.png"
+          rel='icon'
+          type='image/png'
+          sizes='16x16'
+          href='/icons/icon-16x16.png'
         />
-        <link rel="shortcut icon" href="/favicon.ico" />
+        <link rel='shortcut icon' href='/favicon.ico' />
       </head>
       <body
         className={cn(jetbrainsMono.className, 'h-full bg-background')}
@@ -88,7 +88,7 @@ export default function RootLayout({
       >
         <ResponsiveLayout>{children}</ResponsiveLayout>
         <InstallPrompt />
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position='top-right' />
       </body>
     </html>
   );

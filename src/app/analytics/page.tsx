@@ -97,7 +97,7 @@ export default function AnalyticsPage() {
 
       // Load metrics
       const metricsResponse = await fetch(
-        `/api/psychology/metrics?startDate=${startDate}&endDate=${endDate}`,
+        `/api/psychology/metrics?startDate=${startDate}&endDate=${endDate}`
       );
       if (metricsResponse.ok) {
         const metricsData = await metricsResponse.json();
@@ -170,39 +170,39 @@ export default function AnalyticsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className='flex h-full items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     );
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className='flex h-full flex-col'>
       {/* Header */}
-      <div className="border-b p-4 sm:p-6">
-        <div className="flex items-center justify-between">
+      <div className='border-b p-4 sm:p-6'>
+        <div className='flex items-center justify-between'>
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl">
-              <Brain className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+            <h1 className='flex items-center gap-2 text-2xl font-bold sm:text-3xl'>
+              <Brain className='h-6 w-6 text-primary sm:h-8 sm:w-8' />
               Psychological Analytics
             </h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className='mt-1 text-muted-foreground'>
               Insights into your emotional and mental well-being
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-2'>
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-32">
+              <SelectTrigger className='w-32'>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="7days">7 Days</SelectItem>
-                <SelectItem value="30days">30 Days</SelectItem>
-                <SelectItem value="90days">90 Days</SelectItem>
+                <SelectItem value='7days'>7 Days</SelectItem>
+                <SelectItem value='30days'>30 Days</SelectItem>
+                <SelectItem value='90days'>90 Days</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
+            <Button variant='outline' size='sm'>
+              <Download className='mr-2 h-4 w-4' />
               Export
             </Button>
           </div>
@@ -210,23 +210,23 @@ export default function AnalyticsPage() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6">
-        <div className="space-y-6">
+      <div className='flex-1 overflow-auto p-4 sm:p-6'>
+        <div className='space-y-6'>
           {/* Overview Stats */}
           {stats && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Average Mood
                   </CardTitle>
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                  <TrendingUp className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className='text-2xl font-bold'>
                     {stats.avgMood.toFixed(1)}
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                  <div className='flex items-center gap-1 text-xs text-muted-foreground'>
                     <span>Trend:</span>
                     <Badge
                       variant={stats.moodTrend > 0 ? 'default' : 'secondary'}
@@ -239,49 +239,49 @@ export default function AnalyticsPage() {
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Average Energy
                   </CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <BarChart3 className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className='text-2xl font-bold'>
                     {stats.avgEnergy.toFixed(1)}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className='text-xs text-muted-foreground'>
                     Out of 10 scale
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Stress Level
                   </CardTitle>
-                  <Radar className="h-4 w-4 text-muted-foreground" />
+                  <Radar className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className='text-2xl font-bold'>
                     {stats.avgStress.toFixed(1)}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className='text-xs text-muted-foreground'>
                     Lower is better
                   </div>
                 </CardContent>
               </Card>
 
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Active Days
                   </CardTitle>
-                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <Calendar className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.activeDays}</div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className='text-2xl font-bold'>{stats.activeDays}</div>
+                  <div className='text-xs text-muted-foreground'>
                     {stats.totalSessions} total sessions
                   </div>
                 </CardContent>
@@ -290,28 +290,28 @@ export default function AnalyticsPage() {
           )}
 
           {/* Charts */}
-          <Tabs defaultValue="trends" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="trends">Mood Trends</TabsTrigger>
-              <TabsTrigger value="energy">Energy & Stress</TabsTrigger>
-              <TabsTrigger value="emotions">Emotional Profile</TabsTrigger>
+          <Tabs defaultValue='trends' className='w-full'>
+            <TabsList className='grid w-full grid-cols-3'>
+              <TabsTrigger value='trends'>Mood Trends</TabsTrigger>
+              <TabsTrigger value='energy'>Energy & Stress</TabsTrigger>
+              <TabsTrigger value='emotions'>Emotional Profile</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="trends" className="space-y-6">
+            <TabsContent value='trends' className='space-y-6'>
               <MoodTrendChart data={metrics} height={isMobile ? 300 : 400} />
             </TabsContent>
 
-            <TabsContent value="energy" className="space-y-6">
+            <TabsContent value='energy' className='space-y-6'>
               <EnergyBarChart data={metrics} height={isMobile ? 300 : 400} />
             </TabsContent>
 
-            <TabsContent value="emotions" className="space-y-6">
-              <div className="grid gap-6 md:grid-cols-2">
+            <TabsContent value='emotions' className='space-y-6'>
+              <div className='grid gap-6 md:grid-cols-2'>
                 {/* Current Emotional State */}
                 {selectedEvaluation && (
                   <EmotionalRadarChart
                     moodData={parseMoodData(selectedEvaluation.mood)}
-                    title="Latest Emotional State"
+                    title='Latest Emotional State'
                     description={`From ${format(new Date(selectedEvaluation.createdAt), 'MMM dd, yyyy')}`}
                     height={isMobile ? 250 : 300}
                   />
@@ -326,7 +326,7 @@ export default function AnalyticsPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
+                    <div className='space-y-3'>
                       {recentEvaluations.map(evaluation => (
                         <div
                           key={evaluation.id}
@@ -337,23 +337,23 @@ export default function AnalyticsPage() {
                           }`}
                           onClick={() => setSelectedEvaluation(evaluation)}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className="text-sm font-medium">
+                          <div className='flex items-center justify-between'>
+                            <div className='flex items-center gap-2'>
+                              <div className='text-sm font-medium'>
                                 {format(
                                   new Date(evaluation.createdAt),
-                                  'MMM dd, HH:mm',
+                                  'MMM dd, HH:mm'
                                 )}
                               </div>
-                              <Badge variant="outline">
+                              <Badge variant='outline'>
                                 Mood: {evaluation.energy}/10
                               </Badge>
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className='text-xs text-muted-foreground'>
                               Energy: {evaluation.energy}/10
                             </div>
                           </div>
-                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                          <p className='mt-1 line-clamp-2 text-xs text-muted-foreground'>
                             {evaluation.keyInsights}
                           </p>
                         </div>
@@ -376,18 +376,18 @@ export default function AnalyticsPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
+                <div className='space-y-3'>
                   {metrics.slice(0, 3).map(metric => (
-                    <div key={metric.id} className="rounded-lg bg-muted/50 p-3">
-                      <div className="mb-2 flex items-center justify-between">
-                        <div className="text-sm font-medium">
+                    <div key={metric.id} className='rounded-lg bg-muted/50 p-3'>
+                      <div className='mb-2 flex items-center justify-between'>
+                        <div className='text-sm font-medium'>
                           {format(new Date(metric.date), 'MMMM dd, yyyy')}
                         </div>
-                        <Badge variant="outline">
+                        <Badge variant='outline'>
                           {metric.dominantEmotion}
                         </Badge>
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className='text-sm text-muted-foreground'>
                         {metric.insights}
                       </p>
                     </div>
@@ -400,12 +400,12 @@ export default function AnalyticsPage() {
           {/* No Data State */}
           {metrics.length === 0 && (
             <Card>
-              <CardContent className="py-12 text-center">
-                <Brain className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                <p className="text-muted-foreground">
+              <CardContent className='py-12 text-center'>
+                <Brain className='mx-auto mb-4 h-12 w-12 text-muted-foreground' />
+                <p className='text-muted-foreground'>
                   No psychological data available
                 </p>
-                <p className="mt-2 text-sm text-muted-foreground">
+                <p className='mt-2 text-sm text-muted-foreground'>
                   Upload and transcribe audio files to start generating
                   psychological insights
                 </p>

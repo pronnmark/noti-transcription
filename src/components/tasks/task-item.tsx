@@ -83,13 +83,13 @@ export function TaskItem({
       className={cn(
         'transition-all duration-200',
         isCompleted && 'opacity-60',
-        className,
+        className
       )}
     >
       <CardContent className={cn('p-4', isMobile ? 'space-y-3' : 'space-y-4')}>
         {/* Main task content */}
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 pt-1">
+        <div className='flex items-start gap-3'>
+          <div className='flex-shrink-0 pt-1'>
             <TaskCheckbox
               id={note.id}
               checked={isCompleted}
@@ -97,36 +97,36 @@ export function TaskItem({
             />
           </div>
 
-          <div className="min-w-0 flex-1">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
+          <div className='min-w-0 flex-1'>
+            <div className='flex items-start justify-between gap-2'>
+              <div className='min-w-0 flex-1'>
                 <p
                   className={cn(
                     'text-sm font-medium leading-relaxed',
-                    isCompleted && 'text-muted-foreground line-through',
+                    isCompleted && 'text-muted-foreground line-through'
                   )}
                 >
                   {note.content}
                 </p>
 
                 {/* Metadata */}
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className='mt-2 flex flex-wrap items-center gap-2'>
                   <Badge
-                    variant="outline"
+                    variant='outline'
                     className={cn('text-xs', getTypeColor(note.noteType))}
                   >
                     {note.noteType}
                   </Badge>
                   <Badge
-                    variant="outline"
+                    variant='outline'
                     className={cn('text-xs', getPriorityColor(note.priority))}
                   >
                     {note.priority}
                   </Badge>
                   {isCompleted && note.completedAt && (
                     <Badge
-                      variant="outline"
-                      className="bg-green-50 text-xs text-green-700"
+                      variant='outline'
+                      className='bg-green-50 text-xs text-green-700'
                     >
                       Completed
                     </Badge>
@@ -134,8 +134,8 @@ export function TaskItem({
                 </div>
               </div>
 
-              <div className="flex-shrink-0 text-right">
-                <div className="text-xs text-muted-foreground">
+              <div className='flex-shrink-0 text-right'>
+                <div className='text-xs text-muted-foreground'>
                   #{index + 1}
                 </div>
               </div>
@@ -143,7 +143,7 @@ export function TaskItem({
 
             {/* Timestamp and speaker info */}
             {(hasTimestamp || note.speaker) && (
-              <div className="mt-3">
+              <div className='mt-3'>
                 <TranscriptLink
                   fileId={note.fileId.toString()}
                   timestamp={note.timestamp}
@@ -154,39 +154,39 @@ export function TaskItem({
 
             {/* Expandable content */}
             {(hasContext || hasComment || !isExpanded) && (
-              <div className="mt-3">
+              <div className='mt-3'>
                 {(hasContext || hasComment) && !isExpanded && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant='ghost'
+                    size='sm'
                     onClick={() => setIsExpanded(true)}
-                    className="text-muted-foreground hover:text-foreground"
+                    className='text-muted-foreground hover:text-foreground'
                   >
-                    <ChevronDown className="mr-2 h-4 w-4" />
+                    <ChevronDown className='mr-2 h-4 w-4' />
                     Show details
                   </Button>
                 )}
 
                 {isExpanded && (
-                  <div className="space-y-4 pt-2">
+                  <div className='space-y-4 pt-2'>
                     {isExpanded && (
                       <Button
-                        variant="ghost"
-                        size="sm"
+                        variant='ghost'
+                        size='sm'
                         onClick={() => setIsExpanded(false)}
-                        className="text-muted-foreground hover:text-foreground"
+                        className='text-muted-foreground hover:text-foreground'
                       >
-                        <ChevronUp className="mr-2 h-4 w-4" />
+                        <ChevronUp className='mr-2 h-4 w-4' />
                         Hide details
                       </Button>
                     )}
 
                     {hasContext && (
-                      <div className="space-y-2">
-                        <div className="text-sm font-medium text-muted-foreground">
+                      <div className='space-y-2'>
+                        <div className='text-sm font-medium text-muted-foreground'>
                           Context
                         </div>
-                        <div className="rounded-lg border-l-2 border-muted bg-muted/50 p-3 text-sm text-muted-foreground">
+                        <div className='rounded-lg border-l-2 border-muted bg-muted/50 p-3 text-sm text-muted-foreground'>
                           {note.context}
                         </div>
                       </div>
@@ -205,7 +205,7 @@ export function TaskItem({
 
             {/* Always show comment form if expanded or no other expandable content */}
             {!hasContext && !hasComment && (
-              <div className="mt-3">
+              <div className='mt-3'>
                 <CommentForm
                   noteId={note.id}
                   initialComment={note.comments}

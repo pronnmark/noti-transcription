@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
     if (!sessionId || chunkNumber === undefined || !audioChunk) {
       return NextResponse.json(
         { error: 'sessionId, chunkNumber, and audioChunk are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     if (session.status !== 'active') {
       return NextResponse.json(
         { error: 'Session is not active' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
           error:
             'AI configuration not found. Please configure AI settings first.',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -100,7 +100,7 @@ Please provide your analysis based on the instruction above:`;
       const thought = await customAIService.extractFromTranscript(
         transcript,
         aiPrompt,
-        aiSettings.custom_ai_model || 'gpt-3.5-turbo',
+        aiSettings.custom_ai_model || 'gpt-3.5-turbo'
       );
 
       if (!thought) {
@@ -195,7 +195,7 @@ Please provide your analysis based on the instruction above:`;
         details: error instanceof Error ? error.message : 'Unknown error',
         processingTimeMs: processingTime,
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

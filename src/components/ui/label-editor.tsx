@@ -65,7 +65,7 @@ export function LabelEditor({
 
     try {
       const response = await fetch(
-        `/api/labels?q=${encodeURIComponent(query)}&limit=10`,
+        `/api/labels?q=${encodeURIComponent(query)}&limit=10`
       );
       if (response.ok) {
         const data = await response.json();
@@ -141,33 +141,33 @@ export function LabelEditor({
   };
 
   const filteredSuggestions = suggestions.filter(
-    suggestion => !labels.includes(suggestion.label),
+    suggestion => !labels.includes(suggestion.label)
   );
 
   return (
     <div ref={containerRef} className={cn('relative', className)}>
-      <div className="flex flex-wrap items-center gap-1">
+      <div className='flex flex-wrap items-center gap-1'>
         {/* Existing Labels */}
         {labels.map(label => (
           <Badge
             key={label}
-            variant="secondary"
+            variant='secondary'
             className={cn(
               'border text-xs',
               getLabelColor(label),
-              !disabled && 'group transition-all hover:pr-1',
+              !disabled && 'group transition-all hover:pr-1'
             )}
           >
-            <Tag className="mr-1 h-3 w-3" />
+            <Tag className='mr-1 h-3 w-3' />
             {label}
             {!disabled && (
               <Button
-                variant="ghost"
-                size="sm"
-                className="ml-1 h-3 w-3 p-0 opacity-0 hover:bg-transparent group-hover:opacity-100"
+                variant='ghost'
+                size='sm'
+                className='ml-1 h-3 w-3 p-0 opacity-0 hover:bg-transparent group-hover:opacity-100'
                 onClick={() => removeLabel(label)}
               >
-                <X className="h-2 w-2" />
+                <X className='h-2 w-2' />
               </Button>
             )}
           </Badge>
@@ -177,7 +177,7 @@ export function LabelEditor({
         {!disabled && labels.length < maxLabels && (
           <>
             {isEditing ? (
-              <div className="relative">
+              <div className='relative'>
                 <Input
                   ref={inputRef}
                   value={inputValue}
@@ -188,21 +188,21 @@ export function LabelEditor({
                   onKeyDown={handleKeyDown}
                   onFocus={() => setShowSuggestions(true)}
                   placeholder={placeholder}
-                  className="h-6 w-32 px-2 text-xs"
+                  className='h-6 w-32 px-2 text-xs'
                   autoFocus
                 />
 
                 {/* Suggestions Dropdown */}
                 {showSuggestions && filteredSuggestions.length > 0 && (
-                  <div className="absolute left-0 top-full z-50 mt-1 max-h-32 w-48 overflow-y-auto rounded-md border bg-white shadow-lg">
+                  <div className='absolute left-0 top-full z-50 mt-1 max-h-32 w-48 overflow-y-auto rounded-md border bg-white shadow-lg'>
                     {filteredSuggestions.map(suggestion => (
                       <button
                         key={suggestion.label}
-                        className="flex w-full items-center justify-between px-3 py-1 text-left text-xs hover:bg-gray-50"
+                        className='flex w-full items-center justify-between px-3 py-1 text-left text-xs hover:bg-gray-50'
                         onClick={() => addLabel(suggestion.label)}
                       >
                         <span>{suggestion.label}</span>
-                        <span className="text-xs text-gray-400">
+                        <span className='text-xs text-gray-400'>
                           ({suggestion.count})
                         </span>
                       </button>
@@ -212,15 +212,15 @@ export function LabelEditor({
               </div>
             ) : (
               <Button
-                variant="ghost"
-                size="sm"
-                className="h-6 px-2 text-xs text-gray-500 hover:text-gray-700"
+                variant='ghost'
+                size='sm'
+                className='h-6 px-2 text-xs text-gray-500 hover:text-gray-700'
                 onClick={() => {
                   setIsEditing(true);
                   setTimeout(() => inputRef.current?.focus(), 50);
                 }}
               >
-                <Plus className="mr-1 h-3 w-3" />
+                <Plus className='mr-1 h-3 w-3' />
                 Add label
               </Button>
             )}

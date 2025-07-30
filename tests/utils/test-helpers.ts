@@ -26,7 +26,9 @@ export class TestHelpers {
     // }
 
     // TODO: Add database migration setup - currently run manually
-    console.log('📊 Using pre-configured test database (migrations should be run manually)');
+    console.log(
+      '📊 Using pre-configured test database (migrations should be run manually)'
+    );
   }
 
   static async cleanupTestEnvironment(): Promise<void> {
@@ -49,12 +51,12 @@ export class TestHelpers {
 
     const buffer = readFileSync(testFilePath);
     const extension = fileName.split('.').pop()?.toLowerCase();
-    
+
     const contentTypeMap: Record<string, string> = {
-      'mp3': 'audio/mpeg',
-      'wav': 'audio/wav',
-      'ogg': 'audio/ogg',
-      'm4a': 'audio/mp4',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      ogg: 'audio/ogg',
+      m4a: 'audio/mp4',
     };
 
     return {
@@ -77,9 +79,9 @@ export class TestHelpers {
         name: file.name,
         mimeType: file.contentType,
         buffer: file.buffer,
-      }
+      },
     };
-    
+
     if (options.isDraft) {
       multipartData.isDraft = 'true';
     }
@@ -96,18 +98,18 @@ export class TestHelpers {
       console.error('Upload failed:', {
         status: response.status(),
         statusText: response.statusText(),
-        body: errorText
+        body: errorText,
       });
     }
 
     expect(response.ok()).toBeTruthy();
     const responseData = await response.json();
-    
+
     // Return the first result for backward compatibility
     if (responseData.data?.results?.length > 0) {
       return responseData.data.results[0];
     }
-    
+
     // Fallback if response structure is different
     return responseData;
   }
@@ -118,25 +120,25 @@ export class TestHelpers {
     timeoutMs: number = 30000
   ): Promise<any> {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeoutMs) {
       const response = await request.get(`/api/transcribe/status/${fileId}`);
       expect(response.ok()).toBeTruthy();
-      
+
       const status = await response.json();
-      
+
       if (status.job?.status === 'completed') {
         return status.job;
       }
-      
+
       if (status.job?.status === 'failed') {
         throw new Error(`Transcription failed: ${status.job.lastError}`);
       }
-      
+
       // Wait 1 second before checking again
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
+
     throw new Error(`Transcription timed out after ${timeoutMs}ms`);
   }
 
@@ -152,7 +154,10 @@ export class TestHelpers {
     const fileExists = await this.supabaseManager.fileExists(bucket, path);
     expect(fileExists).toBeTruthy();
 
-    const downloadedContent = await this.supabaseManager.downloadFile(bucket, path);
+    const downloadedContent = await this.supabaseManager.downloadFile(
+      bucket,
+      path
+    );
     expect(downloadedContent.equals(expectedContent)).toBeTruthy();
   }
 
@@ -161,11 +166,14 @@ export class TestHelpers {
     const random = Math.random().toString(36).substring(2, 8);
     const extension = baseName.split('.').pop();
     const nameWithoutExt = baseName.replace(`.${extension}`, '');
-    
+
     return `test_${nameWithoutExt}_${timestamp}_${random}.${extension}`;
   }
 
-  static async cleanupTestFiles(bucket: string, paths: string[]): Promise<void> {
+  static async cleanupTestFiles(
+    bucket: string,
+    paths: string[]
+  ): Promise<void> {
     if (!this.supabaseManager || paths.length === 0) {
       return;
     }
@@ -179,5 +187,7 @@ export class TestHelpers {
 }
 
 // Export convenience functions
-export const setupTestEnvironment = TestHelpers.setupTestEnvironment.bind(TestHelpers);
-export const cleanupTestEnvironment = TestHelpers.cleanupTestEnvironment.bind(TestHelpers);
+export const setupTestEnvironment =
+  TestHelpers.setupTestEnvironment.bind(TestHelpers);
+export const cleanupTestEnvironment =
+  TestHelpers.cleanupTestEnvironment.bind(TestHelpers);

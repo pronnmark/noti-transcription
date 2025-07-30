@@ -41,21 +41,21 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
   };
 
   return (
-    <div className="flex h-full w-64 flex-col border-r bg-card">
+    <div className='flex h-full w-64 flex-col border-r bg-card'>
       {/* Logo */}
-      <div className="flex h-16 items-center border-b bg-muted/30 px-6">
+      <div className='flex h-16 items-center border-b bg-muted/30 px-6'>
         <Image
-          src="/logo.svg"
-          alt="Noti"
+          src='/logo.svg'
+          alt='Noti'
           width={120}
           height={32}
-          className="h-8 w-auto"
+          className='h-8 w-auto'
           priority
         />
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-4">
+      <nav className='flex-1 space-y-1 p-4'>
         {navigation.map(item => {
           const itemIsActive = isActive(item.href);
 
@@ -68,7 +68,7 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
                 'block rounded-lg px-3 py-2 text-sm font-medium transition-colors',
                 itemIsActive
                   ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground',
+                  : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
               )}
             >
               {item.name}
@@ -78,8 +78,8 @@ export function Sidebar({ onNavigate }: SidebarProps = {}) {
       </nav>
 
       {/* App Info */}
-      <div className="border-t p-4">
-        <div className="text-center text-xs text-muted-foreground">
+      <div className='border-t p-4'>
+        <div className='text-center text-xs text-muted-foreground'>
           Version 1.0.0
         </div>
       </div>

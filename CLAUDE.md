@@ -1,508 +1,608 @@
-# Noti - AI-Powered Audio Transcription Platform
+# Whisper.cpp Production Integration Guide
 
-## Overview
+## 🚀 Container Management
 
-Noti is a comprehensive web-based audio transcription and AI analysis platform that combines
-real-time recording, automatic transcription, and intelligent content extraction. Built with Next.js
-15, it leverages cutting-edge AI models for transcription (Groq/Whisper) and content analysis
-(Google Gemini 2.0).
+### Start the Container
 
-## src/lib/ Architecture Documentation
+```bash
+# Start with docker-compose (recommended)
+docker-compose up -d
 
-This document provides a comprehensive overview of the `src/lib/` directory structure following
-SOLID and DRY principles after the major cleanup of over-engineered abstractions.
+# Or start directly
+docker run -d --name whisper-swedish-turbo \
+  --gpus all \
+  -v $(pwd)/models:/models:ro \
+  -v $(pwd)/audio:/audio:ro \
+  -p 8080:8080 \
+  ghcr.io/ggml-org/whisper.cpp:main-cuda \
+  "./build/bin/whisper-server --host 0.0.0.0 --port 8080 --model /models/ggml-large-v3-turbo.bin --language sv --diarize --convert"
+```
 
-### Key Design Principles Applied
+### Container Status & Health
 
-- **SOLID Principles**: Each module has a single responsibility, open for extension, follows Liskov
-  substitution, segregated interfaces, and proper dependency inversion
-- **DRY (Don't Repeat Yourself)**: Eliminated duplicate code and abstractions
-- **YAGNI (You Aren't Gonna Need It)**: Removed over-engineered ServiceRegistry, ServiceLocator, and
-  BaseService abstractions
-- **Repository Pattern**: Centralized data access through RepositoryFactory
-- **Direct Instantiation**: Simple service classes without complex dependency injection
+```bash
+# Check container status
+docker ps | grep whisper
 
----
+# View logs
+docker logs whisper-swedish-turbo
 
-## Core Architecture Files
+# Health check
+curl http://localhost:8080/health
+# Response: {"status":"ok"}
 
-### Authentication Layer
+# Stop container
+docker-compose down
+```
 
-#### `/lib/auth.ts` - JWT Session Management
+## 🎯 API Reference
 
-**Purpose**: Core authentication logic using JWT tokens **Used By**: API routes, middleware, auth
-pages **Key Functions**:
+### Base Configuration
 
-- `createSession()` - Generate JWT tokens with 7-day expiration
-- `validateSession(token)` - Verify JWT token validity
-- `getSessionFromRequest(request)` - Extract token from cookies/headers
-- `setSessionCookie(token)` - Set secure HTTP-only auth cookie
-- `clearSessionCookie()` - Clear auth session
+- **Container Name:** `whisper-swedish-turbo`
+- **Base URL:** `http://localhost:8080`
+- **Model:** `ggml-large-v3-turbo.bin` (1.6GB, ~2x real-time processing)
+- **Language:** Swedish with speaker diarization
+- **Audio Support:** WAV, M4A, MP3 (auto-converted)
 
-#### `/lib/auth-client.ts` - Client-Side Auth
+### Endpoints
 
-**Purpose**: Browser-side authentication utilities **Used By**: React components, frontend auth
-flows
+#### 1. Health Check
 
-#### `/lib/auth-server.ts` - Server-Side Auth
+```http
+GET /health
+```
 
-**Purpose**: Server-side authentication utilities for API routes **Used By**: Next.js API routes
-requiring server-side auth
+**Response:**
 
----
+```json
+{ "status": "ok" }
+```
 
-## Database Layer
+#### 2. Web Interface
 
-### Core Database Files
+```http
+GET /
+```
 
-#### `/lib/database/index.ts` - Database Main Export
+**Response:** HTML interface for testing
 
-**Purpose**: Central database exports and singleton instance **Used By**: All database consumers
-**Exports**:
+#### 3. Audio Transcription (Main API)
 
-- `db` - Singleton Drizzle database instance
-- Schema tables (audioFiles, transcriptionJobs, etc.)
-- Query operators (eq, and, or, desc, asc, etc.)
-- Repository classes and types
+```http
+POST /inference
+Content-Type: multipart/form-data
+```
 
-#### `/lib/database/client.ts` - Database Connection
+**Request Parameters:** | Parameter | Type | Required | Description |
+|-----------|------|----------|-------------| | `file` | File | Yes | Audio file (WAV, M4A, MP3) | |
+`response_format` | String | No | "json" (default), "text" | | `temperature` | Float | No | 0.0-1.0,
+controls randomness (default: 0.0) | | `language` | String | No | Override language (default: sv) |
 
-**Purpose**: SQLite connection management and health checks **Used By**: Database initialization,
-health endpoints **Key Functions**:
+**Success Response:**
 
-- `getDb()` - Get singleton database instance
-- `healthCheck()` - Verify database connectivity
-- `closeDatabase()` - Clean shutdown
+```json
+{
+  "text": "(speaker ?) Här är vi kvaren.\n(speaker ?) Ja, här är vi kvaren tidigare.\n(speaker ?) Det går bra.\n(speaker ?) Nej men...\n(speaker ?) Allting vi gör borde vara...\n(speaker ?) projekt specifikt."
+}
+```
 
-#### `/lib/database/server.ts` - Server-Only Database Utils
+**Error Response:**
 
-**Purpose**: Server-side database utilities (migrations, init) **Used By**: Server startup,
-migration scripts
+```json
+{
+  "error": "no 'file' field in the request"
+}
+```
 
-### Schema Definition (`/lib/database/schema/`)
+## 📁 File Upload Integration
 
-#### `/lib/database/schema/index.ts` - Schema Exports
+### cURL Examples
 
-**Purpose**: Central schema exports with proper types **Exports**: All table definitions and
-TypeScript types
-
-#### `/lib/database/schema/audio.ts` - Audio File Schema
-
-**Purpose**: Audio file metadata table definition **Tables**: `audioFiles` - Core audio file records
-with Supabase Storage paths
-
-#### `/lib/database/schema/transcripts.ts` - Transcription Schema
-
-**Purpose**: Transcription job and result schema **Tables**: `transcriptionJobs` - Transcription
-queue and results
-
-#### `/lib/database/schema/extractions.ts` - AI Extraction Schema
-
-**Purpose**: AI-powered content extraction definitions and results **Tables**:
-
-- `extractionDefinitions` - Dynamic AI extraction types
-- `extractionResults` - AI extraction outputs
-- `aiProcessingSessions` - Complete AI analysis runs
-
-#### `/lib/database/schema/notes.ts` - Notes and Tasks Schema
-
-**Purpose**: Extracted tasks, notes, and user annotations **Used By**: Task management, note-taking
-features
-
-#### `/lib/database/schema/system.ts` - System Settings Schema
-
-**Purpose**: Application configuration and settings **Used By**: Settings management, configuration
-API
-
-#### `/lib/database/schema/telegram.ts` - Telegram Integration Schema
-
-**Purpose**: Telegram bot configuration and notifications **Used By**: Christ message sharing,
-notification system
-
-#### `/lib/database/schema/users.ts` - User Management Schema
-
-**Purpose**: Future multi-user support (currently single-user) **Status**: Prepared for future
-expansion
-
-#### `/lib/database/schema/relations.ts` - Database Relations
-
-**Purpose**: Drizzle ORM relationship definitions **Used By**: Complex queries requiring joins
-
-### Repository Layer (`/lib/database/repositories/`)
-
-#### `/lib/database/repositories/index.ts` - Repository Factory
-
-**Purpose**: Singleton repository instances following Factory pattern **Key Component**:
-`RepositoryFactory` - Centralized repository access **Design**: Replaces complex ServiceLocator with
-simple factory pattern **Used By**: All services and API routes for data access
-
-#### `/lib/database/repositories/BaseRepository.ts` - Repository Base Class
-
-**Purpose**: Common repository functionality and interfaces **Used By**: All domain repositories
-extend this base **Features**: Standard CRUD operations, error handling
-
-#### `/lib/database/repositories/AudioRepository.ts` - Audio Data Access
-
-**Purpose**: Audio file database operations **Used By**: AudioService, file management APIs **Key
-Methods**:
-
-- `findAll()` - Get all audio files
-- `findById(id)` - Get specific audio file
-- `create(data)` - Insert new audio file record
-- `checkForDuplicates(hash)` - Duplicate detection
-
-#### `/lib/database/repositories/TranscriptRepository.ts` - Transcription Data Access
-
-**Purpose**: Transcription job and result management **Used By**: TranscriptionService,
-transcription APIs **Key Methods**:
-
-- `create(job)` - Create transcription job
-- `findLatestByFileId(fileId)` - Get latest transcription
-- `updateStatus(id, status)` - Update job progress
-
-#### `/lib/database/repositories/ExtractionRepository.ts` - AI Extraction Data Access
-
-**Purpose**: AI content extraction results management **Used By**: AI processing services,
-extraction APIs
-
-#### `/lib/database/repositories/SummarizationRepository.ts` - Summary Data Access
-
-**Purpose**: AI summary generation and storage **Used By**: Summarization services, summary APIs
-
-#### `/lib/database/repositories/TemplateRepository.ts` - Template Management
-
-**Purpose**: Extraction and summarization template storage **Used By**: Template management APIs, AI
-processing
-
-### Migration System (`/lib/database/migrations/`)
-
-#### `/lib/database/migrations/migration-runner.ts` - Migration Execution
-
-**Purpose**: Database schema migration management **Used By**: Server startup, deployment scripts
-
-#### `/lib/database/migrations/create-migration.ts` - Migration Creation
-
-**Purpose**: Generate new migration files **Used By**: Development workflow
-
----
-
-## Services Layer
-
-### Core Business Services (`/lib/services/core/`)
-
-#### `/lib/services/core/index.ts` - Service Exports
-
-**Purpose**: Central exports for core business services **Exports**: AudioService,
-TranscriptionService, FileUploadService, SupabaseStorageService
-
-#### `/lib/services/core/AudioService.ts` - Audio File Management
-
-**Purpose**: Business logic for audio file operations **Design**: Simple class using
-RepositoryFactory (no BaseService inheritance) **Used By**: Audio management APIs, file listing
-**Key Methods**:
-
-- `getAllFiles()` - Retrieve all audio files with metadata
-- `getFileById(id)` - Get specific file details
-- `checkForDuplicates(data)` - Prevent duplicate uploads
-- `deleteFile(id)` - Remove file and cleanup related data
-
-#### `/lib/services/core/FileUploadService.ts` - File Upload Processing
-
-**Purpose**: Handle file uploads with validation and storage **Design**: Single responsibility class
-with Supabase Storage integration **Used By**: Upload API endpoint **Key Features**:
-
-- File validation (type, size, format)
-- Supabase Storage integration
-- Duplicate detection via SHA-256 hashing
-- Audio metadata extraction (duration, peaks)
-- Location data capture
-- Automatic transcription job creation **Methods**:
-- `uploadFile(file, options)` - Main upload processing
-- `validateFile(file)` - Input validation
-- `saveFileToSupabase(file, buffer)` - Storage management
-- `extractDurationFromSupabase(path)` - Audio metadata extraction
-
-#### `/lib/services/core/TranscriptionService.ts` - Transcription Management
-
-**Purpose**: Handle audio transcription workflows **Used By**: Transcription APIs, background
-workers **Features**:
-
-- Groq API integration for Whisper transcription
-- Speaker diarization support
-- Background job processing
-- Progress tracking and status updates
-
-#### `/lib/services/core/SupabaseStorageService.ts` - Cloud Storage Interface
-
-**Purpose**: Supabase Storage operations abstraction **Used By**: FileUploadService, file deletion,
-downloads **Key Methods**:
-
-- `uploadFile(options)` - Upload file to bucket
-- `downloadFile(bucket, path)` - Retrieve file from storage
-- `deleteFiles(options)` - Remove files from storage
-- `getPublicUrl(bucket, path)` - Generate public URLs
-
-### AI Services (`/lib/services/ai/`)
-
-#### `/lib/services/ai/index.ts` - AI Service Exports
-
-**Purpose**: Central exports for AI-related services
-
-#### `/lib/services/ai/AIProvider.ts` - AI Provider Base Class
-
-**Purpose**: Abstract base for AI service providers (Gemini, OpenAI, etc.) **Design**:
-Self-contained with own interfaces (no external BaseService dependency) **Used By**:
-CustomAIService, future AI providers **Features**:
-
-- Provider configuration management
-- Timeout and retry logic
-- Token management
-- Abstract methods for implementation
-
-#### `/lib/services/ai/PromptEngine.ts` - Dynamic Prompt Generation
-
-**Purpose**: Generate dynamic prompts for AI processing **Used By**: AI processing workflows
-
-### Storage Layer (`/lib/services/storage/`)
-
-#### `/lib/services/storage/StorageService.ts` - Storage Abstraction
-
-**Purpose**: Abstract storage interface for multiple providers **Design**: Simple abstract class (no
-BaseService dependency) **Used By**: Concrete storage implementations
-
-### Additional Services
-
-#### `/lib/services/customAI.ts` - Custom AI Implementation
-
-**Purpose**: Gemini 2.0 Flash integration for content analysis **Design**: Extends AIProvider, no
-complex token estimation **Used By**: AI processing APIs **Key Features**:
-
-- JSON-structured extraction from transcripts
-- Dynamic extraction definitions support
-- Simplified response parsing (removed over-engineered token estimation)
-
-#### `/lib/services/transcription.ts` - Transcription Logic
-
-**Purpose**: Core transcription processing algorithms **Used By**: TranscriptionService, worker
-processes
-
-#### `/lib/services/transcriptionWorker.ts` - Background Processing
-
-**Purpose**: Queue processing for transcription jobs **Used By**: Upload endpoints, scheduled tasks
-
-#### `/lib/services/locationService.ts` - Location Management
-
-**Purpose**: Handle geolocation data from recordings **Used By**: Recording components, upload
-service
-
-#### `/lib/services/dynamicPromptGenerator.ts` - Prompt Generation
-
-**Purpose**: Generate AI prompts based on extraction definitions **Used By**: AI processing
-workflows
-
----
-
-## Middleware Layer (`/lib/middleware/`)
-
-### Core Middleware Components
-
-#### `/lib/middleware/index.ts` - Middleware Orchestration
-
-**Purpose**: Central middleware exports and utility functions **Used By**: All API routes requiring
-middleware **Key Exports**:
-
-- `withMiddleware(handler, config)` - Apply middleware to route handlers
-- `withAuthMiddleware(handler, config)` - Add authentication requirement
-- `createApiResponse(data, options)` - Standardized API responses
-- `createErrorResponse(message, code, status)` - Error response formatting
-
-#### `/lib/middleware/MiddlewareOrchestrator.ts` - Middleware Chain Management
-
-**Purpose**: Execute middleware in proper order with request context **Features**:
-
-- Request context creation and propagation
-- Error handling chain
-- Logging integration
-- Performance monitoring
-
-#### `/lib/middleware/types.ts` - Middleware Type Definitions
-
-**Purpose**: TypeScript interfaces for middleware system **Exports**: RequestContext,
-MiddlewareConfig, ApiResponse types
-
-#### `/lib/middleware/RequestContext.ts` - Request Context Management
-
-**Purpose**: Create and manage request context throughout middleware chain **Features**:
-
-- Unique request ID generation
-- Request metadata tracking
-- Performance timing
-
-#### `/lib/middleware/ErrorMiddleware.ts` - Error Handling
-
-**Purpose**: Centralized error processing and response formatting **Features**:
-
-- Error type detection (AppError, ValidationError)
-- Stack trace sanitization
-- Consistent error response format
-
-#### `/lib/middleware/LoggingMiddleware.ts` - Request/Response Logging
-
-**Purpose**: Structured logging for API requests and responses **Features**:
-
-- Request/response body logging (configurable)
-- Performance metrics
-- Debug information
-
-#### `/lib/middleware/AuthMiddleware.ts` - Authentication Middleware
-
-**Purpose**: JWT token validation for protected routes **Used By**: Protected API endpoints
-**Features**:
-
-- Token extraction from cookies/headers
-- Session validation
-- Unauthorized response handling
-
-#### `/lib/middleware/ResponseMiddleware.ts` - Response Processing
-
-**Purpose**: Standardize API response format and headers **Features**:
-
-- Consistent response structure
-- CORS headers
-- Performance headers
-
----
-
-## Error Handling System (`/lib/errors/`)
-
-#### `/lib/errors/index.ts` - Error System Exports
-
-**Purpose**: Central error handling exports and utilities **Exports**: AppError, ValidationError,
-error factory functions
-
-#### `/lib/errors/AppError.ts` - Application Error Class
-
-**Purpose**: Structured application errors with severity levels **Features**:
-
-- Error codes and categories
-- Severity levels (low, medium, high, critical)
-- Context information
-- Stack trace preservation
-
-#### `/lib/errors/ValidationError.ts` - Input Validation Errors
-
-**Purpose**: Specialized error class for input validation failures **Used By**: Form validation, API
-input checking **Features**:
-
-- Field-specific error messages
-- Value tracking for debugging
-- Validation rule information
-
-#### `/lib/errors/ErrorHandler.ts` - Global Error Processing
-
-**Purpose**: Application-wide error handling logic **Features**:
-
-- Error logging and reporting
-- Error response formatting
-- Development vs production error details
-
----
-
-## Utilities (`/lib/utils/`)
-
-#### `/lib/utils.ts` - General Utilities
-
-**Purpose**: Common utility functions and Tailwind CSS utilities **Exports**:
-
-- `cn(...inputs)` - Tailwind class name merging
-- Debug utility re-exports
-
-#### `/lib/utils/debug.ts` - Debug and Logging Utilities
-
-**Purpose**: Structured logging and debugging functions **Used By**: Throughout application for
-debugging **Functions**:
-
-- `debugLog(message, context)` - Contextual logging
-- `apiDebug(message, data)` - API-specific debugging
-- `servicesDebug(message, data)` - Service layer debugging
-- `workerDebug(message, data)` - Background job debugging
-- `debugPerformance(operation, startTime, context)` - Performance tracking
-- `debugError(error, context, metadata)` - Error logging
-
----
-
-## Legacy Compatibility Layer
-
-#### `/lib/db.ts` - Legacy Database Interface
-
-**Purpose**: Backward compatibility for existing code using old database interface **Status**:
-Temporary compatibility layer during transition **Exports**: Legacy service instances and schema
-aliases **Design**: Maps old interface to new repository pattern
-
----
-
-## API Integration Points
-
-### Routes Using This Architecture
-
-The `src/lib/` architecture is consumed by the following API endpoints:
-
-1. **Upload Routes** (`/api/upload/route.ts`)
-   - Uses: FileUploadService, RepositoryFactory
-   - Pattern: Direct service instantiation
-
-2. **File Management** (`/api/files/[id]/route.ts`)
-   - Uses: RepositoryFactory.audioRepository, SupabaseStorageService
-   - Pattern: Repository pattern with direct service instantiation
-
-3. **Transcription** (`/api/transcribe-simple/[id]/route.ts`)
-   - Uses: RepositoryFactory, SupabaseStorageService
-   - Pattern: Repository access with storage integration
-
-### Architecture Principles Applied
-
-1. **No ServiceLocator**: Eliminated complex dependency injection
-2. **Direct Instantiation**: Simple `new ServiceClass()` pattern
-3. **Repository Factory**: Centralized data access through `RepositoryFactory`
-4. **Single Responsibility**: Each service has one clear purpose
-5. **Composition over Inheritance**: Removed BaseService abstractions
-
----
-
-## Future Expansion Points
-
-The architecture is designed for easy extension:
-
-1. **Additional AI Providers**: Extend AIProvider base class
-2. **Storage Providers**: Implement StorageService interface
-3. **Authentication Methods**: Extend auth system
-4. **Database Providers**: Add new repository implementations
-5. **Middleware Components**: Add to middleware chain
-
----
-
-## Development Guidelines
-
-### Adding New Services
-
-1. Create simple class in appropriate `/core/` or domain directory
-2. Use RepositoryFactory for data access
-3. Add to appropriate `index.ts` exports
-4. No BaseService inheritance required
-
-### Database Changes
-
-1. Update schema files in `/database/schema/`
-2. Create migration in `/database/migrations/`
-3. Update repository methods if needed
-4. Export new types from schema index
-
-### API Route Creation
-
-1. Use `withMiddleware()` or `withAuthMiddleware()` from middleware index
-2. Instantiate services directly: `new ServiceClass()`
-3. Use RepositoryFactory for data access
-4. Return standardized responses with `createApiResponse()`
-
-This architecture prioritizes simplicity, maintainability, and follows SOLID/DRY principles while
-eliminating over-engineered abstractions that provided no real value.
+```bash
+# Basic transcription
+curl -X POST http://localhost:8080/inference \
+  -F "file=@audio.wav" \
+  -F "response_format=json"
+
+# With temperature control
+curl -X POST http://localhost:8080/inference \
+  -F "file=@audio.wav" \
+  -F "temperature=0.2" \
+  -F "response_format=json"
+
+# Test with M4A (auto-converted)
+curl -X POST http://localhost:8080/inference \
+  -F "file=@recording.m4a" \
+  -F "response_format=json"
+```
+
+### Python Integration
+
+```python
+import requests
+import json
+
+def transcribe_audio(file_path, temperature=0.0):
+    """Transcribe audio file using whisper.cpp API"""
+
+    url = "http://localhost:8080/inference"
+
+    with open(file_path, 'rb') as f:
+        files = {'file': f}
+        data = {
+            'temperature': str(temperature),
+            'response_format': 'json'
+        }
+
+        response = requests.post(url, files=files, data=data)
+
+    if response.status_code == 200:
+        result = response.json()
+        return result.get('text', '')
+    else:
+        error = response.json()
+        raise Exception(f"API Error: {error.get('error', 'Unknown error')}")
+
+# Usage
+try:
+    transcript = transcribe_audio("swedish_audio.wav")
+    print(transcript)
+except Exception as e:
+    print(f"Error: {e}")
+```
+
+### JavaScript/Node.js Integration
+
+```javascript
+const FormData = require('form-data');
+const fs = require('fs');
+const axios = require('axios');
+
+async function transcribeAudio(filePath, temperature = 0.0) {
+  const form = new FormData();
+  form.append('file', fs.createReadStream(filePath));
+  form.append('temperature', temperature.toString());
+  form.append('response_format', 'json');
+
+  try {
+    const response = await axios.post('http://localhost:8080/inference', form, {
+      headers: form.getHeaders(),
+    });
+
+    return response.data.text;
+  } catch (error) {
+    if (error.response && error.response.data) {
+      throw new Error(`API Error: ${error.response.data.error}`);
+    }
+    throw error;
+  }
+}
+
+// Usage
+transcribeAudio('swedish_audio.wav')
+  .then(transcript => console.log(transcript))
+  .catch(error => console.error('Error:', error.message));
+```
+
+## 🌊 Streaming Implementation
+
+### HTTP Chunked Streaming (Recommended)
+
+```python
+#!/usr/bin/env python3
+"""
+Production-ready HTTP streaming for whisper.cpp
+Processes large audio files in chunks for near-real-time results
+"""
+
+import os
+import requests
+import subprocess
+import tempfile
+from typing import Iterator, Dict
+
+class WhisperStreamer:
+    def __init__(self, api_url="http://localhost:8080/inference", chunk_duration=30):
+        self.api_url = api_url
+        self.chunk_duration = chunk_duration
+
+    def health_check(self) -> bool:
+        """Check if whisper server is available"""
+        try:
+            response = requests.get("http://localhost:8080/health", timeout=5)
+            return response.json().get('status') == 'ok'
+        except:
+            return False
+
+    def chunk_audio(self, input_file: str) -> Iterator[str]:
+        """Split audio into chunks for streaming processing"""
+
+        # Get duration
+        cmd = ['ffprobe', '-v', 'quiet', '-show_entries', 'format=duration',
+               '-of', 'csv=p=0', input_file]
+        duration = float(subprocess.check_output(cmd).decode().strip())
+
+        # Create chunks
+        for start_time in range(0, int(duration), self.chunk_duration):
+            chunk_file = f"/tmp/chunk_{start_time:04d}.wav"
+
+            cmd = [
+                'ffmpeg', '-i', input_file,
+                '-ss', str(start_time),
+                '-t', str(self.chunk_duration),
+                '-ar', '16000', '-ac', '1', '-c:a', 'pcm_s16le',
+                '-y', chunk_file
+            ]
+
+            subprocess.run(cmd, capture_output=True, check=True)
+            yield chunk_file
+
+    def transcribe_chunk(self, chunk_file: str) -> Dict:
+        """Transcribe single audio chunk"""
+        with open(chunk_file, 'rb') as f:
+            files = {'file': f}
+            data = {'response_format': 'json', 'temperature': '0.0'}
+
+            response = requests.post(self.api_url, files=files, data=data)
+            response.raise_for_status()
+
+            return response.json()
+
+    def stream_transcribe(self, audio_file: str) -> Iterator[Dict]:
+        """Stream transcription results as they become available"""
+
+        if not self.health_check():
+            raise Exception("Whisper server not available")
+
+        chunk_index = 0
+        for chunk_file in self.chunk_audio(audio_file):
+            try:
+                result = self.transcribe_chunk(chunk_file)
+
+                yield {
+                    'chunk_index': chunk_index,
+                    'start_time': chunk_index * self.chunk_duration,
+                    'end_time': (chunk_index + 1) * self.chunk_duration,
+                    'text': result.get('text', '').strip(),
+                    'processing_complete': True
+                }
+
+                chunk_index += 1
+
+            except Exception as e:
+                yield {
+                    'chunk_index': chunk_index,
+                    'error': str(e),
+                    'processing_complete': False
+                }
+            finally:
+                os.unlink(chunk_file)
+
+# Usage Example
+if __name__ == "__main__":
+    streamer = WhisperStreamer(chunk_duration=30)
+
+    for result in streamer.stream_transcribe("long_swedish_audio.wav"):
+        if result.get('error'):
+            print(f"Error in chunk {result['chunk_index']}: {result['error']}")
+        else:
+            print(f"Chunk {result['chunk_index']} ({result['start_time']}s-{result['end_time']}s):")
+            print(f"  {result['text']}")
+            print()
+```
+
+### Real-time Integration Pattern
+
+```python
+import asyncio
+import aiohttp
+from pathlib import Path
+
+class AsyncWhisperClient:
+    def __init__(self, base_url="http://localhost:8080"):
+        self.base_url = base_url
+        self.session = None
+
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        if self.session:
+            await self.session.close()
+
+    async def transcribe(self, audio_path: Path, **kwargs) -> dict:
+        """Async transcription for concurrent processing"""
+
+        data = aiohttp.FormData()
+        data.add_field('file', open(audio_path, 'rb'), filename=audio_path.name)
+        data.add_field('response_format', 'json')
+
+        for key, value in kwargs.items():
+            data.add_field(key, str(value))
+
+        async with self.session.post(f"{self.base_url}/inference", data=data) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                error_data = await response.json()
+                raise Exception(f"API Error: {error_data.get('error')}")
+
+# Usage for concurrent processing
+async def process_multiple_files(audio_files):
+    async with AsyncWhisperClient() as client:
+        tasks = [client.transcribe(Path(file)) for file in audio_files]
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+
+        for i, result in enumerate(results):
+            if isinstance(result, Exception):
+                print(f"Error processing {audio_files[i]}: {result}")
+            else:
+                print(f"File {audio_files[i]}: {result['text'][:100]}...")
+
+# Run with: asyncio.run(process_multiple_files(['file1.wav', 'file2.wav']))
+```
+
+## 📊 Performance & Limitations
+
+### Performance Characteristics
+
+| Metric              | Value                               |
+| ------------------- | ----------------------------------- |
+| Model               | ggml-large-v3-turbo.bin (1.6GB)     |
+| Processing Speed    | ~2x real-time                       |
+| Memory Usage        | ~2GB RAM                            |
+| Concurrent Requests | 3-5 recommended                     |
+| Max File Size       | ~100MB (limited by processing time) |
+| Supported Formats   | WAV, M4A, MP3 (auto-converted)      |
+
+### Response Times (Typical)
+
+| Audio Length | Processing Time | Real-time Factor |
+| ------------ | --------------- | ---------------- |
+| 30 seconds   | ~15 seconds     | 2.0x             |
+| 1 minute     | ~30 seconds     | 2.0x             |
+| 5 minutes    | ~150 seconds    | 2.0x             |
+| 10 minutes   | ~300 seconds    | 2.0x             |
+
+### Best Practices
+
+1. **File Size:** Keep individual files under 10 minutes for optimal response times
+2. **Concurrent Requests:** Limit to 3-5 simultaneous requests to prevent memory issues
+3. **Audio Format:** Use 16kHz WAV files for fastest processing (no conversion needed)
+4. **Chunking:** For files >5 minutes, use HTTP chunking approach for better UX
+5. **Error Handling:** Always implement retry logic for network timeouts
+6. **Health Monitoring:** Check `/health` endpoint before processing
+
+## 🔧 Integration Examples
+
+### Web Application Integration
+
+```javascript
+// Frontend JavaScript for file upload
+async function uploadAudio(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('response_format', 'json');
+
+  try {
+    const response = await fetch('http://localhost:8080/inference', {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Unknown error');
+    }
+
+    const result = await response.json();
+    return result.text;
+  } catch (error) {
+    console.error('Transcription error:', error);
+    throw error;
+  }
+}
+
+// Usage with file input
+document.getElementById('audioFile').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  try {
+    document.getElementById('status').textContent = 'Processing...';
+    const transcript = await uploadAudio(file);
+    document.getElementById('result').textContent = transcript;
+    document.getElementById('status').textContent = 'Complete';
+  } catch (error) {
+    document.getElementById('status').textContent = `Error: ${error.message}`;
+  }
+});
+```
+
+### Microservice Integration
+
+```python
+from flask import Flask, request, jsonify
+import requests
+import tempfile
+import os
+
+app = Flask(__name__)
+WHISPER_URL = "http://localhost:8080/inference"
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe_endpoint():
+    """Proxy endpoint for whisper.cpp integration"""
+
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+
+    audio_file = request.files['audio']
+
+    try:
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.wav') as tmp_file:
+            audio_file.save(tmp_file.name)
+
+            # Forward to whisper.cpp
+            with open(tmp_file.name, 'rb') as f:
+                files = {'file': f}
+                data = {'response_format': 'json'}
+
+                response = requests.post(WHISPER_URL, files=files, data=data)
+
+            # Cleanup
+            os.unlink(tmp_file.name)
+
+            if response.status_code == 200:
+                result = response.json()
+                return jsonify({
+                    'success': True,
+                    'transcript': result['text'],
+                    'processing_time': response.elapsed.total_seconds()
+                })
+            else:
+                error = response.json()
+                return jsonify({
+                    'success': False,
+                    'error': error.get('error', 'Unknown error')
+                }), 500
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
+```
+
+### Background Job Processing
+
+```python
+import celery
+import requests
+from celery import Celery
+
+app = Celery('whisper_tasks', broker='redis://localhost:6379')
+
+@app.task(bind=True, max_retries=3)
+def transcribe_audio_task(self, file_path, callback_url=None):
+    """Background task for audio transcription"""
+
+    try:
+        # Health check
+        health_response = requests.get("http://localhost:8080/health", timeout=5)
+        if health_response.json().get('status') != 'ok':
+            raise Exception("Whisper server not available")
+
+        # Process file
+        with open(file_path, 'rb') as f:
+            files = {'file': f}
+            data = {'response_format': 'json', 'temperature': '0.0'}
+
+            response = requests.post(
+                "http://localhost:8080/inference",
+                files=files,
+                data=data,
+                timeout=600  # 10 minute timeout
+            )
+
+        if response.status_code == 200:
+            result = response.json()
+
+            # Optional callback
+            if callback_url:
+                requests.post(callback_url, json={
+                    'task_id': self.request.id,
+                    'status': 'completed',
+                    'transcript': result['text']
+                })
+
+            return {
+                'status': 'completed',
+                'transcript': result['text'],
+                'file_path': file_path
+            }
+        else:
+            error = response.json()
+            raise Exception(f"API Error: {error.get('error')}")
+
+    except Exception as e:
+        # Retry logic
+        if self.request.retries < self.max_retries:
+            raise self.retry(countdown=60, exc=e)
+
+        # Final failure
+        if callback_url:
+            requests.post(callback_url, json={
+                'task_id': self.request.id,
+                'status': 'failed',
+                'error': str(e)
+            })
+
+        return {
+            'status': 'failed',
+            'error': str(e),
+            'file_path': file_path
+        }
+
+# Usage
+# task = transcribe_audio_task.delay('/path/to/audio.wav', 'http://myapp.com/callback')
+```
+
+## 🚨 Error Handling & Troubleshooting
+
+### Common Errors
+
+#### 1. Container Not Running
+
+```bash
+# Check container status
+docker ps | grep whisper
+
+# If not running, start it
+docker-compose up -d
+
+# Check logs for startup issues
+docker logs whisper-swedish-turbo
+```
+
+#### 2. File Format Issues
+
+```json
+// Error response for unsupported format
+{
+  "error": "failed to read audio data"
+}
+
+// Solution: Ensure --convert flag is used in container
+// Or pre-convert files to 16kHz WAV
+```
+
+#### 3. Memory Issues
+
+```bash
+# If container crashes with large files
+docker logs whisper-swedish-turbo
+
+# Common cause: Multiple large concurrent requests
+# Solution: Implement request queuing or file size limits
+```
+
+#### 4. Network Timeouts
+
+```python
+# Always set appropriate timeouts
+import requests
+
+response = requests.post(
+    "http://localhost:8080/inference",
+    files=files,
+    data=data,
+    timeout=300  # 5 minutes for large files
+)
+```

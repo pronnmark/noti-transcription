@@ -71,14 +71,14 @@ describe('MigrationRunner', () => {
   describe('checkMigrationStatus', () => {
     it('should check migration status without errors', async () => {
       await expect(
-        migrationRunner.checkMigrationStatus(),
+        migrationRunner.checkMigrationStatus()
       ).resolves.not.toThrow();
     });
 
     it('should show migration status after running migrations', async () => {
       await migrationRunner.runMigrations();
       await expect(
-        migrationRunner.checkMigrationStatus(),
+        migrationRunner.checkMigrationStatus()
       ).resolves.not.toThrow();
     });
   });
@@ -134,13 +134,13 @@ describe('DatabaseInitializer', () => {
 
     it('should allow skipping migrations', async () => {
       await expect(
-        initializer.initialize({ runMigrations: false }),
+        initializer.initialize({ runMigrations: false })
       ).resolves.not.toThrow();
     });
 
     it('should allow skipping validation', async () => {
       await expect(
-        initializer.initialize({ validateSchema: false }),
+        initializer.initialize({ validateSchema: false })
       ).resolves.not.toThrow();
     });
   });

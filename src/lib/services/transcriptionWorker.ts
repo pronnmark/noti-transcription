@@ -2,6 +2,7 @@ import { getSupabase } from '../database/client';
 import { join } from 'path';
 import { promises as fs } from 'fs';
 import { startTranscription } from './transcription';
+import { SupabaseStorageService } from './core/SupabaseStorageService';
 
 export interface WorkerResult {
   message: string;
@@ -20,7 +21,7 @@ function createTimeoutPromise(timeoutMs: number): Promise<never> {
   return new Promise((_, reject) => {
     setTimeout(() => {
       reject(
-        new Error(`Transcription timeout after ${timeoutMs / 1000} seconds`),
+        new Error(`Transcription timeout after ${timeoutMs / 1000} seconds`)
       );
     }, timeoutMs);
   });
@@ -33,10 +34,12 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
     // Get pending or stuck processing jobs with file info
     const { data: jobs, error } = await supabase
       .from('transcription_jobs')
-      .select(`
+      .select(
+        `
         *,
         audio_files (*)
-      `)
+      `
+      )
       .eq('status', 'pending')
       .limit(5);
 
@@ -67,9 +70,11 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
         continue;
       }
 
+      let tempFilePath: string | undefined;
+
       try {
         console.log(
-          `Processing transcription job ${job.id} for file: ${file.original_file_name}`,
+          `Processing transcription job ${job.id} for file: ${file.original_file_name}`
         );
 
         // Update status to processing
@@ -84,22 +89,49 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
           .eq('id', job.id);
 
         if (updateError) {
-          throw new Error(`Failed to update job status: ${updateError.message}`);
+          throw new Error(
+            `Failed to update job status: ${updateError.message}`
+          );
         }
 
-        // Check if file exists
-        const audioPath = join(
-          process.cwd(),
-          'data',
-          'audio_files',
-          file.file_name,
-        );
+        // Download file from Supabase Storage to temporary location
+        const supabaseStorageService = new SupabaseStorageService();
+
         try {
-          await fs.access(audioPath);
-        } catch (_e) {
-          console.log('File not found at:', audioPath);
-          console.log('File object:', file);
-          throw new Error(`Audio file not found: ${file.file_name}`);
+          // Download file from Supabase Storage
+          console.log(
+            `Downloading file from Supabase Storage: ${file.file_name}`
+          );
+          const fileBuffer = await supabaseStorageService.downloadFile(
+            'audio-files',
+            file.file_name
+          );
+
+          // Create temporary file path
+          const tempDir = join(process.cwd(), 'data', 'temp');
+          await fs.mkdir(tempDir, { recursive: true });
+
+          // Generate temp filename with original extension
+          const fileExtension =
+            file.original_file_name.split('.').pop() || 'tmp';
+          tempFilePath = join(
+            tempDir,
+            `temp_${job.id}_${Date.now()}.${fileExtension}`
+          );
+
+          // Write buffer to temporary file
+          await fs.writeFile(tempFilePath, fileBuffer);
+          console.log(
+            `File downloaded and saved to temporary location: ${tempFilePath}`
+          );
+        } catch (downloadError) {
+          console.error(
+            'Error downloading file from Supabase Storage:',
+            downloadError
+          );
+          throw new Error(
+            `Failed to download audio file from storage: ${downloadError instanceof Error ? downloadError.message : 'Unknown error'}`
+          );
         }
 
         // Add file size validation
@@ -108,20 +140,26 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
 
         if (fileSizeMB > 100) {
           throw new Error(
-            `File too large: ${fileSizeMB.toFixed(2)}MB (max 100MB)`,
+            `File too large: ${fileSizeMB.toFixed(2)}MB (max 100MB)`
           );
         }
 
         // Start real transcription with timeout protection
         console.log(
-          `Starting real transcription for job ${job.id}, file: ${file.original_file_name}`,
+          `Starting real transcription for job ${job.id}, file: ${file.original_file_name}`
         );
+
+        if (!tempFilePath) {
+          throw new Error(
+            'Temporary file path is undefined - file download may have failed'
+          );
+        }
 
         try {
           // Call the real transcription function with timeout (10 minutes)
           const TRANSCRIPTION_TIMEOUT = 10 * 60 * 1000; // 10 minutes
           await Promise.race([
-            startTranscription(file.id, audioPath),
+            startTranscription(file.id, tempFilePath),
             createTimeoutPromise(TRANSCRIPTION_TIMEOUT),
           ]);
 
@@ -133,7 +171,9 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
             .limit(1);
 
           if (fetchError) {
-            throw new Error(`Failed to fetch updated job: ${fetchError.message}`);
+            throw new Error(
+              `Failed to fetch updated job: ${fetchError.message}`
+            );
           }
 
           if (!updatedJobs || updatedJobs.length === 0) {
@@ -147,15 +187,28 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
             // The transcription function should have updated the status to 'completed'
             // If it didn't, something went wrong
             throw new Error(
-              `Transcription failed with status: ${transcriptionResult.status}`,
+              `Transcription failed with status: ${transcriptionResult.status}`
             );
           }
 
           console.log(`Transcription completed successfully for job ${job.id}`);
+
+          // Clean up temporary file
+          if (tempFilePath) {
+            try {
+              await fs.unlink(tempFilePath);
+              console.log(`Cleaned up temporary file: ${tempFilePath}`);
+            } catch (cleanupError) {
+              console.warn(
+                `Failed to clean up temporary file ${tempFilePath}:`,
+                cleanupError
+              );
+            }
+          }
         } catch (transcriptionError) {
           console.error(
             `Transcription failed for job ${job.id}:`,
-            transcriptionError,
+            transcriptionError
           );
 
           // Update job as failed
@@ -172,6 +225,21 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
               updated_at: new Date().toISOString(),
             })
             .eq('id', job.id);
+
+          // Clean up temporary file on error
+          if (tempFilePath) {
+            try {
+              await fs.unlink(tempFilePath);
+              console.log(
+                `Cleaned up temporary file after error: ${tempFilePath}`
+              );
+            } catch (cleanupError) {
+              console.warn(
+                `Failed to clean up temporary file ${tempFilePath}:`,
+                cleanupError
+              );
+            }
+          }
 
           throw transcriptionError;
         }
@@ -199,6 +267,21 @@ export async function processTranscriptionJobs(): Promise<WorkerResult> {
             .eq('id', job.id);
         } catch (dbError) {
           console.error(`Failed to update job ${job.id} status:`, dbError);
+        }
+
+        // Clean up temporary file on overall error
+        if (tempFilePath) {
+          try {
+            await fs.unlink(tempFilePath);
+            console.log(
+              `Cleaned up temporary file after overall error: ${tempFilePath}`
+            );
+          } catch (cleanupError) {
+            console.warn(
+              `Failed to clean up temporary file ${tempFilePath}:`,
+              cleanupError
+            );
+          }
         }
 
         results.push({

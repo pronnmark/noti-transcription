@@ -42,7 +42,7 @@ export function TaskCheckbox({
       className={cn(
         'transition-all duration-200',
         isToggling && 'cursor-not-allowed opacity-50',
-        className,
+        className
       )}
     />
   );

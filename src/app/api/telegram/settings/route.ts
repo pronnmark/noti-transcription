@@ -9,7 +9,10 @@ const execAsync = promisify(exec);
 export async function GET() {
   try {
     const supabase = getSupabase();
-    const { data: settings } = await supabase.from('telegram_settings').select('*').limit(1);
+    const { data: settings } = await supabase
+      .from('telegram_settings')
+      .select('*')
+      .limit(1);
     const config = settings?.[0];
 
     const hasBotToken = !!(config?.bot_token || process.env.TELEGRAM_BOT_TOKEN);
@@ -58,7 +61,9 @@ asyncio.run(get_bot_info())
         botTokenSource: config?.bot_token ? 'database' : 'environment',
         chatConfigurations: config?.chat_configurations || [],
         defaultChatId:
-          config?.default_chat_id || process.env.TELEGRAM_DEFAULT_CHAT_ID || null,
+          config?.default_chat_id ||
+          process.env.TELEGRAM_DEFAULT_CHAT_ID ||
+          null,
         isEnabled: config?.is_enabled ?? true,
         botInfo,
       },
@@ -67,7 +72,7 @@ asyncio.run(get_bot_info())
     console.error('Error fetching Telegram settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch settings' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
       await request.json();
 
     const supabase = getSupabase();
-    
+
     // Get existing settings
     const { data: existingSettings } = await supabase
       .from('telegram_settings')
@@ -104,7 +109,7 @@ export async function POST(request: NextRequest) {
         .eq('id', existing.id)
         .select()
         .single();
-      
+
       if (error) throw error;
       result = data;
     } else {
@@ -117,7 +122,7 @@ export async function POST(request: NextRequest) {
         })
         .select()
         .single();
-      
+
       if (error) throw error;
       result = data;
     }
@@ -131,7 +136,7 @@ export async function POST(request: NextRequest) {
     console.error('Error updating Telegram settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update settings' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -144,7 +149,7 @@ export async function PUT(request: NextRequest) {
     if (!testChatId) {
       return NextResponse.json(
         { success: false, error: 'Test chat ID is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -160,7 +165,7 @@ export async function PUT(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { success: false, error: 'No bot token configured' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -231,7 +236,7 @@ asyncio.run(test_connection())
     console.error('Telegram connection test error:', error);
     return NextResponse.json(
       { success: false, error: `Connection test failed: ${error}` },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

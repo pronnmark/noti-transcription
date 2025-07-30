@@ -16,20 +16,20 @@ export async function GET(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     // Get bot info
     const botResponse = await fetch(
-      `https://api.telegram.org/bot${botToken}/getMe`,
+      `https://api.telegram.org/bot${botToken}/getMe`
     );
     const botData = await botResponse.json();
 
     if (!botData.ok) {
       return NextResponse.json(
         { error: `Failed to get bot info: ${botData.description}` },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 
     // Get recent updates to see what chats the bot has access to
     const updatesResponse = await fetch(
-      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100`,
+      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100`
     );
     const updatesData = await updatesResponse.json();
 
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
     if (!chatId || !message) {
       return NextResponse.json(
         { error: 'Chat ID and message are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
           text: message,
           parse_mode: 'Markdown',
         }),
-      },
+      }
     );
 
     const data = await response.json();
@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
           error: data.description,
           chat_id: chatId,
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -159,7 +159,7 @@ export async function POST(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

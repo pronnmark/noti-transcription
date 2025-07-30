@@ -16,15 +16,20 @@ test.describe('Complete User Workflows', () => {
     }
   });
 
-  test('complete upload → transcription → view results workflow', async ({ page, request }) => {
+  test('complete upload → transcription → view results workflow', async ({
+    page,
+    request,
+  }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Step 1: Upload file through UI
     await page.goto('/record');
     await page.waitForLoadState('networkidle');
 
-    const uploadPromise = page.waitForResponse(response => 
-      response.url().includes('/api/upload') && response.request().method() === 'POST'
+    const uploadPromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/upload') &&
+        response.request().method() === 'POST'
     );
 
     const fileInput = page.locator('input[type="file"]').first();
@@ -35,10 +40,10 @@ test.describe('Complete User Workflows', () => {
 
     const uploadData = await uploadResponse.json();
     const fileId = uploadData.fileId;
-    
+
     expect(fileId).toBeDefined();
     expect(uploadData.transcriptionStarted).toBe(true);
-    
+
     uploadedFileIds.push(fileId);
 
     // Track file path for cleanup
@@ -53,13 +58,19 @@ test.describe('Complete User Workflows', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for the uploaded file in the list
-    const fileEntry = page.locator(`[data-file-id="${fileId}"], text=${testFile.name}`).first();
+    const fileEntry = page
+      .locator(`[data-file-id="${fileId}"], text=${testFile.name}`)
+      .first();
     if (await fileEntry.isVisible({ timeout: 5000 })) {
       await expect(fileEntry).toBeVisible();
     }
 
     // Step 3: Check transcription status
-    const transcriptionStatus = await TestHelpers.waitForTranscription(request, fileId, 30000);
+    const transcriptionStatus = await TestHelpers.waitForTranscription(
+      request,
+      fileId,
+      30000
+    );
     expect(transcriptionStatus.status).toBe('completed');
     expect(transcriptionStatus.transcript).toBeDefined();
 
@@ -68,19 +79,27 @@ test.describe('Complete User Workflows', () => {
     await page.waitForLoadState('networkidle');
 
     // Verify transcript page loads
-    await expect(page.locator('h1, h2, [data-testid="transcript-title"]')).toBeVisible();
-    
+    await expect(
+      page.locator('h1, h2, [data-testid="transcript-title"]')
+    ).toBeVisible();
+
     // Look for transcript content (even if it's empty/placeholder)
-    const transcriptContent = page.locator(
-      '[data-testid="transcript-content"], .transcript, .transcript-text'
-    ).first();
-    
+    const transcriptContent = page
+      .locator(
+        '[data-testid="transcript-content"], .transcript, .transcript-text'
+      )
+      .first();
+
     if (await transcriptContent.isVisible()) {
       await expect(transcriptContent).toBeVisible();
     }
 
     // Step 5: Verify file integrity through the entire flow
-    await TestHelpers.verifyFileInSupabase('test-audio-files', uploadedPaths[0], testFile.buffer);
+    await TestHelpers.verifyFileInSupabase(
+      'test-audio-files',
+      uploadedPaths[0],
+      testFile.buffer
+    );
   });
 
   test('file management operations workflow', async ({ page, request }) => {
@@ -94,12 +113,17 @@ test.describe('Complete User Workflows', () => {
 
     // Upload files via API for faster test execution
     for (const testFile of testFiles) {
-      const uploadResponse = await TestHelpers.uploadFileViaAPI(request, testFile);
+      const uploadResponse = await TestHelpers.uploadFileViaAPI(
+        request,
+        testFile
+      );
       uploadedIds.push(uploadResponse.fileId);
       uploadedFileIds.push(uploadResponse.fileId);
 
       // Track for cleanup
-      const fileResponse = await request.get(`/api/files/${uploadResponse.fileId}`);
+      const fileResponse = await request.get(
+        `/api/files/${uploadResponse.fileId}`
+      );
       if (fileResponse.ok()) {
         const fileData = await fileResponse.json();
         uploadedPaths.push(fileData.fileName);
@@ -112,7 +136,9 @@ test.describe('Complete User Workflows', () => {
 
     // Verify files are listed
     for (const fileId of uploadedIds) {
-      const fileLink = page.locator(`a[href*="${fileId}"], [data-file-id="${fileId}"]`).first();
+      const fileLink = page
+        .locator(`a[href*="${fileId}"], [data-file-id="${fileId}"]`)
+        .first();
       if (await fileLink.isVisible({ timeout: 5000 })) {
         await expect(fileLink).toBeVisible();
       }
@@ -121,7 +147,7 @@ test.describe('Complete User Workflows', () => {
     // Test file details navigation
     const firstFileId = uploadedIds[0];
     const firstFileLink = page.locator(`a[href*="${firstFileId}"]`).first();
-    
+
     if (await firstFileLink.isVisible()) {
       await firstFileLink.click();
       await page.waitForLoadState('networkidle');
@@ -136,10 +162,10 @@ test.describe('Complete User Workflows', () => {
     }
 
     // Verify file details are shown
-    const fileInfo = page.locator(
-      '[data-testid="file-info"], .file-details, .metadata'
-    ).first();
-    
+    const fileInfo = page
+      .locator('[data-testid="file-info"], .file-details, .metadata')
+      .first();
+
     if (await fileInfo.isVisible()) {
       await expect(fileInfo).toBeVisible();
     }
@@ -147,27 +173,33 @@ test.describe('Complete User Workflows', () => {
 
   test('upload with location data workflow', async ({ page, request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Mock geolocation
     await page.context().grantPermissions(['geolocation']);
-    await page.context().setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
+    await page
+      .context()
+      .setGeolocation({ latitude: 37.7749, longitude: -122.4194 });
 
     // Navigate to record page
     await page.goto('/record');
     await page.waitForLoadState('networkidle');
 
     // Look for location enable button or setting
-    const locationButton = page.locator(
-      'button:has-text("Enable Location"), [data-testid="location-toggle"], input[name*="location"]'
-    ).first();
+    const locationButton = page
+      .locator(
+        'button:has-text("Enable Location"), [data-testid="location-toggle"], input[name*="location"]'
+      )
+      .first();
 
     if (await locationButton.isVisible()) {
       await locationButton.click();
     }
 
     // Upload file
-    const uploadPromise = page.waitForResponse(response => 
-      response.url().includes('/api/upload') && response.request().method() === 'POST'
+    const uploadPromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/upload') &&
+        response.request().method() === 'POST'
     );
 
     const fileInput = page.locator('input[type="file"]').first();
@@ -182,7 +214,7 @@ test.describe('Complete User Workflows', () => {
     // Verify location data was captured
     const fileResponse = await request.get(`/api/files/${uploadData.fileId}`);
     expect(fileResponse.ok()).toBeTruthy();
-    
+
     const fileData = await fileResponse.json();
     uploadedPaths.push(fileData.fileName);
 
@@ -196,7 +228,7 @@ test.describe('Complete User Workflows', () => {
   test('error handling and recovery workflow', async ({ page, request }) => {
     // Test 1: Invalid file upload
     const invalidFile = TestHelpers.getTestFile('invalid-file.txt');
-    
+
     await page.goto('/record');
     await page.waitForLoadState('networkidle');
 
@@ -204,17 +236,21 @@ test.describe('Complete User Workflows', () => {
     await fileInput.setInputFiles(invalidFile.path);
 
     // Verify error message appears
-    const errorMessage = page.locator(
-      'text=Invalid file type, text=not supported, [data-testid="error-message"], .error'
-    ).first();
-    
+    const errorMessage = page
+      .locator(
+        'text=Invalid file type, text=not supported, [data-testid="error-message"], .error'
+      )
+      .first();
+
     await expect(errorMessage).toBeVisible({ timeout: 10000 });
 
     // Test 2: Valid file upload after error
     const validFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
-    const uploadPromise = page.waitForResponse(response => 
-      response.url().includes('/api/upload') && response.request().method() === 'POST'
+
+    const uploadPromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/upload') &&
+        response.request().method() === 'POST'
     );
 
     await fileInput.setInputFiles(validFile.path);
@@ -233,10 +269,12 @@ test.describe('Complete User Workflows', () => {
     }
 
     // Verify success message or navigation
-    const successMessage = page.locator(
-      'text=uploaded successfully, text=Upload complete, [data-testid="success-message"], .success'
-    ).first();
-    
+    const successMessage = page
+      .locator(
+        'text=uploaded successfully, text=Upload complete, [data-testid="success-message"], .success'
+      )
+      .first();
+
     if (await successMessage.isVisible({ timeout: 5000 })) {
       await expect(successMessage).toBeVisible();
     }
@@ -244,11 +282,14 @@ test.describe('Complete User Workflows', () => {
 
   test('transcription monitoring workflow', async ({ page, request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-medium.wav');
-    
+
     // Upload file via API
-    const uploadResponse = await TestHelpers.uploadFileViaAPI(request, testFile);
+    const uploadResponse = await TestHelpers.uploadFileViaAPI(
+      request,
+      testFile
+    );
     const fileId = uploadResponse.fileId;
-    
+
     uploadedFileIds.push(fileId);
 
     // Track for cleanup
@@ -263,18 +304,24 @@ test.describe('Complete User Workflows', () => {
     await page.waitForLoadState('networkidle');
 
     // Look for transcription status indicators
-    const statusIndicator = page.locator(
-      '[data-testid="transcription-status"], .status, .progress'
-    ).first();
+    const statusIndicator = page
+      .locator('[data-testid="transcription-status"], .status, .progress')
+      .first();
 
     if (await statusIndicator.isVisible()) {
       // Check initial status (should be pending or processing)
       const initialStatus = await statusIndicator.textContent();
-      expect(initialStatus?.toLowerCase()).toMatch(/pending|processing|in progress/);
+      expect(initialStatus?.toLowerCase()).toMatch(
+        /pending|processing|in progress/
+      );
     }
 
     // Wait for transcription to complete
-    const transcriptionResult = await TestHelpers.waitForTranscription(request, fileId, 30000);
+    const transcriptionResult = await TestHelpers.waitForTranscription(
+      request,
+      fileId,
+      30000
+    );
     expect(transcriptionResult.status).toBe('completed');
 
     // Refresh page to see completed transcription
@@ -288,18 +335,24 @@ test.describe('Complete User Workflows', () => {
     }
   });
 
-  test('cross-browser compatibility workflow', async ({ browserName, page, request }) => {
+  test('cross-browser compatibility workflow', async ({
+    browserName,
+    page,
+    request,
+  }) => {
     // This test runs on multiple browsers via Playwright config
     console.log(`Testing on ${browserName}`);
-    
+
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Upload workflow
     await page.goto('/record');
     await page.waitForLoadState('networkidle');
 
-    const uploadPromise = page.waitForResponse(response => 
-      response.url().includes('/api/upload') && response.request().method() === 'POST'
+    const uploadPromise = page.waitForResponse(
+      response =>
+        response.url().includes('/api/upload') &&
+        response.request().method() === 'POST'
     );
 
     const fileInput = page.locator('input[type="file"]').first();
@@ -324,7 +377,7 @@ test.describe('Complete User Workflows', () => {
 
     // Verify page loads correctly in all browsers
     await expect(page.locator('body')).toBeVisible();
-    
+
     // Basic functionality should work across browsers
     const pageTitle = await page.title();
     expect(pageTitle).toBeTruthy();

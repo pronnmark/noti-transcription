@@ -17,7 +17,7 @@ test.describe('Telegram Webhook Integration', () => {
 
   test('telegram voice message uploads to Supabase', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-voice-message.ogg');
-    
+
     // Simulate Telegram webhook payload for voice message
     const telegramUpdate = {
       update_id: 12345,
@@ -27,11 +27,11 @@ test.describe('Telegram Webhook Integration', () => {
           id: 123456789,
           is_bot: false,
           first_name: 'Test',
-          username: 'testuser'
+          username: 'testuser',
         },
         chat: {
           id: 123456789,
-          type: 'private'
+          type: 'private',
         },
         date: Math.floor(Date.now() / 1000),
         voice: {
@@ -39,9 +39,9 @@ test.describe('Telegram Webhook Integration', () => {
           mime_type: 'audio/ogg',
           file_id: 'BAADBAADqAADBYaBFy8IDB7UPMFxQI',
           file_unique_id: 'AgADqAADBYaBFw',
-          file_size: testFile.size
-        }
-      }
+          file_size: testFile.size,
+        },
+      },
     };
 
     // Mock the Telegram file download by intercepting the webhook
@@ -51,14 +51,14 @@ test.describe('Telegram Webhook Integration', () => {
     const webhookResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: telegramUpdate
+      data: telegramUpdate,
     });
 
     // The webhook should accept the request (even if file download fails in test)
     expect(webhookResponse.ok()).toBeTruthy();
-    
+
     const responseData = await webhookResponse.json();
     expect(responseData.ok).toBe(true);
 
@@ -69,7 +69,7 @@ test.describe('Telegram Webhook Integration', () => {
 
   test('telegram audio file uploads to Supabase', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Simulate Telegram webhook payload for audio file
     const telegramUpdate = {
       update_id: 12346,
@@ -79,11 +79,11 @@ test.describe('Telegram Webhook Integration', () => {
           id: 123456789,
           is_bot: false,
           first_name: 'Test',
-          username: 'testuser'
+          username: 'testuser',
         },
         chat: {
           id: 123456789,
-          type: 'private'
+          type: 'private',
         },
         date: Math.floor(Date.now() / 1000),
         audio: {
@@ -93,21 +93,21 @@ test.describe('Telegram Webhook Integration', () => {
           file_unique_id: 'AgADqQADBYaBFw',
           file_size: testFile.size,
           title: 'Test Audio File',
-          performer: 'Test Artist'
-        }
-      }
+          performer: 'Test Artist',
+        },
+      },
     };
 
     const webhookResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: telegramUpdate
+      data: telegramUpdate,
     });
 
     expect(webhookResponse.ok()).toBeTruthy();
-    
+
     const responseData = await webhookResponse.json();
     expect(responseData.ok).toBe(true);
   });
@@ -120,24 +120,24 @@ test.describe('Telegram Webhook Integration', () => {
         from: {
           id: 123456789,
           is_bot: false,
-          first_name: 'Test'
+          first_name: 'Test',
         },
         chat: {
           id: 123456789,
-          type: 'private'
+          type: 'private',
         },
         date: Math.floor(Date.now() / 1000),
-        text: '/start'
-      }
+        text: '/start',
+      },
     };
 
     // Test with wrong secret token
     const invalidTokenResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'wrong-secret'
+        'x-telegram-bot-api-secret-token': 'wrong-secret',
       },
-      data: telegramUpdate
+      data: telegramUpdate,
     });
 
     expect(invalidTokenResponse.status()).toBe(401);
@@ -146,9 +146,9 @@ test.describe('Telegram Webhook Integration', () => {
     const validTokenResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: telegramUpdate
+      data: telegramUpdate,
     });
 
     expect(validTokenResponse.ok()).toBeTruthy();
@@ -156,7 +156,7 @@ test.describe('Telegram Webhook Integration', () => {
 
   test('telegram webhook handles text commands', async ({ request }) => {
     const commands = ['/start', '/help', '/list', '/status 123'];
-    
+
     for (const command of commands) {
       const telegramUpdate = {
         update_id: Math.floor(Math.random() * 100000),
@@ -166,27 +166,27 @@ test.describe('Telegram Webhook Integration', () => {
             id: 123456789,
             is_bot: false,
             first_name: 'Test',
-            username: 'testuser'
+            username: 'testuser',
           },
           chat: {
             id: 123456789,
-            type: 'private'
+            type: 'private',
           },
           date: Math.floor(Date.now() / 1000),
-          text: command
-        }
+          text: command,
+        },
       };
 
       const webhookResponse = await request.post('/api/telegram/webhook', {
         headers: {
           'Content-Type': 'application/json',
-          'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+          'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
         },
-        data: telegramUpdate
+        data: telegramUpdate,
       });
 
       expect(webhookResponse.ok()).toBeTruthy();
-      
+
       const responseData = await webhookResponse.json();
       expect(responseData.ok).toBe(true);
     }
@@ -195,7 +195,7 @@ test.describe('Telegram Webhook Integration', () => {
   test('telegram webhook handles disabled integration', async ({ request }) => {
     // This test would require manipulating the telegram settings in the database
     // to disable the integration and verify it's ignored
-    
+
     const telegramUpdate = {
       update_id: 12348,
       message: {
@@ -203,28 +203,28 @@ test.describe('Telegram Webhook Integration', () => {
         from: {
           id: 123456789,
           is_bot: false,
-          first_name: 'Test'
+          first_name: 'Test',
         },
         chat: {
           id: 123456789,
-          type: 'private'
+          type: 'private',
         },
         date: Math.floor(Date.now() / 1000),
-        text: '/start'
-      }
+        text: '/start',
+      },
     };
 
     const webhookResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: telegramUpdate
+      data: telegramUpdate,
     });
 
     // Should still return OK but not process the message
     expect(webhookResponse.ok()).toBeTruthy();
-    
+
     const responseData = await webhookResponse.json();
     expect(responseData.ok).toBe(true);
   });
@@ -234,9 +234,9 @@ test.describe('Telegram Webhook Integration', () => {
     const malformedResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: 'invalid json'
+      data: 'invalid json',
     });
 
     // Should still return OK to avoid Telegram retries
@@ -244,16 +244,16 @@ test.describe('Telegram Webhook Integration', () => {
 
     // Test with missing required fields
     const incompleteUpdate = {
-      update_id: 12349
+      update_id: 12349,
       // Missing message field
     };
 
     const incompleteResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: incompleteUpdate
+      data: incompleteUpdate,
     });
 
     expect(incompleteResponse.ok()).toBeTruthy();
@@ -261,7 +261,7 @@ test.describe('Telegram Webhook Integration', () => {
 
   test('telegram webhook file size validation', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Simulate a file that's too large
     const largeFileUpdate = {
       update_id: 12350,
@@ -270,11 +270,11 @@ test.describe('Telegram Webhook Integration', () => {
         from: {
           id: 123456789,
           is_bot: false,
-          first_name: 'Test'
+          first_name: 'Test',
         },
         chat: {
           id: 123456789,
-          type: 'private'
+          type: 'private',
         },
         date: Math.floor(Date.now() / 1000),
         voice: {
@@ -282,17 +282,17 @@ test.describe('Telegram Webhook Integration', () => {
           mime_type: 'audio/ogg',
           file_id: 'BAADBAADqAADBYaBFy8IDB7UPMFxQI',
           file_unique_id: 'AgADqAADBYaBFw',
-          file_size: 200 * 1024 * 1024 // 200MB - exceeds 100MB limit
-        }
-      }
+          file_size: 200 * 1024 * 1024, // 200MB - exceeds 100MB limit
+        },
+      },
     };
 
     const webhookResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: largeFileUpdate
+      data: largeFileUpdate,
     });
 
     // Should still return OK but internally handle the size validation
@@ -308,46 +308,48 @@ test.describe('Telegram Webhook Integration', () => {
         from: {
           id: 123456789,
           is_bot: false,
-          first_name: 'Test'
+          first_name: 'Test',
         },
         message: {
           message_id: 67895,
           chat: {
             id: 123456789,
-            type: 'private'
+            type: 'private',
           },
           date: Math.floor(Date.now() / 1000),
-          text: 'Original message'
+          text: 'Original message',
         },
-        data: 'transcribe_123'
-      }
+        data: 'transcribe_123',
+      },
     };
 
     const webhookResponse = await request.post('/api/telegram/webhook', {
       headers: {
         'Content-Type': 'application/json',
-        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret'
+        'x-telegram-bot-api-secret-token': 'noti-telegram-webhook-secret',
       },
-      data: callbackUpdate
+      data: callbackUpdate,
     });
 
     expect(webhookResponse.ok()).toBeTruthy();
-    
+
     const responseData = await webhookResponse.json();
     expect(responseData.ok).toBe(true);
   });
 
-  test('telegram webhook PUT endpoint for webhook registration', async ({ request }) => {
+  test('telegram webhook PUT endpoint for webhook registration', async ({
+    request,
+  }) => {
     const webhookConfig = {
       url: 'https://example.com/api/telegram/webhook',
-      secretToken: 'test-secret-token'
+      secretToken: 'test-secret-token',
     };
 
     const registrationResponse = await request.put('/api/telegram/webhook', {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
-      data: webhookConfig
+      data: webhookConfig,
     });
 
     // This might fail in test environment without proper Telegram bot setup
@@ -356,12 +358,13 @@ test.describe('Telegram Webhook Integration', () => {
   });
 
   // Integration test with real file processing (requires full setup)
-  test.skip('end-to-end telegram file processing with Supabase', async ({ request }) => {    
+  test.skip('end-to-end telegram file processing with Supabase', async ({
+    request,
+  }) => {
     // This test would require:
     // 1. A real Telegram bot token
     // 2. Supabase configured and running
     // 3. The ability to simulate actual file downloads from Telegram
-    
     // For now, we skip this test as it requires external dependencies
     // In a real testing environment, you would:
     // 1. Upload a test file to Telegram

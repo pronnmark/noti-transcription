@@ -11,7 +11,7 @@ export async function POST(request: NextRequest) {
     if (password === AUTH_PASSWORD) {
       // Generate a simple session token
       const sessionToken = Buffer.from(
-        `noti-session-${Date.now()}-${Math.random()}`,
+        `noti-session-${Date.now()}-${Math.random()}`
       ).toString('base64');
 
       return NextResponse.json({
@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
           success: false,
           message: 'Invalid password',
         },
-        { status: 401 },
+        { status: 401 }
       );
     }
   } catch (error) {
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
         success: false,
         message: 'Authentication failed',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

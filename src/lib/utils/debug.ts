@@ -56,7 +56,7 @@ export const servicesDebug = createDebugLogger('services');
 export function debugPerformance(
   operation: string,
   startTime: number,
-  context: DebugContext = 'general',
+  context: DebugContext = 'general'
 ): void {
   const duration = Date.now() - startTime;
   debugLog(context, `⏱️ ${operation} completed in ${duration}ms`);
@@ -71,7 +71,7 @@ export function debugPerformance(
 export function debugError(
   error: unknown,
   context: DebugContext = 'general',
-  additionalInfo?: Record<string, unknown>,
+  additionalInfo?: Record<string, unknown>
 ): void {
   if (error instanceof Error) {
     debugLog(context, '❌ Error:', error.message);

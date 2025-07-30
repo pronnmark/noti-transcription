@@ -27,7 +27,7 @@ export function RecordingCalendar({
   // Create a Set for faster lookup of recording dates
   const recordingDateSet = useMemo(
     () => new Set(recordingDates),
-    [recordingDates],
+    [recordingDates]
   );
 
   // Get first day of month and number of days in month
@@ -83,7 +83,7 @@ export function RecordingCalendar({
 
   // Get month name
   const monthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(
-    currentDate,
+    currentDate
   );
 
   // Day names
@@ -105,38 +105,38 @@ export function RecordingCalendar({
   return (
     <div className={cn('standard-card overflow-hidden', className)}>
       {/* Calendar Header */}
-      <div className="border-b border-border bg-secondary px-4 py-3">
-        <div className="flex items-center justify-between">
+      <div className='border-b border-border bg-secondary px-4 py-3'>
+        <div className='flex items-center justify-between'>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={goToPreviousMonth}
-            className="h-8 w-8 p-0 hover:bg-background"
+            className='h-8 w-8 p-0 hover:bg-background'
           >
-            <ChevronLeft className="h-4 w-4 text-foreground" />
+            <ChevronLeft className='h-4 w-4 text-foreground' />
           </Button>
 
-          <div className="font-semibold text-foreground">
+          <div className='font-semibold text-foreground'>
             {monthName} {currentYear}
           </div>
 
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={goToNextMonth}
-            className="h-8 w-8 p-0 hover:bg-background"
+            className='h-8 w-8 p-0 hover:bg-background'
           >
-            <ChevronRight className="h-4 w-4 text-foreground" />
+            <ChevronRight className='h-4 w-4 text-foreground' />
           </Button>
         </div>
       </div>
 
       {/* Day Names Header */}
-      <div className="grid grid-cols-7 border-b border-border">
+      <div className='grid grid-cols-7 border-b border-border'>
         {dayNames.map((dayName, index) => (
           <div
             key={`day-${index}`}
-            className="p-2 text-center text-xs font-medium text-muted-foreground"
+            className='p-2 text-center text-xs font-medium text-muted-foreground'
           >
             {dayName}
           </div>
@@ -144,13 +144,13 @@ export function RecordingCalendar({
       </div>
 
       {/* Calendar Grid */}
-      <div className="grid grid-cols-7">
+      <div className='grid grid-cols-7'>
         {calendarDays.map((day, index) => {
           if (day === null) {
             return (
               <div
                 key={`empty-${index}`}
-                className="h-12 border-b border-r border-border/30"
+                className='h-12 border-b border-r border-border/30'
               />
             );
           }
@@ -178,14 +178,14 @@ export function RecordingCalendar({
                     ? 'bg-red-500 text-white hover:bg-red-600'
                     : 'cursor-not-allowed bg-gray-100 text-gray-300',
                 // Today indicator - black border
-                isToday && !isFuture && 'ring-2 ring-inset ring-black',
+                isToday && !isFuture && 'ring-2 ring-inset ring-black'
               )}
             >
               {/* Day number */}
               <span
                 className={cn(
                   'relative z-10 font-semibold',
-                  isToday && !isFuture && 'font-bold',
+                  isToday && !isFuture && 'font-bold'
                 )}
               >
                 {day}
@@ -193,12 +193,12 @@ export function RecordingCalendar({
 
               {/* File count dots - only show for past/present dates with recordings */}
               {!isFuture && fileCount > 0 && (
-                <div className="absolute bottom-1 left-1/2 flex -translate-x-1/2 transform gap-0.5">
+                <div className='absolute bottom-1 left-1/2 flex -translate-x-1/2 transform gap-0.5'>
                   {Array.from({ length: Math.min(fileCount, 5) }, (_, i) => (
-                    <div key={i} className="h-1 w-1 rounded-full bg-black" />
+                    <div key={i} className='h-1 w-1 rounded-full bg-black' />
                   ))}
                   {fileCount > 5 && (
-                    <div className="ml-0.5 text-[8px] font-bold text-black">
+                    <div className='ml-0.5 text-[8px] font-bold text-black'>
                       +{fileCount - 5}
                     </div>
                   )}
@@ -210,21 +210,21 @@ export function RecordingCalendar({
       </div>
 
       {/* Legend */}
-      <div className="border-t border-gray-300 bg-gray-50 px-4 py-3">
-        <div className="flex items-center justify-center gap-6 text-xs">
-          <div className="flex items-center gap-1.5">
-            <div className="flex h-4 w-4 items-center justify-center rounded bg-green-500">
-              <div className="h-1 w-1 rounded-full bg-black"></div>
+      <div className='border-t border-gray-300 bg-gray-50 px-4 py-3'>
+        <div className='flex items-center justify-center gap-6 text-xs'>
+          <div className='flex items-center gap-1.5'>
+            <div className='flex h-4 w-4 items-center justify-center rounded bg-green-500'>
+              <div className='h-1 w-1 rounded-full bg-black'></div>
             </div>
-            <span className="text-gray-700">Has recordings</span>
+            <span className='text-gray-700'>Has recordings</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-4 w-4 rounded bg-red-500"></div>
-            <span className="text-gray-700">No recordings</span>
+          <div className='flex items-center gap-1.5'>
+            <div className='h-4 w-4 rounded bg-red-500'></div>
+            <span className='text-gray-700'>No recordings</span>
           </div>
-          <div className="flex items-center gap-1.5">
-            <div className="h-1 w-1 rounded-full bg-black"></div>
-            <span className="text-gray-700">= 1 file</span>
+          <div className='flex items-center gap-1.5'>
+            <div className='h-1 w-1 rounded-full bg-black'></div>
+            <span className='text-gray-700'>= 1 file</span>
           </div>
         </div>
       </div>

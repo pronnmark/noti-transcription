@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/lib/database/client';
+import { getSupabase } from '@/lib/database/client';
 import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
 import { debugLog } from '@/lib/utils';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> },
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
     const { fileId } = await params;
@@ -15,57 +15,74 @@ export async function POST(
       return NextResponse.json({ error: 'Invalid file ID' }, { status: 400 });
     }
 
-    const db = getDb();
+    const supabase = getSupabase();
 
     // Check if file exists
-    const file = await db
-      .select()
-      .from(audioFiles)
-      .where(eq(audioFiles.id, fileIdInt))
+    const { data: files, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileIdInt)
       .limit(1);
 
-    if (!file.length) {
+    if (fileError || !files || files.length === 0) {
       return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
 
+    const file = files[0];
+
     // Get the most recent transcription job
-    const existingJob = await db
-      .select()
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileIdInt))
-      .orderBy(desc(transcriptionJobs.createdAt))
+    const { data: existingJobs, error: jobError } = await supabase
+      .from('transcription_jobs')
+      .select('*')
+      .eq('file_id', fileIdInt)
+      .order('created_at', { ascending: false })
       .limit(1);
 
-    if (!existingJob.length) {
+    if (!existingJobs || existingJobs.length === 0) {
       // Create new transcription job if none exists
-      await db.insert(transcriptionJobs).values({
-        fileId: fileIdInt,
-        status: 'pending',
-        progress: 0,
-        diarizationStatus: 'not_attempted',
-        diarization: true,
-        lastError: 'Retry requested - creating new job',
-      });
+      const { error: insertError } = await supabase
+        .from('transcription_jobs')
+        .insert({
+          file_id: fileIdInt,
+          status: 'pending',
+          progress: 0,
+          diarization_status: 'not_attempted',
+          diarization: true,
+          last_error: 'Retry requested - creating new job',
+        });
+
+      if (insertError) {
+        throw new Error(
+          `Failed to create transcription job: ${insertError.message}`
+        );
+      }
 
       debugLog('api', `Created new transcription job for file ${fileIdInt}`);
     } else {
       // Reset existing job to pending
-      await db
-        .update(transcriptionJobs)
-        .set({
+      const { error: updateError } = await supabase
+        .from('transcription_jobs')
+        .update({
           status: 'pending',
           progress: 0,
-          startedAt: null,
-          completedAt: null,
-          diarizationStatus: 'not_attempted',
-          diarizationError: null,
-          lastError: 'Retry requested by user',
+          started_at: null,
+          completed_at: null,
+          diarization_status: 'not_attempted',
+          diarization_error: null,
+          last_error: 'Retry requested by user',
+          updated_at: new Date().toISOString(),
         })
-        .where(eq(transcriptionJobs.id, existingJob[0].id));
+        .eq('id', existingJobs[0].id);
+
+      if (updateError) {
+        throw new Error(
+          `Failed to reset transcription job: ${updateError.message}`
+        );
+      }
 
       debugLog(
         'api',
-        `Reset transcription job ${existingJob[0].id} for file ${fileIdInt}`,
+        `Reset transcription job ${existingJobs[0].id} for file ${fileIdInt}`
       );
     }
 
@@ -74,7 +91,7 @@ export async function POST(
       try {
         debugLog(
           'api',
-          `Starting transcription retry for file ${fileIdInt}...`,
+          `Starting transcription retry for file ${fileIdInt}...`
         );
         const result = await processTranscriptionJobs();
         debugLog('api', 'Transcription worker completed:', result);
@@ -84,35 +101,34 @@ export async function POST(
     });
 
     // Get updated job status
-    const updatedJob = await db
-      .select({
-        id: transcriptionJobs.id,
-        fileId: transcriptionJobs.fileId,
-        status: transcriptionJobs.status,
-        progress: transcriptionJobs.progress,
-        diarizationStatus: transcriptionJobs.diarizationStatus,
-        lastError: transcriptionJobs.lastError,
-      })
-      .from(transcriptionJobs)
-      .where(eq(transcriptionJobs.fileId, fileIdInt))
-      .orderBy(desc(transcriptionJobs.createdAt))
+    const { data: updatedJobs, error: updatedJobError } = await supabase
+      .from('transcription_jobs')
+      .select('id, file_id, status, progress, diarization_status, last_error')
+      .eq('file_id', fileIdInt)
+      .order('created_at', { ascending: false })
       .limit(1);
+
+    if (updatedJobError) {
+      throw new Error(
+        `Failed to fetch updated job: ${updatedJobError.message}`
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: 'Transcription retry initiated',
-      job: updatedJob[0],
+      job: updatedJobs?.[0],
       file: {
-        id: file[0].id,
-        fileName: file[0].fileName,
-        originalFileName: file[0].originalFileName,
+        id: file.id,
+        fileName: file.file_name,
+        originalFileName: file.original_file_name,
       },
     });
   } catch (error) {
     console.error('Retry transcription error:', error);
     return NextResponse.json(
       { error: 'Failed to retry transcription' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -146,7 +146,7 @@ export function TelegramShareButton({
         }
         className={className}
       >
-        <Send className="mr-2 h-4 w-4" />
+        <Send className='mr-2 h-4 w-4' />
         Share to Telegram
       </Button>
     );
@@ -166,9 +166,9 @@ export function TelegramShareButton({
         className={className}
       >
         {isSharing ? (
-          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
         ) : (
-          <Send className="mr-2 h-4 w-4" />
+          <Send className='mr-2 h-4 w-4' />
         )}
         {isSharing ? 'Sharing...' : 'Share to Telegram'}
       </Button>
@@ -184,17 +184,17 @@ export function TelegramShareButton({
         onClick={() => setShowChatPicker(true)}
         className={className}
       >
-        <Send className="mr-2 h-4 w-4" />
+        <Send className='mr-2 h-4 w-4' />
         Share to Telegram
       </Button>
     );
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className='flex items-center gap-2'>
       <Select value={selectedChatId} onValueChange={setSelectedChatId}>
-        <SelectTrigger className="w-48">
-          <SelectValue placeholder="Select chat..." />
+        <SelectTrigger className='w-48'>
+          <SelectValue placeholder='Select chat...' />
         </SelectTrigger>
         <SelectContent>
           {telegramSettings.defaultChatId && (
@@ -217,16 +217,16 @@ export function TelegramShareButton({
         disabled={isSharing || !selectedChatId}
       >
         {isSharing ? (
-          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+          <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
         ) : (
-          <Send className="mr-2 h-4 w-4" />
+          <Send className='mr-2 h-4 w-4' />
         )}
         {isSharing ? 'Sharing...' : 'Share'}
       </Button>
 
       <Button
-        variant="ghost"
-        size="sm"
+        variant='ghost'
+        size='sm'
         onClick={() => setShowChatPicker(false)}
       >
         Cancel

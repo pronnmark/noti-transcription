@@ -52,7 +52,7 @@ export abstract class AIProvider {
     // Check if API key is provided
     if (!this.apiKey) {
       console.warn(
-        `[${this.name}] No API key provided. Service will be unavailable.`,
+        `[${this.name}] No API key provided. Service will be unavailable.`
       );
       return;
     }
@@ -94,7 +94,7 @@ export abstract class AIProvider {
   abstract isAvailable(): Promise<boolean>;
 
   protected validateGenerationOptions(
-    options?: AIGenerationOptions,
+    options?: AIGenerationOptions
   ): AIGenerationOptions {
     const validated: AIGenerationOptions = {
       model: options?.model || this.defaultModel,
@@ -136,7 +136,7 @@ export abstract class AIProvider {
 
   protected async executeWithRetry<T>(
     operation: () => Promise<T>,
-    maxRetries: number = this.retries,
+    maxRetries: number = this.retries
   ): Promise<T> {
     let lastError: any;
 
@@ -158,7 +158,7 @@ export abstract class AIProvider {
         const delay = this.calculateRetryDelay(attempt);
         console.warn(
           `[${this.name}] Attempt ${attempt} failed, retrying in ${delay}ms:`,
-          error instanceof Error ? error.message : String(error),
+          error instanceof Error ? error.message : String(error)
         );
 
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -200,7 +200,7 @@ export abstract class AIProvider {
   protected async makeRequest(
     url: string,
     options: RequestInit,
-    timeout: number = this.timeout,
+    timeout: number = this.timeout
   ): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -233,7 +233,7 @@ export abstract class AIProvider {
       return JSON.parse(text);
     } catch (error) {
       console.warn(
-        `[${this.name}] Failed to parse JSON response, returning raw text`,
+        `[${this.name}] Failed to parse JSON response, returning raw text`
       );
       return { content: text, parseError: true };
     }
@@ -253,7 +253,7 @@ export abstract class AIProvider {
   protected trackUsage(
     operation: string,
     tokens?: number,
-    cost?: number,
+    cost?: number
   ): void {
     console.debug(`[${this.name}] Usage: ${operation}`, { tokens, cost });
   }

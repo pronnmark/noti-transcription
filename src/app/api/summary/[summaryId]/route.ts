@@ -3,7 +3,7 @@ import { getSupabase } from '../../../../lib/database/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ summaryId: string }> },
+  { params }: { params: Promise<{ summaryId: string }> }
 ) {
   try {
     const { summaryId } = await params;
@@ -12,7 +12,8 @@ export async function GET(
     // Get the specific summary with related file and template info
     const { data: summaryResults, error } = await supabase
       .from('summarizations')
-      .select(`
+      .select(
+        `
         id,
         content,
         model,
@@ -31,7 +32,8 @@ export async function GET(
           description,
           is_default
         )
-      `)
+      `
+      )
       .eq('id', summaryId)
       .limit(1);
 
@@ -39,7 +41,7 @@ export async function GET(
       return NextResponse.json({ error: 'Summary not found' }, { status: 404 });
     }
 
-    const result = summaryResults[0];
+    const result: any = summaryResults[0];
 
     // Format the response
     const summary = {
@@ -54,14 +56,15 @@ export async function GET(
         fileName: result.audio_files?.file_name,
         originalFileName: result.audio_files?.original_file_name,
       },
-      template: result.template_id && result.summarization_prompts
-        ? {
-          id: result.template_id,
-          name: result.summarization_prompts.name,
-          description: result.summarization_prompts.description,
-          isDefault: result.summarization_prompts.is_default,
-        }
-        : null,
+      template:
+        result.template_id && result.summarization_prompts
+          ? {
+              id: result.template_id,
+              name: result.summarization_prompts.name,
+              description: result.summarization_prompts.description,
+              isDefault: result.summarization_prompts.is_default,
+            }
+          : null,
     };
 
     return NextResponse.json({
@@ -72,14 +75,14 @@ export async function GET(
     console.error('Error fetching summary:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ summaryId: string }> },
+  { params }: { params: Promise<{ summaryId: string }> }
 ) {
   try {
     const { summaryId } = await params;
@@ -114,7 +117,7 @@ export async function DELETE(
     console.error('Error deleting summary:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

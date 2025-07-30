@@ -3,7 +3,7 @@ import { getSupabase } from '@/lib/database/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -26,11 +26,11 @@ export async function GET(
       console.error('Failed to get speaker labels:', error);
       return NextResponse.json(
         { error: 'Failed to get speaker labels' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    const labels = result && result[0]?.labels || {};
+    const labels = (result && result[0]?.labels) || {};
 
     return NextResponse.json({
       fileId,
@@ -41,14 +41,14 @@ export async function GET(
     console.error('Failed to get speaker labels:', error);
     return NextResponse.json(
       { error: 'Failed to get speaker labels' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -64,7 +64,7 @@ export async function PUT(
     if (!labels || typeof labels !== 'object') {
       return NextResponse.json(
         { error: 'Invalid labels format' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -75,7 +75,7 @@ export async function PUT(
           {
             error: `Invalid speaker ID format: ${speakerId}. Expected format: SPEAKER_XX`,
           },
-          { status: 400 },
+          { status: 400 }
         );
       }
     }
@@ -94,7 +94,7 @@ export async function PUT(
       console.error('Failed to check existing speaker labels:', checkError);
       return NextResponse.json(
         { error: 'Failed to check existing labels' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -112,7 +112,7 @@ export async function PUT(
         console.error('Failed to update speaker labels:', updateError);
         return NextResponse.json(
           { error: 'Failed to update speaker labels' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     } else {
@@ -130,7 +130,7 @@ export async function PUT(
         console.error('Failed to insert speaker labels:', insertError);
         return NextResponse.json(
           { error: 'Failed to save speaker labels' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     }
@@ -145,14 +145,14 @@ export async function PUT(
     console.error('Failed to save speaker labels:', error);
     return NextResponse.json(
       { error: 'Failed to save speaker labels' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -174,7 +174,7 @@ export async function DELETE(
       console.error('Failed to delete speaker labels:', error);
       return NextResponse.json(
         { error: 'Failed to reset speaker labels' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -186,7 +186,7 @@ export async function DELETE(
     console.error('Failed to delete speaker labels:', error);
     return NextResponse.json(
       { error: 'Failed to reset speaker labels' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

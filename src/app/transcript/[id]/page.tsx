@@ -128,7 +128,7 @@ export default function TranscriptPage() {
   const [fileInfo, setFileInfo] = useState<FileInfo | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [speakerLabels, setSpeakerLabels] = useState<Record<string, string>>(
-    {},
+    {}
   );
   const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
@@ -139,11 +139,11 @@ export default function TranscriptPage() {
   const [isCreatingSummary, setIsCreatingSummary] = useState(false);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [deletingSummaryId, setDeletingSummaryId] = useState<string | null>(
-    null,
+    null
   );
   const [showTelegramDialog, setShowTelegramDialog] = useState(false);
   const [telegramTarget, setTelegramTarget] = useState<'group' | 'user'>(
-    'group',
+    'group'
   );
   const [telegramUsername, setTelegramUsername] = useState('');
   const [telegramGroupName, setTelegramGroupName] = useState('devdash');
@@ -210,7 +210,7 @@ export default function TranscriptPage() {
         setTemplates(data.prompts || []);
         // Set default template if available
         const defaultTemplate = data.prompts?.find(
-          (t: SummarizationTemplate) => t.isDefault,
+          (t: SummarizationTemplate) => t.isDefault
         );
         if (defaultTemplate) {
           setSelectedTemplate(defaultTemplate.id);
@@ -387,7 +387,7 @@ export default function TranscriptPage() {
     if (
       !fileInfo ||
       !confirm(
-        `Are you sure you want to delete "${fileInfo.originalFileName}"? This will permanently remove the audio file and transcript.`,
+        `Are you sure you want to delete "${fileInfo.originalFileName}"? This will permanently remove the audio file and transcript.`
       )
     ) {
       return;
@@ -455,7 +455,7 @@ export default function TranscriptPage() {
           })),
         },
         null,
-        2,
+        2
       );
     }
 
@@ -602,19 +602,19 @@ export default function TranscriptPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className='flex h-full items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     );
   }
 
   if (!transcript) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <p className="mb-4 text-muted-foreground">Transcript not found</p>
+      <div className='flex h-full items-center justify-center'>
+        <div className='text-center'>
+          <p className='mb-4 text-muted-foreground'>Transcript not found</p>
           <Button onClick={() => router.push('/')}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
+            <ArrowLeft className='mr-2 h-4 w-4' />
             Back to Dashboard
           </Button>
         </div>
@@ -632,36 +632,36 @@ export default function TranscriptPage() {
         'flex flex-col',
         // Mobile: Natural document flow with minimum screen height
         // Desktop: Fixed viewport height with internal scrolling
-        isMobile ? 'min-h-screen' : 'h-full',
+        isMobile ? 'min-h-screen' : 'h-full'
       )}
     >
       {/* Header - Hidden on mobile as it's handled by responsive layout */}
       {!isMobile && (
-        <div className="buzz-header-desktop border-b">
-          <div className="flex items-center justify-between">
+        <div className='buzz-header-desktop border-b'>
+          <div className='flex items-center justify-between'>
             <div>
-              <div className="mb-2 flex items-center gap-3">
+              <div className='mb-2 flex items-center gap-3'>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => router.push('/')}
-                  className="hover:bg-secondary"
+                  className='hover:bg-secondary'
                 >
-                  <ArrowLeft className="h-4 w-4 text-foreground" />
+                  <ArrowLeft className='h-4 w-4 text-foreground' />
                 </Button>
-                <h1 className="text-3xl font-semibold text-foreground">
+                <h1 className='text-3xl font-semibold text-foreground'>
                   Transcript
                 </h1>
               </div>
               {fileInfo && (
-                <p className="text-base text-muted-foreground">
+                <p className='text-base text-muted-foreground'>
                   {fileInfo.originalFileName}
                 </p>
               )}
             </div>
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={handleCopy}>
-                <Copy className="mr-2 h-4 w-4" />
+            <div className='flex gap-2'>
+              <Button variant='outline' onClick={handleCopy}>
+                <Copy className='mr-2 h-4 w-4' />
                 Copy
               </Button>
               <Dialog
@@ -669,8 +669,8 @@ export default function TranscriptPage() {
                 onOpenChange={setShowTelegramDialog}
               >
                 <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <Send className="mr-2 h-4 w-4" />
+                  <Button variant='outline'>
+                    <Send className='mr-2 h-4 w-4' />
                     Telegram
                   </Button>
                 </DialogTrigger>
@@ -681,8 +681,8 @@ export default function TranscriptPage() {
                       Choose where to send this transcript
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="mt-4 space-y-4">
-                    <div className="space-y-2">
+                  <div className='mt-4 space-y-4'>
+                    <div className='space-y-2'>
                       <Label>Send to</Label>
                       <Select
                         value={telegramTarget}
@@ -694,65 +694,65 @@ export default function TranscriptPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="group">Group</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value='group'>Group</SelectItem>
+                          <SelectItem value='user'>User</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {telegramTarget === 'user' ? (
-                      <div className="space-y-2">
-                        <Label htmlFor="telegram-username">Username</Label>
+                      <div className='space-y-2'>
+                        <Label htmlFor='telegram-username'>Username</Label>
                         <Select
                           value={telegramUsername}
                           onValueChange={setTelegramUsername}
                         >
-                          <SelectTrigger id="telegram-username">
-                            <SelectValue placeholder="Select a user" />
+                          <SelectTrigger id='telegram-username'>
+                            <SelectValue placeholder='Select a user' />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="philip">
+                            <SelectItem value='philip'>
                               Philip (ddphilip)
                             </SelectItem>
-                            <SelectItem value="oskar">
+                            <SelectItem value='oskar'>
                               Oskar (ddoskar)
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <Label htmlFor="telegram-group">Group</Label>
+                      <div className='space-y-2'>
+                        <Label htmlFor='telegram-group'>Group</Label>
                         <Select
                           value={telegramGroupName}
                           onValueChange={setTelegramGroupName}
                         >
-                          <SelectTrigger id="telegram-group">
+                          <SelectTrigger id='telegram-group'>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="devdash">DevDash</SelectItem>
+                            <SelectItem value='devdash'>DevDash</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     )}
 
-                    <div className="flex items-center space-x-2">
+                    <div className='flex items-center space-x-2'>
                       <Checkbox
-                        id="include-timestamps"
+                        id='include-timestamps'
                         checked={includeTimestamps}
                         onCheckedChange={checked =>
                           setIncludeTimestamps(checked as boolean)
                         }
                       />
-                      <Label htmlFor="include-timestamps" className="text-sm">
+                      <Label htmlFor='include-timestamps' className='text-sm'>
                         Include timestamps
                       </Label>
                     </div>
 
-                    <div className="flex justify-end gap-2">
+                    <div className='flex justify-end gap-2'>
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={() => setShowTelegramDialog(false)}
                         disabled={isSendingTelegram}
                       >
@@ -767,12 +767,12 @@ export default function TranscriptPage() {
                       >
                         {isSendingTelegram ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             Sending...
                           </>
                         ) : (
                           <>
-                            <Send className="mr-2 h-4 w-4" />
+                            <Send className='mr-2 h-4 w-4' />
                             Send
                           </>
                         )}
@@ -782,15 +782,15 @@ export default function TranscriptPage() {
                 </DialogContent>
               </Dialog>
               <Button
-                variant="outline"
+                variant='outline'
                 onClick={handleDeleteFile}
                 disabled={isDeleting}
-                className="text-red-600 hover:text-red-700"
+                className='text-red-600 hover:text-red-700'
               >
                 {isDeleting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 ) : (
-                  <Trash2 className="mr-2 h-4 w-4" />
+                  <Trash2 className='mr-2 h-4 w-4' />
                 )}
                 Delete
               </Button>
@@ -805,7 +805,7 @@ export default function TranscriptPage() {
           'flex-1',
           // Mobile: No overflow constraints, natural document flow
           // Desktop: Overflow hidden for internal scrolling
-          isMobile ? '' : 'overflow-hidden',
+          isMobile ? '' : 'overflow-hidden'
         )}
       >
         <div
@@ -813,54 +813,54 @@ export default function TranscriptPage() {
             'pwa-scrollable',
             // Mobile: Natural document flow with safe area padding
             // Desktop: Fixed height with internal scrolling
-            isMobile ? 'space-y-6 px-4 py-6' : 'h-full overflow-y-auto p-6',
+            isMobile ? 'space-y-6 px-4 py-6' : 'h-full overflow-y-auto p-6'
           )}
         >
           {isMobile ? (
             // Mobile Layout - Details first, then transcript
-            <div className="space-y-6">
+            <div className='space-y-6'>
               {/* Mobile Header */}
-              <div className="mb-2 flex items-center gap-3">
+              <div className='mb-2 flex items-center gap-3'>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={() => router.push('/')}
-                  className="hover:bg-secondary"
+                  className='hover:bg-secondary'
                 >
-                  <ArrowLeft className="h-4 w-4 text-foreground" />
+                  <ArrowLeft className='h-4 w-4 text-foreground' />
                 </Button>
                 <div>
-                  <h1 className="text-xl font-semibold text-foreground">
+                  <h1 className='text-xl font-semibold text-foreground'>
                     Transcript
                   </h1>
                   {fileInfo && (
-                    <p className="text-sm text-muted-foreground">
+                    <p className='text-sm text-muted-foreground'>
                       {fileInfo.originalFileName}
                     </p>
                   )}
                 </div>
               </div>
               {/* Recording Details - Compact mobile version */}
-              <Card className="standard-card">
-                <CardContent className="px-4 py-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">
+              <Card className='standard-card'>
+                <CardContent className='px-4 py-3'>
+                  <div className='flex items-center justify-between'>
+                    <div className='flex items-center gap-3'>
+                      <Clock className='h-4 w-4 text-muted-foreground' />
+                      <span className='text-sm font-medium'>
                         {formatDuration(fileInfo?.duration)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className='flex items-center gap-3'>
                       {hasSpeakers && (
                         <>
-                          <Users className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm font-medium">
+                          <Users className='h-4 w-4 text-muted-foreground' />
+                          <span className='text-sm font-medium'>
                             {uniqueSpeakers.length} speakers
                           </span>
                         </>
                       )}
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className='text-xs text-muted-foreground'>
                       {transcript.segments.length} segments
                     </div>
                   </div>
@@ -868,11 +868,11 @@ export default function TranscriptPage() {
               </Card>
 
               {/* Summaries - Compact Mobile Version */}
-              <Card className="standard-card">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Sparkles className="h-4 w-4" />
+              <Card className='standard-card'>
+                <CardHeader className='pb-2'>
+                  <div className='flex items-center justify-between'>
+                    <CardTitle className='flex items-center gap-2 text-sm'>
+                      <Sparkles className='h-4 w-4' />
                       Summaries ({summaries.length})
                     </CardTitle>
                     <Dialog
@@ -880,39 +880,39 @@ export default function TranscriptPage() {
                       onOpenChange={setShowCreateDialog}
                     >
                       <DialogTrigger asChild>
-                        <Button size="sm" variant="outline">
-                          <Plus className="mr-1 h-3 w-3" />
+                        <Button size='sm' variant='outline'>
+                          <Plus className='mr-1 h-3 w-3' />
                           New
                         </Button>
                       </DialogTrigger>
                     </Dialog>
                   </div>
                 </CardHeader>
-                <CardContent className="py-0 pb-3">
+                <CardContent className='py-0 pb-3'>
                   {summaries.length === 0 ? (
-                    <div className="py-3 text-center">
-                      <p className="text-xs text-muted-foreground">
+                    <div className='py-3 text-center'>
+                      <p className='text-xs text-muted-foreground'>
                         Create a summary to extract key insights
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-2">
+                    <div className='space-y-2'>
                       {summaries.map(summary => (
                         <div
                           key={summary.id}
-                          className="cursor-pointer rounded-md border p-2 transition-colors hover:bg-muted/30"
+                          className='cursor-pointer rounded-md border p-2 transition-colors hover:bg-muted/30'
                           onClick={() => handleSummaryClick(summary.id)}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="mb-1 flex items-center gap-2">
-                                <span className="text-xs font-medium text-muted-foreground">
+                          <div className='flex items-center justify-between'>
+                            <div className='min-w-0 flex-1'>
+                              <div className='mb-1 flex items-center gap-2'>
+                                <span className='text-xs font-medium text-muted-foreground'>
                                   {(
                                     summary.template?.name || 'Custom'
                                   ).substring(0, 25)}
                                 </span>
                               </div>
-                              <p className="line-clamp-1 text-xs text-muted-foreground">
+                              <p className='line-clamp-1 text-xs text-muted-foreground'>
                                 {summary.content
                                   .replace(/^#.*$/gm, '')
                                   .trim()
@@ -920,19 +920,19 @@ export default function TranscriptPage() {
                                 ...
                               </p>
                             </div>
-                            <div className="ml-2 flex gap-1">
+                            <div className='ml-2 flex gap-1'>
                               <Dialog>
                                 <DialogTrigger asChild>
                                   <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6"
+                                    size='icon'
+                                    variant='ghost'
+                                    className='h-6 w-6'
                                     onClick={e => e.stopPropagation()}
                                   >
-                                    <FileText className="h-3 w-3" />
+                                    <FileText className='h-3 w-3' />
                                   </Button>
                                 </DialogTrigger>
-                                <DialogContent className="max-h-[80vh] max-w-[95vw] overflow-y-auto">
+                                <DialogContent className='max-h-[80vh] max-w-[95vw] overflow-y-auto'>
                                   <DialogHeader>
                                     <DialogTitle>
                                       {summary.template?.name || 'Summary'}
@@ -941,15 +941,15 @@ export default function TranscriptPage() {
                                       Created {formatDate(summary.createdAt)}
                                     </DialogDescription>
                                   </DialogHeader>
-                                  <div className="mt-4 whitespace-pre-wrap text-sm">
+                                  <div className='mt-4 whitespace-pre-wrap text-sm'>
                                     {summary.content}
                                   </div>
                                 </DialogContent>
                               </Dialog>
                               <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
+                                size='icon'
+                                variant='ghost'
+                                className='h-6 w-6'
                                 onClick={e => {
                                   e.stopPropagation();
                                   handleSummaryTelegramShare(summary);
@@ -957,15 +957,15 @@ export default function TranscriptPage() {
                                 disabled={sharingSummaryId === summary.id}
                               >
                                 {sharingSummaryId === summary.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <Loader2 className='h-3 w-3 animate-spin' />
                                 ) : (
-                                  <Send className="h-3 w-3" />
+                                  <Send className='h-3 w-3' />
                                 )}
                               </Button>
                               <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-6 w-6"
+                                size='icon'
+                                variant='ghost'
+                                className='h-6 w-6'
                                 onClick={e => {
                                   e.stopPropagation();
                                   handleDeleteSummary(summary.id);
@@ -973,9 +973,9 @@ export default function TranscriptPage() {
                                 disabled={deletingSummaryId === summary.id}
                               >
                                 {deletingSummaryId === summary.id ? (
-                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                  <Loader2 className='h-3 w-3 animate-spin' />
                                 ) : (
-                                  <Trash2 className="h-3 w-3" />
+                                  <Trash2 className='h-3 w-3' />
                                 )}
                               </Button>
                             </div>
@@ -992,22 +992,22 @@ export default function TranscriptPage() {
                 open={showCreateDialog}
                 onOpenChange={setShowCreateDialog}
               >
-                <DialogContent className="max-w-[95vw]">
+                <DialogContent className='max-w-[95vw]'>
                   <DialogHeader>
                     <DialogTitle>Create Summary</DialogTitle>
                     <DialogDescription>
                       Select a template to generate a summary
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="mt-4 space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="template-mobile">Template</Label>
+                  <div className='mt-4 space-y-4'>
+                    <div className='space-y-2'>
+                      <Label htmlFor='template-mobile'>Template</Label>
                       <Select
                         value={selectedTemplate}
                         onValueChange={setSelectedTemplate}
                       >
-                        <SelectTrigger id="template-mobile">
-                          <SelectValue placeholder="Select a template" />
+                        <SelectTrigger id='template-mobile'>
+                          <SelectValue placeholder='Select a template' />
                         </SelectTrigger>
                         <SelectContent>
                           {templates.map(template => (
@@ -1019,9 +1019,9 @@ export default function TranscriptPage() {
                       </Select>
                     </div>
                     {selectedTemplate && (
-                      <div className="space-y-2">
+                      <div className='space-y-2'>
                         <Label>Description</Label>
-                        <p className="text-sm text-muted-foreground">
+                        <p className='text-sm text-muted-foreground'>
                           {
                             templates.find(t => t.id === selectedTemplate)
                               ?.description
@@ -1029,9 +1029,9 @@ export default function TranscriptPage() {
                         </p>
                       </div>
                     )}
-                    <div className="flex justify-end gap-2">
+                    <div className='flex justify-end gap-2'>
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={() => setShowCreateDialog(false)}
                         disabled={isCreatingSummary}
                       >
@@ -1043,7 +1043,7 @@ export default function TranscriptPage() {
                       >
                         {isCreatingSummary ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             Generating...
                           </>
                         ) : (
@@ -1060,15 +1060,15 @@ export default function TranscriptPage() {
                 open={showTelegramDialog}
                 onOpenChange={setShowTelegramDialog}
               >
-                <DialogContent className="max-w-[95vw]">
+                <DialogContent className='max-w-[95vw]'>
                   <DialogHeader>
                     <DialogTitle>Send to Telegram</DialogTitle>
                     <DialogDescription>
                       Choose where to send this transcript
                     </DialogDescription>
                   </DialogHeader>
-                  <div className="mt-4 space-y-4">
-                    <div className="space-y-2">
+                  <div className='mt-4 space-y-4'>
+                    <div className='space-y-2'>
                       <Label>Send to</Label>
                       <Select
                         value={telegramTarget}
@@ -1080,70 +1080,70 @@ export default function TranscriptPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="group">Group</SelectItem>
-                          <SelectItem value="user">User</SelectItem>
+                          <SelectItem value='group'>Group</SelectItem>
+                          <SelectItem value='user'>User</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
 
                     {telegramTarget === 'user' ? (
-                      <div className="space-y-2">
-                        <Label htmlFor="telegram-username-mobile">
+                      <div className='space-y-2'>
+                        <Label htmlFor='telegram-username-mobile'>
                           Username
                         </Label>
                         <Select
                           value={telegramUsername}
                           onValueChange={setTelegramUsername}
                         >
-                          <SelectTrigger id="telegram-username-mobile">
-                            <SelectValue placeholder="Select a user" />
+                          <SelectTrigger id='telegram-username-mobile'>
+                            <SelectValue placeholder='Select a user' />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="philip">
+                            <SelectItem value='philip'>
                               Philip (ddphilip)
                             </SelectItem>
-                            <SelectItem value="oskar">
+                            <SelectItem value='oskar'>
                               Oskar (ddoskar)
                             </SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <Label htmlFor="telegram-group-mobile">Group</Label>
+                      <div className='space-y-2'>
+                        <Label htmlFor='telegram-group-mobile'>Group</Label>
                         <Select
                           value={telegramGroupName}
                           onValueChange={setTelegramGroupName}
                         >
-                          <SelectTrigger id="telegram-group-mobile">
+                          <SelectTrigger id='telegram-group-mobile'>
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="devdash">DevDash</SelectItem>
+                            <SelectItem value='devdash'>DevDash</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
                     )}
 
-                    <div className="flex items-center space-x-2">
+                    <div className='flex items-center space-x-2'>
                       <Checkbox
-                        id="include-timestamps-mobile"
+                        id='include-timestamps-mobile'
                         checked={includeTimestamps}
                         onCheckedChange={checked =>
                           setIncludeTimestamps(checked as boolean)
                         }
                       />
                       <Label
-                        htmlFor="include-timestamps-mobile"
-                        className="text-sm"
+                        htmlFor='include-timestamps-mobile'
+                        className='text-sm'
                       >
                         Include timestamps
                       </Label>
                     </div>
 
-                    <div className="flex justify-end gap-2">
+                    <div className='flex justify-end gap-2'>
                       <Button
-                        variant="outline"
+                        variant='outline'
                         onClick={() => setShowTelegramDialog(false)}
                         disabled={isSendingTelegram}
                       >
@@ -1158,12 +1158,12 @@ export default function TranscriptPage() {
                       >
                         {isSendingTelegram ? (
                           <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                             Sending...
                           </>
                         ) : (
                           <>
-                            <Send className="mr-2 h-4 w-4" />
+                            <Send className='mr-2 h-4 w-4' />
                             Send
                           </>
                         )}
@@ -1174,23 +1174,23 @@ export default function TranscriptPage() {
               </Dialog>
 
               {/* Transcript Section */}
-              <Card className="standard-card">
+              <Card className='standard-card'>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className='flex items-center justify-between'>
                     <div>
                       <CardTitle>Transcript</CardTitle>
                       <CardDescription>
                         {fileInfo?.originalFileName}
                       </CardDescription>
                     </div>
-                    <div className="flex gap-2">
+                    <div className='flex gap-2'>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        className="touch-target-44"
+                        variant='ghost'
+                        size='sm'
+                        className='touch-target-44'
                         onClick={handleCopy}
                       >
-                        <Copy className="h-4 w-4" />
+                        <Copy className='h-4 w-4' />
                       </Button>
                       <Dialog
                         open={showTelegramDialog}
@@ -1198,11 +1198,11 @@ export default function TranscriptPage() {
                       >
                         <DialogTrigger asChild>
                           <Button
-                            variant="ghost"
-                            size="sm"
-                            className="touch-target-44"
+                            variant='ghost'
+                            size='sm'
+                            className='touch-target-44'
                           >
-                            <Send className="h-4 w-4" />
+                            <Send className='h-4 w-4' />
                           </Button>
                         </DialogTrigger>
                       </Dialog>
@@ -1211,19 +1211,19 @@ export default function TranscriptPage() {
                 </CardHeader>
                 <CardContent>
                   {/* Transcript segments with Design Buzz styling */}
-                  <div className="space-y-4">
+                  <div className='space-y-4'>
                     {transcript.segments.map((segment, index) => (
                       <div
                         key={index}
-                        className="group rounded-lg p-3 transition-colors duration-200 active:bg-secondary/20"
+                        className='group rounded-lg p-3 transition-colors duration-200 active:bg-secondary/20'
                       >
-                        <div className="flex items-start gap-3">
-                          <div className="w-12 flex-shrink-0 text-right">
-                            <span className="rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+                        <div className='flex items-start gap-3'>
+                          <div className='w-12 flex-shrink-0 text-right'>
+                            <span className='rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground'>
                               {formatTime(segment.start)}
                             </span>
                           </div>
-                          <div className="min-w-0 flex-1">
+                          <div className='min-w-0 flex-1'>
                             {segment.speaker && (
                               <div
                                 className={`mb-2 flex items-center gap-2 text-sm font-semibold ${getSpeakerColor(segment.speaker)}`}
@@ -1234,7 +1234,7 @@ export default function TranscriptPage() {
                                 {segment.displayName || segment.speaker}
                               </div>
                             )}
-                            <p className="text-sm leading-relaxed text-foreground">
+                            <p className='text-sm leading-relaxed text-foreground'>
                               {segment.text}
                             </p>
                           </div>
@@ -1247,87 +1247,87 @@ export default function TranscriptPage() {
             </div>
           ) : (
             // Desktop Layout - Enhanced 3-column grid for better transcript visibility
-            <div className="grid h-full grid-cols-1 gap-6 lg:grid-cols-3">
+            <div className='grid h-full grid-cols-1 gap-6 lg:grid-cols-3'>
               {/* Sidebar */}
-              <div className="space-y-4 lg:col-span-1">
+              <div className='space-y-4 lg:col-span-1'>
                 {/* Recording Information */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <FileText className="h-4 w-4" />
+                    <CardTitle className='flex items-center gap-2 text-sm'>
+                      <FileText className='h-4 w-4' />
                       Recording Information
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3 text-sm">
-                    <div className="space-y-2">
+                  <CardContent className='space-y-3 text-sm'>
+                    <div className='space-y-2'>
                       <div>
-                        <span className="font-medium text-muted-foreground">
+                        <span className='font-medium text-muted-foreground'>
                           File Name:
                         </span>
-                        <div className="mt-1 break-all text-xs text-foreground">
+                        <div className='mt-1 break-all text-xs text-foreground'>
                           {fileInfo?.originalFileName}
                         </div>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2 border-t pt-2">
+                    <div className='grid grid-cols-1 gap-2 border-t pt-2'>
                       <div>
-                        <span className="text-muted-foreground">Duration:</span>
-                        <span className="ml-2 font-medium">
+                        <span className='text-muted-foreground'>Duration:</span>
+                        <span className='ml-2 font-medium'>
                           {formatDuration(fileInfo?.duration)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">
+                        <span className='text-muted-foreground'>
                           File Size:
                         </span>
-                        <span className="ml-2 font-medium">
+                        <span className='ml-2 font-medium'>
                           {formatFileSize(fileInfo?.size)}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Uploaded:</span>
-                        <span className="ml-2 font-medium">
+                        <span className='text-muted-foreground'>Uploaded:</span>
+                        <span className='ml-2 font-medium'>
                           {formatDate(fileInfo?.uploadedAt)}
                         </span>
                       </div>
                       {fileInfo?.transcribedAt && (
                         <div>
-                          <span className="text-muted-foreground">
+                          <span className='text-muted-foreground'>
                             Transcribed:
                           </span>
-                          <span className="ml-2 font-medium">
+                          <span className='ml-2 font-medium'>
                             {formatDate(fileInfo.transcribedAt)}
                           </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 gap-2 border-t pt-2">
+                    <div className='grid grid-cols-1 gap-2 border-t pt-2'>
                       <div>
-                        <span className="text-muted-foreground">Language:</span>
-                        <span className="ml-2 font-medium">
+                        <span className='text-muted-foreground'>Language:</span>
+                        <span className='ml-2 font-medium'>
                           {fileInfo?.language || 'Swedish'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Model:</span>
-                        <span className="ml-2 font-medium">
+                        <span className='text-muted-foreground'>Model:</span>
+                        <span className='ml-2 font-medium'>
                           {fileInfo?.modelSize || 'large-v3'}
                         </span>
                       </div>
                       <div>
-                        <span className="text-muted-foreground">Segments:</span>
-                        <span className="ml-2 font-medium">
+                        <span className='text-muted-foreground'>Segments:</span>
+                        <span className='ml-2 font-medium'>
                           {transcript.segments.length}
                         </span>
                       </div>
                       {hasSpeakers && (
                         <div>
-                          <span className="text-muted-foreground">
+                          <span className='text-muted-foreground'>
                             Speakers:
                           </span>
-                          <span className="ml-2 font-medium">
+                          <span className='ml-2 font-medium'>
                             {uniqueSpeakers.length}
                           </span>
                         </div>
@@ -1340,52 +1340,52 @@ export default function TranscriptPage() {
                 {hasSpeakers && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="flex items-center gap-2 text-sm">
-                        <Users className="h-4 w-4" />
+                      <CardTitle className='flex items-center gap-2 text-sm'>
+                        <Users className='h-4 w-4' />
                         Speakers ({uniqueSpeakers.length})
                       </CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-2">
+                    <CardContent className='space-y-2'>
                       {uniqueSpeakers.map(speaker => (
                         <div
                           key={speaker.id}
-                          className="flex items-center gap-2"
+                          className='flex items-center gap-2'
                         >
                           {editingSpeaker === speaker.id ? (
-                            <div className="flex flex-1 items-center gap-1">
+                            <div className='flex flex-1 items-center gap-1'>
                               <Input
                                 value={editValue}
                                 onChange={e => setEditValue(e.target.value)}
-                                className="h-8 text-sm"
+                                className='h-8 text-sm'
                                 onKeyDown={e => {
                                   if (e.key === 'Enter') handleSpeakerSave();
                                   if (e.key === 'Escape') handleSpeakerCancel();
                                 }}
                               />
-                              <Button size="sm" onClick={handleSpeakerSave}>
-                                <Save className="h-3 w-3" />
+                              <Button size='sm' onClick={handleSpeakerSave}>
+                                <Save className='h-3 w-3' />
                               </Button>
                               <Button
-                                size="sm"
-                                variant="ghost"
+                                size='sm'
+                                variant='ghost'
                                 onClick={handleSpeakerCancel}
                               >
-                                <X className="h-3 w-3" />
+                                <X className='h-3 w-3' />
                               </Button>
                             </div>
                           ) : (
-                            <div className="flex flex-1 items-center justify-between">
+                            <div className='flex flex-1 items-center justify-between'>
                               <span
                                 className={`text-sm font-medium ${getSpeakerColor(speaker.id)}`}
                               >
                                 {speaker.displayName}
                               </span>
                               <Button
-                                size="sm"
-                                variant="ghost"
+                                size='sm'
+                                variant='ghost'
                                 onClick={() => handleSpeakerEdit(speaker.id)}
                               >
-                                <Edit2 className="h-3 w-3" />
+                                <Edit2 className='h-3 w-3' />
                               </Button>
                             </div>
                           )}
@@ -1398,60 +1398,60 @@ export default function TranscriptPage() {
                 {/* Summaries */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-sm">
-                      <Sparkles className="h-4 w-4" />
+                    <CardTitle className='flex items-center gap-2 text-sm'>
+                      <Sparkles className='h-4 w-4' />
                       Summaries ({summaries.length})
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-3">
+                  <CardContent className='space-y-3'>
                     {summaries.length === 0 ? (
-                      <div className="py-6 text-center">
-                        <Sparkles className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
-                        <p className="mb-3 text-sm text-muted-foreground">
+                      <div className='py-6 text-center'>
+                        <Sparkles className='mx-auto mb-2 h-8 w-8 text-muted-foreground' />
+                        <p className='mb-3 text-sm text-muted-foreground'>
                           No summaries yet
                         </p>
-                        <p className="mb-4 text-xs text-muted-foreground">
+                        <p className='mb-4 text-xs text-muted-foreground'>
                           Create a summary to extract key insights from this
                           transcript
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-3">
+                      <div className='space-y-3'>
                         {summaries.map(summary => (
                           <div
                             key={summary.id}
-                            className="cursor-pointer space-y-2 rounded-lg border p-3 transition-colors hover:bg-muted/30"
+                            className='cursor-pointer space-y-2 rounded-lg border p-3 transition-colors hover:bg-muted/30'
                             onClick={() => handleSummaryClick(summary.id)}
                           >
-                            <div className="flex items-start justify-between">
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-1 flex items-center gap-2">
+                            <div className='flex items-start justify-between'>
+                              <div className='min-w-0 flex-1'>
+                                <div className='mb-1 flex items-center gap-2'>
                                   <Badge
-                                    variant="secondary"
-                                    className="text-xs"
+                                    variant='secondary'
+                                    className='text-xs'
                                   >
                                     {summary.template?.name || 'Custom'}
                                   </Badge>
-                                  <span className="text-xs text-muted-foreground">
+                                  <span className='text-xs text-muted-foreground'>
                                     {formatDate(summary.createdAt)}
                                   </span>
                                 </div>
-                                <p className="line-clamp-3 text-sm text-muted-foreground">
+                                <p className='line-clamp-3 text-sm text-muted-foreground'>
                                   {summary.content}
                                 </p>
                               </div>
-                              <div className="ml-2 flex items-center gap-1">
+                              <div className='ml-2 flex items-center gap-1'>
                                 <Dialog>
                                   <DialogTrigger asChild>
                                     <Button
-                                      size="sm"
-                                      variant="ghost"
+                                      size='sm'
+                                      variant='ghost'
                                       onClick={e => e.stopPropagation()}
                                     >
-                                      <FileText className="h-3 w-3" />
+                                      <FileText className='h-3 w-3' />
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="max-h-[80vh] max-w-2xl overflow-y-auto">
+                                  <DialogContent className='max-h-[80vh] max-w-2xl overflow-y-auto'>
                                     <DialogHeader>
                                       <DialogTitle>
                                         {summary.template?.name || 'Summary'}
@@ -1461,14 +1461,14 @@ export default function TranscriptPage() {
                                           'Generated summary'}
                                       </DialogDescription>
                                     </DialogHeader>
-                                    <div className="mt-4 whitespace-pre-wrap text-sm">
+                                    <div className='mt-4 whitespace-pre-wrap text-sm'>
                                       {summary.content}
                                     </div>
                                   </DialogContent>
                                 </Dialog>
                                 <Button
-                                  size="sm"
-                                  variant="ghost"
+                                  size='sm'
+                                  variant='ghost'
                                   onClick={e => {
                                     e.stopPropagation();
                                     handleSummaryTelegramShare(summary);
@@ -1476,14 +1476,14 @@ export default function TranscriptPage() {
                                   disabled={sharingSummaryId === summary.id}
                                 >
                                   {sharingSummaryId === summary.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    <Loader2 className='h-3 w-3 animate-spin' />
                                   ) : (
-                                    <Send className="h-3 w-3" />
+                                    <Send className='h-3 w-3' />
                                   )}
                                 </Button>
                                 <Button
-                                  size="sm"
-                                  variant="ghost"
+                                  size='sm'
+                                  variant='ghost'
                                   onClick={e => {
                                     e.stopPropagation();
                                     handleDeleteSummary(summary.id);
@@ -1491,9 +1491,9 @@ export default function TranscriptPage() {
                                   disabled={deletingSummaryId === summary.id}
                                 >
                                   {deletingSummaryId === summary.id ? (
-                                    <Loader2 className="h-3 w-3 animate-spin" />
+                                    <Loader2 className='h-3 w-3 animate-spin' />
                                   ) : (
-                                    <Trash2 className="h-3 w-3" />
+                                    <Trash2 className='h-3 w-3' />
                                   )}
                                 </Button>
                               </div>
@@ -1510,12 +1510,12 @@ export default function TranscriptPage() {
                     >
                       <DialogTrigger asChild>
                         <Button
-                          variant="outline"
-                          size="sm"
-                          className="mt-3 w-full"
+                          variant='outline'
+                          size='sm'
+                          className='mt-3 w-full'
                           disabled={isCreatingSummary}
                         >
-                          <Plus className="mr-2 h-4 w-4" />
+                          <Plus className='mr-2 h-4 w-4' />
                           Create Summary
                         </Button>
                       </DialogTrigger>
@@ -1527,15 +1527,15 @@ export default function TranscriptPage() {
                             transcript
                           </DialogDescription>
                         </DialogHeader>
-                        <div className="mt-4 space-y-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="template">Template</Label>
+                        <div className='mt-4 space-y-4'>
+                          <div className='space-y-2'>
+                            <Label htmlFor='template'>Template</Label>
                             <Select
                               value={selectedTemplate}
                               onValueChange={setSelectedTemplate}
                             >
-                              <SelectTrigger id="template">
-                                <SelectValue placeholder="Select a template" />
+                              <SelectTrigger id='template'>
+                                <SelectValue placeholder='Select a template' />
                               </SelectTrigger>
                               <SelectContent>
                                 {templates.map(template => (
@@ -1550,9 +1550,9 @@ export default function TranscriptPage() {
                             </Select>
                           </div>
                           {selectedTemplate && (
-                            <div className="space-y-2">
+                            <div className='space-y-2'>
                               <Label>Template Description</Label>
-                              <p className="text-sm text-muted-foreground">
+                              <p className='text-sm text-muted-foreground'>
                                 {
                                   templates.find(t => t.id === selectedTemplate)
                                     ?.description
@@ -1560,9 +1560,9 @@ export default function TranscriptPage() {
                               </p>
                             </div>
                           )}
-                          <div className="flex justify-end gap-2">
+                          <div className='flex justify-end gap-2'>
                             <Button
-                              variant="outline"
+                              variant='outline'
                               onClick={() => setShowCreateDialog(false)}
                               disabled={isCreatingSummary}
                             >
@@ -1574,7 +1574,7 @@ export default function TranscriptPage() {
                             >
                               {isCreatingSummary ? (
                                 <>
-                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                                   Generating...
                                 </>
                               ) : (
@@ -1590,34 +1590,34 @@ export default function TranscriptPage() {
               </div>
 
               {/* Transcript */}
-              <div className="lg:col-span-2">
-                <Card className="buzz-shadow-sm h-full">
-                  <CardHeader className="buzz-content-spacing border-b">
-                    <CardTitle className="flex items-center gap-2 text-foreground">
-                      <FileText className="h-5 w-5" />
+              <div className='lg:col-span-2'>
+                <Card className='buzz-shadow-sm h-full'>
+                  <CardHeader className='buzz-content-spacing border-b'>
+                    <CardTitle className='flex items-center gap-2 text-foreground'>
+                      <FileText className='h-5 w-5' />
                       Transcript Content
                     </CardTitle>
-                    <CardDescription className="text-muted-foreground">
+                    <CardDescription className='text-muted-foreground'>
                       {hasSpeakers
                         ? `${uniqueSpeakers.length} speakers detected`
                         : 'No speaker information available'}
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-0">
-                    <ScrollArea className="h-[calc(100vh-300px)]">
-                      <div className="space-y-4 p-6">
+                  <CardContent className='p-0'>
+                    <ScrollArea className='h-[calc(100vh-300px)]'>
+                      <div className='space-y-4 p-6'>
                         {transcript.segments.map((segment, index) => (
                           <div
                             key={index}
-                            className="group rounded-lg p-3 transition-colors duration-200 hover:bg-secondary/30"
+                            className='group rounded-lg p-3 transition-colors duration-200 hover:bg-secondary/30'
                           >
-                            <div className="flex items-start gap-4">
-                              <div className="w-16 flex-shrink-0 text-right">
-                                <span className="rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground">
+                            <div className='flex items-start gap-4'>
+                              <div className='w-16 flex-shrink-0 text-right'>
+                                <span className='rounded bg-muted px-2 py-1 font-mono text-xs text-muted-foreground'>
                                   {formatTime(segment.start)}
                                 </span>
                               </div>
-                              <div className="min-w-0 flex-1">
+                              <div className='min-w-0 flex-1'>
                                 {segment.speaker && (
                                   <div
                                     className={`mb-2 flex items-center gap-2 text-sm font-semibold ${getSpeakerColor(segment.speaker)}`}
@@ -1628,7 +1628,7 @@ export default function TranscriptPage() {
                                     {segment.displayName || segment.speaker}
                                   </div>
                                 )}
-                                <p className="text-sm leading-relaxed text-foreground">
+                                <p className='text-sm leading-relaxed text-foreground'>
                                   {segment.text}
                                 </p>
                               </div>

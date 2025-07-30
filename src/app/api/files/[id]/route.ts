@@ -3,17 +3,20 @@ import { RepositoryFactory } from '@/lib/database/repositories';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
     const fileId = parseInt(id);
 
     if (isNaN(fileId)) {
-      return NextResponse.json({
-        success: false,
-        error: { message: 'Invalid file ID', code: 'INVALID_ID' }
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: 'Invalid file ID', code: 'INVALID_ID' },
+        },
+        { status: 400 }
+      );
     }
 
     // Get the file from the database using real repository
@@ -21,15 +24,19 @@ export async function GET(
     const audioFile = await audioRepository.findById(fileId);
 
     if (!audioFile) {
-      return NextResponse.json({
-        success: false,
-        error: { message: 'File not found', code: 'NOT_FOUND' }
-      }, { status: 404 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: { message: 'File not found', code: 'NOT_FOUND' },
+        },
+        { status: 404 }
+      );
     }
 
     // Get transcription information if available
     const transcriptRepository = RepositoryFactory.transcriptionRepository;
-    const latestTranscription = await transcriptRepository.findLatestByFileId(fileId);
+    const latestTranscription =
+      await transcriptRepository.findLatestByFileId(fileId);
 
     // Return the actual file data with proper field mapping
     return NextResponse.json({
@@ -41,25 +48,36 @@ export async function GET(
         fileSize: audioFile.file_size,
         mimeType: audioFile.original_file_type,
         duration: audioFile.duration,
-        uploadedAt: audioFile.created_at ? new Date(audioFile.created_at).toISOString() : null,
-        updatedAt: audioFile.updated_at ? new Date(audioFile.updated_at).toISOString() : null,
+        uploadedAt: audioFile.uploaded_at
+          ? new Date(audioFile.uploaded_at).toISOString()
+          : null,
+        updatedAt: audioFile.updated_at
+          ? new Date(audioFile.updated_at).toISOString()
+          : null,
         transcriptionStatus: latestTranscription?.status || 'pending',
-        transcribedAt: latestTranscription?.completed_at ? new Date(latestTranscription.completed_at).toISOString() : null,
+        transcribedAt: latestTranscription?.completed_at
+          ? new Date(latestTranscription.completed_at).toISOString()
+          : null,
         language: latestTranscription?.language || 'auto',
         modelSize: latestTranscription?.model_size || 'large-v3',
         // Include location data if present
         latitude: audioFile.latitude,
         longitude: audioFile.longitude,
         locationAccuracy: audioFile.location_accuracy,
-        locationTimestamp: audioFile.location_timestamp ? new Date(audioFile.location_timestamp).toISOString() : null,
+        locationTimestamp: audioFile.location_timestamp
+          ? new Date(audioFile.location_timestamp).toISOString()
+          : null,
         locationProvider: audioFile.location_provider,
-      }
+      },
     });
   } catch (error) {
     console.error('Error in GET /api/files/[id]:', error);
-    return NextResponse.json({
-      success: false,
-      error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: { message: 'Internal error', code: 'INTERNAL_ERROR' },
+      },
+      { status: 500 }
+    );
   }
 }

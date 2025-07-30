@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server';
 import { jwtVerify, SignJWT } from 'jose';
 
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'noti-secret-key-change-in-production',
+  process.env.JWT_SECRET || 'noti-secret-key-change-in-production'
 );
 
 export async function createSession(): Promise<string> {
@@ -18,7 +18,7 @@ export async function createSession(): Promise<string> {
 }
 
 export async function validateSession(
-  token: string | null | undefined,
+  token: string | null | undefined
 ): Promise<boolean> {
   if (!token) return false;
 
@@ -37,7 +37,7 @@ export async function deleteSession(token: string): Promise<void> {
 }
 
 export async function getSessionFromRequest(
-  request: NextRequest,
+  request: NextRequest
 ): Promise<string | null> {
   // Check cookie first - use the same cookie name as middleware
   const cookieStore = await cookies();

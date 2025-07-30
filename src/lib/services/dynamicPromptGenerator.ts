@@ -25,9 +25,9 @@ export class DynamicPromptGenerator {
 
   async generatePrompt(config: DynamicPromptConfig): Promise<GeneratedPrompt> {
     return {
-      systemPrompt: "Default system prompt - needs implementation",
+      systemPrompt: 'Default system prompt - needs implementation',
       expectedJsonSchema: {},
-      extractionMap: {}
+      extractionMap: {},
     };
   }
 
@@ -42,7 +42,7 @@ export class DynamicPromptGenerator {
     return {
       success: false,
       extractionResults: [],
-      error: "Not implemented - needs Supabase conversion"
+      error: 'Not implemented - needs Supabase conversion',
     };
   }
 
@@ -59,15 +59,15 @@ export class DynamicPromptGenerator {
   }
 
   async createExtractionDefinition(definition: any): Promise<any> {
-    throw new Error("Not implemented - needs Supabase conversion");
+    throw new Error('Not implemented - needs Supabase conversion');
   }
 
   async updateExtractionDefinition(id: string, updates: any): Promise<void> {
-    throw new Error("Not implemented - needs Supabase conversion");
+    throw new Error('Not implemented - needs Supabase conversion');
   }
 
   async deleteExtractionDefinition(id: string): Promise<void> {
-    throw new Error("Not implemented - needs Supabase conversion");
+    throw new Error('Not implemented - needs Supabase conversion');
   }
 }
 

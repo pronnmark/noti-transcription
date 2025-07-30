@@ -19,7 +19,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
       includeRequestId?: boolean;
       includeVersion?: boolean;
       version?: string;
-    } = {},
+    } = {}
   ) {
     this.options = {
       wrapResponses: true,
@@ -35,7 +35,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     // Skip formatting for non-JSON responses
     const contentType = response.headers.get('content-type') || '';
@@ -84,7 +84,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
 
   private wrapResponse(
     data: any,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): ApiResponse {
     const response: ApiResponse = {
       success: true,
@@ -108,7 +108,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
 
   private addHeaders(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): NextResponse {
     // Add standard headers
     response.headers.set('X-Request-ID', context.requestId);
@@ -117,7 +117,7 @@ export class ResponseFormattingMiddleware implements ResponseMiddlewareHandler {
     // Add CORS headers if needed
     response.headers.set(
       'Access-Control-Expose-Headers',
-      'X-Request-ID, X-Response-Time',
+      'X-Request-ID, X-Response-Time'
     );
 
     return response;
@@ -129,7 +129,7 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     // Only process successful JSON responses
     const contentType = response.headers.get('content-type') || '';
@@ -160,7 +160,7 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
         page,
         limit,
         total,
-        context,
+        context
       );
 
       return NextResponse.json(paginatedResponse, {
@@ -196,7 +196,7 @@ export class PaginationMiddleware implements ResponseMiddlewareHandler {
     page: number,
     limit: number,
     total: number | undefined,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): PaginatedApiResponse {
     const totalItems = total || data.length;
     const totalPages = Math.ceil(totalItems / limit);
@@ -229,7 +229,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
       threshold?: number;
       level?: number;
       types?: string[];
-    } = {},
+    } = {}
   ) {
     this.options = {
       threshold: 1024, // 1KB
@@ -247,7 +247,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     const contentType = response.headers.get('content-type') || '';
     const contentLength = context.size || 0;
@@ -278,7 +278,7 @@ export class CompressionMiddleware implements ResponseMiddlewareHandler {
     } catch (error) {
       context.logger.warn(
         'Failed to compress response',
-        error instanceof Error ? error : new Error(String(error)),
+        error instanceof Error ? error : new Error(String(error))
       );
       return response;
     }
@@ -299,7 +299,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
       apiMaxAge?: number;
       noCache?: string[];
       mustRevalidate?: string[];
-    } = {},
+    } = {}
   ) {
     this.options = {
       defaultMaxAge: 0,
@@ -313,7 +313,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     // Skip if cache-control header is already set
     if (response.headers.has('cache-control')) {
@@ -329,7 +329,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
   }
 
   private getCacheControl(
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): string | null {
     const path = context.path;
 
@@ -346,7 +346,7 @@ export class CacheControlMiddleware implements ResponseMiddlewareHandler {
     // API endpoints
     if (path.startsWith('/api/')) {
       const mustRevalidate = this.options.mustRevalidate!.some(pattern =>
-        path.startsWith(pattern),
+        path.startsWith(pattern)
       );
       const maxAge = this.options.apiMaxAge;
 

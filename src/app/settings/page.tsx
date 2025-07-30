@@ -326,9 +326,15 @@ export default function SettingsPage() {
       (hasBaseUrl || hasApiKey || hasModel) &&
       (!hasBaseUrl || !hasApiKey || !hasModel)
     ) {
-      if (!hasBaseUrl) {errors.customAiBaseUrl = 'Base URL is required when using custom AI';}
-      if (!hasApiKey) {errors.customAiApiKey = 'API key is required when using custom AI';}
-      if (!hasModel) {errors.customAiModel = 'Model name is required when using custom AI';}
+      if (!hasBaseUrl) {
+        errors.customAiBaseUrl = 'Base URL is required when using custom AI';
+      }
+      if (!hasApiKey) {
+        errors.customAiApiKey = 'API key is required when using custom AI';
+      }
+      if (!hasModel) {
+        errors.customAiModel = 'Model name is required when using custom AI';
+      }
     }
 
     setValidationErrors(errors);
@@ -399,7 +405,7 @@ export default function SettingsPage() {
 
       if (response.ok) {
         toast.success(
-          `Template ${editingTemplate ? 'updated' : 'created'} successfully`,
+          `Template ${editingTemplate ? 'updated' : 'created'} successfully`
         );
         setIsTemplateDialogOpen(false);
         loadTemplates();
@@ -562,24 +568,24 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="standard-page-bg min-h-screen space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6">
+    <div className='standard-page-bg min-h-screen space-y-4 overflow-y-auto p-4 sm:space-y-6 sm:p-6'>
       {/* Header - Now part of scrollable content */}
-      <div className="buzz-header-desktop space-y-2">
-        <h1 className="text-3xl font-semibold text-foreground">Settings</h1>
-        <p className="text-base text-muted-foreground">
+      <div className='buzz-header-desktop space-y-2'>
+        <h1 className='text-3xl font-semibold text-foreground'>Settings</h1>
+        <p className='text-base text-muted-foreground'>
           Configure your transcription preferences
         </p>
       </div>
-      <Tabs defaultValue="essential" className="space-y-4 sm:space-y-6">
+      <Tabs defaultValue='essential' className='space-y-4 sm:space-y-6'>
         <TabsList>
-          <TabsTrigger value="essential">Essential</TabsTrigger>
-          <TabsTrigger value="advanced">Advanced</TabsTrigger>
-          <TabsTrigger value="templates">Templates</TabsTrigger>
-          <TabsTrigger value="realtime">Real-time</TabsTrigger>
-          <TabsTrigger value="telegram">Telegram</TabsTrigger>
+          <TabsTrigger value='essential'>Essential</TabsTrigger>
+          <TabsTrigger value='advanced'>Advanced</TabsTrigger>
+          <TabsTrigger value='templates'>Templates</TabsTrigger>
+          <TabsTrigger value='realtime'>Real-time</TabsTrigger>
+          <TabsTrigger value='telegram'>Telegram</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="essential" className="space-y-4 sm:space-y-6">
+        <TabsContent value='essential' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Basic Transcription</CardTitle>
@@ -587,10 +593,10 @@ export default function SettingsPage() {
                 Essential settings for speech-to-text transcription
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="modelSize">Model Size</Label>
+            <CardContent className='space-y-4'>
+              <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label htmlFor='modelSize'>Model Size</Label>
                   <Select
                     value={transcriptionSettings.modelSize}
                     onValueChange={value =>
@@ -600,7 +606,7 @@ export default function SettingsPage() {
                       }))
                     }
                   >
-                    <SelectTrigger id="modelSize">
+                    <SelectTrigger id='modelSize'>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -613,8 +619,8 @@ export default function SettingsPage() {
                   </Select>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="language">Language</Label>
+                <div className='space-y-2'>
+                  <Label htmlFor='language'>Language</Label>
                   <Select
                     value={transcriptionSettings.language}
                     onValueChange={value =>
@@ -624,7 +630,7 @@ export default function SettingsPage() {
                       }))
                     }
                   >
-                    <SelectTrigger id="language">
+                    <SelectTrigger id='language'>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -647,16 +653,16 @@ export default function SettingsPage() {
                 Identify different speakers in conversations
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="diarization">Enable Speaker Detection</Label>
-                  <p className="text-sm text-muted-foreground">
+            <CardContent className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <div className='space-y-0.5'>
+                  <Label htmlFor='diarization'>Enable Speaker Detection</Label>
+                  <p className='text-sm text-muted-foreground'>
                     Automatically identify different speakers
                   </p>
                 </div>
                 <Switch
-                  id="diarization"
+                  id='diarization'
                   checked={transcriptionSettings.enableSpeakerDiarization}
                   onCheckedChange={checked =>
                     setTranscriptionSettings(prev => ({
@@ -668,12 +674,12 @@ export default function SettingsPage() {
               </div>
 
               {transcriptionSettings.enableSpeakerDiarization && (
-                <div className="space-y-2">
-                  <Label htmlFor="huggingfaceToken">HuggingFace Token</Label>
-                  <div className="flex min-w-0 gap-2">
+                <div className='space-y-2'>
+                  <Label htmlFor='huggingfaceToken'>HuggingFace Token</Label>
+                  <div className='flex min-w-0 gap-2'>
                     <Input
-                      className="min-w-0 flex-1"
-                      id="huggingfaceToken"
+                      className='min-w-0 flex-1'
+                      id='huggingfaceToken'
                       type={showTokens.huggingfaceToken ? 'text' : 'password'}
                       value={transcriptionSettings.huggingfaceToken}
                       onChange={e =>
@@ -682,21 +688,21 @@ export default function SettingsPage() {
                           huggingfaceToken: e.target.value,
                         }))
                       }
-                      placeholder="hf_..."
+                      placeholder='hf_...'
                     />
                     <Button
-                      variant="outline"
-                      size="icon"
+                      variant='outline'
+                      size='icon'
                       onClick={() => toggleTokenVisibility('huggingfaceToken')}
                     >
                       {showTokens.huggingfaceToken ? (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className='h-4 w-4' />
                       ) : (
-                        <Eye className="h-4 w-4" />
+                        <Eye className='h-4 w-4' />
                       )}
                     </Button>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className='text-sm text-muted-foreground'>
                     Required for speaker detection. Get one from huggingface.co
                   </p>
                 </div>
@@ -708,38 +714,37 @@ export default function SettingsPage() {
             <CardHeader>
               <CardTitle>OpenAI-Compatible AI API</CardTitle>
               <CardDescription>
-                Configure any OpenAI-compatible AI service for summarization and
-                note extraction
+                Configure any OpenAI-compatible AI service for summarization
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="standard-card bg-muted/20 p-4">
-                <h4 className="mb-2 font-medium">Supported Providers</h4>
-                <div className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
-                  <div className="break-all">
+            <CardContent className='space-y-4'>
+              <div className='standard-card bg-muted/20 p-4'>
+                <h4 className='mb-2 font-medium'>Supported Providers</h4>
+                <div className='grid grid-cols-1 gap-2 text-sm sm:grid-cols-2'>
+                  <div className='break-all'>
                     <strong>OpenAI:</strong> https://api.openai.com/v1
                   </div>
-                  <div className="break-all">
+                  <div className='break-all'>
                     <strong>Anthropic:</strong> https://api.anthropic.com/v1
                   </div>
-                  <div className="break-all">
+                  <div className='break-all'>
                     <strong>OpenRouter:</strong> https://openrouter.ai/api/v1
                   </div>
-                  <div className="break-all">
+                  <div className='break-all'>
                     <strong>Local (LM Studio):</strong> http://localhost:1234/v1
                   </div>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground">
+                <p className='mt-2 text-xs text-muted-foreground'>
                   All providers must support OpenAI's /chat/completions API
                   format
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="customAiBaseUrl">API Base URL</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='customAiBaseUrl'>API Base URL</Label>
                 <Input
-                  id="customAiBaseUrl"
-                  type="url"
+                  id='customAiBaseUrl'
+                  type='url'
                   value={aiSettings.customAiBaseUrl}
                   onChange={e => {
                     setAISettings(prev => ({
@@ -754,28 +759,28 @@ export default function SettingsPage() {
                       }));
                     }
                   }}
-                  placeholder="https://api.openai.com/v1"
+                  placeholder='https://api.openai.com/v1'
                   className={
                     validationErrors.customAiBaseUrl ? 'border-red-500' : ''
                   }
                 />
                 {validationErrors.customAiBaseUrl && (
-                  <p className="text-sm text-red-500">
+                  <p className='text-sm text-red-500'>
                     {validationErrors.customAiBaseUrl}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground">
+                <p className='text-sm text-muted-foreground'>
                   Complete base URL including /v1 endpoint (must support OpenAI
                   chat/completions format)
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="customAiApiKey">API Key</Label>
-                <div className="flex min-w-0 gap-2">
+              <div className='space-y-2'>
+                <Label htmlFor='customAiApiKey'>API Key</Label>
+                <div className='flex min-w-0 gap-2'>
                   <Input
                     className={`min-w-0 flex-1 ${validationErrors.customAiApiKey ? 'border-red-500' : ''}`}
-                    id="customAiApiKey"
+                    id='customAiApiKey'
                     type={showTokens.customAiApiKey ? 'text' : 'password'}
                     value={aiSettings.customAiApiKey}
                     onChange={e => {
@@ -791,36 +796,36 @@ export default function SettingsPage() {
                         }));
                       }
                     }}
-                    placeholder="sk-... (OpenAI) or claude-... (Anthropic)"
+                    placeholder='sk-... (OpenAI) or claude-... (Anthropic)'
                   />
                   <Button
-                    variant="outline"
-                    size="icon"
+                    variant='outline'
+                    size='icon'
                     onClick={() => toggleTokenVisibility('customAiApiKey')}
                   >
                     {showTokens.customAiApiKey ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className='h-4 w-4' />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className='h-4 w-4' />
                     )}
                   </Button>
                 </div>
                 {validationErrors.customAiApiKey && (
-                  <p className="text-sm text-red-500">
+                  <p className='text-sm text-red-500'>
                     {validationErrors.customAiApiKey}
                   </p>
                 )}
-                <p className="text-sm text-muted-foreground">
+                <p className='text-sm text-muted-foreground'>
                   API key from your chosen provider (get from provider's
                   dashboard)
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="customAiModel">Model Name</Label>
+              <div className='space-y-2'>
+                <Label htmlFor='customAiModel'>Model Name</Label>
                 <Input
-                  id="customAiModel"
-                  type="text"
+                  id='customAiModel'
+                  type='text'
                   value={aiSettings.customAiModel}
                   onChange={e => {
                     setAISettings(prev => ({
@@ -835,19 +840,19 @@ export default function SettingsPage() {
                       }));
                     }
                   }}
-                  placeholder="gpt-3.5-turbo"
+                  placeholder='gpt-3.5-turbo'
                   className={
                     validationErrors.customAiModel ? 'border-red-500' : ''
                   }
                 />
                 {validationErrors.customAiModel && (
-                  <p className="text-sm text-red-500">
+                  <p className='text-sm text-red-500'>
                     {validationErrors.customAiModel}
                   </p>
                 )}
-                <div className="text-sm text-muted-foreground">
+                <div className='text-sm text-muted-foreground'>
                   <p>Common models by provider:</p>
-                  <div className="mt-1 grid grid-cols-1 gap-1 text-xs">
+                  <div className='mt-1 grid grid-cols-1 gap-1 text-xs'>
                     <div>
                       <strong>OpenAI:</strong> gpt-3.5-turbo, gpt-4, gpt-4-turbo
                     </div>
@@ -870,9 +875,9 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="templates" className="space-y-4 sm:space-y-6">
+        <TabsContent value='templates' className='space-y-4 sm:space-y-6'>
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className='flex flex-row items-center justify-between'>
               <div>
                 <CardTitle>Summary Templates</CardTitle>
                 <CardDescription>
@@ -881,61 +886,61 @@ export default function SettingsPage() {
               </div>
               <Button
                 onClick={() => openTemplateDialog()}
-                className="flex items-center gap-2"
+                className='flex items-center gap-2'
               >
-                <Plus className="h-4 w-4" />
+                <Plus className='h-4 w-4' />
                 New Template
               </Button>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className='space-y-4'>
               {templates.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className='py-8 text-center text-muted-foreground'>
                   <p>No templates created yet.</p>
-                  <p className="text-sm">
+                  <p className='text-sm'>
                     Create your first template to get started.
                   </p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   {templates.map(template => (
                     <div
                       key={template.id}
-                      className="space-y-2 rounded-lg border p-4"
+                      className='space-y-2 rounded-lg border p-4'
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-medium">{template.name}</h4>
+                      <div className='flex items-start justify-between'>
+                        <div className='flex-1'>
+                          <div className='flex items-center gap-2'>
+                            <h4 className='font-medium'>{template.name}</h4>
                             {template.isDefault && (
-                              <span className="rounded bg-primary/20 px-2 py-1 text-xs text-primary">
+                              <span className='rounded bg-primary/20 px-2 py-1 text-xs text-primary'>
                                 Default
                               </span>
                             )}
                           </div>
                           {template.description && (
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <p className='mt-1 text-sm text-muted-foreground'>
                               {template.description}
                             </p>
                           )}
-                          <div className="mt-2 rounded bg-muted/50 p-2 text-xs text-muted-foreground">
-                            <p className="line-clamp-2">{template.prompt}</p>
+                          <div className='mt-2 rounded bg-muted/50 p-2 text-xs text-muted-foreground'>
+                            <p className='line-clamp-2'>{template.prompt}</p>
                           </div>
                         </div>
-                        <div className="ml-4 flex items-center gap-2">
+                        <div className='ml-4 flex items-center gap-2'>
                           <Button
-                            variant="outline"
-                            size="icon"
+                            variant='outline'
+                            size='icon'
                             onClick={() => openTemplateDialog(template)}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Edit2 className='h-4 w-4' />
                           </Button>
                           <Button
-                            variant="outline"
-                            size="icon"
+                            variant='outline'
+                            size='icon'
                             onClick={() => deleteTemplate(template.id)}
-                            className="text-destructive hover:text-destructive"
+                            className='text-destructive hover:text-destructive'
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className='h-4 w-4' />
                           </Button>
                         </div>
                       </div>
@@ -947,7 +952,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="telegram" className="space-y-4 sm:space-y-6">
+        <TabsContent value='telegram' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Telegram Integration</CardTitle>
@@ -955,18 +960,18 @@ export default function SettingsPage() {
                 Configure Telegram bot and chat settings for sharing summaries
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="telegramEnabled">
+            <CardContent className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <div className='space-y-0.5'>
+                  <Label htmlFor='telegramEnabled'>
                     Enable Telegram Integration
                   </Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className='text-sm text-muted-foreground'>
                     Allow sharing summaries to Telegram chats
                   </p>
                 </div>
                 <Switch
-                  id="telegramEnabled"
+                  id='telegramEnabled'
                   checked={telegramSettings.isEnabled}
                   onCheckedChange={checked =>
                     setTelegramSettings(prev => ({
@@ -979,9 +984,9 @@ export default function SettingsPage() {
 
               {telegramSettings.isEnabled && (
                 <>
-                  <div className="standard-card bg-muted/20 p-4">
-                    <h4 className="mb-2 font-medium">Bot Configuration</h4>
-                    <p className="mb-2 text-sm text-muted-foreground">
+                  <div className='standard-card bg-muted/20 p-4'>
+                    <h4 className='mb-2 font-medium'>Bot Configuration</h4>
+                    <p className='mb-2 text-sm text-muted-foreground'>
                       Current bot token source:{' '}
                       <strong>{telegramSettings.botTokenSource}</strong>
                       {telegramSettings.botTokenSource === 'environment' &&
@@ -989,27 +994,27 @@ export default function SettingsPage() {
                     </p>
                     {telegramSettings.hasBotToken ? (
                       <>
-                        <p className="mb-2 text-sm text-green-600">
+                        <p className='mb-2 text-sm text-green-600'>
                           ✓ Bot token is configured
                         </p>
                         {telegramSettings.botInfo && (
-                          <div className="mt-3 space-y-1 rounded-lg bg-background p-3">
-                            <p className="text-sm">
-                              <span className="text-muted-foreground">
+                          <div className='mt-3 space-y-1 rounded-lg bg-background p-3'>
+                            <p className='text-sm'>
+                              <span className='text-muted-foreground'>
                                 Bot Name:
                               </span>{' '}
                               <strong>{telegramSettings.botInfo.name}</strong>
                             </p>
-                            <p className="text-sm">
-                              <span className="text-muted-foreground">
+                            <p className='text-sm'>
+                              <span className='text-muted-foreground'>
                                 Username:
                               </span>{' '}
                               <strong>
                                 @{telegramSettings.botInfo.username}
                               </strong>
                             </p>
-                            <p className="text-sm">
-                              <span className="text-muted-foreground">
+                            <p className='text-sm'>
+                              <span className='text-muted-foreground'>
                                 Features:
                               </span>{' '}
                               {telegramSettings.botInfo.canJoinGroups &&
@@ -1021,20 +1026,20 @@ export default function SettingsPage() {
                         )}
                       </>
                     ) : (
-                      <p className="text-sm text-yellow-600">
+                      <p className='text-sm text-yellow-600'>
                         ⚠ No bot token found in environment or database
                       </p>
                     )}
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="botToken">
+                  <div className='space-y-2'>
+                    <Label htmlFor='botToken'>
                       Override Bot Token (Optional)
                     </Label>
-                    <div className="flex gap-2">
+                    <div className='flex gap-2'>
                       <Input
-                        id="botToken"
-                        type="password"
+                        id='botToken'
+                        type='password'
                         value={telegramForm.botToken}
                         onChange={e =>
                           setTelegramForm(prev => ({
@@ -1042,51 +1047,51 @@ export default function SettingsPage() {
                             botToken: e.target.value,
                           }))
                         }
-                        placeholder="Bot token (leave empty to use environment variable)"
-                        className="flex-1"
+                        placeholder='Bot token (leave empty to use environment variable)'
+                        className='flex-1'
                       />
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className='text-sm text-muted-foreground'>
                       Leave empty to use TELEGRAM_BOT_TOKEN from environment.
                       Override here to use a different bot for this instance.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <h4 className="font-medium">Chat Configurations</h4>
+                  <div className='space-y-4'>
+                    <h4 className='font-medium'>Chat Configurations</h4>
 
                     {telegramSettings.chatConfigurations.length === 0 ? (
-                      <div className="rounded-lg border py-4 text-center text-muted-foreground">
+                      <div className='rounded-lg border py-4 text-center text-muted-foreground'>
                         <p>No chat configurations added yet.</p>
-                        <p className="text-sm">
+                        <p className='text-sm'>
                           Add chats below to enable targeted sharing.
                         </p>
                       </div>
                     ) : (
-                      <div className="space-y-2">
+                      <div className='space-y-2'>
                         {telegramSettings.chatConfigurations.map(
                           (chat, index) => (
                             <div
                               key={index}
-                              className="flex items-center justify-between rounded-lg border p-3"
+                              className='flex items-center justify-between rounded-lg border p-3'
                             >
-                              <div className="flex-1">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium">
+                              <div className='flex-1'>
+                                <div className='flex items-center gap-2'>
+                                  <span className='font-medium'>
                                     {chat.name}
                                   </span>
-                                  <span className="rounded bg-muted px-2 py-1 text-xs">
+                                  <span className='rounded bg-muted px-2 py-1 text-xs'>
                                     {chat.type}
                                   </span>
                                 </div>
-                                <p className="text-sm text-muted-foreground">
+                                <p className='text-sm text-muted-foreground'>
                                   {chat.chatId}
                                 </p>
                               </div>
-                              <div className="flex items-center gap-2">
+                              <div className='flex items-center gap-2'>
                                 <Button
-                                  variant="outline"
-                                  size="sm"
+                                  variant='outline'
+                                  size='sm'
                                   onClick={() =>
                                     setTelegramSettings(prev => ({
                                       ...prev,
@@ -1104,27 +1109,27 @@ export default function SettingsPage() {
                                     : 'Set Default'}
                                 </Button>
                                 <Button
-                                  variant="outline"
-                                  size="icon"
+                                  variant='outline'
+                                  size='icon'
                                   onClick={() => removeChatConfiguration(index)}
-                                  className="text-destructive hover:text-destructive"
+                                  className='text-destructive hover:text-destructive'
                                 >
-                                  <Trash2 className="h-4 w-4" />
+                                  <Trash2 className='h-4 w-4' />
                                 </Button>
                               </div>
                             </div>
-                          ),
+                          )
                         )}
                       </div>
                     )}
 
-                    <div className="space-y-4 rounded-lg border p-4">
-                      <h5 className="font-medium">Add New Chat</h5>
-                      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="newChatName">Chat Name</Label>
+                    <div className='space-y-4 rounded-lg border p-4'>
+                      <h5 className='font-medium'>Add New Chat</h5>
+                      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+                        <div className='space-y-2'>
+                          <Label htmlFor='newChatName'>Chat Name</Label>
                           <Input
-                            id="newChatName"
+                            id='newChatName'
                             value={telegramForm.newChatName}
                             onChange={e =>
                               setTelegramForm(prev => ({
@@ -1132,13 +1137,13 @@ export default function SettingsPage() {
                                 newChatName: e.target.value,
                               }))
                             }
-                            placeholder="e.g., Family Group"
+                            placeholder='e.g., Family Group'
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="newChatId">Chat ID</Label>
+                        <div className='space-y-2'>
+                          <Label htmlFor='newChatId'>Chat ID</Label>
                           <Input
-                            id="newChatId"
+                            id='newChatId'
                             value={telegramForm.newChatId}
                             onChange={e =>
                               setTelegramForm(prev => ({
@@ -1146,15 +1151,15 @@ export default function SettingsPage() {
                                 newChatId: e.target.value,
                               }))
                             }
-                            placeholder="e.g., -123456789"
+                            placeholder='e.g., -123456789'
                           />
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="newChatType">Type</Label>
+                        <div className='space-y-2'>
+                          <Label htmlFor='newChatType'>Type</Label>
                           <Select
                             value={telegramForm.newChatType}
                             onValueChange={(
-                              value: 'user' | 'group' | 'channel',
+                              value: 'user' | 'group' | 'channel'
                             ) =>
                               setTelegramForm(prev => ({
                                 ...prev,
@@ -1162,26 +1167,26 @@ export default function SettingsPage() {
                               }))
                             }
                           >
-                            <SelectTrigger id="newChatType">
+                            <SelectTrigger id='newChatType'>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="user">User</SelectItem>
-                              <SelectItem value="group">Group</SelectItem>
-                              <SelectItem value="channel">Channel</SelectItem>
+                              <SelectItem value='user'>User</SelectItem>
+                              <SelectItem value='group'>Group</SelectItem>
+                              <SelectItem value='channel'>Channel</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
                       </div>
-                      <Button onClick={addChatConfiguration} className="w-full">
-                        <Plus className="mr-2 h-4 w-4" />
+                      <Button onClick={addChatConfiguration} className='w-full'>
+                        <Plus className='mr-2 h-4 w-4' />
                         Add Chat Configuration
                       </Button>
                     </div>
 
-                    <div className="space-y-4 rounded-lg border p-4">
-                      <h5 className="font-medium">Test Connection</h5>
-                      <div className="flex gap-2">
+                    <div className='space-y-4 rounded-lg border p-4'>
+                      <h5 className='font-medium'>Test Connection</h5>
+                      <div className='flex gap-2'>
                         <Input
                           value={telegramForm.testChatId}
                           onChange={e =>
@@ -1190,30 +1195,30 @@ export default function SettingsPage() {
                               testChatId: e.target.value,
                             }))
                           }
-                          placeholder="Enter chat ID to test (e.g., -123456789)"
-                          className="flex-1"
+                          placeholder='Enter chat ID to test (e.g., -123456789)'
+                          className='flex-1'
                         />
                         <Button
                           onClick={testTelegramConnection}
                           disabled={isTesting}
-                          variant="outline"
+                          variant='outline'
                         >
                           {isTesting ? (
-                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                            <RefreshCw className='mr-2 h-4 w-4 animate-spin' />
                           ) : (
-                            <TestTube className="mr-2 h-4 w-4" />
+                            <TestTube className='mr-2 h-4 w-4' />
                           )}
                           {isTesting ? 'Testing...' : 'Test'}
                         </Button>
                       </div>
-                      <p className="text-xs text-muted-foreground">
+                      <p className='text-xs text-muted-foreground'>
                         This will send a test message to verify your bot
                         configuration.
                       </p>
                     </div>
 
-                    <Button onClick={saveTelegramSettings} className="w-full">
-                      <Save className="mr-2 h-4 w-4" />
+                    <Button onClick={saveTelegramSettings} className='w-full'>
+                      <Save className='mr-2 h-4 w-4' />
                       Save Telegram Settings
                     </Button>
                   </div>
@@ -1223,7 +1228,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="realtime" className="space-y-4 sm:space-y-6">
+        <TabsContent value='realtime' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Real-time Thoughts</CardTitle>
@@ -1231,19 +1236,19 @@ export default function SettingsPage() {
                 Configure AI analysis during recording with chunked processing
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label htmlFor="realTimeEnabled">
+            <CardContent className='space-y-4'>
+              <div className='flex items-center justify-between'>
+                <div className='space-y-0.5'>
+                  <Label htmlFor='realTimeEnabled'>
                     Enable Real-time Thoughts
                   </Label>
-                  <p className="text-sm text-muted-foreground">
+                  <p className='text-sm text-muted-foreground'>
                     Process audio chunks during recording and generate AI
                     insights
                   </p>
                 </div>
                 <Switch
-                  id="realTimeEnabled"
+                  id='realTimeEnabled'
                   checked={realTimeSettings.realTimeEnabled}
                   onCheckedChange={checked =>
                     setRealTimeSettings(prev => ({
@@ -1256,8 +1261,8 @@ export default function SettingsPage() {
 
               {realTimeSettings.realTimeEnabled && (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="chunkInterval">
+                  <div className='space-y-2'>
+                    <Label htmlFor='chunkInterval'>
                       Chunk Processing Interval
                     </Label>
                     <Select
@@ -1269,29 +1274,29 @@ export default function SettingsPage() {
                         }))
                       }
                     >
-                      <SelectTrigger id="chunkInterval">
+                      <SelectTrigger id='chunkInterval'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="60">1 minute</SelectItem>
-                        <SelectItem value="120">2 minutes</SelectItem>
-                        <SelectItem value="180">3 minutes</SelectItem>
-                        <SelectItem value="240">4 minutes</SelectItem>
-                        <SelectItem value="300">5 minutes</SelectItem>
+                        <SelectItem value='60'>1 minute</SelectItem>
+                        <SelectItem value='120'>2 minutes</SelectItem>
+                        <SelectItem value='180'>3 minutes</SelectItem>
+                        <SelectItem value='240'>4 minutes</SelectItem>
+                        <SelectItem value='300'>5 minutes</SelectItem>
                       </SelectContent>
                     </Select>
-                    <p className="text-sm text-muted-foreground">
+                    <p className='text-sm text-muted-foreground'>
                       How often to process audio chunks and generate thoughts
                       during recording
                     </p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="aiInstruction">
+                  <div className='space-y-2'>
+                    <Label htmlFor='aiInstruction'>
                       AI Analysis Instruction
                     </Label>
                     <Textarea
-                      id="aiInstruction"
+                      id='aiInstruction'
                       value={realTimeSettings.realTimeAiInstruction}
                       onChange={e =>
                         setRealTimeSettings(prev => ({
@@ -1299,22 +1304,22 @@ export default function SettingsPage() {
                           realTimeAiInstruction: e.target.value,
                         }))
                       }
-                      placeholder="Enter instructions for how the AI should analyze each audio chunk..."
+                      placeholder='Enter instructions for how the AI should analyze each audio chunk...'
                       rows={4}
-                      className="min-h-24"
+                      className='min-h-24'
                     />
-                    <p className="text-sm text-muted-foreground">
+                    <p className='text-sm text-muted-foreground'>
                       This instruction will be sent to the AI with each
                       transcribed chunk. Be specific about what insights,
                       decisions, or actionable items you want extracted.
                     </p>
                   </div>
 
-                  <div className="standard-card bg-muted/20 p-4">
-                    <h4 className="mb-2 font-medium">
+                  <div className='standard-card bg-muted/20 p-4'>
+                    <h4 className='mb-2 font-medium'>
                       How Real-time Thoughts Work
                     </h4>
-                    <ul className="space-y-1 text-sm text-muted-foreground">
+                    <ul className='space-y-1 text-sm text-muted-foreground'>
                       <li>
                         • Recording continues uninterrupted while chunks are
                         processed in the background
@@ -1342,7 +1347,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="advanced" className="space-y-4 sm:space-y-6">
+        <TabsContent value='advanced' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Advanced Transcription</CardTitle>
@@ -1350,9 +1355,9 @@ export default function SettingsPage() {
                 Fine-tune transcription performance and processing
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="device">Processing Device</Label>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='device'>Processing Device</Label>
                 <Select
                   value={transcriptionSettings.preferredDevice}
                   onValueChange={value =>
@@ -1362,25 +1367,25 @@ export default function SettingsPage() {
                     }))
                   }
                 >
-                  <SelectTrigger id="device">
+                  <SelectTrigger id='device'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="auto">
+                    <SelectItem value='auto'>
                       Auto (GPU with CPU fallback)
                     </SelectItem>
-                    <SelectItem value="cuda">GPU Only</SelectItem>
-                    <SelectItem value="cpu">CPU Only</SelectItem>
+                    <SelectItem value='cuda'>GPU Only</SelectItem>
+                    <SelectItem value='cpu'>CPU Only</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="batchSize">Batch Size</Label>
+              <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
+                <div className='space-y-2'>
+                  <Label htmlFor='batchSize'>Batch Size</Label>
                   <Input
-                    id="batchSize"
-                    type="number"
+                    id='batchSize'
+                    type='number'
                     value={transcriptionSettings.batchSize}
                     onChange={e =>
                       setTranscriptionSettings(prev => ({
@@ -1391,11 +1396,11 @@ export default function SettingsPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="threads">CPU Threads</Label>
+                <div className='space-y-2'>
+                  <Label htmlFor='threads'>CPU Threads</Label>
                   <Input
-                    id="threads"
-                    type="number"
+                    id='threads'
+                    type='number'
                     value={transcriptionSettings.threads}
                     onChange={e =>
                       setTranscriptionSettings(prev => ({
@@ -1408,15 +1413,15 @@ export default function SettingsPage() {
               </div>
 
               {transcriptionSettings.enableSpeakerDiarization && (
-                <div className="space-y-2">
-                  <Label htmlFor="speakerCount">
+                <div className='space-y-2'>
+                  <Label htmlFor='speakerCount'>
                     Number of Speakers (optional)
                   </Label>
                   <Input
-                    id="speakerCount"
-                    type="number"
-                    min="2"
-                    max="20"
+                    id='speakerCount'
+                    type='number'
+                    min='2'
+                    max='20'
                     value={transcriptionSettings.speakerCount || ''}
                     onChange={e =>
                       setTranscriptionSettings(prev => ({
@@ -1426,9 +1431,9 @@ export default function SettingsPage() {
                           : undefined,
                       }))
                     }
-                    placeholder="Auto-detect"
+                    placeholder='Auto-detect'
                   />
-                  <p className="text-sm text-muted-foreground">
+                  <p className='text-sm text-muted-foreground'>
                     Specify exact number if known. Leave empty to auto-detect.
                   </p>
                 </div>
@@ -1443,12 +1448,12 @@ export default function SettingsPage() {
                 Configure AI model selection and default prompts
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="aiModel">AI Model (OpenRouter)</Label>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='aiModel'>AI Model (OpenRouter)</Label>
                 <Input
-                  id="aiModel"
-                  type="text"
+                  id='aiModel'
+                  type='text'
                   value={aiSettings.aiExtractModel}
                   onChange={e =>
                     setAISettings(prev => ({
@@ -1456,19 +1461,19 @@ export default function SettingsPage() {
                       aiExtractModel: e.target.value,
                     }))
                   }
-                  placeholder="e.g. anthropic/claude-sonnet-4"
+                  placeholder='e.g. anthropic/claude-sonnet-4'
                 />
-                <p className="text-sm text-muted-foreground">
+                <p className='text-sm text-muted-foreground'>
                   Enter any valid OpenRouter model ID.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="openaiKey">OpenAI API Key (Optional)</Label>
-                <div className="flex min-w-0 gap-2">
+              <div className='space-y-2'>
+                <Label htmlFor='openaiKey'>OpenAI API Key (Optional)</Label>
+                <div className='flex min-w-0 gap-2'>
                   <Input
-                    className="min-w-0 flex-1"
-                    id="openaiKey"
+                    className='min-w-0 flex-1'
+                    id='openaiKey'
                     type={showTokens.openaiApiKey ? 'text' : 'password'}
                     value={aiSettings.openaiApiKey}
                     onChange={e =>
@@ -1477,17 +1482,17 @@ export default function SettingsPage() {
                         openaiApiKey: e.target.value,
                       }))
                     }
-                    placeholder="sk-..."
+                    placeholder='sk-...'
                   />
                   <Button
-                    variant="outline"
-                    size="icon"
+                    variant='outline'
+                    size='icon'
                     onClick={() => toggleTokenVisibility('openaiApiKey')}
                   >
                     {showTokens.openaiApiKey ? (
-                      <EyeOff className="h-4 w-4" />
+                      <EyeOff className='h-4 w-4' />
                     ) : (
-                      <Eye className="h-4 w-4" />
+                      <Eye className='h-4 w-4' />
                     )}
                   </Button>
                 </div>
@@ -1505,14 +1510,14 @@ export default function SettingsPage() {
             User account and application information
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-xl bg-muted/50 p-4">
+        <CardContent className='space-y-4'>
+          <div className='flex items-center justify-between rounded-xl bg-muted/50 p-4'>
             <div>
-              <p className="text-sm font-medium">Application Version</p>
-              <p className="text-xs text-muted-foreground">v1.0.0</p>
+              <p className='text-sm font-medium'>Application Version</p>
+              <p className='text-xs text-muted-foreground'>v1.0.0</p>
             </div>
             <Button
-              variant="destructive"
+              variant='destructive'
               onClick={async () => {
                 try {
                   const response = await fetch('/api/auth/logout', {
@@ -1527,7 +1532,7 @@ export default function SettingsPage() {
                   toast.error('Logout failed');
                 }
               }}
-              className="touch-target-44"
+              className='touch-target-44'
             >
               Logout
             </Button>
@@ -1535,13 +1540,13 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 flex justify-end gap-4">
-        <Button variant="outline" onClick={loadSettings}>
-          <RefreshCw className="mr-2 h-4 w-4" />
+      <div className='mt-6 flex justify-end gap-4'>
+        <Button variant='outline' onClick={loadSettings}>
+          <RefreshCw className='mr-2 h-4 w-4' />
           Reset
         </Button>
         <Button onClick={saveSettings} disabled={isSaving}>
-          <Save className="mr-2 h-4 w-4" />
+          <Save className='mr-2 h-4 w-4' />
           {isSaving ? 'Saving...' : 'Save Settings'}
         </Button>
       </div>
@@ -1551,7 +1556,7 @@ export default function SettingsPage() {
         open={isTemplateDialogOpen}
         onOpenChange={setIsTemplateDialogOpen}
       >
-        <DialogContent className="max-w-2xl">
+        <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>
               {editingTemplate ? 'Edit Template' : 'Create New Template'}
@@ -1562,25 +1567,25 @@ export default function SettingsPage() {
                 : 'Create a custom template for AI summarization'}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="templateName">Template Name</Label>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='templateName'>Template Name</Label>
               <Input
-                id="templateName"
+                id='templateName'
                 value={templateForm.name}
                 onChange={e =>
                   setTemplateForm(prev => ({ ...prev, name: e.target.value }))
                 }
-                placeholder="e.g., Meeting Summary, Interview Notes"
+                placeholder='e.g., Meeting Summary, Interview Notes'
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="templateDescription">
+            <div className='space-y-2'>
+              <Label htmlFor='templateDescription'>
                 Description (Optional)
               </Label>
               <Input
-                id="templateDescription"
+                id='templateDescription'
                 value={templateForm.description}
                 onChange={e =>
                   setTemplateForm(prev => ({
@@ -1588,44 +1593,44 @@ export default function SettingsPage() {
                     description: e.target.value,
                   }))
                 }
-                placeholder="Brief description of when to use this template"
+                placeholder='Brief description of when to use this template'
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="templatePrompt">Template Prompt</Label>
+            <div className='space-y-2'>
+              <Label htmlFor='templatePrompt'>Template Prompt</Label>
               <Textarea
-                id="templatePrompt"
+                id='templatePrompt'
                 value={templateForm.prompt}
                 onChange={e =>
                   setTemplateForm(prev => ({ ...prev, prompt: e.target.value }))
                 }
-                placeholder="Enter your custom prompt for summarization..."
+                placeholder='Enter your custom prompt for summarization...'
                 rows={8}
-                className="min-h-32"
+                className='min-h-32'
               />
-              <p className="text-xs text-muted-foreground">
+              <p className='text-xs text-muted-foreground'>
                 This prompt will be used to instruct the AI on how to summarize
                 transcriptions. Be specific about the format and content you
                 want.
               </p>
             </div>
 
-            <div className="flex items-center space-x-2">
+            <div className='flex items-center space-x-2'>
               <Switch
-                id="templateDefault"
+                id='templateDefault'
                 checked={templateForm.isDefault}
                 onCheckedChange={checked =>
                   setTemplateForm(prev => ({ ...prev, isDefault: checked }))
                 }
               />
-              <Label htmlFor="templateDefault">Set as default template</Label>
+              <Label htmlFor='templateDefault'>Set as default template</Label>
             </div>
           </div>
 
-          <div className="mt-6 flex justify-end gap-2">
+          <div className='mt-6 flex justify-end gap-2'>
             <Button
-              variant="outline"
+              variant='outline'
               onClick={() => setIsTemplateDialogOpen(false)}
             >
               Cancel

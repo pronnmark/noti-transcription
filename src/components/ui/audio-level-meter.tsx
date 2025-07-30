@@ -39,30 +39,30 @@ export function AudioLevelMeter({
 
   return (
     <div className={cn('flex flex-col items-center gap-2', className)}>
-      <div className="text-xs font-medium text-muted-foreground">
+      <div className='text-xs font-medium text-muted-foreground'>
         Audio Level
       </div>
 
       {/* Audio level bar */}
-      <div className="h-8 w-full max-w-xs overflow-hidden rounded-full border-2 border-gray-300 bg-gray-200">
+      <div className='h-8 w-full max-w-xs overflow-hidden rounded-full border-2 border-gray-300 bg-gray-200'>
         <div
           className={cn(
             'h-full rounded-full bg-gradient-to-r transition-all duration-100 ease-out',
-            getBarGradient(normalizedLevel),
+            getBarGradient(normalizedLevel)
           )}
           style={{ width: `${Math.max(0, normalizedLevel)}%` }}
         />
       </div>
 
       {/* Level indicator text */}
-      <div className="flex items-center gap-2 text-xs">
+      <div className='flex items-center gap-2 text-xs'>
         <div
           className={cn(
             'h-2 w-2 rounded-full transition-colors duration-200',
-            normalizedLevel === 0 ? 'bg-gray-400' : getBarColor(normalizedLevel),
+            normalizedLevel === 0 ? 'bg-gray-400' : getBarColor(normalizedLevel)
           )}
         />
-        <span className="text-muted-foreground">
+        <span className='text-muted-foreground'>
           {normalizedLevel === 0
             ? 'Silent'
             : normalizedLevel < 5
@@ -73,7 +73,7 @@ export function AudioLevelMeter({
                   ? 'Good'
                   : 'High'}
         </span>
-        <span className="ml-2 font-mono text-xs text-muted-foreground">
+        <span className='ml-2 font-mono text-xs text-muted-foreground'>
           {normalizedLevel.toFixed(0)}%
         </span>
       </div>

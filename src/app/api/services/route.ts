@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export async function GET() {
   return NextResponse.json({
     message: 'Services API temporarily simplified',
-    services: ['audio', 'transcription', 'extraction', 'gemini'],
+    services: ['audio', 'transcription', 'summarization'],
     status: 'healthy',
   });
 }

@@ -96,7 +96,7 @@ export class AppError extends Error {
     severity: ErrorSeverity = ErrorSeverity.MEDIUM,
     isOperational: boolean = true,
     metadata: Partial<ErrorMetadata> = {},
-    cause?: Error,
+    cause?: Error
   ) {
     super(message);
 
@@ -130,10 +130,10 @@ export class AppError extends Error {
       metadata: this.metadata,
       cause: this.cause
         ? {
-          name: this.cause.name,
-          message: this.cause.message,
-          stack: this.cause.stack,
-        }
+            name: this.cause.name,
+            message: this.cause.message,
+            stack: this.cause.stack,
+          }
         : undefined,
     };
   }
@@ -150,7 +150,7 @@ export class AppError extends Error {
       400,
       ErrorSeverity.LOW,
       true,
-      { context },
+      { context }
     );
   }
 
@@ -164,7 +164,7 @@ export class AppError extends Error {
       404,
       ErrorSeverity.LOW,
       true,
-      { context: { resource, id } },
+      { context: { resource, id } }
     );
   }
 
@@ -174,7 +174,7 @@ export class AppError extends Error {
       ErrorCode.UNAUTHORIZED,
       401,
       ErrorSeverity.MEDIUM,
-      true,
+      true
     );
   }
 
@@ -184,7 +184,7 @@ export class AppError extends Error {
       ErrorCode.FORBIDDEN,
       403,
       ErrorSeverity.MEDIUM,
-      true,
+      true
     );
   }
 
@@ -195,14 +195,14 @@ export class AppError extends Error {
       409,
       ErrorSeverity.LOW,
       true,
-      { context },
+      { context }
     );
   }
 
   static internal(
     message: string,
     cause?: Error,
-    context?: ErrorContext,
+    context?: ErrorContext
   ): AppError {
     return new AppError(
       message,
@@ -211,14 +211,14 @@ export class AppError extends Error {
       ErrorSeverity.HIGH,
       false,
       { context },
-      cause,
+      cause
     );
   }
 
   static database(
     message: string,
     cause?: Error,
-    context?: ErrorContext,
+    context?: ErrorContext
   ): AppError {
     return new AppError(
       message,
@@ -227,14 +227,14 @@ export class AppError extends Error {
       ErrorSeverity.HIGH,
       true,
       { context },
-      cause,
+      cause
     );
   }
 
   static aiService(
     message: string,
     cause?: Error,
-    context?: ErrorContext,
+    context?: ErrorContext
   ): AppError {
     return new AppError(
       message,
@@ -243,7 +243,7 @@ export class AppError extends Error {
       ErrorSeverity.MEDIUM,
       true,
       { context },
-      cause,
+      cause
     );
   }
 
@@ -254,7 +254,7 @@ export class AppError extends Error {
       408,
       ErrorSeverity.MEDIUM,
       true,
-      { context },
+      { context }
     );
   }
 
@@ -264,7 +264,7 @@ export class AppError extends Error {
       ErrorCode.RATE_LIMIT_EXCEEDED,
       429,
       ErrorSeverity.LOW,
-      true,
+      true
     );
   }
 
@@ -275,7 +275,7 @@ export class AppError extends Error {
       500,
       ErrorSeverity.HIGH,
       false,
-      { context },
+      { context }
     );
   }
 }

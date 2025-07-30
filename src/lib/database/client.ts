@@ -2,10 +2,13 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // Supabase configuration
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.TEST_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.TEST_SUPABASE_ANON_KEY;
+const SUPABASE_ANON_KEY =
+  process.env.SUPABASE_ANON_KEY || process.env.TEST_SUPABASE_ANON_KEY;
 
 if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase configuration. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your environment.');
+  throw new Error(
+    'Missing Supabase configuration. Please set SUPABASE_URL and SUPABASE_ANON_KEY in your environment.'
+  );
 }
 
 // Create Supabase client
@@ -15,7 +18,7 @@ function createSupabaseClient(): SupabaseClient {
   try {
     console.log(`📂 Connecting to Supabase: ${SUPABASE_URL}`);
 
-    const client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    const client = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       auth: {
         persistSession: false, // For server-side usage
       },
@@ -34,12 +37,14 @@ function createSupabaseClient(): SupabaseClient {
     if (process.env.NODE_ENV === 'development') {
       console.error('💡 To fix this, try:');
       console.error('   1. Ensure Supabase is running: npx supabase start');
-      console.error('   2. Check SUPABASE_URL and SUPABASE_ANON_KEY in .env.local');
+      console.error(
+        '   2. Check SUPABASE_URL and SUPABASE_ANON_KEY in .env.local'
+      );
       console.error('   3. Verify Supabase service is accessible');
     }
 
     throw new Error(
-      `Supabase client creation failed: ${error instanceof Error ? error.message : String(error)}`,
+      `Supabase client creation failed: ${error instanceof Error ? error.message : String(error)}`
     );
   }
 }
@@ -58,17 +63,43 @@ export const supabase = getSupabase();
 // Database health check
 export async function healthCheck(): Promise<boolean> {
   try {
+    console.log('🔍 Performing Supabase health check...');
     const client = getSupabase();
-    const { data, error } = await client.from('audio_files').select('count').limit(1);
     
-    if (error && error.code !== 'PGRST116') { // PGRST116 is "relation does not exist" which is expected if table doesn't exist yet
-      console.error('Database health check failed:', error);
+    // Try a simple query that should work even with empty database
+    const { data, error } = await client
+      .from('audio_files')
+      .select('count')
+      .limit(1);
+
+    if (error) {
+      console.log('Health check error details:', {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint
+      });
+      
+      if (error.code === 'PGRST116') {
+        // PGRST116 is "relation does not exist" which is expected if table doesn't exist yet
+        console.log('✅ Table does not exist but connection is working');
+        return true;
+      }
+      
+      if (error.code === '42P01') {
+        // PostgreSQL "relation does not exist" error
+        console.log('✅ Table not found but connection is working');
+        return true;
+      }
+      
+      console.error('❌ Database health check failed:', error);
       return false;
     }
-    
+
+    console.log('✅ Database health check successful, data:', data);
     return true;
   } catch (error) {
-    console.error('Database health check failed:', error);
+    console.error('❌ Database health check failed with exception:', error);
     return false;
   }
 }
@@ -79,19 +110,19 @@ export async function ensureConnection(): Promise<boolean> {
     const isHealthy = await healthCheck();
     if (!isHealthy) {
       console.warn('Database connection unhealthy, attempting to reconnect...');
-      
+
       // Reset connection and try again
       supabaseClient = null;
       const newCheck = await healthCheck();
-      
+
       if (!newCheck) {
         console.error('Failed to restore database connection');
         return false;
       }
-      
+
       console.log('✅ Database connection restored');
     }
-    
+
     return true;
   } catch (error) {
     console.error('Connection validation failed:', error);
@@ -145,7 +176,12 @@ export interface TranscriptionJob {
   status: 'pending' | 'processing' | 'completed' | 'failed' | 'draft';
   progress?: number;
   transcript?: any; // JSON data
-  diarization_status?: 'not_attempted' | 'in_progress' | 'success' | 'failed' | 'no_speakers_detected';
+  diarization_status?:
+    | 'not_attempted'
+    | 'in_progress'
+    | 'success'
+    | 'failed'
+    | 'no_speakers_detected';
   diarization_error?: string;
   last_error?: string;
   started_at?: string;

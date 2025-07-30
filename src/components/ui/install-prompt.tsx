@@ -63,7 +63,7 @@ export function InstallPrompt() {
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
-        handleBeforeInstallPrompt,
+        handleBeforeInstallPrompt
       );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
@@ -105,7 +105,7 @@ export function InstallPrompt() {
     switch (platform) {
       case 'ios':
         return {
-          icon: <Smartphone className="h-4 w-4" />,
+          icon: <Smartphone className='h-4 w-4' />,
           title: 'Install Noti on iOS',
           instructions: [
             'Tap the Share button in Safari',
@@ -115,7 +115,7 @@ export function InstallPrompt() {
         };
       case 'android':
         return {
-          icon: <Smartphone className="h-4 w-4" />,
+          icon: <Smartphone className='h-4 w-4' />,
           title: 'Install Noti on Android',
           instructions: [
             'Tap "Install" below or',
@@ -125,7 +125,7 @@ export function InstallPrompt() {
         };
       default:
         return {
-          icon: <Monitor className="h-4 w-4" />,
+          icon: <Monitor className='h-4 w-4' />,
           title: 'Install Noti on Desktop',
           instructions: [
             'Click "Install" below or',
@@ -139,30 +139,30 @@ export function InstallPrompt() {
   const { icon, title, instructions } = getInstallInstructions();
 
   return (
-    <div className="fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm md:bottom-4">
-      <UnibodyCard className="border border-primary/20 shadow-lg">
-        <div className="mb-3 flex items-start justify-between">
-          <div className="flex items-center gap-2">
+    <div className='fixed bottom-20 left-4 right-4 z-50 mx-auto max-w-sm md:bottom-4'>
+      <UnibodyCard className='border border-primary/20 shadow-lg'>
+        <div className='mb-3 flex items-start justify-between'>
+          <div className='flex items-center gap-2'>
             {icon}
-            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            <h3 className='text-sm font-semibold text-foreground'>{title}</h3>
           </div>
           <Button
-            variant="ghost"
-            size="sm"
-            className="-mr-1 -mt-1 h-6 w-6 p-0"
+            variant='ghost'
+            size='sm'
+            className='-mr-1 -mt-1 h-6 w-6 p-0'
             onClick={handleDismiss}
           >
-            <X className="h-3 w-3" />
+            <X className='h-3 w-3' />
           </Button>
         </div>
 
-        <div className="space-y-3">
-          <div className="text-xs text-muted-foreground">
-            <p className="mb-2">Get the full app experience:</p>
-            <ul className="space-y-1">
+        <div className='space-y-3'>
+          <div className='text-xs text-muted-foreground'>
+            <p className='mb-2'>Get the full app experience:</p>
+            <ul className='space-y-1'>
               {instructions.map((instruction, index) => (
-                <li key={index} className="flex items-start gap-2">
-                  <span className="mt-0.5 text-[10px] font-bold text-primary">
+                <li key={index} className='flex items-start gap-2'>
+                  <span className='mt-0.5 text-[10px] font-bold text-primary'>
                     •
                   </span>
                   <span>{instruction}</span>
@@ -171,24 +171,24 @@ export function InstallPrompt() {
             </ul>
           </div>
 
-          <div className="flex gap-2">
+          <div className='flex gap-2'>
             {deferredPrompt && platform !== 'ios' && (
               <Button
                 onClick={handleInstall}
-                size="sm"
-                className="flex-1 bg-primary text-primary-foreground hover:bg-primary/90"
+                size='sm'
+                className='flex-1 bg-primary text-primary-foreground hover:bg-primary/90'
               >
-                <Download className="mr-1 h-3 w-3" />
+                <Download className='mr-1 h-3 w-3' />
                 Install
               </Button>
             )}
             <Button
               onClick={handleDismiss}
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               className={cn(
                 '',
-                deferredPrompt && platform !== 'ios' ? '' : 'flex-1',
+                deferredPrompt && platform !== 'ios' ? '' : 'flex-1'
               )}
             >
               Maybe Later
@@ -231,7 +231,7 @@ export function usePWAInstall() {
     return () => {
       window.removeEventListener(
         'beforeinstallprompt',
-        handleBeforeInstallPrompt,
+        handleBeforeInstallPrompt
       );
       window.removeEventListener('appinstalled', handleAppInstalled);
     };

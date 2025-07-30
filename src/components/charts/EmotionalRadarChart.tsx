@@ -76,10 +76,10 @@ export function EmotionalRadarChart({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width='100%' height={height}>
           <RadarChart data={radarData}>
             <PolarGrid />
-            <PolarAngleAxis dataKey="emotion" tick={{ fontSize: 12 }} />
+            <PolarAngleAxis dataKey='emotion' tick={{ fontSize: 12 }} />
             <PolarRadiusAxis
               angle={90}
               domain={[0, 10]}
@@ -87,10 +87,10 @@ export function EmotionalRadarChart({
               tickCount={6}
             />
             <Radar
-              name="Emotional Intensity"
-              dataKey="value"
-              stroke="#3b82f6"
-              fill="#3b82f6"
+              name='Emotional Intensity'
+              dataKey='value'
+              stroke='#3b82f6'
+              fill='#3b82f6'
               fillOpacity={0.1}
               strokeWidth={2}
             />
@@ -98,31 +98,31 @@ export function EmotionalRadarChart({
         </ResponsiveContainer>
 
         {/* Dominant emotions summary */}
-        <div className="mt-4">
-          <h4 className="mb-3 font-medium">Dominant Emotions</h4>
-          <div className="space-y-2">
+        <div className='mt-4'>
+          <h4 className='mb-3 font-medium'>Dominant Emotions</h4>
+          <div className='space-y-2'>
             {sortedEmotions.map(([emotion, value], index) => (
-              <div key={emotion} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
+              <div key={emotion} className='flex items-center justify-between'>
+                <div className='flex items-center gap-2'>
                   <div
-                    className="h-3 w-3 rounded-full"
+                    className='h-3 w-3 rounded-full'
                     style={{ backgroundColor: getEmotionColor(emotion) }}
                   />
-                  <span className="text-sm font-medium capitalize">
+                  <span className='text-sm font-medium capitalize'>
                     {emotion}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-20 rounded-full bg-gray-200">
+                <div className='flex items-center gap-2'>
+                  <div className='h-2 w-20 rounded-full bg-gray-200'>
                     <div
-                      className="h-2 rounded-full transition-all duration-300"
+                      className='h-2 rounded-full transition-all duration-300'
                       style={{
                         width: `${((value || 0) / 10) * 100}%`,
                         backgroundColor: getEmotionColor(emotion),
                       }}
                     />
                   </div>
-                  <span className="w-8 text-sm text-gray-600">
+                  <span className='w-8 text-sm text-gray-600'>
                     {value?.toFixed(1)}
                   </span>
                 </div>
@@ -132,13 +132,13 @@ export function EmotionalRadarChart({
         </div>
 
         {/* Emotional insights */}
-        <div className="mt-4 rounded-lg bg-gray-50 p-3">
-          <h4 className="mb-2 font-medium">Emotional Insights</h4>
-          <div className="text-sm text-gray-600">
+        <div className='mt-4 rounded-lg bg-gray-50 p-3'>
+          <h4 className='mb-2 font-medium'>Emotional Insights</h4>
+          <div className='text-sm text-gray-600'>
             {sortedEmotions.length > 0 && (
               <p>
                 Primary emotion:{' '}
-                <span className="font-medium">{sortedEmotions[0][0]}</span>
+                <span className='font-medium'>{sortedEmotions[0][0]}</span>
                 {sortedEmotions[0][1] &&
                   ` (${sortedEmotions[0][1].toFixed(1)}/10)`}
               </p>
@@ -146,13 +146,13 @@ export function EmotionalRadarChart({
             {sortedEmotions.length > 1 && (
               <p>
                 Secondary emotion:{' '}
-                <span className="font-medium">{sortedEmotions[1][0]}</span>
+                <span className='font-medium'>{sortedEmotions[1][0]}</span>
                 {sortedEmotions[1][1] &&
                   ` (${sortedEmotions[1][1].toFixed(1)}/10)`}
               </p>
             )}
             {/* Emotional balance assessment */}
-            <p className="mt-2">
+            <p className='mt-2'>
               {(() => {
                 const positiveEmotions =
                   (moodData.happy || 0) +

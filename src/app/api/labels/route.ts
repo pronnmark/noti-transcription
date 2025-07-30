@@ -15,7 +15,10 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Error fetching labels:', error);
-      return NextResponse.json({ error: 'Failed to fetch labels' }, { status: 500 });
+      return NextResponse.json(
+        { error: 'Failed to fetch labels' },
+        { status: 500 }
+      );
     }
 
     // Flatten and deduplicate labels
@@ -43,7 +46,7 @@ export async function GET(request: NextRequest) {
     console.error('Labels API error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

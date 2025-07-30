@@ -51,10 +51,12 @@ test.describe('Audio Upload API Tests', () => {
     uploadedFileIds = [];
   });
 
-  test('should successfully upload a small MP3 file via API', async ({ request }) => {
+  test('should successfully upload a small MP3 file via API', async ({
+    request,
+  }) => {
     // Get test file
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     // Create FormData with the file
     const formData = new FormData();
     const blob = new Blob([testFile.buffer], { type: testFile.contentType });
@@ -71,7 +73,7 @@ test.describe('Audio Upload API Tests', () => {
       console.error('Upload failed:', {
         status: response.status(),
         statusText: response.statusText(),
-        body: errorText
+        body: errorText,
       });
     }
 
@@ -100,33 +102,38 @@ test.describe('Audio Upload API Tests', () => {
     // Verify file exists in database
     const fileResponse = await request.get(`/api/files/${result.fileId}`);
     expect(fileResponse.ok()).toBeTruthy();
-    
+
     const fileData = await fileResponse.json();
     expect(fileData.success).toBe(true);
     expect(fileData.data).toBeDefined();
     expect(fileData.data.originalFileName).toBe(testFile.name);
     expect(fileData.data.fileSize).toBe(testFile.size);
-    
+
     // Track file path for Supabase cleanup
     uploadedPaths.push(fileData.data.fileName);
 
     // Verify file exists in Supabase Storage
-    const fileExists = await supabaseManager.fileExists('audio-files', fileData.data.fileName);
+    const fileExists = await supabaseManager.fileExists(
+      'audio-files',
+      fileData.data.fileName
+    );
     expect(fileExists).toBe(true);
 
-    console.log(`✅ Successfully uploaded file ${result.fileId}: ${testFile.name}`);
+    console.log(
+      `✅ Successfully uploaded file ${result.fileId}: ${testFile.name}`
+    );
   });
 
   test('should successfully upload a WAV file via API', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-medium.wav');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
           name: testFile.name,
           mimeType: testFile.contentType,
           buffer: testFile.buffer,
-        }
+        },
       },
     });
 
@@ -135,7 +142,7 @@ test.describe('Audio Upload API Tests', () => {
 
     expect(responseData.success).toBe(true);
     expect(responseData.data.results[0].success).toBe(true);
-    
+
     const result = responseData.data.results[0];
     uploadedFileIds.push(result.fileId);
 
@@ -145,15 +152,20 @@ test.describe('Audio Upload API Tests', () => {
     uploadedPaths.push(fileData.data.fileName);
 
     // Verify in Supabase
-    const fileExists = await supabaseManager.fileExists('audio-files', fileData.data.fileName);
+    const fileExists = await supabaseManager.fileExists(
+      'audio-files',
+      fileData.data.fileName
+    );
     expect(fileExists).toBe(true);
 
-    console.log(`✅ Successfully uploaded WAV file ${result.fileId}: ${testFile.name}`);
+    console.log(
+      `✅ Successfully uploaded WAV file ${result.fileId}: ${testFile.name}`
+    );
   });
 
   test('should upload file with location data', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
@@ -164,7 +176,7 @@ test.describe('Audio Upload API Tests', () => {
         latitude: '37.7749',
         longitude: '-122.4194',
         locationAccuracy: '10',
-        locationProvider: 'gps'
+        locationProvider: 'gps',
       },
     });
 
@@ -173,7 +185,7 @@ test.describe('Audio Upload API Tests', () => {
 
     expect(responseData.success).toBe(true);
     expect(responseData.data.locationCaptured).toBe(true);
-    
+
     const result = responseData.data.results[0];
     uploadedFileIds.push(result.fileId);
 
@@ -185,12 +197,14 @@ test.describe('Audio Upload API Tests', () => {
     expect(fileData.data.latitude).toBeCloseTo(37.7749, 4);
     expect(fileData.data.longitude).toBeCloseTo(-122.4194, 3);
 
-    console.log(`✅ Successfully uploaded file with location data: ${result.fileId}`);
+    console.log(
+      `✅ Successfully uploaded file with location data: ${result.fileId}`
+    );
   });
 
   test('should upload file with speaker count', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
@@ -198,7 +212,7 @@ test.describe('Audio Upload API Tests', () => {
           mimeType: testFile.contentType,
           buffer: testFile.buffer,
         },
-        speakerCount: '3'
+        speakerCount: '3',
       },
     });
 
@@ -208,7 +222,7 @@ test.describe('Audio Upload API Tests', () => {
     expect(responseData.success).toBe(true);
     expect(responseData.data.speakerCount).toBe(3);
     expect(responseData.data.speakerDetection).toBe('user_specified');
-    
+
     const result = responseData.data.results[0];
     uploadedFileIds.push(result.fileId);
 
@@ -217,15 +231,19 @@ test.describe('Audio Upload API Tests', () => {
     const fileData = await fileResponse.json();
     uploadedPaths.push(fileData.data.fileName);
 
-    console.log(`✅ Successfully uploaded file with speaker count: ${result.fileId}`);
+    console.log(
+      `✅ Successfully uploaded file with speaker count: ${result.fileId}`
+    );
   });
 
-  test('should handle single file upload (multiple files not supported in Playwright multipart)', async ({ request }) => {
+  test('should handle single file upload (multiple files not supported in Playwright multipart)', async ({
+    request,
+  }) => {
     const testFiles = [
       TestHelpers.getTestFile('test-audio-small.mp3'),
       TestHelpers.getTestFile('test-voice-message.ogg'),
     ];
-    
+
     // Note: Playwright multipart doesn't support multiple files with same field name
     // Upload only one file and adjust expectations
     const response = await request.post('/api/upload', {
@@ -234,7 +252,7 @@ test.describe('Audio Upload API Tests', () => {
           name: testFiles[0].name,
           mimeType: testFiles[0].contentType,
           buffer: testFiles[0].buffer,
-        }
+        },
       },
     });
 
@@ -258,19 +276,21 @@ test.describe('Audio Upload API Tests', () => {
       uploadedPaths.push(fileData.data.fileName);
     }
 
-    console.log(`✅ Successfully uploaded ${responseData.data.successCount} files`);
+    console.log(
+      `✅ Successfully uploaded ${responseData.data.successCount} files`
+    );
   });
 
   test('should reject invalid file type', async ({ request }) => {
     const invalidFile = TestHelpers.getTestFile('invalid-file.txt');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
           name: invalidFile.name,
           mimeType: 'text/plain',
           buffer: invalidFile.buffer,
-        }
+        },
       },
     });
 
@@ -281,12 +301,14 @@ test.describe('Audio Upload API Tests', () => {
     expect(responseData.error).toBeDefined();
     expect(responseData.error.message).toContain('Invalid file type');
 
-    console.log(`✅ Successfully rejected invalid file type: ${invalidFile.name}`);
+    console.log(
+      `✅ Successfully rejected invalid file type: ${invalidFile.name}`
+    );
   });
 
   test('should handle empty file upload request', async ({ request }) => {
     const response = await request.post('/api/upload', {
-      multipart: {}
+      multipart: {},
     });
 
     expect(response.status()).toBe(400);
@@ -301,7 +323,7 @@ test.describe('Audio Upload API Tests', () => {
 
   test('should validate speaker count parameter', async ({ request }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
@@ -309,7 +331,7 @@ test.describe('Audio Upload API Tests', () => {
           mimeType: testFile.contentType,
           buffer: testFile.buffer,
         },
-        speakerCount: 'invalid'
+        speakerCount: 'invalid',
       },
     });
 
@@ -322,23 +344,25 @@ test.describe('Audio Upload API Tests', () => {
     console.log(`✅ Successfully validated speaker count parameter`);
   });
 
-  test('should verify file content integrity after upload', async ({ request }) => {
+  test('should verify file content integrity after upload', async ({
+    request,
+  }) => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     const response = await request.post('/api/upload', {
       multipart: {
         file: {
           name: testFile.name,
           mimeType: testFile.contentType,
           buffer: testFile.buffer,
-        }
+        },
       },
     });
 
     expect(response.ok()).toBeTruthy();
     const responseData = await response.json();
     const result = responseData.data.results[0];
-    
+
     uploadedFileIds.push(result.fileId);
 
     // Get file details
@@ -347,9 +371,14 @@ test.describe('Audio Upload API Tests', () => {
     uploadedPaths.push(fileData.data.fileName);
 
     // Download file from Supabase and verify content
-    const downloadedContent = await supabaseManager.downloadFile('audio-files', fileData.data.fileName);
+    const downloadedContent = await supabaseManager.downloadFile(
+      'audio-files',
+      fileData.data.fileName
+    );
     expect(downloadedContent.equals(testFile.buffer)).toBe(true);
 
-    console.log(`✅ Successfully verified file content integrity: ${result.fileId}`);
+    console.log(
+      `✅ Successfully verified file content integrity: ${result.fileId}`
+    );
   });
 });

@@ -4,13 +4,16 @@ import {
   createApiResponse,
   createErrorResponse,
 } from '@/lib/middleware';
-import { RepositoryFactory } from '@/lib/database/repositories';
+import {
+  RepositoryFactory,
+  SummarizationRepository,
+} from '@/lib/database/repositories';
 import { debugLog } from '@/lib/utils/debug';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> },
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   return withAuthMiddleware(
     async (req: NextRequest, context) => {
@@ -23,7 +26,7 @@ export async function POST(
         if (isNaN(fileIdInt)) {
           return NextResponse.json(
             createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-            { status: 400 },
+            { status: 400 }
           );
         }
         const body = await req.json();
@@ -55,7 +58,7 @@ export async function POST(
             await summarizationTemplateRepo.findActiveByIds(templateIds);
           const validTemplateIds = new Set(validTemplates.map(t => t.id));
           const invalidTemplateIds = templateIds.filter(
-            (id: string) => !validTemplateIds.has(id),
+            (id: string) => !validTemplateIds.has(id)
           );
 
           if (invalidTemplateIds.length > 0) {
@@ -71,9 +74,9 @@ export async function POST(
                 {
                   invalidTemplateIds,
                   validTemplateIds: Array.from(validTemplateIds),
-                },
+                }
               ),
-              { status: 400 },
+              { status: 400 }
             );
           }
         }
@@ -83,7 +86,7 @@ export async function POST(
         if (!file) {
           return NextResponse.json(
             createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-            { status: 404 },
+            { status: 404 }
           );
         }
 
@@ -95,9 +98,9 @@ export async function POST(
             createErrorResponse(
               'Transcription job not found',
               'TRANSCRIPTION_NOT_FOUND',
-              404,
+              404
             ),
-            { status: 404 },
+            { status: 404 }
           );
         }
 
@@ -106,15 +109,15 @@ export async function POST(
             createErrorResponse(
               'File not transcribed yet',
               'NOT_TRANSCRIBED',
-              400,
+              400
             ),
-            { status: 400 },
+            { status: 400 }
           );
         }
 
         debugLog(
           'api',
-          `Starting AI processing for file ${fileIdInt}, type: ${processType}`,
+          `Starting AI processing for file ${fileIdInt}, type: ${processType}`
         );
 
         let results: Record<string, unknown> = {};
@@ -125,83 +128,80 @@ export async function POST(
               // Update file timestamp
               await audioRepo.updateTimestamp(fileIdInt);
 
-              results.summarization =
-                await adaptiveAIService.generateSummarization(
-                  fileIdInt,
-                  transcriptionJob.transcript,
-                  {
-                    templateId: templateIds[0],
-                    customPrompt,
-                    model,
-                  },
-                );
+              const summaryResult = await adaptiveAIService.summarizeTranscript(
+                transcriptionJob.transcript,
+                {
+                  templateId: templateIds[0],
+                  customPrompt,
+                  model,
+                }
+              );
+
+              // Store the summarization
+              const summarizationRepo =
+                RepositoryFactory.summarizationRepository;
+              const savedSummary = await summarizationRepo.create({
+                file_id: fileIdInt,
+                content: summaryResult.content,
+                model: summaryResult.model,
+                prompt: summaryResult.prompt,
+                template_id: templateIds[0] || null,
+              });
+
+              results.summarization = savedSummary;
 
               // Update file timestamp
               await audioRepo.updateTimestamp(fileIdInt);
               break;
 
             case 'extractions':
-              if (templateIds.length === 0) {
-                return NextResponse.json(
-                  createErrorResponse(
-                    'Template IDs required for extractions',
-                    'TEMPLATE_IDS_REQUIRED',
-                    400,
-                  ),
-                  { status: 400 },
-                );
-              }
-
-              // Update file timestamp
-              await audioRepo.updateTimestamp(fileIdInt);
-
-              results.extractions = await adaptiveAIService.processExtractions(
-                fileIdInt,
-                transcriptionJob.transcript,
-                templateIds,
-                { model, temperature },
+              return NextResponse.json(
+                createErrorResponse(
+                  'Extractions feature has been removed',
+                  'FEATURE_REMOVED',
+                  501
+                ),
+                { status: 501 }
               );
-
-              // Update file timestamp
-              await audioRepo.updateTimestamp(fileIdInt);
-              break;
 
             case 'datapoints':
-              if (templateIds.length === 0) {
-                return NextResponse.json(
-                  createErrorResponse(
-                    'Template IDs required for data points',
-                    'TEMPLATE_IDS_REQUIRED',
-                    400,
-                  ),
-                  { status: 400 },
-                );
-              }
-
-              // Update file timestamp
-              await audioRepo.updateTimestamp(fileIdInt);
-
-              results.dataPoints = await adaptiveAIService.processDataPoints(
-                fileIdInt,
-                transcriptionJob.transcript,
-                templateIds,
-                { model, temperature },
+              return NextResponse.json(
+                createErrorResponse(
+                  'Data points feature has been removed',
+                  'FEATURE_REMOVED',
+                  501
+                ),
+                { status: 501 }
               );
-
-              // Update file timestamp
-              await audioRepo.updateTimestamp(fileIdInt);
-              break;
 
             case 'all':
               // Update file timestamp
               await audioRepo.updateTimestamp(fileIdInt);
 
-              // Process with default templates
-              results = await adaptiveAIService.processFileWithDefaults(
-                fileIdInt,
-                transcriptionJob.transcript,
-                { model, temperature },
-              );
+              // Only process summarization since extractions and data points have been removed
+              const allSummaryResult =
+                await adaptiveAIService.summarizeTranscript(
+                  transcriptionJob.transcript,
+                  {
+                    model,
+                  }
+                );
+
+              // Store the summarization
+              const summarizationRepoAll =
+                RepositoryFactory.summarizationRepository;
+              const savedSummaryAll = await summarizationRepoAll.create({
+                file_id: fileIdInt,
+                content: allSummaryResult.content,
+                model: allSummaryResult.model,
+                prompt: allSummaryResult.prompt,
+                template_id: null,
+              });
+
+              results = {
+                summarization: savedSummaryAll,
+                // extractions and datapoints features have been removed
+              };
 
               // Update file timestamp
               await audioRepo.updateTimestamp(fileIdInt);
@@ -212,9 +212,9 @@ export async function POST(
                 createErrorResponse(
                   'Invalid process type',
                   'INVALID_PROCESS_TYPE',
-                  400,
+                  400
                 ),
-                { status: 400 },
+                { status: 400 }
               );
           }
 
@@ -234,8 +234,8 @@ export async function POST(
                   requestId: context.requestId,
                   duration: Date.now() - startTime,
                 },
-              },
-            ),
+              }
+            )
           );
         } catch (aiError) {
           debugLog('api', 'AI processing error:', aiError);
@@ -260,6 +260,6 @@ export async function POST(
         enabled: true,
         sanitizeErrors: true,
       },
-    },
+    }
   )(request);
 }

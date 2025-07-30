@@ -3,7 +3,7 @@ import { cleanupTestEnvironment } from './test-helpers';
 
 async function globalTeardown(config: FullConfig) {
   console.log('🧹 Cleaning up e2e test environment...');
-  
+
   try {
     await cleanupTestEnvironment();
     console.log('✅ Test environment cleanup complete');

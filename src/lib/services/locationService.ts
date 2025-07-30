@@ -40,7 +40,7 @@ export class LocationService {
   public async startTracking(
     onLocationUpdate: (location: LocationData) => void,
     onError: (error: string) => void,
-    options: LocationServiceOptions = {},
+    options: LocationServiceOptions = {}
   ): Promise<void> {
     if (!this.isSupported()) {
       onError('Geolocation is not supported by this browser');
@@ -70,7 +70,7 @@ export class LocationService {
           enableHighAccuracy: finalOptions.enableHighAccuracy,
           timeout: finalOptions.timeout,
           maximumAge: finalOptions.maximumAge,
-        },
+        }
       );
 
       this.isTracking = true;
@@ -118,7 +118,7 @@ export class LocationService {
    * Get current position once (not continuous)
    */
   private getCurrentPosition(
-    options: Required<LocationServiceOptions>,
+    options: Required<LocationServiceOptions>
   ): Promise<LocationData> {
     return new Promise((resolve, reject) => {
       navigator.geolocation.getCurrentPosition(
@@ -133,7 +133,7 @@ export class LocationService {
           enableHighAccuracy: options.enableHighAccuracy,
           timeout: options.timeout,
           maximumAge: options.maximumAge,
-        },
+        }
       );
     });
   }

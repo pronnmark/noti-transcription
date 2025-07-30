@@ -26,7 +26,7 @@ export interface Template {
 
 export interface TemplateSelectorProps {
   /** Template type to load (determines API endpoint) */
-  templateType: 'summarization' | 'extraction' | 'data-points';
+  templateType: 'summarization';
   /** Currently selected template ID */
   selectedTemplateId?: string;
   /** Callback when template selection changes */
@@ -53,8 +53,6 @@ export interface TemplateSelectorProps {
 
 const API_ENDPOINTS = {
   summarization: '/api/summarization-prompts',
-  extraction: '/api/extract/templates',
-  'data-points': '/api/data-points/templates',
 };
 
 export function TemplateSelector({
@@ -145,7 +143,7 @@ export function TemplateSelector({
     }
 
     const selectedTemplates = templates.filter(t =>
-      newSelectedIds.includes(t.id),
+      newSelectedIds.includes(t.id)
     );
     onMultipleSelect(selectedTemplates);
   };
@@ -176,8 +174,8 @@ export function TemplateSelector({
   if (loading) {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Loader2 className="h-4 w-4 animate-spin" />
-        <span className="text-sm text-muted-foreground">
+        <Loader2 className='h-4 w-4 animate-spin' />
+        <span className='text-sm text-muted-foreground'>
           Loading templates...
         </span>
       </div>
@@ -189,10 +187,10 @@ export function TemplateSelector({
       <div className={`text-sm text-red-600 ${className}`}>
         Error: {error}
         <Button
-          variant="ghost"
-          size="sm"
+          variant='ghost'
+          size='sm'
           onClick={loadTemplates}
-          className="ml-2 h-6 px-2"
+          className='ml-2 h-6 px-2'
         >
           Retry
         </Button>
@@ -204,33 +202,33 @@ export function TemplateSelector({
     <div className={`flex items-center gap-2 ${className}`}>
       {multiple ? (
         // Multiple selection with checkboxes
-        <div className="space-y-2">
-          <div className="text-sm font-medium">Select templates:</div>
-          <div className="max-h-32 space-y-1 overflow-y-auto">
+        <div className='space-y-2'>
+          <div className='text-sm font-medium'>Select templates:</div>
+          <div className='max-h-32 space-y-1 overflow-y-auto'>
             {templates.map(template => (
               <label
                 key={template.id}
-                className="flex cursor-pointer items-center gap-2"
+                className='flex cursor-pointer items-center gap-2'
               >
                 <input
-                  type="checkbox"
+                  type='checkbox'
                   checked={selectedTemplateIds.includes(template.id)}
                   onChange={e =>
                     handleMultipleSelection(template.id, e.target.checked)
                   }
                   disabled={disabled}
-                  className="rounded border-gray-300"
+                  className='rounded border-gray-300'
                 />
-                <div className="min-w-0 flex-1">
-                  <div className="text-sm font-medium">{template.name}</div>
+                <div className='min-w-0 flex-1'>
+                  <div className='text-sm font-medium'>{template.name}</div>
                   {template.description && (
-                    <div className="truncate text-xs text-muted-foreground">
+                    <div className='truncate text-xs text-muted-foreground'>
                       {template.description}
                     </div>
                   )}
                 </div>
                 {template.isDefault && (
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant='outline' className='text-xs'>
                     Default
                   </Badge>
                 )}
@@ -251,22 +249,22 @@ export function TemplateSelector({
             </SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="none">
-              <span className="text-muted-foreground">No template</span>
+            <SelectItem value='none'>
+              <span className='text-muted-foreground'>No template</span>
             </SelectItem>
             {templates.map(template => (
               <SelectItem key={template.id} value={template.id}>
-                <div className="flex w-full items-center justify-between">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-medium">{template.name}</div>
+                <div className='flex w-full items-center justify-between'>
+                  <div className='min-w-0 flex-1'>
+                    <div className='font-medium'>{template.name}</div>
                     {template.description && (
-                      <div className="truncate text-xs text-muted-foreground">
+                      <div className='truncate text-xs text-muted-foreground'>
                         {template.description}
                       </div>
                     )}
                   </div>
                   {template.isDefault && (
-                    <Badge variant="outline" className="ml-2 text-xs">
+                    <Badge variant='outline' className='ml-2 text-xs'>
                       Default
                     </Badge>
                   )}
@@ -279,14 +277,14 @@ export function TemplateSelector({
 
       {showManagement && onManagementClick && (
         <Button
-          variant="outline"
+          variant='outline'
           size={size === 'sm' ? 'sm' : 'default'}
           onClick={onManagementClick}
           disabled={disabled}
-          className="flex-shrink-0"
+          className='flex-shrink-0'
         >
-          <Settings className="h-4 w-4" />
-          {size !== 'sm' && <span className="ml-2">Manage</span>}
+          <Settings className='h-4 w-4' />
+          {size !== 'sm' && <span className='ml-2'>Manage</span>}
         </Button>
       )}
     </div>

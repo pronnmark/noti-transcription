@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
     if (!sessionId) {
       return NextResponse.json(
         { error: 'sessionId is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching real-time thoughts:', error);
     return NextResponse.json(
       { error: 'Failed to fetch thoughts' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
           error:
             'sessionId, chunkNumber, transcriptText, and aiThought are required',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating real-time thought:', error);
     return NextResponse.json(
       { error: 'Failed to create thought' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -107,7 +107,7 @@ export async function PATCH(request: NextRequest) {
     if (!thoughtId) {
       return NextResponse.json(
         { error: 'thoughtId is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -115,7 +115,8 @@ export async function PATCH(request: NextRequest) {
     const updateData: any = {};
     if (status) updateData.status = status;
     if (aiThought) updateData.ai_thought = aiThought;
-    if (processingTimeMs !== undefined) updateData.processing_time_ms = processingTimeMs;
+    if (processingTimeMs !== undefined)
+      updateData.processing_time_ms = processingTimeMs;
 
     const { data: updatedThought, error } = await supabase
       .from('real_time_thoughts')
@@ -127,7 +128,10 @@ export async function PATCH(request: NextRequest) {
     if (error) {
       if (error.code === 'PGRST116') {
         // No rows updated - thought not found
-        return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Thought not found' },
+          { status: 404 }
+        );
       }
       throw error;
     }
@@ -137,7 +141,7 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating real-time thought:', error);
     return NextResponse.json(
       { error: 'Failed to update thought' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -150,7 +154,7 @@ export async function DELETE(request: NextRequest) {
     if (!thoughtId) {
       return NextResponse.json(
         { error: 'thoughtId is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -165,7 +169,10 @@ export async function DELETE(request: NextRequest) {
     if (error) {
       if (error.code === 'PGRST116') {
         // No rows deleted - thought not found
-        return NextResponse.json({ error: 'Thought not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Thought not found' },
+          { status: 404 }
+        );
       }
       throw error;
     }
@@ -175,7 +182,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting real-time thought:', error);
     return NextResponse.json(
       { error: 'Failed to delete thought' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { FileAudio, Plus, Loader2, Trash2 } from 'lucide-react';
+import { FileAudio, Plus, Loader2, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -42,10 +42,10 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
   if (!hasAiExtract || extractCount === 0) {
     // Hollow circle for no summaries
     return (
-      <div className="flex items-center gap-1">
+      <div className='flex items-center gap-1'>
         <div
-          className="h-2 w-2 rounded-full border border-gray-400 bg-transparent"
-          title="No summaries generated"
+          className='h-2 w-2 rounded-full border border-gray-400 bg-transparent'
+          title='No summaries generated'
         />
       </div>
     );
@@ -53,16 +53,16 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
 
   // Filled circles for summaries - one per summary
   return (
-    <div className="flex items-center gap-1">
+    <div className='flex items-center gap-1'>
       {Array.from({ length: Math.min(extractCount, 5) }, (_, i) => (
         <div
           key={i}
-          className="h-2 w-2 rounded-full bg-gray-800"
+          className='h-2 w-2 rounded-full bg-gray-800'
           title={`${extractCount} ${extractCount === 1 ? 'summary' : 'summaries'} generated`}
         />
       ))}
       {extractCount > 5 && (
-        <span className="ml-1 text-xs text-gray-600">+{extractCount - 5}</span>
+        <span className='ml-1 text-xs text-gray-600'>+{extractCount - 5}</span>
       )}
     </div>
   );
@@ -117,7 +117,7 @@ export default function FilesPage() {
       if (response.status === 409) {
         const duplicateData = await response.json();
         const shouldUpload = confirm(
-          `File "${duplicateData.existingFile.originalFileName}" already exists.\n\nUpload anyway?`,
+          `File "${duplicateData.existingFile.originalFileName}" already exists.\n\nUpload anyway?`
         );
 
         if (shouldUpload) {
@@ -138,7 +138,7 @@ export default function FilesPage() {
       await loadFiles();
     } catch (error) {
       toast.error(
-        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     } finally {
       setUploading(false);
@@ -164,6 +164,42 @@ export default function FilesPage() {
     }
   }
 
+  async function handleDownloadFile(fileId: string, fileName: string) {
+    try {
+      toast.info(`Preparing download for ${fileName}...`);
+      
+      // Verify download endpoint is accessible before opening
+      const downloadUrl = `/api/files/${fileId}/download`;
+      const response = await fetch(downloadUrl, { 
+        method: 'HEAD',
+        credentials: 'same-origin'
+      });
+      
+      if (!response.ok) {
+        // Handle specific error cases
+        if (response.status === 404) {
+          toast.error('File not found or no longer available');
+        } else if (response.status === 500) {
+          toast.error('Server error - unable to generate download link');
+        } else if (response.status === 400) {
+          toast.error('Invalid file - unable to download');
+        } else {
+          toast.error('Download failed - please try again');
+        }
+        return;
+      }
+      
+      // Open download endpoint in new window/tab
+      // The API will redirect to the signed URL for download
+      window.open(downloadUrl, '_blank');
+      
+      toast.success(`Download started for ${fileName}`);
+    } catch (error) {
+      toast.error('Failed to initiate download');
+      console.error('Download error:', error);
+    }
+  }
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '';
     const mins = Math.floor(seconds / 60);
@@ -178,7 +214,7 @@ export default function FilesPage() {
     const fileDate = new Date(
       date.getFullYear(),
       date.getMonth(),
-      date.getDate(),
+      date.getDate()
     );
 
     if (fileDate.getTime() === today.getTime()) {
@@ -205,7 +241,7 @@ export default function FilesPage() {
     const fileDate = new Date(
       date.getFullYear(),
       date.getMonth(),
-      date.getDate(),
+      date.getDate()
     );
 
     if (fileDate.getTime() === today.getTime()) {
@@ -232,7 +268,7 @@ export default function FilesPage() {
       groups[dateGroup].push(file);
       return groups;
     },
-    {},
+    {}
   );
 
   // Sort date groups (Today first, then Yesterday, then chronological)
@@ -246,26 +282,26 @@ export default function FilesPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+      <div className='flex h-screen items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-gray-400' />
       </div>
     );
   }
 
   return (
-    <div className="standard-page-bg">
-      <div className="safe-area-inset">
+    <div className='standard-page-bg'>
+      <div className='safe-area-inset'>
         {/* Header */}
-        <div className="standard-section-bg">
-          <div className="px-4 pb-4 pt-6">
-            <h1 className="text-2xl font-semibold text-gray-900">Files</h1>
+        <div className='standard-section-bg'>
+          <div className='px-4 pb-4 pt-6'>
+            <h1 className='text-2xl font-semibold text-gray-900'>Files</h1>
           </div>
         </div>
 
         {/* Content */}
-        <div className="px-4 py-6">
+        <div className='px-4 py-6'>
           {/* Multi-file Upload Component */}
-          <div className="mb-6">
+          <div className='mb-6'>
             <MultiFileUpload
               onUploadComplete={results => {
                 // Reload files after successful uploads
@@ -279,37 +315,37 @@ export default function FilesPage() {
 
           {files.length === 0 ? (
             /* Empty State */
-            <div className="py-20 text-center">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
-                <FileAudio className="h-8 w-8 text-gray-400" />
+            <div className='py-20 text-center'>
+              <div className='mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100'>
+                <FileAudio className='h-8 w-8 text-gray-400' />
               </div>
-              <h3 className="mb-2 text-lg font-medium text-gray-900">
+              <h3 className='mb-2 text-lg font-medium text-gray-900'>
                 No files yet
               </h3>
-              <p className="mb-6 text-gray-500">
+              <p className='mb-6 text-gray-500'>
                 Upload your first audio file to get started
               </p>
             </div>
           ) : (
             /* Files List - Grouped by Date */
-            <div className="space-y-6">
+            <div className='space-y-6'>
               {sortedDateGroups.map(dateGroup => (
                 <div key={dateGroup}>
                   {/* Date Header */}
-                  <div className="mb-3 flex items-center">
-                    <h2 className="text-sm font-medium text-gray-600">
+                  <div className='mb-3 flex items-center'>
+                    <h2 className='text-sm font-medium text-gray-600'>
                       {dateGroup}
                     </h2>
-                    <div className="ml-3 flex-1 border-t border-gray-200" />
+                    <div className='ml-3 flex-1 border-t border-gray-200' />
                   </div>
 
                   {/* Files for this date */}
-                  <div className="space-y-2">
+                  <div className='space-y-2'>
                     {groupedFiles[dateGroup]
                       .sort(
                         (a, b) =>
                           new Date(b.recordedAt || b.createdAt).getTime() -
-                          new Date(a.recordedAt || a.createdAt).getTime(),
+                          new Date(a.recordedAt || a.createdAt).getTime()
                       )
                       .map(file => (
                         <div
@@ -318,7 +354,7 @@ export default function FilesPage() {
                             'standard-card p-3',
                             file.transcriptionStatus === 'completed'
                               ? 'standard-card-hover cursor-pointer'
-                              : '',
+                              : ''
                           )}
                           onClick={() => {
                             if (file.transcriptionStatus === 'completed') {
@@ -326,10 +362,10 @@ export default function FilesPage() {
                             }
                           }}
                         >
-                          <div className="flex items-center justify-between">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2">
-                                <p className="truncate text-sm font-medium text-gray-900">
+                          <div className='flex items-center justify-between'>
+                            <div className='min-w-0 flex-1'>
+                              <div className='flex items-center gap-2'>
+                                <p className='truncate text-sm font-medium text-gray-900'>
                                   {file.originalName}
                                 </p>
                                 <SummaryStatus
@@ -337,40 +373,55 @@ export default function FilesPage() {
                                   extractCount={file.extractCount || 0}
                                 />
                               </div>
-                              <div className="mt-1 flex items-center gap-3">
-                                <span className="text-xs text-gray-500">
+                              <div className='mt-1 flex items-center gap-3'>
+                                <span className='text-xs text-gray-500'>
                                   {formatDate(
-                                    file.recordedAt || file.createdAt,
+                                    file.recordedAt || file.createdAt
                                   )}
                                 </span>
                                 {file.duration && (
-                                  <span className="text-xs text-gray-500">
+                                  <span className='text-xs text-gray-500'>
                                     {formatDuration(file.duration)}
                                   </span>
                                 )}
                                 {file.transcriptionStatus === 'processing' && (
-                                  <span className="text-xs text-blue-600">
+                                  <span className='text-xs text-blue-600'>
                                     Processing...
                                   </span>
                                 )}
                               </div>
                             </div>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
-                              onClick={e => {
-                                e.stopPropagation();
-                                handleDeleteFile(file.id, file.originalName);
-                              }}
-                              disabled={deletingId === file.id}
-                            >
-                              {deletingId === file.id ? (
-                                <Loader2 className="h-3 w-3 animate-spin" />
-                              ) : (
-                                <Trash2 className="h-3 w-3" />
-                              )}
-                            </Button>
+                            <div className='flex items-center gap-1'>
+                              <Button
+                                size='sm'
+                                variant='ghost'
+                                className='h-8 w-8 p-0 text-gray-400 hover:text-blue-600'
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleDownloadFile(file.id, file.originalName);
+                                }}
+                                title={`Download ${file.originalName}`}
+                              >
+                                <Download className='h-3 w-3' />
+                              </Button>
+                              <Button
+                                size='sm'
+                                variant='ghost'
+                                className='h-8 w-8 p-0 text-gray-400 hover:text-red-600'
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  handleDeleteFile(file.id, file.originalName);
+                                }}
+                                disabled={deletingId === file.id}
+                                title={`Delete ${file.originalName}`}
+                              >
+                                {deletingId === file.id ? (
+                                  <Loader2 className='h-3 w-3 animate-spin' />
+                                ) : (
+                                  <Trash2 className='h-3 w-3' />
+                                )}
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -381,36 +432,36 @@ export default function FilesPage() {
           )}
 
           {/* Bottom Padding for Floating Button */}
-          <div className="h-20" />
+          <div className='h-20' />
         </div>
       </div>
 
       {/* Floating Upload Button */}
-      <div className="fixed bottom-20 right-4 z-50 md:bottom-6">
-        <label className="relative block">
+      <div className='fixed bottom-20 right-4 z-50 md:bottom-6'>
+        <label className='relative block'>
           <Button
-            size="icon"
+            size='icon'
             className={cn(
               'h-14 w-14 rounded-full shadow-lg hover:shadow-xl',
               'bg-blue-600 text-white hover:bg-blue-700',
               'transition-all duration-200 active:scale-95',
               'flex items-center justify-center',
-              uploading && 'pointer-events-none opacity-75',
+              uploading && 'pointer-events-none opacity-75'
             )}
             disabled={uploading}
             asChild
           >
             <span>
               {uploading ? (
-                <Loader2 className="h-6 w-6 animate-spin" />
+                <Loader2 className='h-6 w-6 animate-spin' />
               ) : (
-                <Plus className="h-6 w-6" />
+                <Plus className='h-6 w-6' />
               )}
             </span>
           </Button>
           <input
-            type="file"
-            accept="audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac"
+            type='file'
+            accept='audio/*,.m4a,.mp3,.wav,.aac,.ogg,.flac'
             onChange={e => {
               const file = e.target.files?.[0];
               if (file) {
@@ -418,7 +469,7 @@ export default function FilesPage() {
                 e.target.value = '';
               }
             }}
-            className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+            className='absolute inset-0 h-full w-full cursor-pointer opacity-0'
             disabled={uploading}
           />
         </label>

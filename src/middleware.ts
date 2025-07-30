@@ -26,11 +26,20 @@ export async function middleware(request: NextRequest) {
     request.headers.get('authorization')?.replace('Bearer ', '');
 
   // Skip auth check for certain API endpoints that might be called before auth
-  const publicApiEndpoints = ['/api/health', '/api/auth', '/api/upload', '/api/debug-upload', '/api/files', '/api/telegram/webhook', '/api/transcribe-simple', '/api/transcribe', '/api/transcription-status'];
-  
-  
+  const publicApiEndpoints = [
+    '/api/health',
+    '/api/auth',
+    '/api/upload',
+    '/api/debug-upload',
+    '/api/files',
+    '/api/telegram/webhook',
+    '/api/transcribe-simple',
+    '/api/transcribe',
+    '/api/transcription-status',
+  ];
+
   const isPublicApi = publicApiEndpoints.some(endpoint =>
-    pathname.startsWith(endpoint),
+    pathname.startsWith(endpoint)
   );
 
   if (isPublicApi) {
@@ -46,7 +55,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 },
+        { status: 401 }
       );
     }
 

@@ -1,15 +1,20 @@
-import { spawn } from 'child_process';
 import { join } from 'path';
-import { readFile } from 'fs/promises';
+import { readFile, writeFile } from 'fs/promises';
 import { AudioService } from './core/AudioService';
+import { SupabaseStorageService } from './core/SupabaseStorageService';
 import { detectAndApplySpeakerNames } from './speakerDetectionService';
 import { getSupabase } from '../database/client';
+import FormData from 'form-data';
+import { createReadStream } from 'fs';
+import axios from 'axios';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface TranscriptSegment {
   start: number;
   end: number;
   text: string;
-  speaker?: string;
+  speaker?: number;
+  speakerName?: string;
 }
 
 const _audioService = new AudioService();
@@ -22,198 +27,162 @@ const debugLog = (...args: unknown[]) => {
   }
 };
 
-// Transcription settings - matching SvelteKit version
-const HUGGINGFACE_TOKEN = process.env.HUGGINGFACE_TOKEN;
-const MODEL_SIZE = 'large-v3'; // Always use the biggest, most accurate model
+// Whisper Docker container settings
+const WHISPER_API_URL = process.env.WHISPER_API_URL || 'http://localhost:8080';
+const WHISPER_TIMEOUT = 600000; // 10 minutes
 const ENABLE_DIARIZATION = true; // Always enable speaker detection
 
 export interface TranscriptionResult {
   segments: TranscriptSegment[];
 }
 
-// Helper function to try transcription with specific device
+// Helper function to parse Whisper diarized text into segments
+function parseWhisperTextToSegments(whisperText: string): TranscriptSegment[] {
+  const segments: TranscriptSegment[] = [];
+  const lines = whisperText.split('\n').filter(line => line.trim());
+
+  let currentTime = 0;
+  const SEGMENT_DURATION = 5; // Default 5 seconds per segment
+
+  for (const line of lines) {
+    const trimmedLine = line.trim();
+    if (!trimmedLine) continue;
+
+    // Check if line contains speaker information
+    const speakerMatch = trimmedLine.match(/^\(speaker (\?|\d+)\)\s*(.+)$/);
+
+    if (speakerMatch) {
+      const speakerId = speakerMatch[1];
+      const text = speakerMatch[2].trim();
+
+      if (text) {
+        segments.push({
+          start: currentTime,
+          end: currentTime + SEGMENT_DURATION,
+          text: text,
+          speaker: speakerId === '?' ? undefined : parseInt(speakerId, 10),
+        });
+        currentTime += SEGMENT_DURATION;
+      }
+    } else {
+      // No speaker diarization, treat as single speaker
+      if (trimmedLine) {
+        segments.push({
+          start: currentTime,
+          end: currentTime + SEGMENT_DURATION,
+          text: trimmedLine,
+          speaker: 1,
+        });
+        currentTime += SEGMENT_DURATION;
+      }
+    }
+  }
+
+  // If no segments were created, create one from the entire text
+  if (segments.length === 0 && whisperText.trim()) {
+    segments.push({
+      start: 0,
+      end: 30, // Default duration
+      text: whisperText.trim(),
+      speaker: 1,
+    });
+  }
+
+  return segments;
+}
+
+// Helper function to call Whisper Docker container API
 async function tryTranscription(
   audioPath: string,
   outputPath: string,
   device: 'cuda' | 'cpu',
-  speakerCount?: number,
+  speakerCount?: number
 ): Promise<boolean> {
-  const scriptPath = join(process.cwd(), 'scripts', 'transcribe.py');
-  const pythonPath = join(process.cwd(), 'venv', 'bin', 'python');
+  const inferenceUrl = `${WHISPER_API_URL}/inference`;
 
-  const args = [
-    scriptPath,
-    '--audio-file',
-    audioPath,
-    '--output-file',
-    outputPath,
-    '--model-size',
-    MODEL_SIZE,
-    '--language',
-    'sv',
-    '--device',
-    device,
-    '--enable-diarization',
-  ];
+  console.log(`🎙️ Starting Whisper transcription for ${audioPath}`);
 
-  // Add speaker count if specified
-  if (speakerCount && speakerCount > 1) {
-    args.push('--num-speakers', speakerCount.toString());
+  try {
+    // First check if Whisper container is available
+    const healthResponse = await axios.get(`${WHISPER_API_URL}/health`, {
+      timeout: 5000,
+    });
+
+    if (healthResponse.data.status !== 'ok') {
+      throw new Error('Whisper container not healthy');
+    }
+
+    // Prepare FormData for API call
+    const formData = new FormData();
+    formData.append('file', createReadStream(audioPath));
+    formData.append('response_format', 'json');
+    formData.append('temperature', '0.0');
+    formData.append('language', 'sv'); // Swedish language
+
+    // Get file size for logging
+    const { stat } = await import('fs/promises');
+    const fileStats = await stat(audioPath);
+    const fileSizeMB = (fileStats.size / 1024 / 1024).toFixed(2);
+    
+    console.log(`📡 Sending audio file to Whisper container: ${audioPath} (${fileSizeMB}MB)`);
+
+    // Call Whisper API
+    const response = await axios.post(inferenceUrl, formData, {
+      headers: formData.getHeaders(),
+      timeout: WHISPER_TIMEOUT,
+    });
+
+    const whisperResult = response.data;
+    console.log(
+      `✅ Whisper transcription completed: ${whisperResult.text?.length || 0} characters`
+    );
+
+    // Parse Whisper response and convert to our format
+    const transcriptText = whisperResult.text || '';
+    const segments = parseWhisperTextToSegments(transcriptText);
+
+    const result = {
+      segments: segments,
+    };
+
+    // Write result to output file
+    await writeFile(outputPath, JSON.stringify(result, null, 2));
+
+    // Create metadata file
+    const metadataPath = outputPath.replace('.json', '_metadata.json');
+    const metadata = {
+      diarization_attempted: true,
+      diarization_success: segments.some(s => s.speaker),
+      detected_speakers: new Set(segments.map(s => s.speaker).filter(Boolean))
+        .size,
+      format_conversion_attempted: false,
+      whisper_model: 'ggml-large-v3-turbo.bin',
+      language: 'sv',
+    };
+    await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
+
+    console.log(`✅ Transcription completed successfully for ${audioPath}`);
+    return true;
+  } catch (error) {
+    console.error(`❌ Whisper transcription failed for ${audioPath}:`, error);
+    return false;
   }
-
-  const envVars = {
-    ...process.env,
-    // ALWAYS include HuggingFace token for speaker diarization (with hardcoded fallback)
-    HUGGINGFACE_TOKEN: HUGGINGFACE_TOKEN,
-    // Set Python path to include our venv
-    PYTHONPATH: join(
-      process.cwd(),
-      'venv',
-      'lib',
-      'python3.12',
-      'site-packages',
-    ),
-    // GPU environment variables - try multiple CUDA paths
-    ...(device === 'cuda'
-      ? {
-        CUDA_VISIBLE_DEVICES: '0',
-        PYTORCH_CUDA_ALLOC_CONF: 'max_split_size_mb:512',
-        LD_LIBRARY_PATH: [
-          '/usr/local/cuda/lib64',
-          '/usr/lib/x86_64-linux-gnu',
-          `${process.cwd()}/venv/lib/python3.12/site-packages/nvidia/cudnn/lib`,
-          `${process.cwd()}/venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib`,
-          `${process.cwd()}/venv/lib/python3.12/site-packages/nvidia/cublas/lib`,
-          process.env.LD_LIBRARY_PATH || '',
-        ]
-          .filter(Boolean)
-          .join(':'),
-      }
-      : {}),
-  };
-
-  debugLog(`Trying transcription with ${device.toUpperCase()}:`, args);
-  debugLog(`Environment variables for ${device.toUpperCase()}:`);
-  debugLog(
-    `  HUGGINGFACE_TOKEN: ${envVars.HUGGINGFACE_TOKEN ? 'SET' : 'NOT SET'}`,
-  );
-  debugLog(`  PYTHONPATH: ${envVars.PYTHONPATH}`);
-  if (device === 'cuda') {
-    debugLog(`  CUDA_VISIBLE_DEVICES: ${envVars.CUDA_VISIBLE_DEVICES}`);
-    debugLog(`  LD_LIBRARY_PATH: ${envVars.LD_LIBRARY_PATH}`);
-  }
-
-  return new Promise(resolve => {
-    const timeout = setTimeout(
-      () => {
-        console.error(
-          `❌ ${device.toUpperCase()} transcription timed out after 10 minutes`,
-        );
-        pythonProcess.kill('SIGTERM');
-        resolve(false);
-      },
-      10 * 60 * 1000,
-    ); // 10 minute timeout
-
-    const pythonProcess = spawn(pythonPath, args, {
-      cwd: process.cwd(),
-      env: envVars,
-    });
-
-    let stderrOutput = '';
-    let stdoutOutput = '';
-
-    pythonProcess.stdout.on('data', data => {
-      const output = data.toString();
-      stdoutOutput += output;
-      debugLog(`${device.toUpperCase()} stdout:`, output.trim());
-    });
-
-    pythonProcess.stderr.on('data', data => {
-      const output = data.toString();
-      stderrOutput += output;
-      // Only log important stderr messages, not warnings
-      if (
-        output.includes('Error') ||
-        output.includes('Failed') ||
-        output.includes('Exception')
-      ) {
-        console.error(`${device.toUpperCase()} stderr:`, output.trim());
-      }
-    });
-
-    pythonProcess.on('close', code => {
-      clearTimeout(timeout);
-
-      if (code === 0) {
-        debugLog(
-          `✅ ${device.toUpperCase()} transcription completed successfully!`,
-        );
-        resolve(true);
-      } else {
-        console.error(
-          `❌ ${device.toUpperCase()} transcription failed with code ${code}`,
-        );
-
-        // Log relevant error information
-        if (
-          stderrOutput.includes('Error') ||
-          stderrOutput.includes('Exception')
-        ) {
-          console.error(
-            'Error details:',
-            stderrOutput
-              .split('\n')
-              .filter(
-                line =>
-                  line.includes('Error') ||
-                  line.includes('Exception') ||
-                  line.includes('Traceback'),
-              )
-              .slice(-5),
-          );
-        }
-
-        // Check if it's a CUDA error that should trigger fallback
-        const isCudaError =
-          device === 'cuda' &&
-          (stderrOutput.includes('libcudnn') ||
-            stderrOutput.includes('CUDA out of memory') ||
-            stderrOutput.includes('cuDNN') ||
-            stderrOutput.includes('core dumped') ||
-            code === 134 ||
-            code === null); // Process killed
-
-        if (isCudaError) {
-          debugLog('🔄 CUDA error detected, will try CPU fallback');
-        }
-
-        resolve(false);
-      }
-    });
-
-    pythonProcess.on('error', err => {
-      clearTimeout(timeout);
-      console.error(`${device.toUpperCase()} process error:`, err);
-      resolve(false);
-    });
-  });
 }
 
 export async function startTranscription(
   fileId: number,
   audioPath: string,
-  speakerCount?: number,
+  speakerCount?: number
 ): Promise<void> {
   const supabase = getSupabase();
 
   try {
     debugLog(
-      `🚀 Starting transcription for file ${fileId} with ${MODEL_SIZE} model...`,
+      `🚀 Starting transcription for file ${fileId} with Whisper Docker container...`
     );
     debugLog(`Audio path: ${audioPath}`);
     debugLog(
-      `Speaker diarization: ${ENABLE_DIARIZATION ? 'enabled' : 'disabled'}`,
+      `Speaker diarization: ${ENABLE_DIARIZATION ? 'enabled' : 'disabled'}`
     );
     // Note: Speaker count will be read from database job or fallback to parameter
 
@@ -222,7 +191,7 @@ export async function startTranscription(
       .from('transcription_jobs')
       .select('*')
       .eq('file_id', fileId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(1);
 
     if (jobError) {
@@ -239,7 +208,7 @@ export async function startTranscription(
     const finalSpeakerCount = job.speakerCount || speakerCount;
     if (finalSpeakerCount) {
       debugLog(
-        `Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`,
+        `Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`
       );
     } else {
       debugLog('No speaker count specified - will auto-detect');
@@ -261,27 +230,55 @@ export async function startTranscription(
       throw new Error(`Failed to update job status: ${updateError1.message}`);
     }
 
-    // Validate audio file exists
+    // Download audio file from Supabase storage to temporary file
+    const storageService = new SupabaseStorageService();
+    let tempAudioPath: string;
+    
     try {
-      await readFile(audioPath);
-    } catch (_error) {
+      debugLog(`Downloading file from Supabase Storage: ${audioPath}`);
+      
+      // Create temporary directory
+      const tempDir = join(process.cwd(), 'data', 'temp');
+      const { existsSync, mkdirSync } = await import('fs');
+      if (!existsSync(tempDir)) {
+        mkdirSync(tempDir, { recursive: true });
+        debugLog(`Created temp directory: ${tempDir}`);
+      }
+      
+      // Generate unique temporary filename
+      const fileExtension = audioPath.split('.').pop() || 'webm';
+      const tempFileName = `temp_${job.id}_${Date.now()}.${fileExtension}`;
+      tempAudioPath = join(tempDir, tempFileName);
+      
+      // Download file from Supabase storage
+      const fileBuffer = await storageService.downloadFile('audio-files', audioPath);
+      
+      // Save to temporary file efficiently
+      await writeFile(tempAudioPath, fileBuffer);
+      debugLog(`File downloaded to temporary location: ${tempAudioPath}`);
+      debugLog(`File size: ${(fileBuffer.length / 1024 / 1024).toFixed(2)}MB`);
+      
+    } catch (error) {
+      const errorMessage = `Failed to download audio file from storage: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      debugLog(`❌ ${errorMessage}`);
+      
       await supabase
         .from('transcription_jobs')
         .update({
           status: 'failed',
-          last_error: `Audio file not found: ${audioPath}`,
+          last_error: errorMessage,
           completed_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
         })
         .eq('id', job.id);
-      throw new Error(`Audio file not found: ${audioPath}`);
+      throw new Error(errorMessage);
     }
 
     const outputPath = join(
       process.cwd(),
       'data',
       'transcripts',
-      `${fileId}.json`,
+      `${fileId}.json`
     );
     debugLog(`Output path: ${outputPath}`);
 
@@ -296,7 +293,7 @@ export async function startTranscription(
     // Update progress
     await supabase
       .from('transcription_jobs')
-      .update({ 
+      .update({
         progress: 20,
         updated_at: new Date().toISOString(),
       })
@@ -305,38 +302,55 @@ export async function startTranscription(
     // Try GPU first, then fallback to CPU
     let success = false;
 
-    debugLog(`🚀 Starting GPU transcription with ${MODEL_SIZE} model...`);
-    success = await tryTranscription(
-      audioPath,
-      outputPath,
-      'cuda',
-      finalSpeakerCount,
-    );
-
-    if (!success) {
-      debugLog('🔄 GPU transcription failed, falling back to CPU...');
-      // Update progress
-      await supabase
-        .from('transcription_jobs')
-        .update({ 
-          progress: 50,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', job.id);
-
+    // Wrap transcription in try-finally to ensure cleanup
+    try {
+      debugLog(`🚀 Starting Whisper transcription...`);
+      debugLog(`Temporary audio file: ${tempAudioPath}`);
+      
       success = await tryTranscription(
-        audioPath,
+        tempAudioPath,
         outputPath,
-        'cpu',
-        finalSpeakerCount,
+        'cuda',
+        finalSpeakerCount
       );
+
+      if (!success) {
+        debugLog('🔄 GPU transcription failed, falling back to CPU...');
+        // Update progress
+        await supabase
+          .from('transcription_jobs')
+          .update({
+            progress: 50,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', job.id);
+
+        success = await tryTranscription(
+          tempAudioPath,
+          outputPath,
+          'cpu',
+          finalSpeakerCount
+        );
+      }
+    } finally {
+      // Always clean up temporary file
+      if (tempAudioPath) {
+        try {
+          const { unlink } = await import('fs/promises');
+          await unlink(tempAudioPath);
+          debugLog(`🧹 Cleaned up temporary file: ${tempAudioPath}`);
+        } catch (cleanupError) {
+          console.warn(`⚠️ Failed to cleanup temporary file ${tempAudioPath}:`, cleanupError);
+          // Don't fail the transcription for cleanup issues
+        }
+      }
     }
 
     if (success) {
       // Update progress
       await supabase
         .from('transcription_jobs')
-        .update({ 
+        .update({
           progress: 80,
           updated_at: new Date().toISOString(),
         })
@@ -370,7 +384,7 @@ export async function startTranscription(
       }
 
       debugLog(
-        `✅ Transcription completed with ${result.segments.length} segments`,
+        `✅ Transcription completed with ${result.segments.length} segments`
       );
 
       // Read metadata file to get diarization and format conversion status
@@ -389,11 +403,11 @@ export async function startTranscription(
         if (metadata.format_conversion_attempted) {
           if (metadata.format_conversion_success) {
             debugLog(
-              `🔄 Audio format converted successfully for diarization compatibility`,
+              `🔄 Audio format converted successfully for diarization compatibility`
             );
           } else if (metadata.format_conversion_error) {
             debugLog(
-              `⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`,
+              `⚠️ Audio format conversion failed: ${metadata.format_conversion_error}`
             );
             debugLog(`📝 Continuing with original file format...`);
           }
@@ -403,7 +417,7 @@ export async function startTranscription(
           if (metadata.diarization_success) {
             diarizationStatus = 'success';
             debugLog(
-              `✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`,
+              `✅ Speaker diarization successful! Found ${metadata.detected_speakers} speakers`
             );
           } else if (metadata.diarization_error) {
             diarizationStatus = 'failed';
@@ -416,7 +430,7 @@ export async function startTranscription(
             ) {
               diarizationError = `Format conversion failed (${metadata.format_conversion_error}), then diarization failed: ${metadata.diarization_error}`;
               debugLog(
-                `⚠️ Both format conversion and diarization failed: ${diarizationError}`,
+                `⚠️ Both format conversion and diarization failed: ${diarizationError}`
               );
             } else {
               debugLog(`⚠️ Speaker diarization failed: ${diarizationError}`);
@@ -425,7 +439,7 @@ export async function startTranscription(
         }
       } catch (metadataError) {
         debugLog(
-          'Could not read diarization metadata, falling back to segment analysis',
+          'Could not read diarization metadata, falling back to segment analysis'
         );
         if (metadataError instanceof Error) {
           debugLog('Metadata error details:', metadataError.message);
@@ -436,10 +450,10 @@ export async function startTranscription(
 
         if (hasSpeakers) {
           const uniqueSpeakers = new Set(
-            result.segments.map(s => s.speaker).filter(Boolean),
+            result.segments.map(s => s.speaker).filter(Boolean)
           );
           debugLog(
-            `✅ Speaker diarization successful! Found ${uniqueSpeakers.size} speakers`,
+            `✅ Speaker diarization successful! Found ${uniqueSpeakers.size} speakers`
           );
           diarizationStatus = 'success';
         } else {
@@ -455,30 +469,30 @@ export async function startTranscription(
         try {
           debugLog(`🎯 Starting speaker name detection for file ${fileId}...`);
           const speakerResult = await detectAndApplySpeakerNames(
-            result.segments,
+            result.segments
           );
 
           if (speakerResult.success && speakerResult.updatedTranscript) {
             finalSegments = speakerResult.updatedTranscript;
             debugLog(
               `✅ Speaker detection completed for file ${fileId}:`,
-              speakerResult.stats,
+              speakerResult.stats
             );
           } else {
             debugLog(
-              `ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`,
+              `ℹ️ Speaker detection skipped for file ${fileId}: ${speakerResult.error || 'No names found'}`
             );
           }
         } catch (speakerError) {
           console.error(
             `⚠️ Speaker detection failed for file ${fileId}:`,
-            speakerError,
+            speakerError
           );
           // Continue with original segments - don't fail transcription
         }
       } else {
         debugLog(
-          `ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`,
+          `ℹ️ Skipping speaker detection for file ${fileId}: no speaker diarization available`
         );
       }
 
@@ -493,7 +507,7 @@ export async function startTranscription(
         });
         calculatedDuration = lastSegment.end || 0;
         debugLog(
-          `📏 Calculated duration from transcript: ${calculatedDuration} seconds`,
+          `📏 Calculated duration from transcript: ${calculatedDuration} seconds`
         );
       }
 
@@ -529,24 +543,24 @@ export async function startTranscription(
           if (durationError) {
             console.error(
               `⚠️ Failed to update duration for file ${fileId}:`,
-              durationError.message,
+              durationError.message
             );
           } else {
             debugLog(
-              `📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`,
+              `📏 Updated audioFiles duration: ${calculatedDuration} seconds for file ${fileId}`
             );
           }
         } catch (durationError) {
           console.error(
             `⚠️ Failed to update duration for file ${fileId}:`,
-            durationError,
+            durationError
           );
           // Don't fail the transcription for duration update issues
         }
       }
 
       debugLog(
-        `✅ File ${fileId} transcription process completed successfully`,
+        `✅ File ${fileId} transcription process completed successfully`
       );
 
       debugLog(`✅ Transcription completed successfully for file ${fileId}`);
@@ -571,7 +585,7 @@ export async function startTranscription(
   } catch (error) {
     console.error(
       `❌ Top-level transcription error for file ${fileId}:`,
-      error,
+      error
     );
 
     // Update job as failed if not already updated
@@ -588,7 +602,8 @@ export async function startTranscription(
           .from('transcription_jobs')
           .update({
             status: 'failed',
-            last_error: error instanceof Error ? error.message : 'Unknown error',
+            last_error:
+              error instanceof Error ? error.message : 'Unknown error',
             diarization_status: 'failed',
             diarization_error:
               error instanceof Error ? error.message : 'Unknown error',
@@ -606,7 +621,7 @@ export async function startTranscription(
 }
 
 export async function getTranscript(
-  fileId: number,
+  fileId: number
 ): Promise<TranscriptionResult | null> {
   try {
     const supabase = getSupabase();
@@ -624,7 +639,11 @@ export async function getTranscript(
       return null;
     }
 
-    if (!transcriptionJobs || transcriptionJobs.length === 0 || !transcriptionJobs[0].transcript) {
+    if (
+      !transcriptionJobs ||
+      transcriptionJobs.length === 0 ||
+      !transcriptionJobs[0].transcript
+    ) {
       debugLog(`No transcript found for file ${fileId}`);
       return null;
     }

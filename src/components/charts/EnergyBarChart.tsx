@@ -52,18 +52,18 @@ export function EnergyBarChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="rounded-lg border bg-white p-3 shadow-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-sm">
-            <span className="text-green-600">Energy: </span>
+        <div className='rounded-lg border bg-white p-3 shadow-lg'>
+          <p className='font-medium'>{label}</p>
+          <p className='text-sm'>
+            <span className='text-green-600'>Energy: </span>
             {data.energy}/10
           </p>
-          <p className="text-sm">
-            <span className="text-red-600">Stress: </span>
+          <p className='text-sm'>
+            <span className='text-red-600'>Stress: </span>
             {data.stress}/10
           </p>
-          <p className="text-sm">
-            <span className="text-gray-600">Sessions: </span>
+          <p className='text-sm'>
+            <span className='text-gray-600'>Sessions: </span>
             {data.sessions}
           </p>
         </div>
@@ -79,11 +79,11 @@ export function EnergyBarChart({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width='100%' height={height}>
           <BarChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray='3 3' />
             <XAxis
-              dataKey="date"
+              dataKey='date'
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12 }}
@@ -97,63 +97,63 @@ export function EnergyBarChart({
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Bar
-              dataKey="energy"
-              fill="#10b981"
-              name="Energy Level"
+              dataKey='energy'
+              fill='#10b981'
+              name='Energy Level'
               radius={[2, 2, 0, 0]}
             />
             <Bar
-              dataKey="stress"
-              fill="#ef4444"
-              name="Stress Level"
+              dataKey='stress'
+              fill='#ef4444'
+              name='Stress Level'
               radius={[2, 2, 0, 0]}
             />
           </BarChart>
         </ResponsiveContainer>
 
         {/* Summary statistics */}
-        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+        <div className='mt-4 grid grid-cols-2 gap-4 md:grid-cols-4'>
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-green-600'>
               {data.length > 0
                 ? (
-                  data.reduce(
-                    (sum, item) => sum + (item.averageEnergy || 0),
-                    0,
-                  ) / data.length
-                ).toFixed(1)
+                    data.reduce(
+                      (sum, item) => sum + (item.averageEnergy || 0),
+                      0
+                    ) / data.length
+                  ).toFixed(1)
                 : '0.0'}
             </div>
-            <div className="text-sm text-gray-600">Avg Energy</div>
+            <div className='text-sm text-gray-600'>Avg Energy</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-red-600'>
               {data.length > 0
                 ? (
-                  data.reduce(
-                    (sum, item) => sum + (item.averageStress || 0),
-                    0,
-                  ) / data.length
-                ).toFixed(1)
+                    data.reduce(
+                      (sum, item) => sum + (item.averageStress || 0),
+                      0
+                    ) / data.length
+                  ).toFixed(1)
                 : '0.0'}
             </div>
-            <div className="text-sm text-gray-600">Avg Stress</div>
+            <div className='text-sm text-gray-600'>Avg Stress</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-blue-600'>
               {Math.max(...data.map(item => item.averageEnergy || 0)).toFixed(
-                1,
+                1
               )}
             </div>
-            <div className="text-sm text-gray-600">Peak Energy</div>
+            <div className='text-sm text-gray-600'>Peak Energy</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-orange-600'>
               {Math.min(...data.map(item => item.averageStress || 0)).toFixed(
-                1,
+                1
               )}
             </div>
-            <div className="text-sm text-gray-600">Min Stress</div>
+            <div className='text-sm text-gray-600'>Min Stress</div>
           </div>
         </div>
       </CardContent>

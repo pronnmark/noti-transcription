@@ -38,7 +38,7 @@ export class SupabaseStorageService {
 
     if (!this.supabaseKey) {
       throw new Error(
-        'Supabase key is required. Set SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY',
+        'Supabase key is required. Set SUPABASE_ANON_KEY or SUPABASE_SERVICE_ROLE_KEY'
       );
     }
 
@@ -51,19 +51,19 @@ export class SupabaseStorageService {
     try {
       // Test connection and ensure buckets exist
       await this.ensureBucketsExist();
-      
+
       console.log(
         '[SupabaseStorageService] Supabase Storage service initialized',
         {
           url: this.supabaseUrl,
           environment: this.storageConfig.getConfig().environment,
           bucketsChecked: this.storageConfig.getAllBuckets().map(b => b.name),
-        },
+        }
       );
     } catch (error) {
       console.error(
         '[SupabaseStorageService] Failed to initialize Supabase Storage service:',
-        error,
+        error
       );
       throw error;
     }
@@ -98,13 +98,17 @@ export class SupabaseStorageService {
 
           if (createError) {
             // If creation fails due to RLS policy or bucket already exists, that's OK
-            if (createError.message.includes('policy') || 
-                createError.message.includes('already exists') ||
-                createError.message.includes('duplicate')) {
-              console.log(`Bucket ${bucket.name} exists or creation restricted (this is OK for testing)`);
+            if (
+              createError.message.includes('policy') ||
+              createError.message.includes('already exists') ||
+              createError.message.includes('duplicate')
+            ) {
+              console.log(
+                `Bucket ${bucket.name} exists or creation restricted (this is OK for testing)`
+              );
             } else {
               throw new Error(
-                `Failed to create bucket ${bucket.name}: ${createError.message}`,
+                `Failed to create bucket ${bucket.name}: ${createError.message}`
               );
             }
           } else {
@@ -112,7 +116,9 @@ export class SupabaseStorageService {
           }
         } else if (listError) {
           // If we can't check bucket status, log warning but continue
-          console.warn(`Warning: Could not verify bucket ${bucket.name}: ${listError.message}`);
+          console.warn(
+            `Warning: Could not verify bucket ${bucket.name}: ${listError.message}`
+          );
         } else {
           console.log(`Bucket ${bucket.name} already exists`);
         }
@@ -130,7 +136,7 @@ export class SupabaseStorageService {
    * Upload a file to Supabase Storage
    */
   async uploadFile(
-    options: SupabaseUploadOptions,
+    options: SupabaseUploadOptions
   ): Promise<SupabaseUploadResult> {
     try {
       console.log('Uploading file to Supabase Storage', {
@@ -178,7 +184,7 @@ export class SupabaseStorageService {
         // Public URL not available, which is fine for private buckets
         console.log(
           'Public URL not available (bucket may be private)',
-          urlError,
+          urlError
         );
       }
 
@@ -197,7 +203,7 @@ export class SupabaseStorageService {
         path: options.path,
       });
       throw createError.internal(
-        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -239,7 +245,7 @@ export class SupabaseStorageService {
         path,
       });
       throw createError.internal(
-        `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to download file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -273,7 +279,7 @@ export class SupabaseStorageService {
         paths: options.paths,
       });
       throw createError.internal(
-        `Failed to delete files: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to delete files: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -284,7 +290,7 @@ export class SupabaseStorageService {
   async getFileUrl(
     bucket: string,
     path: string,
-    expiresIn: number = 3600,
+    expiresIn: number = 3600
   ): Promise<string> {
     try {
       // Try to get public URL first
@@ -318,7 +324,7 @@ export class SupabaseStorageService {
         path,
       });
       throw createError.internal(
-        `Failed to get file URL: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get file URL: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -380,7 +386,7 @@ export class SupabaseStorageService {
         path,
       });
       throw createError.internal(
-        `Failed to get file info: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Failed to get file info: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }

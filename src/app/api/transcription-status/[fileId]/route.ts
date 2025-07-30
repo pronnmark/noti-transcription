@@ -8,7 +8,7 @@ import {
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> },
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
     // Note: Authentication now handled by middleware, so this endpoint is public
@@ -26,7 +26,8 @@ export async function GET(
     // Get the most recent transcription job for this file with audio file info
     const { data: jobs, error } = await supabase
       .from('transcription_jobs')
-      .select(`
+      .select(
+        `
         id,
         status,
         progress,
@@ -40,7 +41,8 @@ export async function GET(
         audio_files!inner (
           original_file_name
         )
-      `)
+      `
+      )
       .eq('file_id', fileId)
       .order('created_at', { ascending: false })
       .limit(1);
@@ -49,14 +51,14 @@ export async function GET(
       console.error('Database query error:', error);
       return NextResponse.json(
         { error: 'Failed to query transcription status' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     if (!jobs || jobs.length === 0) {
       return NextResponse.json(
         { error: 'No transcription job found for this file' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -98,7 +100,7 @@ export async function GET(
     console.error('Transcription status error:', error);
     return NextResponse.json(
       { error: 'Failed to get transcription status' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

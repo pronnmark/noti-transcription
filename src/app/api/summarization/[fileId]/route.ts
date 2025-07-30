@@ -4,7 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> },
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
     const { fileId } = await params;
@@ -25,7 +25,8 @@ export async function GET(
     // Get summarizations for this file with template details
     const { data: summaries, error: summariesError } = await supabase
       .from('summarizations')
-      .select(`
+      .select(
+        `
         id,
         content,
         model,
@@ -39,7 +40,8 @@ export async function GET(
           description,
           is_default
         )
-      `)
+      `
+      )
       .eq('file_id', fileIdInt)
       .order('created_at', { ascending: false });
 
@@ -48,21 +50,22 @@ export async function GET(
     }
 
     // Restructure summaries to include nested template objects
-    const formattedSummaries = (summaries || []).map(summary => ({
+    const formattedSummaries = (summaries || []).map((summary: any) => ({
       id: summary.id,
       content: summary.content,
       model: summary.model,
       prompt: summary.prompt,
       createdAt: summary.created_at,
       updatedAt: summary.updated_at,
-      template: summary.template_id && summary.summarization_prompts
-        ? {
-          id: summary.template_id,
-          name: summary.summarization_prompts.name,
-          description: summary.summarization_prompts.description,
-          isDefault: summary.summarization_prompts.is_default,
-        }
-        : null,
+      template:
+        summary.template_id && summary.summarization_prompts
+          ? {
+              id: summary.template_id,
+              name: summary.summarization_prompts.name,
+              description: summary.summarization_prompts.description,
+              isDefault: summary.summarization_prompts.is_default,
+            }
+          : null,
     }));
 
     return NextResponse.json({
@@ -78,14 +81,14 @@ export async function GET(
     console.error('Error fetching summarization:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ fileId: string }> },
+  { params }: { params: Promise<{ fileId: string }> }
 ) {
   try {
     const { fileId } = await params;
@@ -112,10 +115,15 @@ export async function POST(
       .eq('file_id', fileIdInt)
       .limit(1);
 
-    if (transcriptionError || !transcription || transcription.length === 0 || !transcription[0].transcript) {
+    if (
+      transcriptionError ||
+      !transcription ||
+      transcription.length === 0 ||
+      !transcription[0].transcript
+    ) {
       return NextResponse.json(
         { error: 'File not transcribed yet' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -162,11 +170,11 @@ export async function POST(
 
       const transcriptText = Array.isArray(transcriptData)
         ? transcriptData
-          .map(
-            (segment: any) =>
-              `${segment.speaker || 'Speaker'}: ${segment.text}`,
-          )
-          .join('\n')
+            .map(
+              (segment: any) =>
+                `${segment.speaker || 'Speaker'}: ${segment.text}`
+            )
+            .join('\n')
         : String(transcriptData);
 
       // Try to use AI service for real summarization
@@ -179,7 +187,7 @@ export async function POST(
         // Generate real AI summary
         summary = await customAIService.extractFromTranscript(
           transcriptText,
-          prompt,
+          prompt
         );
 
         const modelInfo = customAIService.getModelInfo();
@@ -235,14 +243,14 @@ export async function POST(
           error: 'Failed to generate summary',
           details: String(aiError),
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
   } catch (error) {
     console.error('Error generating summarization:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

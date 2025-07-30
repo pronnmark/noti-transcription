@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Mic, Square, Pause, Play, Loader2, AlertCircle } from 'lucide-react';
+import { Mic, Square, Pause, Play, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
@@ -104,6 +104,9 @@ export default function RecordPage() {
   // Location error state (local since it's just for logging)
   const [_locationError, setLocationError] = useState<string | null>(null);
 
+  // Supabase connection status
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean | null>(null);
+
   // Ref to store the cloned audio stream for the analyser
   const analyserStreamRef = useRef<MediaStream | null>(null);
 
@@ -113,13 +116,34 @@ export default function RecordPage() {
   // Ref to store the last known location to ensure it persists through upload
   const lastLocationRef = useRef<LocationData | null>(null);
 
+  // Check Supabase connection status
+  const checkSupabaseConnection = useCallback(async () => {
+    try {
+      console.log('🔍 Checking Supabase connection via API...');
+      const response = await fetch('/api/health');
+      const healthData = await response.json();
+      
+      const isConnected = healthData.database?.healthy === true;
+      setSupabaseConnected(isConnected);
+      
+      if (isConnected) {
+        console.log('✅ Supabase connection healthy via API');
+      } else {
+        console.warn('⚠️ Supabase connection issue detected:', healthData);
+      }
+    } catch (error) {
+      console.error('Failed to check Supabase connection via API:', error);
+      setSupabaseConnected(false);
+    }
+  }, []);
+
   const checkRecordingSupport = useCallback(async () => {
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.log('MediaDevices API not available');
         setRecordingSupport(
           false,
-          'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.',
+          'Your browser does not support audio recording. Please use Chrome, Firefox, or Safari with HTTPS.'
         );
         return;
       }
@@ -128,7 +152,7 @@ export default function RecordPage() {
       if (typeof MediaRecorder === 'undefined') {
         setRecordingSupport(
           false,
-          'MediaRecorder API not supported. Please update your browser.',
+          'MediaRecorder API not supported. Please update your browser.'
         );
         return;
       }
@@ -136,7 +160,7 @@ export default function RecordPage() {
       // Check if audio devices are available (no permission request)
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioInputs = devices.filter(
-        device => device.kind === 'audioinput',
+        device => device.kind === 'audioinput'
       );
 
       const deviceDebug = `${isMobile ? '📱 Mobile' : '💻 Desktop'} - Found ${audioInputs.length} audio input device(s)`;
@@ -147,7 +171,7 @@ export default function RecordPage() {
         setRecordingSupport(
           false,
           'No microphone detected. Please connect a microphone and refresh the page.',
-          deviceDebug,
+          deviceDebug
         );
         return;
       }
@@ -159,10 +183,10 @@ export default function RecordPage() {
       console.error('Recording support check failed:', error);
       setRecordingSupport(
         false,
-        'Unable to check recording capabilities. Please check your browser permissions.',
+        'Unable to check recording capabilities. Please check your browser permissions.'
       );
     }
-  }, []);  // Remove isMobile dependency to prevent infinite loops
+  }, []); // Remove isMobile dependency to prevent infinite loops
 
   const performAutoSave = useCallback(async () => {
     if (!mediaRecorder || !audioChunks.length) return;
@@ -206,7 +230,7 @@ export default function RecordPage() {
           formData.append('locationAccuracy', locationData.accuracy.toString());
           formData.append(
             'locationTimestamp',
-            locationData.timestamp.toString(),
+            locationData.timestamp.toString()
           );
           formData.append('locationProvider', locationData.provider);
         }
@@ -238,6 +262,7 @@ export default function RecordPage() {
   useEffect(() => {
     detectMobile(); // Run first to set isMobile
     checkRecordingSupport(); // Then check recording support
+    checkSupabaseConnection(); // Check Supabase connection
   }, []); // Run once on mount only
 
   // Clean up wake lock and audio monitoring on unmount
@@ -294,7 +319,7 @@ export default function RecordPage() {
         () => {
           performAutoSave();
         },
-        10 * 60 * 1000,
+        10 * 60 * 1000
       ); // 10 minutes
     }
     return () => clearInterval(autoSaveInterval);
@@ -305,7 +330,7 @@ export default function RecordPage() {
       navigator.userAgent || navigator.vendor || (window as any).opera;
     const isMobileDevice =
       /android|webos|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(
-        userAgent,
+        userAgent
       );
     setIsMobile(isMobileDevice);
   }
@@ -314,7 +339,7 @@ export default function RecordPage() {
     try {
       if ('wakeLock' in navigator && isMobile) {
         const wakeLockInstance = await (navigator as any).wakeLock.request(
-          'screen',
+          'screen'
         );
         setWakeLock(wakeLockInstance);
         console.log('Wake lock acquired');
@@ -335,7 +360,7 @@ export default function RecordPage() {
   async function startLocationTracking() {
     if (!locationService.isSupported()) {
       console.log(
-        'Geolocation not supported - recording will continue without location data',
+        'Geolocation not supported - recording will continue without location data'
       );
       return;
     }
@@ -360,7 +385,7 @@ export default function RecordPage() {
           timeout: 10000,
           maximumAge: 30000,
           updateInterval: 30000, // Update every 30 seconds during recording
-        },
+        }
       );
 
       setLocationTracking(true);
@@ -368,7 +393,7 @@ export default function RecordPage() {
     } catch (error) {
       console.warn('⚠️ Failed to start location tracking:', error);
       setLocationError(
-        error instanceof Error ? error.message : 'Location tracking failed',
+        error instanceof Error ? error.message : 'Location tracking failed'
       );
       // Recording continues without location
     }
@@ -392,7 +417,7 @@ export default function RecordPage() {
       console.log(`🎵 Stream has ${audioTracks.length} audio tracks`);
       audioTracks.forEach((track, index) => {
         console.log(
-          `🎵 Track ${index}: ${track.label}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`,
+          `🎵 Track ${index}: ${track.label}, enabled: ${track.enabled}, muted: ${track.muted}, readyState: ${track.readyState}`
         );
       });
 
@@ -567,7 +592,7 @@ export default function RecordPage() {
   async function startRecording() {
     console.log(
       '🎙️ startRecording called, recordingSupported:',
-      recordingSupported,
+      recordingSupported
     );
     try {
       if (!recordingSupported) {
@@ -617,7 +642,7 @@ export default function RecordPage() {
       } catch (error) {
         console.log(
           'Optimized settings failed, trying basic constraints:',
-          error,
+          error
         );
         // Fallback to basic constraints
         stream = await navigator.mediaDevices.getUserMedia({
@@ -694,7 +719,7 @@ export default function RecordPage() {
         console.log(
           'Total chunks size:',
           chunks.reduce((total, chunk) => total + chunk.size, 0),
-          'bytes',
+          'bytes'
         );
 
         if (chunks.length > 0) {
@@ -703,7 +728,7 @@ export default function RecordPage() {
             'Created audio blob:',
             audioBlob.size,
             'bytes, type:',
-            audioBlob.type,
+            audioBlob.type
           );
           await uploadRecording(audioBlob);
         } else {
@@ -844,7 +869,7 @@ export default function RecordPage() {
         console.warn(
           'Warning: Recording is very small:',
           audioBlob.size,
-          'bytes',
+          'bytes'
         );
       }
 
@@ -885,7 +910,7 @@ export default function RecordPage() {
           `  ${key}:`,
           value instanceof File
             ? `File(${value.name}, ${value.size} bytes)`
-            : value,
+            : value
         );
       });
 
@@ -896,11 +921,11 @@ export default function RecordPage() {
         formData.append('longitude', locationToUpload.longitude.toString());
         formData.append(
           'locationAccuracy',
-          locationToUpload.accuracy.toString(),
+          locationToUpload.accuracy.toString()
         );
         formData.append(
           'locationTimestamp',
-          locationToUpload.timestamp.toString(),
+          locationToUpload.timestamp.toString()
         );
         formData.append('locationProvider', locationToUpload.provider);
         console.log('📍 Including location data in upload:', locationToUpload);
@@ -920,7 +945,7 @@ export default function RecordPage() {
           .json()
           .catch(() => ({ error: 'Unknown error' }));
         throw new Error(
-          `Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`,
+          `Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`
         );
       }
 
@@ -938,7 +963,7 @@ export default function RecordPage() {
         // Extract fileId from the results array (check both response formats)
         const resultsArray = result.data?.results || result.results;
         const successfulFile = resultsArray?.find(
-          (r: any) => r.success && r.fileId,
+          (r: any) => r.success && r.fileId
         );
         const fileId = successfulFile?.fileId;
 
@@ -993,39 +1018,55 @@ export default function RecordPage() {
   }
 
   return (
-    <div className="flex h-full flex-col">
+    <div className='flex h-full flex-col'>
       {/* Header */}
-      <div className="border-b p-4 sm:p-6">
-        <h1 className="text-2xl font-bold sm:text-3xl">Record Audio</h1>
-        <p className="mt-1 text-muted-foreground">
+      <div className='border-b p-4 sm:p-6'>
+        <h1 className='text-2xl font-bold sm:text-3xl'>Record Audio</h1>
+        <p className='mt-1 text-muted-foreground'>
           Record and transcribe audio directly from your device
         </p>
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6">
-        <div className="mx-auto max-w-2xl space-y-6">
+      <div className='flex-1 overflow-auto p-4 sm:p-6'>
+        <div className='mx-auto max-w-2xl space-y-6'>
           <Card>
-            <CardHeader className="text-center">
-              <CardTitle className="flex items-center justify-center gap-2 text-lg sm:text-xl">
-                <Mic className="h-5 w-5 sm:h-6 sm:w-6" />
+            <CardHeader className='text-center'>
+              <CardTitle className='flex items-center justify-center gap-2 text-lg sm:text-xl'>
+                <Mic className='h-5 w-5 sm:h-6 sm:w-6' />
                 Audio Recording
+                {supabaseConnected === true && (
+                  <div className='flex items-center gap-1 text-sm font-normal text-green-600'>
+                    <CheckCircle className='h-4 w-4' />
+                    <span className='hidden sm:inline'>Connected</span>
+                  </div>
+                )}
               </CardTitle>
               <CardDescription>
                 {recordingSupported
                   ? 'Record audio directly from your device'
                   : 'Recording not supported on this device'}
               </CardDescription>
+              {supabaseConnected === true && (
+                <div className='mt-1 text-center text-xs text-green-600'>
+                  ✓ Supabase database connected
+                </div>
+              )}
+              {supabaseConnected === false && (
+                <div className='mt-1 text-center text-xs text-amber-600'>
+                  ⚠️ Database connection issue
+                </div>
+              )}
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className='space-y-6'>
               {recordingSupported ? (
                 <>
                   {/* Speaker Count Selection */}
                   {!isRecording && (
-                    <div className="mb-4 flex items-center justify-center gap-2">
+                    <div className='mb-4 flex items-center justify-center gap-2'>
                       <label
-                        htmlFor="speakerCount"
-                        className="text-sm font-medium"
+                        htmlFor='speakerCount'
+                        className='text-sm font-medium'
                       >
                         Expected speakers:
                       </label>
@@ -1035,43 +1076,43 @@ export default function RecordPage() {
                           setSpeakerCount(parseInt(value))
                         }
                       >
-                        <SelectTrigger className="w-20">
+                        <SelectTrigger className='w-20'>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">1</SelectItem>
-                          <SelectItem value="2">2</SelectItem>
-                          <SelectItem value="3">3</SelectItem>
-                          <SelectItem value="4">4</SelectItem>
-                          <SelectItem value="5">5</SelectItem>
-                          <SelectItem value="6">6</SelectItem>
-                          <SelectItem value="7">7</SelectItem>
-                          <SelectItem value="8">8</SelectItem>
-                          <SelectItem value="9">9</SelectItem>
-                          <SelectItem value="10">10</SelectItem>
+                          <SelectItem value='1'>1</SelectItem>
+                          <SelectItem value='2'>2</SelectItem>
+                          <SelectItem value='3'>3</SelectItem>
+                          <SelectItem value='4'>4</SelectItem>
+                          <SelectItem value='5'>5</SelectItem>
+                          <SelectItem value='6'>6</SelectItem>
+                          <SelectItem value='7'>7</SelectItem>
+                          <SelectItem value='8'>8</SelectItem>
+                          <SelectItem value='9'>9</SelectItem>
+                          <SelectItem value='10'>10</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   )}
 
                   {/* Recording Status */}
-                  <div className="text-center">
-                    <div className="mb-2 font-mono text-4xl font-bold sm:text-6xl">
+                  <div className='text-center'>
+                    <div className='mb-2 font-mono text-4xl font-bold sm:text-6xl'>
                       {formatRecordingTime(recordingTime)}
                     </div>
                     {isRecording && (
-                      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <div className='flex items-center justify-center gap-2 text-sm text-muted-foreground'>
                         <div
                           className={cn(
                             'h-2 w-2 rounded-full',
                             isPaused
                               ? 'bg-yellow-500'
-                              : 'animate-pulse bg-red-500',
+                              : 'animate-pulse bg-red-500'
                           )}
                         />
                         {isPaused ? 'Paused' : 'Recording'}
                         {isMobile && wakeLock && (
-                          <span className="rounded bg-green-100 px-2 py-1 text-xs text-green-800">
+                          <span className='rounded bg-green-100 px-2 py-1 text-xs text-green-800'>
                             🔒 Screen locked
                           </span>
                         )}
@@ -1080,26 +1121,26 @@ export default function RecordPage() {
 
                     {/* Audio Level Meter */}
                     {isRecording && (
-                      <div className="mt-4">
+                      <div className='mt-4'>
                         <AudioLevelMeter
                           audioLevel={isPaused ? 0 : audioLevel}
                           isActive={isRecording}
-                          className="mx-auto max-w-sm"
+                          className='mx-auto max-w-sm'
                         />
                         {isPaused && (
-                          <div className="mt-1 text-center text-xs text-muted-foreground">
+                          <div className='mt-1 text-center text-xs text-muted-foreground'>
                             Audio monitoring paused
                           </div>
                         )}
                       </div>
                     )}
                     {isRecording && (
-                      <div className="mt-1 text-xs text-muted-foreground">
+                      <div className='mt-1 text-xs text-muted-foreground'>
                         Expecting {speakerCount} speaker
                         {speakerCount > 1 ? 's' : ''}
                         {lastAutoSave && (
                           <ClientOnly>
-                            <div className="mt-1 text-xs text-green-600">
+                            <div className='mt-1 text-xs text-green-600'>
                               ✓ Auto-saved: {lastAutoSave.toLocaleTimeString()}
                             </div>
                           </ClientOnly>
@@ -1110,11 +1151,11 @@ export default function RecordPage() {
 
                   {/* Mobile warning */}
                   {isMobile && isRecording && (
-                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-center">
-                      <div className="text-sm font-medium text-amber-700">
+                    <div className='rounded-lg border border-amber-200 bg-amber-50 p-3 text-center'>
+                      <div className='text-sm font-medium text-amber-700'>
                         📱 Keep this tab active during recording
                       </div>
-                      <div className="mt-1 text-xs text-amber-600">
+                      <div className='mt-1 text-xs text-amber-600'>
                         Background recording may be interrupted on mobile
                         devices
                       </div>
@@ -1122,15 +1163,15 @@ export default function RecordPage() {
                   )}
 
                   {/* Recording Controls */}
-                  <div className="flex flex-col justify-center gap-3 sm:flex-row sm:gap-4">
+                  <div className='flex flex-col justify-center gap-3 sm:flex-row sm:gap-4'>
                     {!isRecording ? (
                       <Button
                         onClick={startRecording}
-                        className="w-full bg-red-600 text-white hover:bg-red-700 sm:w-auto"
-                        size="lg"
+                        className='w-full bg-red-600 text-white hover:bg-red-700 sm:w-auto'
+                        size='lg'
                         disabled={isUploading}
                       >
-                        <Mic className="mr-2 h-5 w-5" />
+                        <Mic className='mr-2 h-5 w-5' />
                         Start Recording
                       </Button>
                     ) : (
@@ -1138,35 +1179,35 @@ export default function RecordPage() {
                         {!isPaused ? (
                           <Button
                             onClick={pauseRecording}
-                            variant="outline"
-                            size="lg"
-                            className="w-full sm:w-auto"
+                            variant='outline'
+                            size='lg'
+                            className='w-full sm:w-auto'
                           >
-                            <Pause className="mr-2 h-5 w-5" />
+                            <Pause className='mr-2 h-5 w-5' />
                             Pause
                           </Button>
                         ) : (
                           <Button
                             onClick={resumeRecording}
-                            variant="outline"
-                            size="lg"
-                            className="w-full sm:w-auto"
+                            variant='outline'
+                            size='lg'
+                            className='w-full sm:w-auto'
                           >
-                            <Play className="mr-2 h-5 w-5" />
+                            <Play className='mr-2 h-5 w-5' />
                             Resume
                           </Button>
                         )}
                         <Button
                           onClick={stopRecording}
-                          variant="destructive"
-                          size="lg"
-                          className="w-full sm:w-auto"
+                          variant='destructive'
+                          size='lg'
+                          className='w-full sm:w-auto'
                           disabled={isUploading}
                         >
                           {isUploading ? (
-                            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                            <Loader2 className='mr-2 h-5 w-5 animate-spin' />
                           ) : (
-                            <Square className="mr-2 h-5 w-5" />
+                            <Square className='mr-2 h-5 w-5' />
                           )}
                           {isUploading ? 'Uploading...' : 'Stop & Save'}
                         </Button>
@@ -1175,14 +1216,14 @@ export default function RecordPage() {
                   </div>
                 </>
               ) : (
-                <div className="py-8 text-center">
-                  <AlertCircle className="mx-auto mb-4 h-12 w-12 text-red-500" />
-                  <div className="mb-4 text-lg font-semibold text-red-600">
+                <div className='py-8 text-center'>
+                  <AlertCircle className='mx-auto mb-4 h-12 w-12 text-red-500' />
+                  <div className='mb-4 text-lg font-semibold text-red-600'>
                     Recording Not Available
                   </div>
                   {supportError && (
-                    <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
-                      <div className="text-sm text-red-700">{supportError}</div>
+                    <div className='mb-6 rounded-lg border border-red-200 bg-red-50 p-4'>
+                      <div className='text-sm text-red-700'>{supportError}</div>
                     </div>
                   )}
                 </div>
@@ -1200,7 +1241,7 @@ export default function RecordPage() {
               uploadProgress={uploadProgress}
               transcriptionProgress={transcriptionProgress}
               error={workflowError}
-              className="mt-6"
+              className='mt-6'
             />
           )}
 
@@ -1215,31 +1256,31 @@ export default function RecordPage() {
                 resetWorkflow();
                 toast.info('Ready for new recording!');
               }}
-              className="mt-6"
+              className='mt-6'
             />
           )}
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-2'>
             <Card
-              className="cursor-pointer transition-shadow hover:shadow-md"
+              className='cursor-pointer transition-shadow hover:shadow-md'
               onClick={() => (window.location.href = '/files')}
             >
-              <CardContent className="p-4 text-center">
-                <div className="text-lg font-medium">Upload Files</div>
-                <div className="text-sm text-muted-foreground">
+              <CardContent className='p-4 text-center'>
+                <div className='text-lg font-medium'>Upload Files</div>
+                <div className='text-sm text-muted-foreground'>
                   Choose audio files from your device
                 </div>
               </CardContent>
             </Card>
 
             <Card
-              className="cursor-pointer transition-shadow hover:shadow-md"
+              className='cursor-pointer transition-shadow hover:shadow-md'
               onClick={() => (window.location.href = '/transcripts')}
             >
-              <CardContent className="p-4 text-center">
-                <div className="text-lg font-medium">View Transcripts</div>
-                <div className="text-sm text-muted-foreground">
+              <CardContent className='p-4 text-center'>
+                <div className='text-lg font-medium'>View Transcripts</div>
+                <div className='text-sm text-muted-foreground'>
                   See your completed transcriptions
                 </div>
               </CardContent>

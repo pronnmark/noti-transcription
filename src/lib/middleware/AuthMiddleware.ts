@@ -10,18 +10,20 @@ export class AuthMiddleware implements MiddlewareHandler {
   async execute(
     request: NextRequest,
     context: RequestContext,
-    next: () => Promise<NextResponse>,
+    next: () => Promise<NextResponse>
   ): Promise<NextResponse> {
     try {
       // Skip auth for certain paths if needed
       const skipPaths = ['/api/upload', '/api/health'];
-      
+
       // Skip auth for all API endpoints in test environment
       if (process.env.NODE_ENV === 'test') {
-        context.logger.info('Skipping auth for test environment', { path: context.path });
+        context.logger.info('Skipping auth for test environment', {
+          path: context.path,
+        });
         return next();
       }
-      
+
       if (skipPaths.some(path => context.path.startsWith(path))) {
         return next();
       }
@@ -43,7 +45,7 @@ export class AuthMiddleware implements MiddlewareHandler {
           createErrorResponse('Authentication required', 'UNAUTHORIZED', 401, {
             requestId: context.requestId,
           }),
-          { status: 401 },
+          { status: 401 }
         );
       }
 
@@ -58,7 +60,7 @@ export class AuthMiddleware implements MiddlewareHandler {
         createErrorResponse('Authentication error', 'AUTH_ERROR', 500, {
           requestId: context.requestId,
         }),
-        { status: 500 },
+        { status: 500 }
       );
     }
   }
@@ -75,7 +77,7 @@ export function withAuth(
   handler: (
     request: NextRequest,
     context: RequestContext
-  ) => Promise<NextResponse>,
+  ) => Promise<NextResponse>
 ) {
   return async (request: NextRequest) => {
     const authMiddleware = createAuthMiddleware();

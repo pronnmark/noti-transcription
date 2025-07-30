@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
     if (!fileId) {
       return NextResponse.json(
         { success: false, error: 'Missing required field: fileId' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -35,11 +35,11 @@ export async function POST(request: NextRequest) {
       .select('*')
       .eq('id', fileId)
       .limit(1);
-    
+
     if (fileError || !fileData || fileData.length === 0) {
       return NextResponse.json(
         { success: false, error: 'File not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -49,10 +49,15 @@ export async function POST(request: NextRequest) {
       .eq('file_id', fileId)
       .limit(1);
 
-    if (transcriptError || !transcriptData || transcriptData.length === 0 || !transcriptData[0].transcript) {
+    if (
+      transcriptError ||
+      !transcriptData ||
+      transcriptData.length === 0 ||
+      !transcriptData[0].transcript
+    ) {
       return NextResponse.json(
         { success: false, error: 'No transcript available for this file' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
@@ -148,14 +153,14 @@ export async function POST(request: NextRequest) {
       result = await telegramMCP.sendMessageToUser(
         username,
         message,
-        sessionToken,
+        sessionToken
       );
       targetIdentifier = username;
     } else if (groupName) {
       result = await telegramMCP.sendMessageToGroup(
         groupName,
         message,
-        sessionToken,
+        sessionToken
       );
       targetIdentifier = groupName;
     } else {
@@ -165,7 +170,7 @@ export async function POST(request: NextRequest) {
       result = await telegramMCP.sendMessage(
         defaultChatId,
         message,
-        sessionToken,
+        sessionToken
       );
       targetIdentifier = defaultChatId;
     }
@@ -188,7 +193,7 @@ export async function POST(request: NextRequest) {
             instructions: 'Visit /api/telegram/setup for configuration help',
           },
         },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -223,7 +228,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

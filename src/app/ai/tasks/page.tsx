@@ -127,12 +127,12 @@ export default function GlobalTasksPage() {
         prev.map(task =>
           task.id === taskId
             ? {
-              ...task,
-              status: completed ? 'completed' : 'active',
-              completedAt: completed ? new Date().toISOString() : undefined,
-            }
-            : task,
-        ),
+                ...task,
+                status: completed ? 'completed' : 'active',
+                completedAt: completed ? new Date().toISOString() : undefined,
+              }
+            : task
+        )
       );
 
       // Reload stats
@@ -160,8 +160,8 @@ export default function GlobalTasksPage() {
       // Update local state
       setTasks(prev =>
         prev.map(task =>
-          task.id === taskId ? { ...task, comments: comment } : task,
-        ),
+          task.id === taskId ? { ...task, comments: comment } : task
+        )
       );
 
       toast.success('Comment updated');
@@ -186,8 +186,8 @@ export default function GlobalTasksPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className='flex h-full items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     );
   }
@@ -195,16 +195,16 @@ export default function GlobalTasksPage() {
   const filteredTasks = getFilteredTasks();
 
   return (
-    <div className="flex h-full flex-col">
+    <div className='flex h-full flex-col'>
       {/* Header - Hidden on mobile */}
       {!isMobile && (
-        <div className="border-b p-4 sm:p-6">
+        <div className='border-b p-4 sm:p-6'>
           <div>
-            <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl">
-              <ListTodo className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+            <h1 className='flex items-center gap-2 text-2xl font-bold sm:text-3xl'>
+              <ListTodo className='h-6 w-6 text-primary sm:h-8 sm:w-8' />
               Global Tasks
             </h1>
-            <p className="mt-1 text-muted-foreground">
+            <p className='mt-1 text-muted-foreground'>
               All tasks across all audio files
             </p>
           </div>
@@ -212,59 +212,59 @@ export default function GlobalTasksPage() {
       )}
 
       {/* Content */}
-      <div className="flex-1 overflow-hidden p-4 sm:p-6">
-        <div className="space-y-6">
+      <div className='flex-1 overflow-hidden p-4 sm:p-6'>
+        <div className='space-y-6'>
           {/* Stats */}
           {stats && (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-4'>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Total Tasks
                   </CardTitle>
-                  <ListTodo className="h-4 w-4 text-muted-foreground" />
+                  <ListTodo className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.tasks.total}</div>
+                  <div className='text-2xl font-bold'>{stats.tasks.total}</div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Active Tasks
                   </CardTitle>
-                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  <Clock className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stats.tasks.active}</div>
+                  <div className='text-2xl font-bold'>{stats.tasks.active}</div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Completed Tasks
                   </CardTitle>
-                  <CheckCircle className="h-4 w-4 text-muted-foreground" />
+                  <CheckCircle className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className='text-2xl font-bold'>
                     {stats.tasks.completed}
                   </div>
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">
+                <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
+                  <CardTitle className='text-sm font-medium'>
                     Completion Rate
                   </CardTitle>
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                  <BarChart3 className='h-4 w-4 text-muted-foreground' />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">
+                  <div className='text-2xl font-bold'>
                     {stats.tasks.total > 0
                       ? Math.round(
-                        (stats.tasks.completed / stats.tasks.total) * 100,
-                      )
+                          (stats.tasks.completed / stats.tasks.total) * 100
+                        )
                       : 0}
                     %
                   </div>
@@ -276,8 +276,8 @@ export default function GlobalTasksPage() {
           {/* Tasks */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ListTodo className="h-5 w-5 text-primary" />
+              <CardTitle className='flex items-center gap-2'>
+                <ListTodo className='h-5 w-5 text-primary' />
                 All Tasks
               </CardTitle>
               <CardDescription>
@@ -288,54 +288,54 @@ export default function GlobalTasksPage() {
               <Tabs
                 value={activeTab}
                 onValueChange={setActiveTab}
-                className="w-full"
+                className='w-full'
               >
-                <TabsList className="grid w-full grid-cols-4">
-                  <TabsTrigger value="all">All ({tasks.length})</TabsTrigger>
-                  <TabsTrigger value="active">
+                <TabsList className='grid w-full grid-cols-4'>
+                  <TabsTrigger value='all'>All ({tasks.length})</TabsTrigger>
+                  <TabsTrigger value='active'>
                     Active ({tasks.filter(t => t.status === 'active').length})
                   </TabsTrigger>
-                  <TabsTrigger value="completed">
+                  <TabsTrigger value='completed'>
                     Completed (
                     {tasks.filter(t => t.status === 'completed').length})
                   </TabsTrigger>
-                  <TabsTrigger value="archived">
+                  <TabsTrigger value='archived'>
                     Archived (
                     {tasks.filter(t => t.status === 'archived').length})
                   </TabsTrigger>
                 </TabsList>
 
-                <TabsContent value={activeTab} className="mt-4 space-y-4">
+                <TabsContent value={activeTab} className='mt-4 space-y-4'>
                   {filteredTasks.length === 0 ? (
-                    <div className="py-12 text-center">
-                      <ListTodo className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">
+                    <div className='py-12 text-center'>
+                      <ListTodo className='mx-auto mb-4 h-12 w-12 text-muted-foreground' />
+                      <p className='text-muted-foreground'>
                         {activeTab === 'all'
                           ? 'No tasks found'
                           : `No ${activeTab} tasks`}
                       </p>
-                      <p className="mt-2 text-sm text-muted-foreground">
+                      <p className='mt-2 text-sm text-muted-foreground'>
                         Tasks will appear here automatically when transcripts
                         are processed
                       </p>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className='space-y-4'>
                       {filteredTasks.map((task, index) => (
-                        <div key={task.id} className="rounded-lg border p-4">
-                          <div className="flex items-start gap-3">
-                            <div className="flex-1">
-                              <div className="mb-2 flex items-center gap-2">
-                                <Badge variant="outline" className="text-xs">
-                                  <FileText className="mr-1 h-3 w-3" />
+                        <div key={task.id} className='rounded-lg border p-4'>
+                          <div className='flex items-start gap-3'>
+                            <div className='flex-1'>
+                              <div className='mb-2 flex items-center gap-2'>
+                                <Badge variant='outline' className='text-xs'>
+                                  <FileText className='mr-1 h-3 w-3' />
                                   {task.fileName || 'Unknown File'}
                                 </Badge>
                                 {task.speaker && (
                                   <Badge
-                                    variant="secondary"
-                                    className="text-xs"
+                                    variant='secondary'
+                                    className='text-xs'
                                   >
-                                    <User className="mr-1 h-3 w-3" />
+                                    <User className='mr-1 h-3 w-3' />
                                     {task.speaker}
                                   </Badge>
                                 )}
@@ -347,7 +347,7 @@ export default function GlobalTasksPage() {
                                         ? 'default'
                                         : 'secondary'
                                   }
-                                  className="text-xs"
+                                  className='text-xs'
                                 >
                                   {task.priority}
                                 </Badge>
@@ -359,10 +359,10 @@ export default function GlobalTasksPage() {
                                 onUpdateComment={updateTaskComment}
                               />
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className='flex items-center gap-2'>
                               <Button
-                                size="sm"
-                                variant="outline"
+                                size='sm'
+                                variant='outline'
                                 onClick={() =>
                                   (window.location.href = `/transcript/${task.fileId}`)
                                 }

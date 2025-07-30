@@ -1,10 +1,37 @@
 import { RepositoryFactory } from '../../database/repositories';
 import type { TranscriptionRepository } from '../../database/repositories/TranscriptRepository';
-import type {
-  TranscriptionJob,
-  NewTranscriptionJob,
-  TranscriptSegment,
-} from '../../database/schema';
+import type { TranscriptionJob } from '../../database/client';
+
+interface NewTranscriptionJob {
+  file_id: number;
+  language?: string;
+  model_size?: string;
+  threads?: number;
+  processors?: number;
+  diarization?: boolean;
+  speaker_count?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed' | 'draft';
+  progress?: number;
+  transcript?: any;
+  diarization_status?:
+    | 'not_attempted'
+    | 'in_progress'
+    | 'success'
+    | 'failed'
+    | 'no_speakers_detected';
+  diarization_error?: string;
+  last_error?: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
+interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: number;
+  confidence?: number;
+}
 
 export class TranscriptionService {
   private transcriptionRepository: TranscriptionRepository;
@@ -17,25 +44,41 @@ export class TranscriptionService {
   async createJob(data: NewTranscriptionJob): Promise<TranscriptionJob> {
     try {
       // Validate input
-      if (!data.fileId || typeof data.fileId !== 'number' || data.fileId <= 0) {
-        throw new Error('fileId is required and must be a positive number');
+      if (
+        !data.file_id ||
+        typeof data.file_id !== 'number' ||
+        data.file_id <= 0
+      ) {
+        throw new Error('file_id is required and must be a positive number');
       }
 
       // Set default values
-      const jobData: NewTranscriptionJob = {
-        ...data,
-        status: data.status || 'pending',
+      const jobData = {
+        file_id: data.file_id,
+        status: (data.status || 'pending') as
+          | 'pending'
+          | 'processing'
+          | 'completed'
+          | 'failed'
+          | 'draft',
         progress: data.progress || 0,
         language: data.language || 'auto',
-        modelSize: data.modelSize || 'large-v3',
+        model_size: data.model_size || 'large-v3',
         threads: data.threads || 4,
         processors: data.processors || 1,
         diarization: data.diarization ?? true,
+        speaker_count: data.speaker_count,
+        transcript: data.transcript,
+        diarization_status: data.diarization_status,
+        diarization_error: data.diarization_error,
+        last_error: data.last_error,
+        started_at: data.started_at,
+        completed_at: data.completed_at,
       };
 
       const job = await this.transcriptionRepository.create(jobData);
       console.log(
-        `Created transcription job ${job.id} for file ${data.fileId}`,
+        `Created transcription job ${job.id} for file ${data.file_id}`
       );
       return job;
     } catch (error) {
@@ -111,13 +154,13 @@ export class TranscriptionService {
 
       if (job.status !== 'pending') {
         throw new Error(
-          `Cannot start transcription job ${jobId}: current status is ${job.status}`,
+          `Cannot start transcription job ${jobId}: current status is ${job.status}`
         );
       }
 
       const updatedJob = await this.transcriptionRepository.updateStatus(
         jobId,
-        'processing',
+        'processing'
       );
       console.log(`Started transcription job ${jobId}`);
       return updatedJob;
@@ -129,7 +172,7 @@ export class TranscriptionService {
 
   async updateProgress(
     jobId: number,
-    progress: number,
+    progress: number
   ): Promise<TranscriptionJob> {
     try {
       if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
@@ -144,13 +187,13 @@ export class TranscriptionService {
         progress > 100
       ) {
         throw new Error(
-          'progress is required and must be a number between 0 and 100',
+          'progress is required and must be a number between 0 and 100'
         );
       }
 
       const updatedJob = await this.transcriptionRepository.updateProgress(
         jobId,
-        progress,
+        progress
       );
       console.log(`Updated progress for job ${jobId}: ${progress}%`);
       return updatedJob;
@@ -162,7 +205,7 @@ export class TranscriptionService {
 
   async completeTranscription(
     jobId: number,
-    transcript: TranscriptSegment[],
+    transcript: TranscriptSegment[]
   ): Promise<TranscriptionJob> {
     try {
       if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
@@ -177,7 +220,7 @@ export class TranscriptionService {
       for (const segment of transcript) {
         if (!segment.start || !segment.end || !segment.text) {
           throw new Error(
-            'Each transcript segment must have start, end, and text properties',
+            'Each transcript segment must have start, end, and text properties'
           );
         }
         if (
@@ -186,23 +229,27 @@ export class TranscriptionService {
           typeof segment.text !== 'string'
         ) {
           throw new Error(
-            'Transcript segment start and end must be numbers, text must be a string',
+            'Transcript segment start and end must be numbers, text must be a string'
           );
         }
         if (segment.start >= segment.end) {
           throw new Error(
-            'Transcript segment start time must be before end time',
+            'Transcript segment start time must be before end time'
           );
         }
       }
 
-      const completedJob =
-        await this.transcriptionRepository.completeTranscription(
-          jobId,
+      const completedJob = await this.transcriptionRepository.updateWithResults(
+        jobId,
+        {
+          status: 'completed',
+          progress: 100,
           transcript,
-        );
+          completedAt: new Date(),
+        }
+      );
       console.log(
-        `Completed transcription job ${jobId} with ${transcript.length} segments`,
+        `Completed transcription job ${jobId} with ${transcript.length} segments`
       );
       return completedJob;
     } catch (error) {
@@ -213,7 +260,7 @@ export class TranscriptionService {
 
   async failTranscription(
     jobId: number,
-    error: string,
+    error: string
   ): Promise<TranscriptionJob> {
     try {
       if (!jobId || typeof jobId !== 'number' || jobId <= 0) {
@@ -227,7 +274,7 @@ export class TranscriptionService {
       const failedJob = await this.transcriptionRepository.updateStatus(
         jobId,
         'failed',
-        error,
+        { lastError: error, completedAt: new Date().toISOString() }
       );
       console.error(`Failed transcription job ${jobId}: ${error}`);
       return failedJob;
@@ -237,13 +284,15 @@ export class TranscriptionService {
     }
   }
 
-  async getJobsByStatus(status: string): Promise<TranscriptionJob[]> {
+  async getJobsByStatus(
+    status: TranscriptionJob['status']
+  ): Promise<TranscriptionJob[]> {
     try {
       if (!status || typeof status !== 'string') {
         throw new Error('status is required and must be a string');
       }
 
-      const validStatuses = [
+      const validStatuses: TranscriptionJob['status'][] = [
         'pending',
         'processing',
         'completed',
@@ -298,7 +347,10 @@ export class TranscriptionService {
       const cancelledJob = await this.transcriptionRepository.updateStatus(
         jobId,
         'failed',
-        'Cancelled by user',
+        {
+          lastError: 'Cancelled by user',
+          completedAt: new Date().toISOString(),
+        }
       );
       console.log(`Cancelled transcription job ${jobId}`);
       return cancelledJob;
@@ -321,13 +373,13 @@ export class TranscriptionService {
 
       if (job.status !== 'failed') {
         throw new Error(
-          `Cannot retry transcription job ${jobId}: current status is ${job.status}`,
+          `Cannot retry transcription job ${jobId}: current status is ${job.status}`
         );
       }
 
       const retriedJob = await this.transcriptionRepository.updateStatus(
         jobId,
-        'pending',
+        'pending'
       );
       console.log(`Retrying transcription job ${jobId}`);
       return retriedJob;

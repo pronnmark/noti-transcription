@@ -14,13 +14,13 @@ export { errorHandler } from './ErrorHandler';
 
 // Utility functions for error handling
 export function isAppError(
-  error: unknown,
+  error: unknown
 ): error is import('./AppError').AppError {
   return error instanceof Error && 'code' in error && 'severity' in error;
 }
 
 export function isValidationError(
-  error: unknown,
+  error: unknown
 ): error is import('./ValidationError').ValidationError {
   return error instanceof Error && error.name === 'ValidationError';
 }

@@ -95,7 +95,7 @@ interface DateGroupSummaryDotsProps {
 
 function DateGroupSummaryDots({ files }: DateGroupSummaryDotsProps) {
   return (
-    <div className="ml-2 flex items-center gap-1">
+    <div className='ml-2 flex items-center gap-1'>
       {files.map(file => (
         <div
           key={file.id}
@@ -103,7 +103,7 @@ function DateGroupSummaryDots({ files }: DateGroupSummaryDotsProps) {
             'h-2 w-2 rounded-full',
             file.hasAiExtract && file.extractCount > 0
               ? 'bg-gray-800'
-              : 'border border-gray-400 bg-transparent',
+              : 'border border-gray-400 bg-transparent'
           )}
           title={`${file.originalName}: ${
             file.hasAiExtract && file.extractCount > 0
@@ -177,7 +177,7 @@ export default function SummarizationPage() {
         return sortOrder === 'desc' ? -comparison : comparison;
       });
     },
-    [sortBy, sortOrder],
+    [sortBy, sortOrder]
   );
 
   const applySortingToGroups = useCallback(
@@ -187,7 +187,7 @@ export default function SummarizationPage() {
         files: sortFiles(group.files),
       }));
     },
-    [sortFiles],
+    [sortFiles]
   );
 
   // Load files with summarization data
@@ -251,11 +251,11 @@ export default function SummarizationPage() {
 
           return groups;
         },
-        {} as Record<string, DateGroup>,
+        {} as Record<string, DateGroup>
       );
 
       const groupsArray = Object.values(groupedFiles).sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
       );
 
       const sortedGroups = applySortingToGroups(groupsArray);
@@ -296,7 +296,7 @@ export default function SummarizationPage() {
           acc[result.fileId] = result.summaries;
           return acc;
         },
-        {} as Record<string, SummaryItem[]>,
+        {} as Record<string, SummaryItem[]>
       );
 
       setFileSummaries(summariesMap);
@@ -309,7 +309,7 @@ export default function SummarizationPage() {
     const date = new Date(dateString);
     const now = new Date();
     const diffHours = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60 * 60),
+      (now.getTime() - date.getTime()) / (1000 * 60 * 60)
     );
 
     if (diffHours < 1) return 'Just now';
@@ -320,7 +320,7 @@ export default function SummarizationPage() {
 
   const handleDeleteSummary = async (summaryId: string, fileId: string) => {
     const confirmed = window.confirm(
-      'Are you sure you want to delete this summary? This action cannot be undone.',
+      'Are you sure you want to delete this summary? This action cannot be undone.'
     );
 
     if (!confirmed) return;
@@ -364,8 +364,8 @@ export default function SummarizationPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className='flex min-h-screen items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-blue-500' />
       </div>
     );
   }
@@ -380,11 +380,11 @@ export default function SummarizationPage() {
     >
       {/* Header - Hidden on mobile as it's handled by responsive layout */}
       {!isMobile && (
-        <div className="border-b p-4 sm:p-6">
-          <div className="flex items-center justify-between">
+        <div className='border-b p-4 sm:p-6'>
+          <div className='flex items-center justify-between'>
             <div>
-              <h1 className="ios-title1 text-foreground">Summaries</h1>
-              <p className="mt-2 text-sm font-light text-muted-foreground">
+              <h1 className='ios-title1 text-foreground'>Summaries</h1>
+              <p className='mt-2 text-sm font-light text-muted-foreground'>
                 View summaries from your recordings
               </p>
             </div>
@@ -396,29 +396,29 @@ export default function SummarizationPage() {
       <div
         className={cn(
           'flex-1',
-          isMobile ? 'pb-safe p-4' : 'overflow-y-auto p-6',
+          isMobile ? 'pb-safe p-4' : 'overflow-y-auto p-6'
         )}
       >
         {/* Sort Controls */}
         {(groupedFiles.length > 0 || files.length > 0) && (
-          <div className="mb-6 rounded-lg border bg-gray-50 p-4">
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <h3 className="text-sm font-medium text-gray-700">Sort by:</h3>
+          <div className='mb-6 rounded-lg border bg-gray-50 p-4'>
+            <div className='flex flex-wrap items-center justify-between gap-4'>
+              <div className='flex items-center gap-4'>
+                <h3 className='text-sm font-medium text-gray-700'>Sort by:</h3>
                 <Select
                   value={sortBy}
                   onValueChange={(value: typeof sortBy) => setSortBy(value)}
                 >
-                  <SelectTrigger className="w-40">
+                  <SelectTrigger className='w-40'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="date">Date</SelectItem>
-                    <SelectItem value="duration">Duration</SelectItem>
-                    <SelectItem value="name">File Name</SelectItem>
-                    <SelectItem value="speakers">Speaker Count</SelectItem>
-                    <SelectItem value="status">Status</SelectItem>
-                    <SelectItem value="labels">Labels</SelectItem>
+                    <SelectItem value='date'>Date</SelectItem>
+                    <SelectItem value='duration'>Duration</SelectItem>
+                    <SelectItem value='name'>File Name</SelectItem>
+                    <SelectItem value='speakers'>Speaker Count</SelectItem>
+                    <SelectItem value='status'>Status</SelectItem>
+                    <SelectItem value='labels'>Labels</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -428,11 +428,11 @@ export default function SummarizationPage() {
                     setSortOrder(value)
                   }
                 >
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className='w-32'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="desc">
+                    <SelectItem value='desc'>
                       {sortBy === 'date'
                         ? 'Newest First'
                         : sortBy === 'duration'
@@ -445,7 +445,7 @@ export default function SummarizationPage() {
                                 ? 'Z-A'
                                 : 'Completed First'}
                     </SelectItem>
-                    <SelectItem value="asc">
+                    <SelectItem value='asc'>
                       {sortBy === 'date'
                         ? 'Oldest First'
                         : sortBy === 'duration'
@@ -462,13 +462,13 @@ export default function SummarizationPage() {
                 </Select>
               </div>
 
-              <div className="text-sm text-gray-600">
+              <div className='text-sm text-gray-600'>
                 {files.length} file{files.length !== 1 ? 's' : ''} •{' '}
                 {Math.round(
                   files.reduce(
                     (total, file) => total + (file.duration || 0),
-                    0,
-                  ) / 60,
+                    0
+                  ) / 60
                 )}{' '}
                 min total
               </div>
@@ -476,15 +476,15 @@ export default function SummarizationPage() {
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className='space-y-4'>
           {groupedFiles.length === 0 && files.length === 0 ? (
-            <Card className="py-12 text-center">
+            <Card className='py-12 text-center'>
               <CardContent>
-                <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-                <h3 className="mb-2 text-lg font-medium text-gray-900">
+                <FileText className='mx-auto mb-4 h-12 w-12 text-gray-400' />
+                <h3 className='mb-2 text-lg font-medium text-gray-900'>
                   No files found
                 </h3>
-                <p className="mb-4 text-gray-600">
+                <p className='mb-4 text-gray-600'>
                   Upload audio files to start generating summaries
                 </p>
                 <Button onClick={() => (window.location.href = '/files')}>
@@ -494,56 +494,56 @@ export default function SummarizationPage() {
             </Card>
           ) : (
             // Date-based Accordion Grouping
-            <Accordion type="multiple" className="w-full">
+            <Accordion type='multiple' className='w-full'>
               {groupedFiles.map(group => (
                 <AccordionItem key={group.date} value={group.date}>
-                  <AccordionTrigger className="min-h-[48px] touch-manipulation py-4 hover:no-underline">
-                    <div className="flex w-full items-center justify-between pr-4">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4" />
-                        <span className="font-medium">{group.displayDate}</span>
+                  <AccordionTrigger className='min-h-[48px] touch-manipulation py-4 hover:no-underline'>
+                    <div className='flex w-full items-center justify-between pr-4'>
+                      <div className='flex items-center gap-2'>
+                        <Calendar className='h-4 w-4' />
+                        <span className='font-medium'>{group.displayDate}</span>
                         {group.hasTimeData && (
                           <Clock3
-                            className="h-3 w-3 text-blue-500"
-                            aria-label="Contains recordings with specific times"
+                            className='h-3 w-3 text-blue-500'
+                            aria-label='Contains recordings with specific times'
                           />
                         )}
                         <DateGroupSummaryDots files={group.files} />
                       </div>
-                      <Badge variant="secondary" className="ml-auto">
+                      <Badge variant='secondary' className='ml-auto'>
                         {group.count} file{group.count !== 1 ? 's' : ''}
                       </Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    <div className="space-y-3">
+                    <div className='space-y-3'>
                       {group.files.map(file => (
                         <Card
                           key={file.id}
-                          className="touch-manipulation border-gray-100 bg-white transition-all duration-200 hover:shadow-sm"
+                          className='touch-manipulation border-gray-100 bg-white transition-all duration-200 hover:shadow-sm'
                         >
-                          <CardContent className="p-4 sm:p-5">
+                          <CardContent className='p-4 sm:p-5'>
                             {/* File Header */}
-                            <div className="mb-3">
-                              <div className="mb-2 flex items-center gap-2">
-                                <h3 className="text-sm font-medium text-gray-900">
+                            <div className='mb-3'>
+                              <div className='mb-2 flex items-center gap-2'>
+                                <h3 className='text-sm font-medium text-gray-900'>
                                   {file.originalName}
                                 </h3>
                               </div>
 
                               {/* Simplified File Info */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
+                              <div className='flex items-center justify-between'>
+                                <div className='flex items-center gap-3'>
                                   {/* Duration */}
-                                  <div className="flex items-center gap-1 text-sm text-gray-600">
-                                    <Clock className="h-3 w-3" />
+                                  <div className='flex items-center gap-1 text-sm text-gray-600'>
+                                    <Clock className='h-3 w-3' />
                                     {formatDuration(file.duration)}
                                   </div>
 
                                   {/* Creation Date */}
-                                  <div className="text-xs text-gray-500">
+                                  <div className='text-xs text-gray-500'>
                                     {formatRelativeDate(
-                                      file.recordedAt || file.createdAt,
+                                      file.recordedAt || file.createdAt
                                     )}
                                   </div>
                                 </div>
@@ -554,91 +554,91 @@ export default function SummarizationPage() {
                             {file.hasAiExtract &&
                               fileSummaries[file.id] &&
                               fileSummaries[file.id].length > 0 && (
-                              <div className="mt-4 space-y-3">
-                                <h4 className="mb-3 text-sm font-medium text-gray-900">
+                                <div className='mt-4 space-y-3'>
+                                  <h4 className='mb-3 text-sm font-medium text-gray-900'>
                                     Summaries ({fileSummaries[file.id].length})
-                                </h4>
+                                  </h4>
 
-                                {fileSummaries[file.id].map(
-                                  (summary: SummaryItem, _index: number) => (
-                                    <div
-                                      key={summary.id}
-                                      onClick={() =>
-                                        router.push(`/summary/${summary.id}`)
-                                      }
-                                      className="group relative cursor-pointer rounded-lg border border-gray-100 bg-white p-4 transition-all duration-200 hover:border-gray-200 hover:shadow-sm"
-                                    >
-                                      {/* Header with actions */}
-                                      <div className="mb-2 flex items-center justify-between">
-                                        <div className="flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
-                                          {/* Telegram share button */}
-                                          <div
-                                            onClick={e => e.stopPropagation()}
-                                          >
-                                            <TelegramShareButton
-                                              fileId={parseInt(file.id)}
-                                              fileName={file.originalName}
-                                              content={summary.content}
-                                              summarizationId={summary.id}
-                                              size="sm"
-                                              variant="ghost"
-                                            />
+                                  {fileSummaries[file.id].map(
+                                    (summary: SummaryItem, _index: number) => (
+                                      <div
+                                        key={summary.id}
+                                        onClick={() =>
+                                          router.push(`/summary/${summary.id}`)
+                                        }
+                                        className='group relative cursor-pointer rounded-lg border border-gray-100 bg-white p-4 transition-all duration-200 hover:border-gray-200 hover:shadow-sm'
+                                      >
+                                        {/* Header with actions */}
+                                        <div className='mb-2 flex items-center justify-between'>
+                                          <div className='flex items-center gap-2 opacity-0 transition-opacity duration-200 group-hover:opacity-100'>
+                                            {/* Telegram share button */}
+                                            <div
+                                              onClick={e => e.stopPropagation()}
+                                            >
+                                              <TelegramShareButton
+                                                fileId={parseInt(file.id)}
+                                                fileName={file.originalName}
+                                                content={summary.content}
+                                                summarizationId={summary.id}
+                                                size='sm'
+                                                variant='ghost'
+                                              />
+                                            </div>
+                                          </div>
+
+                                          <div className='flex items-center gap-1'>
+                                            {/* Delete action - only visible on hover */}
+                                            <button
+                                              onClick={e => {
+                                                e.stopPropagation();
+                                                handleDeleteSummary(
+                                                  summary.id,
+                                                  file.id
+                                                );
+                                              }}
+                                              disabled={
+                                                deletingSummary === summary.id
+                                              }
+                                              className='rounded p-1 text-gray-400 opacity-0 transition-opacity duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100'
+                                              title='Delete summary'
+                                            >
+                                              {deletingSummary ===
+                                              summary.id ? (
+                                                <Loader2 className='h-4 w-4 animate-spin' />
+                                              ) : (
+                                                <Trash2 className='h-4 w-4' />
+                                              )}
+                                            </button>
                                           </div>
                                         </div>
 
-                                        <div className="flex items-center gap-1">
-                                          {/* Delete action - only visible on hover */}
-                                          <button
-                                            onClick={e => {
-                                              e.stopPropagation();
-                                              handleDeleteSummary(
-                                                summary.id,
-                                                file.id,
-                                              );
-                                            }}
-                                            disabled={
-                                              deletingSummary === summary.id
-                                            }
-                                            className="rounded p-1 text-gray-400 opacity-0 transition-opacity duration-200 hover:bg-red-50 hover:text-red-600 group-hover:opacity-100"
-                                            title="Delete summary"
-                                          >
-                                            {deletingSummary ===
-                                              summary.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                              ) : (
-                                                <Trash2 className="h-4 w-4" />
-                                              )}
-                                          </button>
-                                        </div>
+                                        {/* Summary preview */}
+                                        <p className='text-sm leading-relaxed text-gray-700'>
+                                          {summary.content.length > 120
+                                            ? `${summary.content.substring(0, 120)}...`
+                                            : summary.content}
+                                        </p>
+
+                                        {/* Subtle click indicator */}
+                                        <div className='absolute inset-0 rounded-lg ring-1 ring-transparent transition-all duration-200 group-hover:ring-gray-200'></div>
                                       </div>
-
-                                      {/* Summary preview */}
-                                      <p className="text-sm leading-relaxed text-gray-700">
-                                        {summary.content.length > 120
-                                          ? `${summary.content.substring(0, 120)}...`
-                                          : summary.content}
-                                      </p>
-
-                                      {/* Subtle click indicator */}
-                                      <div className="absolute inset-0 rounded-lg ring-1 ring-transparent transition-all duration-200 group-hover:ring-gray-200"></div>
-                                    </div>
-                                  ),
-                                )}
-                              </div>
-                            )}
+                                    )
+                                  )}
+                                </div>
+                              )}
 
                             {/* Simple Actions */}
                             {file.hasTranscript && (
-                              <div className="mt-4 border-t border-gray-100 pt-3">
+                              <div className='mt-4 border-t border-gray-100 pt-3'>
                                 <Button
-                                  size="sm"
-                                  variant="outline"
+                                  size='sm'
+                                  variant='outline'
                                   onClick={() =>
                                     (window.location.href = `/transcript/${file.id}`)
                                   }
-                                  className="w-full"
+                                  className='w-full'
                                 >
-                                  <FileText className="mr-2 h-4 w-4" />
+                                  <FileText className='mr-2 h-4 w-4' />
                                   View Transcript
                                 </Button>
                               </div>

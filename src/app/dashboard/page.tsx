@@ -48,7 +48,7 @@ interface DashboardStats {
 export default function DashboardPage() {
   const [recordingDates, setRecordingDates] = useState<string[]>([]);
   const [dateFileCounts, setDateFileCounts] = useState<Record<string, number>>(
-    {},
+    {}
   );
   const [selectedDateFiles, setSelectedDateFiles] = useState<AudioFile[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -74,10 +74,10 @@ export default function DashboardPage() {
         const _totalFiles = files.length;
         const _totalDuration = files.reduce(
           (sum, file) => sum + (file.duration || 0),
-          0,
+          0
         );
         const _completedTranscriptions = files.filter(
-          file => file.transcriptionStatus === 'completed',
+          file => file.transcriptionStatus === 'completed'
         ).length;
 
         // Files from this month
@@ -163,38 +163,38 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
+      <div className='flex h-full items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin' />
       </div>
     );
   }
 
   return (
     <>
-      <div className="min-h-full">
+      <div className='min-h-full'>
         <div
           className={cn(
             'min-h-screen overflow-y-auto',
-            isMobile ? 'space-y-6 px-4 py-6' : 'space-y-6 p-6',
+            isMobile ? 'space-y-6 px-4 py-6' : 'space-y-6 p-6'
           )}
         >
           {/* Header - Now part of scrollable content */}
           <div
             className={cn('mb-8 space-y-2', !isMobile && 'buzz-header-desktop')}
           >
-            <h1 className="text-3xl font-semibold text-foreground">
+            <h1 className='text-3xl font-semibold text-foreground'>
               Dashboard
             </h1>
-            <p className="text-base text-muted-foreground">
+            <p className='text-base text-muted-foreground'>
               Recording calendar
             </p>
           </div>
 
           {/* Calendar Section */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-blue-600" />
-              <h3 className="text-lg font-semibold text-gray-900">
+          <div className='space-y-4'>
+            <div className='flex items-center gap-2'>
+              <Calendar className='h-5 w-5 text-blue-600' />
+              <h3 className='text-lg font-semibold text-gray-900'>
                 Recording Calendar
               </h3>
             </div>
@@ -210,45 +210,45 @@ export default function DashboardPage() {
 
       {/* Date Files Modal */}
       {showDateModal && selectedDate && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+        <div className='fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4'>
           <div
             className={cn(
               'flex max-h-[80vh] w-full flex-col overflow-hidden bg-white',
-              isMobile ? 'rounded-t-2xl' : 'standard-modal max-w-2xl',
+              isMobile ? 'rounded-t-2xl' : 'standard-modal max-w-2xl'
             )}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
+            <div className='flex items-center justify-between border-b border-gray-200 p-4'>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className='text-lg font-semibold text-gray-900'>
                   {formatDate(selectedDate)}
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className='text-sm text-gray-600'>
                   {selectedDateFiles.length} recording
                   {selectedDateFiles.length !== 1 ? 's' : ''}
                 </p>
               </div>
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={() => setShowDateModal(false)}
-                className="h-8 w-8 p-0"
+                className='h-8 w-8 p-0'
               >
-                <X className="h-5 w-5" />
+                <X className='h-5 w-5' />
               </Button>
             </div>
 
             {/* Files List */}
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className='flex-1 overflow-y-auto p-4'>
               {selectedDateFiles.length === 0 ? (
-                <div className="py-8 text-center">
-                  <FileAudio className="mx-auto mb-4 h-12 w-12 text-gray-300" />
-                  <p className="text-gray-500">
+                <div className='py-8 text-center'>
+                  <FileAudio className='mx-auto mb-4 h-12 w-12 text-gray-300' />
+                  <p className='text-gray-500'>
                     No recordings found for this date
                   </p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className='space-y-3'>
                   {selectedDateFiles.map(file => (
                     <MobileFileCard
                       key={file.id}

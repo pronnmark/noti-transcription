@@ -68,7 +68,7 @@ export const POST = withAuthMiddleware(
       if (!transcriptionJobs || transcriptionJobs.length === 0) {
         return NextResponse.json(
           { error: 'Transcription job not found' },
-          { status: 404 },
+          { status: 404 }
         );
       }
 
@@ -76,21 +76,21 @@ export const POST = withAuthMiddleware(
       if (!transcriptRecord.transcript) {
         return NextResponse.json(
           { error: 'File not transcribed yet' },
-          { status: 400 },
+          { status: 400 }
         );
       }
 
       debugLog(
         'api',
-        `🤖 Starting dynamic AI processing for file ${fileIdInt}`,
+        `🤖 Starting dynamic AI processing for file ${fileIdInt}`
       );
       debugLog(
         'api',
-        `📝 Summarization prompt: ${summarizationPromptId || 'default'}`,
+        `📝 Summarization prompt: ${summarizationPromptId || 'default'}`
       );
       debugLog(
         'api',
-        `🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`,
+        `🔍 Extraction definitions: ${extractionDefinitionIds.join(', ')}`
       );
 
       // Create processing session
@@ -99,7 +99,7 @@ export const POST = withAuthMiddleware(
 
       // Update file timestamp
       // TODO: Re-implement updateTimestamp method in repository
-// await audioRepo.updateTimestamp(fileIdInt);
+      // await audioRepo.updateTimestamp(fileIdInt);
 
       // Get the configured AI model outside try block for error handling access
       const configuredModel = await customAIService.getDefaultModel();
@@ -121,13 +121,13 @@ export const POST = withAuthMiddleware(
 
         debugLog(
           'api',
-          `📋 Generated system prompt (${systemPrompt.length} chars)`,
+          `📋 Generated system prompt (${systemPrompt.length} chars)`
         );
         debugLog('api', `🔧 Extraction map:`, Object.keys(extractionMap));
 
         // Format transcript for AI
         const transcriptText = formatTranscriptForAI(
-          transcriptRecord.transcript || [],
+          transcriptRecord.transcript || []
         );
 
         // Create AI processing session record using Supabase
@@ -146,7 +146,9 @@ export const POST = withAuthMiddleware(
           });
 
         if (insertError) {
-          throw new Error(`Failed to create processing session: ${insertError.message}`);
+          throw new Error(
+            `Failed to create processing session: ${insertError.message}`
+          );
         }
 
         // Call AI with dynamic prompt and structured JSON output
@@ -158,14 +160,14 @@ export const POST = withAuthMiddleware(
             temperature: 0.2,
             systemPrompt,
             jsonSchema: expectedJsonSchema,
-          },
+          }
         );
 
         debugLog('api', `🤖 AI response received (${aiResponse.length} chars)`);
         debugLog(
           'api',
           `📊 Sample response:`,
-          aiResponse.substring(0, 200) + '...',
+          aiResponse.substring(0, 200) + '...'
         );
 
         // Update session with AI response
@@ -191,7 +193,7 @@ export const POST = withAuthMiddleware(
             extractionMap,
             sessionId,
             configuredModel,
-            summarizationPromptId,
+            summarizationPromptId
           );
 
         if (!success) {
@@ -200,15 +202,15 @@ export const POST = withAuthMiddleware(
 
         // Update file timestamp
         // TODO: Re-implement updateTimestamp method in repository
-// await audioRepo.updateTimestamp(fileIdInt);
+        // await audioRepo.updateTimestamp(fileIdInt);
 
         debugLog(
           'api',
-          `✅ Dynamic AI processing completed for file ${fileIdInt}`,
+          `✅ Dynamic AI processing completed for file ${fileIdInt}`
         );
         debugLog(
           'api',
-          `📊 Extracted ${extractionResults.length} result groups`,
+          `📊 Extracted ${extractionResults.length} result groups`
         );
 
         return NextResponse.json({
@@ -229,7 +231,7 @@ export const POST = withAuthMiddleware(
               extractionMap,
               sessionId,
               configuredModel,
-              summarizationPromptId,
+              summarizationPromptId
             );
 
           // Update session with partial success
@@ -247,7 +249,7 @@ export const POST = withAuthMiddleware(
 
           // Update file timestamp
           // TODO: Re-implement updateTimestamp method in repository
-// await audioRepo.updateTimestamp(fileIdInt);
+          // await audioRepo.updateTimestamp(fileIdInt);
 
           return NextResponse.json({
             sessionId,
@@ -274,7 +276,7 @@ export const POST = withAuthMiddleware(
 
           // Update file timestamp
           // TODO: Re-implement updateTimestamp method in repository
-// await audioRepo.updateTimestamp(fileIdInt);
+          // await audioRepo.updateTimestamp(fileIdInt);
 
           return NextResponse.json(
             {
@@ -282,7 +284,7 @@ export const POST = withAuthMiddleware(
               details: String(aiError),
               sessionId,
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
       }
@@ -290,17 +292,17 @@ export const POST = withAuthMiddleware(
       debugLog('api', 'Unexpected error:', error);
       return NextResponse.json(
         { error: 'Internal server error' },
-        { status: 500 },
+        { status: 500 }
       );
     }
-  },
+  }
 );
 
 /**
  * Format transcript for AI processing
  */
 function formatTranscriptForAI(
-  transcript: string | Array<{ speaker?: string; start?: number; text: string }>,
+  transcript: string | Array<{ speaker?: string; start?: number; text: string }>
 ): string {
   if (typeof transcript === 'string') {
     return transcript;
@@ -353,7 +355,7 @@ export const GET = withAuthMiddleware(async (request: NextRequest, context) => {
     debugLog('api', 'GET error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 });

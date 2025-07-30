@@ -3,7 +3,7 @@ import { getSupabase } from '../../../../../lib/database/client';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -21,11 +21,12 @@ export async function GET(
       console.error('Error fetching file labels:', error);
       return NextResponse.json(
         { error: 'Failed to fetch labels' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
-    const labels = labelRecord && labelRecord.length > 0 ? labelRecord[0].labels || [] : [];
+    const labels =
+      labelRecord && labelRecord.length > 0 ? labelRecord[0].labels || [] : [];
 
     return NextResponse.json({
       fileId,
@@ -36,14 +37,14 @@ export async function GET(
     console.error('Error fetching file labels:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
@@ -69,7 +70,7 @@ export async function PUT(
     ) {
       return NextResponse.json(
         { error: 'Labels must be an array of strings' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -90,7 +91,7 @@ export async function PUT(
       console.error('Error checking existing labels:', checkError);
       return NextResponse.json(
         { error: 'Failed to check existing labels' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -108,25 +109,23 @@ export async function PUT(
         console.error('Error updating file labels:', updateError);
         return NextResponse.json(
           { error: 'Failed to update labels' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     } else {
       // Create new record
-      const { error: insertError } = await supabase
-        .from('file_labels')
-        .insert({
-          file_id: fileId,
-          labels: cleanLabels,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const { error: insertError } = await supabase.from('file_labels').insert({
+        file_id: fileId,
+        labels: cleanLabels,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
       if (insertError) {
         console.error('Error creating file labels:', insertError);
         return NextResponse.json(
           { error: 'Failed to create labels' },
-          { status: 500 },
+          { status: 500 }
         );
       }
     }
@@ -140,7 +139,7 @@ export async function PUT(
     console.error('Error updating file labels:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -31,11 +31,11 @@ export class DatabaseInitializer {
       const { data, error } = await supabase
         .from('audio_files')
         .select('count', { count: 'exact', head: true });
-      
+
       if (error) {
         throw error;
       }
-      
+
       console.log('✅ Supabase connection successful');
     } catch (error) {
       console.error('❌ Supabase connection failed:', error);

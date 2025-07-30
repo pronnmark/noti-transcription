@@ -60,11 +60,11 @@ export function BottomNav({ className }: BottomNavProps) {
         'border-t border-gray-200/50 bg-white/80 backdrop-blur-xl',
         'shadow-[0_-1px_20px_rgba(0,0,0,0.08)]',
         'safe-area-inset-bottom',
-        className,
+        className
       )}
     >
       {/* iOS-style tab bar container */}
-      <div className="flex items-center justify-around px-2 py-1">
+      <div className='flex items-center justify-around px-2 py-1'>
         {navItems.map(item => {
           const Icon = item.icon;
           return (
@@ -80,7 +80,7 @@ export function BottomNav({ className }: BottomNavProps) {
                 // Active state with single accent color
                 item.isActive
                   ? 'text-blue-600'
-                  : 'text-gray-600 hover:text-gray-800 active:scale-95',
+                  : 'text-gray-600 hover:text-gray-800 active:scale-95'
               )}
               onClick={() => router.push(item.href)}
               aria-label={item.label}
@@ -89,7 +89,7 @@ export function BottomNav({ className }: BottomNavProps) {
               <Icon
                 className={cn(
                   'transition-all duration-200 ease-out',
-                  item.isActive ? 'h-6 w-6 scale-110' : 'h-5 w-5',
+                  item.isActive ? 'h-6 w-6 scale-110' : 'h-5 w-5'
                 )}
               />
 
@@ -98,7 +98,7 @@ export function BottomNav({ className }: BottomNavProps) {
                 className={cn(
                   'text-[10px] font-medium leading-tight tracking-wide',
                   'transition-all duration-200 ease-out',
-                  item.isActive ? 'font-semibold opacity-100' : 'opacity-75',
+                  item.isActive ? 'font-semibold opacity-100' : 'opacity-75'
                 )}
               >
                 {item.label}
@@ -106,7 +106,7 @@ export function BottomNav({ className }: BottomNavProps) {
 
               {/* Active indicator dot - purposeful existence */}
               {item.isActive && (
-                <div className="absolute bottom-1 h-1 w-1 rounded-full bg-blue-600" />
+                <div className='absolute bottom-1 h-1 w-1 rounded-full bg-blue-600' />
               )}
             </button>
           );

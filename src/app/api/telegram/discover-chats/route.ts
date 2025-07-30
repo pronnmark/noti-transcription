@@ -16,13 +16,13 @@ export async function GET(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
     // Get recent updates with higher limit to find more chats
     const updatesResponse = await fetch(
-      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100&offset=-100`,
+      `https://api.telegram.org/bot${botToken}/getUpdates?limit=100&offset=-100`
     );
     const updatesData = await updatesResponse.json();
 
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
       .filter(chat => chat.username)
       .map(
         chat =>
-          `  '${chat.username.toLowerCase()}': '${chat.id}', // ${chat.title}`,
+          `  '${chat.username.toLowerCase()}': '${chat.id}', // ${chat.title}`
       )
       .join('\n');
 
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

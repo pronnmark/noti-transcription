@@ -196,7 +196,7 @@ export default function TemplateManagementModal({
         `/api/summarization-prompts?id=${templateId}`,
         {
           method: 'DELETE',
-        },
+        }
       );
 
       if (!response.ok) {
@@ -250,115 +250,115 @@ export default function TemplateManagementModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[80vh] max-w-4xl overflow-y-auto">
+      <DialogContent className='max-h-[80vh] max-w-4xl overflow-y-auto'>
         <DialogHeader>
           <DialogTitle>Manage Summarization Templates</DialogTitle>
         </DialogHeader>
 
         {error && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+          <div className='mb-4 rounded border border-red-200 bg-red-50 px-4 py-3 text-red-700'>
             {error}
           </div>
         )}
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="list">Templates</TabsTrigger>
-            <TabsTrigger value="create">Create New</TabsTrigger>
-            <TabsTrigger value="edit" disabled={!editingTemplate}>
+          <TabsList className='grid w-full grid-cols-3'>
+            <TabsTrigger value='list'>Templates</TabsTrigger>
+            <TabsTrigger value='create'>Create New</TabsTrigger>
+            <TabsTrigger value='edit' disabled={!editingTemplate}>
               Edit Template
             </TabsTrigger>
           </TabsList>
 
           {/* Templates List */}
-          <TabsContent value="list" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-medium">All Templates</h3>
-              <Button onClick={() => setActiveTab('create')} size="sm">
-                <Plus className="mr-2 h-4 w-4" />
+          <TabsContent value='list' className='space-y-4'>
+            <div className='flex items-center justify-between'>
+              <h3 className='text-lg font-medium'>All Templates</h3>
+              <Button onClick={() => setActiveTab('create')} size='sm'>
+                <Plus className='mr-2 h-4 w-4' />
                 Create New
               </Button>
             </div>
 
             {templates.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="mb-4 text-gray-600">No templates found</p>
+              <div className='py-8 text-center'>
+                <p className='mb-4 text-gray-600'>No templates found</p>
                 <Button
                   onClick={() => setActiveTab('create')}
-                  variant="outline"
+                  variant='outline'
                 >
-                  <Plus className="mr-2 h-4 w-4" />
+                  <Plus className='mr-2 h-4 w-4' />
                   Create First Template
                 </Button>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className='space-y-3'>
                 {templates.map(template => (
-                  <div key={template.id} className="rounded-lg border p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center space-x-2">
-                          <h4 className="font-medium">{template.name}</h4>
+                  <div key={template.id} className='rounded-lg border p-4'>
+                    <div className='flex items-start justify-between'>
+                      <div className='flex-1'>
+                        <div className='mb-2 flex items-center space-x-2'>
+                          <h4 className='font-medium'>{template.name}</h4>
                           {template.isDefault && (
                             <Badge
-                              variant="secondary"
-                              className="bg-blue-100 text-blue-800"
+                              variant='secondary'
+                              className='bg-blue-100 text-blue-800'
                             >
-                              <Star className="mr-1 h-3 w-3" />
+                              <Star className='mr-1 h-3 w-3' />
                               Default
                             </Badge>
                           )}
                           {!template.isActive && (
                             <Badge
-                              variant="outline"
-                              className="bg-gray-100 text-gray-600"
+                              variant='outline'
+                              className='bg-gray-100 text-gray-600'
                             >
                               Inactive
                             </Badge>
                           )}
                         </div>
                         {template.description && (
-                          <p className="mb-2 text-sm text-gray-600">
+                          <p className='mb-2 text-sm text-gray-600'>
                             {template.description}
                           </p>
                         )}
-                        <div className="max-h-20 overflow-y-auto rounded bg-gray-50 p-2 text-xs text-gray-500">
+                        <div className='max-h-20 overflow-y-auto rounded bg-gray-50 p-2 text-xs text-gray-500'>
                           {template.prompt}
                         </div>
                       </div>
-                      <div className="ml-4 flex items-center space-x-2">
+                      <div className='ml-4 flex items-center space-x-2'>
                         {!template.isDefault && (
                           <Button
-                            variant="ghost"
-                            size="sm"
+                            variant='ghost'
+                            size='sm'
                             onClick={() => handleSetDefault(template.id)}
                             disabled={isLoading}
-                            title="Set as default"
+                            title='Set as default'
                           >
-                            <StarOff className="h-4 w-4" />
+                            <StarOff className='h-4 w-4' />
                           </Button>
                         )}
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant='ghost'
+                          size='sm'
                           onClick={() => startEditing(template)}
                           disabled={isLoading}
                         >
-                          <Edit className="h-4 w-4" />
+                          <Edit className='h-4 w-4' />
                         </Button>
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant='ghost'
+                          size='sm'
                           onClick={() => handleDeleteTemplate(template.id)}
                           disabled={isLoading || template.isDefault}
-                          className="text-red-600 hover:text-red-700"
+                          className='text-red-600 hover:text-red-700'
                           title={
                             template.isDefault
                               ? 'Cannot delete default template'
                               : 'Delete template'
                           }
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className='h-4 w-4' />
                         </Button>
                       </div>
                     </div>
@@ -369,27 +369,27 @@ export default function TemplateManagementModal({
           </TabsContent>
 
           {/* Create New Template */}
-          <TabsContent value="create" className="space-y-4">
-            <h3 className="text-lg font-medium">Create New Template</h3>
+          <TabsContent value='create' className='space-y-4'>
+            <h3 className='text-lg font-medium'>Create New Template</h3>
 
-            <div className="space-y-4">
+            <div className='space-y-4'>
               <div>
-                <Label htmlFor="new-name">Template Name *</Label>
+                <Label htmlFor='new-name'>Template Name *</Label>
                 <Input
-                  id="new-name"
+                  id='new-name'
                   value={newTemplate.name}
                   onChange={e =>
                     setNewTemplate(prev => ({ ...prev, name: e.target.value }))
                   }
-                  placeholder="e.g., Meeting Summary, Personal Reflection"
-                  className="mt-1"
+                  placeholder='e.g., Meeting Summary, Personal Reflection'
+                  className='mt-1'
                 />
               </div>
 
               <div>
-                <Label htmlFor="new-description">Description</Label>
+                <Label htmlFor='new-description'>Description</Label>
                 <Input
-                  id="new-description"
+                  id='new-description'
                   value={newTemplate.description}
                   onChange={e =>
                     setNewTemplate(prev => ({
@@ -397,15 +397,15 @@ export default function TemplateManagementModal({
                       description: e.target.value,
                     }))
                   }
-                  placeholder="Brief description of when to use this template"
-                  className="mt-1"
+                  placeholder='Brief description of when to use this template'
+                  className='mt-1'
                 />
               </div>
 
               <div>
-                <Label htmlFor="new-prompt">Prompt *</Label>
+                <Label htmlFor='new-prompt'>Prompt *</Label>
                 <Textarea
-                  id="new-prompt"
+                  id='new-prompt'
                   value={newTemplate.prompt}
                   onChange={e =>
                     setNewTemplate(prev => ({
@@ -413,17 +413,17 @@ export default function TemplateManagementModal({
                       prompt: e.target.value,
                     }))
                   }
-                  placeholder="Enter the AI prompt for this summarization style..."
+                  placeholder='Enter the AI prompt for this summarization style...'
                   rows={8}
-                  className="mt-1"
+                  className='mt-1'
                 />
-                <p className="mt-1 text-xs text-gray-500">
+                <p className='mt-1 text-xs text-gray-500'>
                   This prompt will be sent to the AI to generate summaries in
                   your desired style.
                 </p>
               </div>
 
-              <div className="flex items-center space-x-2 pt-4">
+              <div className='flex items-center space-x-2 pt-4'>
                 <Button
                   onClick={handleCreateTemplate}
                   disabled={
@@ -433,18 +433,18 @@ export default function TemplateManagementModal({
                   }
                 >
                   {isLoading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                   ) : (
-                    <Save className="mr-2 h-4 w-4" />
+                    <Save className='mr-2 h-4 w-4' />
                   )}
                   Create Template
                 </Button>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => setActiveTab('list')}
                   disabled={isLoading}
                 >
-                  <X className="mr-2 h-4 w-4" />
+                  <X className='mr-2 h-4 w-4' />
                   Cancel
                 </Button>
               </div>
@@ -452,59 +452,59 @@ export default function TemplateManagementModal({
           </TabsContent>
 
           {/* Edit Template */}
-          <TabsContent value="edit" className="space-y-4">
+          <TabsContent value='edit' className='space-y-4'>
             {editingTemplate && (
               <>
-                <h3 className="text-lg font-medium">Edit Template</h3>
+                <h3 className='text-lg font-medium'>Edit Template</h3>
 
-                <div className="space-y-4">
+                <div className='space-y-4'>
                   <div>
-                    <Label htmlFor="edit-name">Template Name *</Label>
+                    <Label htmlFor='edit-name'>Template Name *</Label>
                     <Input
-                      id="edit-name"
+                      id='edit-name'
                       value={editingTemplate.name}
                       onChange={e =>
                         setEditingTemplate(prev =>
-                          prev ? { ...prev, name: e.target.value } : null,
+                          prev ? { ...prev, name: e.target.value } : null
                         )
                       }
-                      placeholder="e.g., Meeting Summary, Personal Reflection"
-                      className="mt-1"
+                      placeholder='e.g., Meeting Summary, Personal Reflection'
+                      className='mt-1'
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="edit-description">Description</Label>
+                    <Label htmlFor='edit-description'>Description</Label>
                     <Input
-                      id="edit-description"
+                      id='edit-description'
                       value={editingTemplate.description}
                       onChange={e =>
                         setEditingTemplate(prev =>
-                          prev ? { ...prev, description: e.target.value } : null,
+                          prev ? { ...prev, description: e.target.value } : null
                         )
                       }
-                      placeholder="Brief description of when to use this template"
-                      className="mt-1"
+                      placeholder='Brief description of when to use this template'
+                      className='mt-1'
                     />
                   </div>
 
                   <div>
-                    <Label htmlFor="edit-prompt">Prompt *</Label>
+                    <Label htmlFor='edit-prompt'>Prompt *</Label>
                     <Textarea
-                      id="edit-prompt"
+                      id='edit-prompt'
                       value={editingTemplate.prompt}
                       onChange={e =>
                         setEditingTemplate(prev =>
-                          prev ? { ...prev, prompt: e.target.value } : null,
+                          prev ? { ...prev, prompt: e.target.value } : null
                         )
                       }
-                      placeholder="Enter the AI prompt for this summarization style..."
+                      placeholder='Enter the AI prompt for this summarization style...'
                       rows={8}
-                      className="mt-1"
+                      className='mt-1'
                     />
                   </div>
 
-                  <div className="flex items-center space-x-2 pt-4">
+                  <div className='flex items-center space-x-2 pt-4'>
                     <Button
                       onClick={handleUpdateTemplate}
                       disabled={
@@ -514,21 +514,21 @@ export default function TemplateManagementModal({
                       }
                     >
                       {isLoading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                       ) : (
-                        <Save className="mr-2 h-4 w-4" />
+                        <Save className='mr-2 h-4 w-4' />
                       )}
                       Save Changes
                     </Button>
                     <Button
-                      variant="outline"
+                      variant='outline'
                       onClick={() => {
                         setEditingTemplate(null);
                         setActiveTab('list');
                       }}
                       disabled={isLoading}
                     >
-                      <X className="mr-2 h-4 w-4" />
+                      <X className='mr-2 h-4 w-4' />
                       Cancel
                     </Button>
                   </div>

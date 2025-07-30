@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTranscript } from '@/lib/services/transcription';
-import { db, speakerLabels } from '@/lib/database';
+import { getSupabase } from '@/lib/database/client';
+
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: fileId } = await params;
@@ -13,18 +14,23 @@ export async function GET(
     if (!transcript) {
       return NextResponse.json(
         { error: 'Transcript not found' },
-        { status: 404 },
+        { status: 404 }
       );
     }
 
     // Get speaker labels for this file
-    const speakerLabelResult = await db
-      .select()
-      .from(speakerLabels)
-      .where(eq(speakerLabels.fileId, fileIdInt))
+    const supabase = getSupabase();
+    const { data: speakerLabelResult, error } = await supabase
+      .from('speaker_labels')
+      .select('*')
+      .eq('file_id', fileIdInt)
       .limit(1);
 
-    const customSpeakerNames = speakerLabelResult[0]?.labels || {};
+    if (error) {
+      console.error('Error fetching speaker labels:', error);
+    }
+
+    const customSpeakerNames = speakerLabelResult?.[0]?.labels || {};
 
     // Enhance segments with display names
     const enhancedSegments =
@@ -39,8 +45,8 @@ export async function GET(
     // Extract unique speakers with their display names
     const speakers = Array.from(
       new Set(
-        transcript.segments?.map((s: any) => s.speaker).filter(Boolean) || [],
-      ),
+        transcript.segments?.map((s: any) => s.speaker).filter(Boolean) || []
+      )
     ).map(speaker => ({
       id: speaker,
       displayName: customSpeakerNames[speaker] || speaker,
@@ -50,16 +56,14 @@ export async function GET(
     return NextResponse.json({
       segments: enhancedSegments,
       speakers,
-      hasSpeakers:
-        transcript.segments?.some((s: { speaker?: string }) => s.speaker) ||
-        false,
+      hasSpeakers: transcript.segments?.some((s: any) => s.speaker) || false,
       customSpeakerNames,
     });
   } catch (error) {
     console.error('Get transcript error:', error);
     return NextResponse.json(
       { error: 'Failed to get transcript' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

@@ -20,13 +20,14 @@ export class StorageConfigManager {
 
   private updateConfig() {
     const environment = this.determineEnvironment();
-    
+
     this.config = {
       audioBucket: environment === 'test' ? 'test-audio-files' : 'audio-files',
-      transcriptsBucket: environment === 'test' ? 'test-transcripts' : 'transcripts',
+      transcriptsBucket:
+        environment === 'test' ? 'test-transcripts' : 'transcripts',
       environment,
     };
-    
+
     this.lastEnvironment = process.env.NODE_ENV;
   }
 
@@ -45,7 +46,7 @@ export class StorageConfigManager {
 
   private determineEnvironment(): 'test' | 'development' | 'production' {
     const nodeEnv = process.env.NODE_ENV;
-    
+
     if (nodeEnv === 'test') return 'test';
     if (nodeEnv === 'production') return 'production';
     return 'development';

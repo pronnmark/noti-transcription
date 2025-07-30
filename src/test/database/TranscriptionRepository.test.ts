@@ -1,13 +1,38 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { TranscriptionRepository } from '@/lib/database/repositories/TranscriptRepository';
 import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
-import { db } from '@/lib/database';
-import {
-  audioFiles,
-  transcriptionJobs,
-  NewTranscriptionJob,
-  TranscriptSegment,
-} from '@/lib/database/schema';
+import { TranscriptionJob, AudioFile } from '@/lib/database/client';
+
+interface NewTranscriptionJob {
+  file_id: number;
+  language?: string;
+  model_size?: string;
+  threads?: number;
+  processors?: number;
+  diarization?: boolean;
+  speaker_count?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed' | 'draft';
+  progress?: number;
+  transcript?: any;
+  diarization_status?:
+    | 'not_attempted'
+    | 'in_progress'
+    | 'success'
+    | 'failed'
+    | 'no_speakers_detected';
+  diarization_error?: string;
+  last_error?: string;
+  started_at?: string;
+  completed_at?: string;
+}
+
+interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: number;
+  confidence?: number;
+}
 
 describe('TranscriptionRepository', () => {
   let transcriptionRepository: TranscriptionRepository;
@@ -21,11 +46,11 @@ describe('TranscriptionRepository', () => {
 
     // Create a test audio file
     const audioFile = await audioRepository.create({
-      fileName: 'test.mp3',
-      originalFileName: 'test-original.mp3',
-      originalFileType: 'audio/mpeg',
-      fileSize: 1024,
-      fileHash: 'test-hash-123',
+      file_name: 'test.mp3',
+      original_file_name: 'test-original.mp3',
+      original_file_type: 'audio/mpeg',
+      file_size: 1024,
+      file_hash: 'test-hash-123',
     });
     testAudioFileId = audioFile.id;
   });
@@ -38,9 +63,9 @@ describe('TranscriptionRepository', () => {
   describe('create', () => {
     it('should create a transcription job', async () => {
       const newJob: NewTranscriptionJob = {
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         language: 'en',
-        modelSize: 'large-v3',
+        model_size: 'large-v3',
         threads: 4,
         processors: 1,
         diarization: true,
@@ -52,7 +77,7 @@ describe('TranscriptionRepository', () => {
 
       expect(created).toBeDefined();
       expect(created.id).toBeDefined();
-      expect(created.fileId).toBe(testAudioFileId);
+      expect(created.file_id).toBe(testAudioFileId);
       expect(created.status).toBe('pending');
       expect(created.progress).toBe(0);
     });
@@ -61,16 +86,16 @@ describe('TranscriptionRepository', () => {
   describe('findByFileId', () => {
     it('should find transcription jobs by file ID', async () => {
       const job1: NewTranscriptionJob = {
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         language: 'en',
-        modelSize: 'large-v3',
+        model_size: 'large-v3',
         status: 'pending',
       };
 
       const job2: NewTranscriptionJob = {
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         language: 'sv',
-        modelSize: 'medium',
+        model_size: 'medium',
         status: 'completed',
       };
 
@@ -80,7 +105,7 @@ describe('TranscriptionRepository', () => {
       const jobs = await transcriptionRepository.findByFileId(testAudioFileId);
 
       expect(jobs).toHaveLength(2);
-      expect(jobs.every(job => job.fileId === testAudioFileId)).toBe(true);
+      expect(jobs.every(job => job.file_id === testAudioFileId)).toBe(true);
     });
 
     it('should return empty array for non-existent file ID', async () => {
@@ -92,16 +117,16 @@ describe('TranscriptionRepository', () => {
   describe('findLatestByFileId', () => {
     it('should find the latest transcription job for a file', async () => {
       const job1: NewTranscriptionJob = {
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         language: 'en',
-        modelSize: 'large-v3',
+        model_size: 'large-v3',
         status: 'completed',
       };
 
       const job2: NewTranscriptionJob = {
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         language: 'sv',
-        modelSize: 'medium',
+        model_size: 'medium',
         status: 'pending',
       };
 
@@ -126,19 +151,19 @@ describe('TranscriptionRepository', () => {
   describe('findByStatus', () => {
     it('should find jobs by status', async () => {
       await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'pending',
         language: 'en',
       });
 
       await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'completed',
         language: 'sv',
       });
 
       await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'pending',
         language: 'fr',
       });
@@ -157,39 +182,39 @@ describe('TranscriptionRepository', () => {
   describe('updateStatus', () => {
     it('should update job status to processing', async () => {
       const job = await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'pending',
         language: 'en',
       });
 
       const updated = await transcriptionRepository.updateStatus(
         job.id,
-        'processing',
+        'processing'
       );
 
       expect(updated.status).toBe('processing');
-      expect(updated.startedAt).toBeDefined();
+      expect(updated.started_at).toBeDefined();
     });
 
     it('should update job status to completed', async () => {
       const job = await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'processing',
         language: 'en',
       });
 
       const updated = await transcriptionRepository.updateStatus(
         job.id,
-        'completed',
+        'completed'
       );
 
       expect(updated.status).toBe('completed');
-      expect(updated.completedAt).toBeDefined();
+      expect(updated.completed_at).toBeDefined();
     });
 
     it('should update job status to failed with error', async () => {
       const job = await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'processing',
         language: 'en',
       });
@@ -198,16 +223,16 @@ describe('TranscriptionRepository', () => {
       const updated = await transcriptionRepository.updateStatus(
         job.id,
         'failed',
-        errorMessage,
+        errorMessage
       );
 
       expect(updated.status).toBe('failed');
-      expect(updated.lastError).toBe(errorMessage);
+      expect(updated.last_error).toBe(errorMessage);
     });
 
     it('should throw error for non-existent job', async () => {
       await expect(
-        transcriptionRepository.updateStatus(99999, 'completed'),
+        transcriptionRepository.updateStatus(99999, 'completed')
       ).rejects.toThrow();
     });
   });
@@ -215,7 +240,7 @@ describe('TranscriptionRepository', () => {
   describe('updateProgress', () => {
     it('should update job progress', async () => {
       const job = await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'processing',
         language: 'en',
         progress: 0,
@@ -228,7 +253,7 @@ describe('TranscriptionRepository', () => {
 
     it('should throw error for non-existent job', async () => {
       await expect(
-        transcriptionRepository.updateProgress(99999, 50),
+        transcriptionRepository.updateProgress(99999, 50)
       ).rejects.toThrow();
     });
   });
@@ -236,7 +261,7 @@ describe('TranscriptionRepository', () => {
   describe('completeTranscription', () => {
     it('should complete transcription with transcript data', async () => {
       const job = await transcriptionRepository.create({
-        fileId: testAudioFileId,
+        file_id: testAudioFileId,
         status: 'processing',
         language: 'en',
         progress: 50,
@@ -259,13 +284,13 @@ describe('TranscriptionRepository', () => {
 
       const completed = await transcriptionRepository.completeTranscription(
         job.id,
-        transcript,
+        transcript
       );
 
       expect(completed.status).toBe('completed');
       expect(completed.progress).toBe(100);
       expect(completed.transcript).toEqual(transcript);
-      expect(completed.completedAt).toBeDefined();
+      expect(completed.completed_at).toBeDefined();
     });
 
     it('should throw error for non-existent job', async () => {
@@ -274,7 +299,7 @@ describe('TranscriptionRepository', () => {
       ];
 
       await expect(
-        transcriptionRepository.completeTranscription(99999, transcript),
+        transcriptionRepository.completeTranscription(99999, transcript)
       ).rejects.toThrow();
     });
   });

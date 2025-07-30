@@ -10,13 +10,13 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
       includeStackTrace?: boolean;
       sanitizeErrors?: boolean;
       reportErrors?: boolean;
-    } = {},
+    } = {}
   ) {}
 
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext,
+    context: RequestContext
   ): Promise<NextResponse> {
     const startTime = Date.now();
 
@@ -24,7 +24,7 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
       // Handle the error using the centralized error handler
       const errorResponse = await errorHandler.handleError(
         error,
-        context.requestId,
+        context.requestId
       );
 
       // Log the error
@@ -37,7 +37,7 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
           statusCode: errorResponse.error.statusCode,
           errorCode: errorResponse.error.code,
           duration: Date.now() - context.startTime,
-        },
+        }
       );
 
       // Create API response
@@ -82,7 +82,7 @@ export class ErrorMiddleware implements ErrorMiddlewareHandler {
         'Error handler failed',
         handlerError instanceof Error
           ? handlerError
-          : new Error(String(handlerError)),
+          : new Error(String(handlerError))
       );
 
       const fallbackResponse: ApiResponse = {
@@ -119,7 +119,7 @@ export class ValidationErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext,
+    context: RequestContext
   ): Promise<NextResponse> {
     if (!(error instanceof Error) || !error.message.includes('validation')) {
       throw error; // Re-throw if not a validation error
@@ -173,7 +173,7 @@ export class NotFoundErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext,
+    context: RequestContext
   ): Promise<NextResponse> {
     if (!(error instanceof AppError) || error.code !== ErrorCode.NOT_FOUND) {
       throw error; // Re-throw if not a not found error
@@ -218,7 +218,7 @@ export class RateLimitErrorMiddleware implements ErrorMiddlewareHandler {
   async execute(
     error: unknown,
     request: NextRequest,
-    context: RequestContext,
+    context: RequestContext
   ): Promise<NextResponse> {
     if (
       !(error instanceof AppError) ||
@@ -264,7 +264,7 @@ export class RateLimitErrorMiddleware implements ErrorMiddlewareHandler {
 // Error middleware factory
 export function createErrorMiddleware(
   type: 'general' | 'validation' | 'not-found' | 'rate-limit' = 'general',
-  options?: any,
+  options?: any
 ): ErrorMiddlewareHandler {
   switch (type) {
     case 'validation':

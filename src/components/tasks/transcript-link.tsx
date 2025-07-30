@@ -31,12 +31,12 @@ export function TranscriptLink({
   if (!timestamp) {
     return (
       <Button
-        variant="ghost"
-        size="sm"
+        variant='ghost'
+        size='sm'
         onClick={handleClick}
         className={cn('text-muted-foreground hover:text-foreground', className)}
       >
-        <Play className="mr-1 h-3 w-3" />
+        <Play className='mr-1 h-3 w-3' />
         View transcript
       </Button>
     );
@@ -46,15 +46,15 @@ export function TranscriptLink({
     <div
       className={cn(
         'flex items-center gap-2 text-sm text-muted-foreground',
-        className,
+        className
       )}
     >
-      <Clock className="h-3 w-3" />
+      <Clock className='h-3 w-3' />
       <Button
-        variant="ghost"
-        size="sm"
+        variant='ghost'
+        size='sm'
         onClick={handleClick}
-        className="h-auto p-0 text-muted-foreground hover:text-foreground"
+        className='h-auto p-0 text-muted-foreground hover:text-foreground'
       >
         {formatTime(timestamp)}
       </Button>

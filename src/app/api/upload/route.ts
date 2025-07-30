@@ -56,7 +56,7 @@ export const POST = withMiddleware(
             receivedFields: Array.from(formData.keys()),
             hint: 'Expected field name: files[] for multiple files or file/audio for single file',
           }),
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -70,9 +70,9 @@ export const POST = withMiddleware(
             createErrorResponse(
               'Invalid speaker count',
               'INVALID_SPEAKER_COUNT',
-              400,
+              400
             ),
-            { status: 400 },
+            { status: 400 }
           );
         }
       }
@@ -140,7 +140,7 @@ export const POST = withMiddleware(
               error: error instanceof Error ? error.message : 'Unknown error',
             };
           }
-        }),
+        })
       );
 
       // Auto-trigger transcription worker for successful uploads (non-blocking)
@@ -149,7 +149,7 @@ export const POST = withMiddleware(
         setImmediate(async () => {
           try {
             apiDebug(
-              `Starting transcription worker for ${successfulUploads} newly uploaded files...`,
+              `Starting transcription worker for ${successfulUploads} newly uploaded files...`
             );
             const result = await processTranscriptionJobs();
             apiDebug('Transcription worker completed:', result);
@@ -201,8 +201,8 @@ export const POST = withMiddleware(
               requestId: context.requestId,
               duration: Date.now() - startTime,
             },
-          },
-        ),
+          }
+        )
       );
     } catch (error) {
       apiDebug('Upload error:', error);
@@ -211,9 +211,9 @@ export const POST = withMiddleware(
           error instanceof Error ? error.message : 'Unknown error',
           'UPLOAD_ERROR',
           500,
-          { stack: error instanceof Error ? error.stack : undefined },
+          { stack: error instanceof Error ? error.stack : undefined }
         ),
-        { status: 500 },
+        { status: 500 }
       );
     }
   },
@@ -235,5 +235,5 @@ export const POST = withMiddleware(
       includeStackTrace: process.env.NODE_ENV === 'development',
       sanitizeErrors: true,
     },
-  },
+  }
 );

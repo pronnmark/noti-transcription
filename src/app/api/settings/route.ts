@@ -77,7 +77,7 @@ async function saveSettings(settings: Settings): Promise<void> {
   // Save AI and real-time settings to database
   debugLog(
     'api',
-    'Attempting to save AI and real-time settings to database...',
+    'Attempting to save AI and real-time settings to database...'
   );
   try {
     const dbSettingsData = {
@@ -101,7 +101,7 @@ async function saveSettings(settings: Settings): Promise<void> {
     console.error('Error saving settings to database:', error);
     console.error(
       'Error details:',
-      error instanceof Error ? error.message : String(error),
+      error instanceof Error ? error.message : String(error)
     );
     throw error;
   }
@@ -213,7 +213,7 @@ export async function GET(request: NextRequest) {
     console.error('Error loading settings:', error);
     return NextResponse.json(
       { error: 'Failed to load settings' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -224,7 +224,7 @@ export async function POST(request: NextRequest) {
     debugLog(
       'api',
       'Received settings to save:',
-      JSON.stringify(settings.ai, null, 2),
+      JSON.stringify(settings.ai, null, 2)
     );
 
     // Save settings (AI to database, others to file)
@@ -240,18 +240,18 @@ export async function POST(request: NextRequest) {
     console.error('Error saving settings:', error);
     console.error(
       'Error details:',
-      error instanceof Error ? error.message : String(error),
+      error instanceof Error ? error.message : String(error)
     );
     console.error(
       'Error stack:',
-      error instanceof Error ? error.stack : 'No stack trace',
+      error instanceof Error ? error.stack : 'No stack trace'
     );
     return NextResponse.json(
       {
         error: 'Failed to save settings',
         details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

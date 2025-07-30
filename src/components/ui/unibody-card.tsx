@@ -38,14 +38,14 @@ const UnibodyCard = forwardRef<HTMLDivElement, UnibodyCardProps>(
             'cursor-pointer touch-manipulation',
           ],
 
-          className,
+          className
         )}
         {...props}
       >
         {children}
       </div>
     );
-  },
+  }
 );
 
 UnibodyCard.displayName = 'UnibodyCard';

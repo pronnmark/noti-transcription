@@ -37,14 +37,14 @@ const IOSCard = forwardRef<HTMLDivElement, IOSCardProps>(
             'cursor-pointer touch-manipulation',
           ],
 
-          className,
+          className
         )}
         {...props}
       >
         {children}
       </div>
     );
-  },
+  }
 );
 
 IOSCard.displayName = 'IOSCard';
@@ -62,7 +62,7 @@ const IOSCardContent = forwardRef<
     className={cn(
       // Generous iOS-style padding following 8pt grid system
       'px-5 py-4',
-      className,
+      className
     )}
     {...props}
   />
@@ -82,7 +82,7 @@ const IOSCardHeader = forwardRef<
     className={cn(
       // iOS system typography with generous spacing
       'px-5 pb-2 pt-5',
-      className,
+      className
     )}
     {...props}
   />
@@ -102,7 +102,7 @@ const IOSCardTitle = forwardRef<
     className={cn(
       // iOS Large Title style - clear hierarchy
       'text-lg font-semibold leading-tight tracking-tight text-gray-900',
-      className,
+      className
     )}
     {...props}
   />
@@ -122,7 +122,7 @@ const IOSCardDescription = forwardRef<
     className={cn(
       // iOS secondary text style - clear but understated
       'mt-1 text-sm font-normal leading-relaxed text-gray-600',
-      className,
+      className
     )}
     {...props}
   />
@@ -142,7 +142,7 @@ const IOSCardFooter = forwardRef<
     className={cn(
       // Consistent footer styling with subtle separation
       'px-5 pb-5 pt-2',
-      className,
+      className
     )}
     {...props}
   />

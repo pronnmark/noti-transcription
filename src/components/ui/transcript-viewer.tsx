@@ -40,7 +40,7 @@ export function TranscriptViewer({
 
   // Parse transcript - handle both JSON speaker format and plain text
   const parseTranscript = (
-    text: string | null | undefined,
+    text: string | null | undefined
   ): TranscriptSegment[] => {
     // Ensure we have a valid string
     if (!text || typeof text !== 'string') {
@@ -136,67 +136,67 @@ export function TranscriptViewer({
 
   return (
     <Card className={cn('w-full', className)}>
-      <CardHeader className="pb-4">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-xl">Transcript</CardTitle>
-          <div className="flex items-center gap-2">
+      <CardHeader className='pb-4'>
+        <div className='flex items-center justify-between'>
+          <CardTitle className='text-xl'>Transcript</CardTitle>
+          <div className='flex items-center gap-2'>
             {hasMultipleSpeakers && (
-              <Badge variant="secondary">
+              <Badge variant='secondary'>
                 {speakerCount} Speaker{speakerCount > 1 ? 's' : ''}
               </Badge>
             )}
-            <Badge variant="outline">
+            <Badge variant='outline'>
               {segments.length} Segment{segments.length > 1 ? 's' : ''}
             </Badge>
           </div>
         </div>
 
         {fileName && (
-          <p className="text-sm text-muted-foreground">📁 {fileName}</p>
+          <p className='text-sm text-muted-foreground'>📁 {fileName}</p>
         )}
       </CardHeader>
 
-      <CardContent className="space-y-6">
+      <CardContent className='space-y-6'>
         {/* Controls */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className='flex flex-wrap items-center gap-2'>
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={copyToClipboard}
-            className="text-xs"
+            className='text-xs'
           >
-            <Copy className="mr-1 h-3 w-3" />
+            <Copy className='mr-1 h-3 w-3' />
             Copy
           </Button>
 
           <Button
-            variant="outline"
-            size="sm"
+            variant='outline'
+            size='sm'
             onClick={downloadTranscript}
-            className="text-xs"
+            className='text-xs'
           >
-            <Download className="mr-1 h-3 w-3" />
+            <Download className='mr-1 h-3 w-3' />
             Download
           </Button>
 
           {fileId && (
             <Button
-              variant="outline"
-              size="sm"
+              variant='outline'
+              size='sm'
               onClick={() => toast.info('Share feature coming soon!')}
-              className="text-xs"
+              className='text-xs'
             >
-              <Share className="mr-1 h-3 w-3" />
+              <Share className='mr-1 h-3 w-3' />
               Share
             </Button>
           )}
 
           {hasMultipleSpeakers && segments.some(s => s.start) && (
             <Button
-              variant="ghost"
-              size="sm"
+              variant='ghost'
+              size='sm'
               onClick={() => setShowTimestamps(!showTimestamps)}
-              className="text-xs"
+              className='text-xs'
             >
               {showTimestamps ? 'Hide' : 'Show'} Timestamps
             </Button>
@@ -204,26 +204,26 @@ export function TranscriptViewer({
         </div>
 
         {/* Transcript Content */}
-        <div className="max-h-96 space-y-4 overflow-y-auto rounded-lg border bg-muted/30 p-4">
+        <div className='max-h-96 space-y-4 overflow-y-auto rounded-lg border bg-muted/30 p-4'>
           {segments.map((segment, index) => (
-            <div key={index} className="space-y-2">
+            <div key={index} className='space-y-2'>
               {segment.speaker && (
-                <div className="flex items-center gap-2">
+                <div className='flex items-center gap-2'>
                   <Badge
-                    variant="secondary"
+                    variant='secondary'
                     className={cn('text-xs', getSpeakerColor(segment.speaker))}
                   >
                     {segment.speaker}
                   </Badge>
                   {showTimestamps && segment.start && (
-                    <span className="font-mono text-xs text-muted-foreground">
+                    <span className='font-mono text-xs text-muted-foreground'>
                       {formatTimestamp(segment.start)}
                       {segment.end && ` - ${formatTimestamp(segment.end)}`}
                     </span>
                   )}
                 </div>
               )}
-              <p className="border-l-2 border-muted pl-2 text-sm leading-relaxed">
+              <p className='border-l-2 border-muted pl-2 text-sm leading-relaxed'>
                 {segment.text}
               </p>
             </div>
@@ -231,9 +231,9 @@ export function TranscriptViewer({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-center border-t pt-4">
-          <Button onClick={onStartNewRecording} className="w-full sm:w-auto">
-            <RotateCcw className="mr-2 h-4 w-4" />
+        <div className='flex justify-center border-t pt-4'>
+          <Button onClick={onStartNewRecording} className='w-full sm:w-auto'>
+            <RotateCcw className='mr-2 h-4 w-4' />
             Record Another
           </Button>
         </div>

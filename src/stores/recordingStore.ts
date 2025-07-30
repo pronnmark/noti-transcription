@@ -298,7 +298,7 @@ export const useRecordingStore = create<RecordingState>()(
               error: status.error || 'Transcription failed',
             });
             toast.error(
-              'Transcription failed: ' + (status.error || 'Unknown error'),
+              'Transcription failed: ' + (status.error || 'Unknown error')
             );
             break;
         }
@@ -306,6 +306,6 @@ export const useRecordingStore = create<RecordingState>()(
     }),
     {
       name: 'recording-store',
-    },
-  ),
+    }
+  )
 );

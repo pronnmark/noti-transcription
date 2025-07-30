@@ -24,7 +24,7 @@ export class ValidationError extends AppError {
     field?: string,
     value?: any,
     rules: ValidationRule[] = [],
-    context: Partial<ValidationErrorContext> = {},
+    context: Partial<ValidationErrorContext> = {}
   ) {
     // Map validation context to error metadata
     const metadata = {
@@ -42,7 +42,7 @@ export class ValidationError extends AppError {
       400,
       ErrorSeverity.LOW,
       true,
-      metadata,
+      metadata
     );
 
     this.field = field;
@@ -59,7 +59,7 @@ export class ValidationError extends AppError {
   static invalidType(
     field: string,
     expectedType: string,
-    actualValue?: any,
+    actualValue?: any
   ): ValidationError {
     const actualType = typeof actualValue;
     return new ValidationError(
@@ -73,14 +73,14 @@ export class ValidationError extends AppError {
           message: `Must be of type '${expectedType}'`,
           value: actualValue,
         },
-      ],
+      ]
     );
   }
 
   static invalidFormat(
     field: string,
     format: string,
-    value?: any,
+    value?: any
   ): ValidationError {
     return new ValidationError(
       `Field '${field}' has invalid format, expected '${format}'`,
@@ -93,7 +93,7 @@ export class ValidationError extends AppError {
           message: `Must match format '${format}'`,
           value,
         },
-      ],
+      ]
     );
   }
 
@@ -101,7 +101,7 @@ export class ValidationError extends AppError {
     field: string,
     min?: number,
     max?: number,
-    value?: any,
+    value?: any
   ): ValidationError {
     let message = `Field '${field}' is out of range`;
     if (min !== undefined && max !== undefined) {
@@ -126,7 +126,7 @@ export class ValidationError extends AppError {
     field: string,
     minLength?: number,
     maxLength?: number,
-    actualLength?: number,
+    actualLength?: number
   ): ValidationError {
     let message = `Field '${field}' has invalid length`;
     if (minLength !== undefined && maxLength !== undefined) {
@@ -154,7 +154,7 @@ export class ValidationError extends AppError {
   static invalidChoice(
     field: string,
     validChoices: any[],
-    value?: any,
+    value?: any
   ): ValidationError {
     return new ValidationError(
       `Field '${field}' must be one of: ${validChoices.join(', ')}`,
@@ -167,7 +167,7 @@ export class ValidationError extends AppError {
           message: `Must be one of: ${validChoices.join(', ')}`,
           value,
         },
-      ],
+      ]
     );
   }
 
@@ -175,7 +175,7 @@ export class ValidationError extends AppError {
     field: string,
     message: string,
     value?: any,
-    rule?: string,
+    rule?: string
   ): ValidationError {
     return new ValidationError(message, field, value, [
       {
@@ -193,7 +193,7 @@ export class ValidationError extends AppError {
       message || defaultMessage,
       undefined,
       undefined,
-      rules,
+      rules
     );
   }
 

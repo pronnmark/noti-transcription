@@ -52,18 +52,18 @@ export function MoodTrendChart({
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
-        <div className="rounded-lg border bg-white p-3 shadow-lg">
-          <p className="font-medium">{label}</p>
-          <p className="text-sm">
-            <span className="text-blue-600">Mood: </span>
+        <div className='rounded-lg border bg-white p-3 shadow-lg'>
+          <p className='font-medium'>{label}</p>
+          <p className='text-sm'>
+            <span className='text-blue-600'>Mood: </span>
             {data.mood}/10
           </p>
-          <p className="text-sm">
-            <span className="text-gray-600">Sessions: </span>
+          <p className='text-sm'>
+            <span className='text-gray-600'>Sessions: </span>
             {data.sessions}
           </p>
-          <p className="text-sm">
-            <span className="text-purple-600">Emotion: </span>
+          <p className='text-sm'>
+            <span className='text-purple-600'>Emotion: </span>
             {data.emotion}
           </p>
         </div>
@@ -79,11 +79,11 @@ export function MoodTrendChart({
         <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={height}>
+        <ResponsiveContainer width='100%' height={height}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" />
+            <CartesianGrid strokeDasharray='3 3' />
             <XAxis
-              dataKey="date"
+              dataKey='date'
               axisLine={false}
               tickLine={false}
               tick={{ fontSize: 12 }}
@@ -97,49 +97,49 @@ export function MoodTrendChart({
             <Tooltip content={<CustomTooltip />} />
             <Legend />
             <Line
-              type="monotone"
-              dataKey="mood"
-              stroke="#3b82f6"
+              type='monotone'
+              dataKey='mood'
+              stroke='#3b82f6'
               strokeWidth={2}
               dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }}
               activeDot={{ r: 6, stroke: '#3b82f6', strokeWidth: 2 }}
-              name="Mood Score"
+              name='Mood Score'
             />
           </LineChart>
         </ResponsiveContainer>
 
         {/* Summary statistics */}
-        <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">
+        <div className='mt-4 grid grid-cols-2 gap-4 md:grid-cols-4'>
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-blue-600'>
               {data.length > 0
                 ? (
-                  data.reduce(
-                    (sum, item) => sum + (item.averageMood || 0),
-                    0,
-                  ) / data.length
-                ).toFixed(1)
+                    data.reduce(
+                      (sum, item) => sum + (item.averageMood || 0),
+                      0
+                    ) / data.length
+                  ).toFixed(1)
                 : '0.0'}
             </div>
-            <div className="text-sm text-gray-600">Average Mood</div>
+            <div className='text-sm text-gray-600'>Average Mood</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-green-600'>
               {Math.max(...data.map(item => item.averageMood || 0)).toFixed(1)}
             </div>
-            <div className="text-sm text-gray-600">Best Day</div>
+            <div className='text-sm text-gray-600'>Best Day</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-orange-600'>
               {Math.min(...data.map(item => item.averageMood || 0)).toFixed(1)}
             </div>
-            <div className="text-sm text-gray-600">Lowest Day</div>
+            <div className='text-sm text-gray-600'>Lowest Day</div>
           </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className='text-center'>
+            <div className='text-2xl font-bold text-purple-600'>
               {data.reduce((sum, item) => sum + (item.sessionCount || 0), 0)}
             </div>
-            <div className="text-sm text-gray-600">Total Sessions</div>
+            <div className='text-sm text-gray-600'>Total Sessions</div>
           </div>
         </div>
       </CardContent>

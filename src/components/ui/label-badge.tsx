@@ -52,12 +52,12 @@ export function LabelBadge({
       {visibleLabels.map(label => (
         <Badge
           key={label}
-          variant="secondary"
+          variant='secondary'
           className={cn(
             badgeSize,
             'border',
             getLabelColor(label),
-            onClick && 'cursor-pointer hover:opacity-80',
+            onClick && 'cursor-pointer hover:opacity-80'
           )}
           onClick={() => onClick?.(label)}
         >
@@ -68,7 +68,7 @@ export function LabelBadge({
 
       {remainingCount > 0 && (
         <Badge
-          variant="secondary"
+          variant='secondary'
           className={cn(badgeSize, 'border-gray-200 bg-gray-100 text-gray-600')}
         >
           +{remainingCount} more

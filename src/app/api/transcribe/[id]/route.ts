@@ -15,7 +15,7 @@ const execAsync = promisify(exec);
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   return withAuthMiddleware(
     async (req: NextRequest, context) => {
@@ -28,7 +28,7 @@ export async function POST(
         if (isNaN(fileId)) {
           return NextResponse.json(
             createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-            { status: 400 },
+            { status: 400 }
           );
         }
 
@@ -46,7 +46,7 @@ export async function POST(
         if (!file) {
           return NextResponse.json(
             createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-            { status: 404 },
+            { status: 404 }
           );
         }
 
@@ -64,21 +64,21 @@ export async function POST(
                   requestId: context.requestId,
                   duration: Date.now() - startTime,
                 },
-              },
-            ),
+              }
+            )
           );
         }
 
         // Create transcription job using repository
         const job = await transcriptionRepo.create({
-          fileId: fileId,
+          file_id: fileId,
           language: 'auto',
-          modelSize: 'large-v3',
+          model_size: 'large-v3',
           diarization: true,
-          speakerCount: undefined,
+          speaker_count: undefined,
           status: 'processing',
           progress: 0,
-          startedAt: new Date(),
+          started_at: new Date().toISOString(),
         });
 
         // Start transcription in background (fire and forget)
@@ -98,8 +98,8 @@ export async function POST(
                 requestId: context.requestId,
                 duration: Date.now() - startTime,
               },
-            },
-          ),
+            }
+          )
         );
       } catch (error: any) {
         debugLog('api', 'Transcribe error:', error);
@@ -116,7 +116,7 @@ export async function POST(
         enabled: true,
         sanitizeErrors: true,
       },
-    },
+    }
   )(request);
 }
 
@@ -138,7 +138,7 @@ async function transcribeInBackground(file: any, jobId: number) {
     if (!audioPath.endsWith('.wav')) {
       debugLog('worker', 'Converting to WAV...', { audioPath, wavPath });
       await execAsync(
-        `ffmpeg -i "${audioPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`,
+        `ffmpeg -i "${audioPath}" -ar 16000 -ac 1 -c:a pcm_s16le "${wavPath}" -y`
       );
     }
 
@@ -151,7 +151,7 @@ async function transcribeInBackground(file: any, jobId: number) {
 
     const { stdout, stderr } = await execAsync(
       `python3 "${pythonScript}" "${wavPath}" --model base --language en`,
-      { maxBuffer: 10 * 1024 * 1024 }, // 10MB buffer
+      { maxBuffer: 10 * 1024 * 1024 } // 10MB buffer
     );
 
     if (stderr) {

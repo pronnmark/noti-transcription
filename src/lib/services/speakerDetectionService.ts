@@ -1,5 +1,12 @@
 import { customAIService } from './customAI';
-import type { TranscriptSegment } from '../database/schema';
+
+interface TranscriptSegment {
+  start: number;
+  end: number;
+  text: string;
+  speaker?: number;
+  confidence?: number;
+}
 
 interface SpeakerMapping {
   [speakerId: string]: string | null;
@@ -9,7 +16,7 @@ interface SpeakerMapping {
  * Smart sampling: Get optimal number of segments for name detection
  */
 function getSampleSegments(
-  transcript: TranscriptSegment[],
+  transcript: TranscriptSegment[]
 ): TranscriptSegment[] {
   const percentage = 25; // First 25% of transcript
   const minSegments = 5; // Always get at least 5 segments
@@ -17,7 +24,7 @@ function getSampleSegments(
 
   const targetCount = Math.max(
     minSegments,
-    Math.min(maxSegments, Math.floor((transcript.length * percentage) / 100)),
+    Math.min(maxSegments, Math.floor((transcript.length * percentage) / 100))
   );
 
   return transcript.slice(0, targetCount);
@@ -27,11 +34,11 @@ function getSampleSegments(
  * Detect speaker names from transcript introductions using LLM
  */
 export async function detectSpeakerNames(
-  transcript: TranscriptSegment[],
+  transcript: TranscriptSegment[]
 ): Promise<{ success: boolean; mappings?: SpeakerMapping; error?: string }> {
   try {
     console.log(
-      `🎯 Starting speaker name detection for ${transcript.length} segments...`,
+      `🎯 Starting speaker name detection for ${transcript.length} segments...`
     );
 
     if (!transcript || transcript.length === 0) {
@@ -41,11 +48,11 @@ export async function detectSpeakerNames(
     // Get smart sample of segments
     const sampleSegments = getSampleSegments(transcript);
     const samplePercentage = Math.round(
-      (sampleSegments.length / transcript.length) * 100,
+      (sampleSegments.length / transcript.length) * 100
     );
 
     console.log(
-      `📊 Analyzing ${sampleSegments.length} segments (${samplePercentage}%) for name detection`,
+      `📊 Analyzing ${sampleSegments.length} segments (${samplePercentage}%) for name detection`
     );
 
     // Convert segments to text format for LLM
@@ -58,7 +65,7 @@ export async function detectSpeakerNames(
       .join('\n');
 
     console.log(
-      `📝 Sample transcript length: ${transcriptText.length} characters`,
+      `📝 Sample transcript length: ${transcriptText.length} characters`
     );
 
     // Prepare LLM prompt for name detection
@@ -96,7 +103,7 @@ ${transcriptText}`;
 
     console.log(
       `📥 LLM response received:`,
-      response.substring(0, 200) + '...',
+      response.substring(0, 200) + '...'
     );
 
     // Parse JSON response
@@ -133,10 +140,10 @@ ${transcriptText}`;
 
     // Count detected names
     const detectedNames = Object.entries(mappings).filter(
-      ([_, name]) => name !== null,
+      ([_, name]) => name !== null
     );
     console.log(
-      `🎉 Speaker detection completed: ${detectedNames.length} names detected`,
+      `🎉 Speaker detection completed: ${detectedNames.length} names detected`
     );
 
     if (detectedNames.length > 0) {
@@ -165,7 +172,7 @@ ${transcriptText}`;
  */
 export function applySpeakerNames(
   transcript: TranscriptSegment[],
-  mappings: SpeakerMapping,
+  mappings: SpeakerMapping
 ): TranscriptSegment[] {
   console.log(`🔄 Applying speaker names to ${transcript.length} segments...`);
 
@@ -173,13 +180,14 @@ export function applySpeakerNames(
 
   const updatedTranscript = transcript.map(segment => {
     const originalSpeaker = segment.speaker;
-    const newName = originalSpeaker ? mappings[originalSpeaker] : null;
+    const newName =
+      originalSpeaker !== undefined ? mappings[String(originalSpeaker)] : null;
 
-    if (newName && newName !== originalSpeaker) {
+    if (newName) {
       updatedCount++;
       return {
         ...segment,
-        speaker: newName,
+        speakerName: newName,
       };
     }
 
@@ -203,7 +211,7 @@ function formatTime(seconds: number): string {
  * Complete speaker detection and application pipeline
  */
 export async function detectAndApplySpeakerNames(
-  transcript: TranscriptSegment[],
+  transcript: TranscriptSegment[]
 ): Promise<{
   success: boolean;
   updatedTranscript?: TranscriptSegment[];
@@ -224,12 +232,12 @@ export async function detectAndApplySpeakerNames(
     // Step 2: Apply names to transcript
     const updatedTranscript = applySpeakerNames(
       transcript,
-      detectionResult.mappings,
+      detectionResult.mappings
     );
 
     // Generate stats
     const detectedNames = Object.entries(detectionResult.mappings).filter(
-      ([_, name]) => name !== null,
+      ([_, name]) => name !== null
     );
     const stats = {
       totalSegments: transcript.length,

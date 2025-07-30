@@ -15,7 +15,7 @@ export async function GET(_request: NextRequest) {
       {
         error: error.message || 'Worker failed',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       {
         error: error.message || 'Failed to trigger worker',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

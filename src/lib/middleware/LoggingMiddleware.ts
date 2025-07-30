@@ -16,13 +16,13 @@ export class RequestLoggingMiddleware implements MiddlewareHandler {
       logQuery?: boolean;
       skipPaths?: string[];
       skipMethods?: string[];
-    } = {},
+    } = {}
   ) {}
 
   async execute(
     request: NextRequest,
     context: RequestContext,
-    next: () => Promise<NextResponse>,
+    next: () => Promise<NextResponse>
   ): Promise<NextResponse> {
     // Skip logging for certain paths or methods
     if (this.shouldSkip(context)) {
@@ -103,12 +103,12 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
       skipPaths?: string[];
       skipSuccessful?: boolean;
       slowRequestThreshold?: number;
-    } = {},
+    } = {}
   ) {}
 
   async execute(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     // Skip logging for certain paths
     if (this.shouldSkip(context)) {
@@ -122,7 +122,7 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
   }
 
   private shouldSkip(
-    context: RequestContext | (RequestContext & ResponseContext),
+    context: RequestContext | (RequestContext & ResponseContext)
   ): boolean {
     const { skipPaths = [] } = this.options;
 
@@ -154,7 +154,7 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
 
   private logResponse(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): void {
     const logData: Record<string, any> = {
       method: context.method,
@@ -207,7 +207,7 @@ export class ResponseLoggingMiddleware implements ResponseMiddlewareHandler {
   }
 
   private getLogLevel(
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): 'error' | 'warn' | 'info' | 'debug' {
     // Error responses
     if (context.statusCode >= 500) {
@@ -244,7 +244,7 @@ export class PerformanceLoggingMiddleware implements MiddlewareHandler {
       slowRequestThreshold?: number;
       trackMemoryUsage?: boolean;
       reportInterval?: number;
-    } = {},
+    } = {}
   ) {
     this.options = {
       slowRequestThreshold: 1000, // 1 second
@@ -262,7 +262,7 @@ export class PerformanceLoggingMiddleware implements MiddlewareHandler {
   async execute(
     request: NextRequest,
     context: RequestContext,
-    next: () => Promise<NextResponse>,
+    next: () => Promise<NextResponse>
   ): Promise<NextResponse> {
     const startTime = Date.now();
     const startMemory = this.options.trackMemoryUsage

@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
     const audioRepository = RepositoryFactory.audioRepository;
 
     // Get files from database
-    const files = await audioRepository.findAll(limit, offset);
+    const files = await audioRepository.findAll({ limit, offset });
     const totalCount = await audioRepository.count();
 
     // Map to expected format
@@ -26,31 +26,39 @@ export async function GET(request: NextRequest) {
       fileSize: file.file_size,
       mimeType: file.original_file_type,
       duration: file.duration,
-      uploadedAt: file.created_at ? new Date(file.created_at).toISOString() : null,
-      updatedAt: file.updated_at ? new Date(file.updated_at).toISOString() : null,
+      uploadedAt: file.uploaded_at
+        ? new Date(file.uploaded_at).toISOString()
+        : null,
+      updatedAt: file.updated_at
+        ? new Date(file.updated_at).toISOString()
+        : null,
       // Include location data if present
       latitude: file.latitude,
       longitude: file.longitude,
       locationAccuracy: file.location_accuracy,
-      locationTimestamp: file.location_timestamp ? new Date(file.location_timestamp).toISOString() : null,
+      locationTimestamp: file.location_timestamp
+        ? new Date(file.location_timestamp).toISOString()
+        : null,
       locationProvider: file.location_provider,
     }));
 
     return NextResponse.json({
       success: true,
-      data: formattedFiles,
+      files: formattedFiles,
       meta: {
         total: totalCount,
         limit,
         offset,
-      }
+      },
     });
   } catch (error) {
     console.error('Error fetching files:', error);
-    return NextResponse.json({
-      success: false,
-      error: { message: 'Internal error', code: 'INTERNAL_ERROR' }
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: { message: 'Internal error', code: 'INTERNAL_ERROR' },
+      },
+      { status: 500 }
+    );
   }
 }
-

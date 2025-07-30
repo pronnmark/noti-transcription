@@ -38,7 +38,7 @@ export class MiddlewareOrchestrator {
     handler: (
       request: NextRequest,
       context: RequestContext
-    ) => Promise<NextResponse>,
+    ) => Promise<NextResponse>
   ): Promise<NextResponse> {
     let context: RequestContext;
 
@@ -52,7 +52,7 @@ export class MiddlewareOrchestrator {
         context,
         async () => {
           return await handler(request, context);
-        },
+        }
       );
 
       // Build response context - DISABLED FOR TESTING TO FIX READABLESTREAM ISSUE
@@ -81,7 +81,7 @@ export class MiddlewareOrchestrator {
   private async executeRequestChain(
     request: NextRequest,
     context: RequestContext,
-    finalHandler: () => Promise<NextResponse>,
+    finalHandler: () => Promise<NextResponse>
   ): Promise<NextResponse> {
     let index = 0;
 
@@ -100,7 +100,7 @@ export class MiddlewareOrchestrator {
   private async executeErrorChain(
     error: unknown,
     request: NextRequest,
-    context: RequestContext,
+    context: RequestContext
   ): Promise<NextResponse> {
     for (const handler of this.errorHandlers) {
       try {
@@ -122,7 +122,7 @@ export class MiddlewareOrchestrator {
 
   private async executeResponseChain(
     response: NextResponse,
-    context: RequestContext & ResponseContext,
+    context: RequestContext & ResponseContext
   ): Promise<NextResponse> {
     let currentResponse = response;
 
@@ -132,7 +132,7 @@ export class MiddlewareOrchestrator {
       } catch (error) {
         context.logger.warn(
           `Response handler '${handler.name}' failed`,
-          error instanceof Error ? error : new Error(String(error)),
+          error instanceof Error ? error : new Error(String(error))
         );
         // Continue with other handlers even if one fails
       }
@@ -143,7 +143,7 @@ export class MiddlewareOrchestrator {
 
   private async buildResponseContext(
     response: NextResponse,
-    requestContext: RequestContext,
+    requestContext: RequestContext
   ): Promise<ResponseContext> {
     const duration = Date.now() - requestContext.startTime;
     const statusCode = response.status;
@@ -167,7 +167,7 @@ export class MiddlewareOrchestrator {
   }
 
   private async createFallbackContext(
-    request: NextRequest,
+    request: NextRequest
   ): Promise<RequestContext> {
     return {
       requestId: `fallback_${Date.now()}`,
@@ -196,13 +196,13 @@ export class MiddlewareOrchestrator {
     // Request handlers (executed in order)
     if (this.config.performance?.enabled !== false) {
       this.requestHandlers.push(
-        new PerformanceLoggingMiddleware(this.config.performance),
+        new PerformanceLoggingMiddleware(this.config.performance)
       );
     }
 
     if (this.config.logging?.logRequests !== false) {
       this.requestHandlers.push(
-        new RequestLoggingMiddleware(this.config.logging),
+        new RequestLoggingMiddleware(this.config.logging)
       );
     }
 
@@ -212,7 +212,7 @@ export class MiddlewareOrchestrator {
     // Response handlers (executed in order) - DISABLED FOR TESTING
     if (false && this.config.logging?.logResponses !== false) {
       this.responseHandlers.push(
-        new ResponseLoggingMiddleware(this.config.logging),
+        new ResponseLoggingMiddleware(this.config.logging)
       );
     }
 
@@ -254,7 +254,7 @@ export class MiddlewareOrchestrator {
 
   // Get handler by name
   getHandler(
-    name: string,
+    name: string
   ):
     | MiddlewareHandler
     | ErrorMiddlewareHandler
@@ -272,7 +272,7 @@ export class MiddlewareOrchestrator {
     request: string[];
     error: string[];
     response: string[];
-    } {
+  } {
     return {
       request: this.requestHandlers.map(h => h.name),
       error: this.errorHandlers.map(h => h.name),
@@ -326,14 +326,14 @@ let defaultOrchestrator: MiddlewareOrchestrator | undefined;
 export function getDefaultOrchestrator(): MiddlewareOrchestrator {
   if (!defaultOrchestrator) {
     defaultOrchestrator = new MiddlewareOrchestrator(
-      createDefaultMiddlewareConfig(),
+      createDefaultMiddlewareConfig()
     );
   }
   return defaultOrchestrator;
 }
 
 export function setDefaultOrchestrator(
-  orchestrator: MiddlewareOrchestrator,
+  orchestrator: MiddlewareOrchestrator
 ): void {
   defaultOrchestrator = orchestrator;
 }

@@ -29,11 +29,11 @@ export async function POST(request: NextRequest) {
       .from('telegram_settings')
       .select('*')
       .limit(1);
-    
+
     if (settingsError) {
       throw settingsError;
     }
-    
+
     const config = settings?.[0];
 
     if (!config?.is_enabled) {
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         success: false,
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -78,25 +78,25 @@ export async function POST(request: NextRequest) {
 // Handle transcription complete notifications
 async function handleTranscriptionComplete(
   notification: NotificationRequest,
-  config: any,
+  config: any
 ) {
   if (!notification.jobId) {
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
   const supabase = getSupabase();
-  
+
   // Get job details
   const { data: jobResults, error: jobError } = await supabase
     .from('transcription_jobs')
     .select('*')
     .eq('id', notification.jobId!)
     .limit(1);
-    
+
   if (jobError || !jobResults || jobResults.length === 0) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
-  
+
   const job = jobResults[0];
 
   // Get file details
@@ -105,11 +105,11 @@ async function handleTranscriptionComplete(
     .select('*')
     .eq('id', job.file_id)
     .limit(1);
-    
+
   if (fileError || !fileResults || fileResults.length === 0) {
     return NextResponse.json({ success: false, error: 'File not found' });
   }
-  
+
   const file = fileResults[0];
 
   // Attach file to job object to maintain compatibility
@@ -126,10 +126,10 @@ async function handleTranscriptionComplete(
   const duration =
     job.completed_at && job.started_at
       ? Math.round(
-        (new Date(job.completed_at).getTime() -
+          (new Date(job.completed_at).getTime() -
             new Date(job.started_at).getTime()) /
-            1000,
-      )
+            1000
+        )
       : null;
 
   const message = `✅ **Transcription Complete!**
@@ -156,25 +156,25 @@ Use /summary ${file.id} to see the transcription.`;
 // Handle transcription failed notifications
 async function handleTranscriptionFailed(
   notification: NotificationRequest,
-  config: any,
+  config: any
 ) {
   if (!notification.jobId) {
     return NextResponse.json({ success: false, error: 'Job ID required' });
   }
 
   const supabase = getSupabase();
-  
+
   // Get job details
   const { data: jobResults, error: jobError } = await supabase
     .from('transcription_jobs')
     .select('*')
     .eq('id', notification.jobId!)
     .limit(1);
-    
+
   if (jobError || !jobResults || jobResults.length === 0) {
     return NextResponse.json({ success: false, error: 'Job not found' });
   }
-  
+
   const job = jobResults[0];
 
   // Get file details
@@ -183,11 +183,11 @@ async function handleTranscriptionFailed(
     .select('*')
     .eq('id', job.file_id)
     .limit(1);
-    
+
   if (fileError || !fileResults || fileResults.length === 0) {
     return NextResponse.json({ success: false, error: 'File not found' });
   }
-  
+
   const file = fileResults[0];
 
   // Attach file to job object to maintain compatibility
@@ -223,7 +223,7 @@ Please try uploading the file again or contact support if the issue persists.`;
 // Handle summary ready notifications
 async function handleSummaryReady(
   notification: NotificationRequest,
-  config: any,
+  config: any
 ) {
   if (!notification.fileId) {
     return NextResponse.json({ success: false, error: 'File ID required' });
@@ -258,7 +258,7 @@ Visit the Noti dashboard to view and share the summary.`;
 // Handle custom notifications
 async function handleCustomNotification(
   notification: NotificationRequest,
-  config: any,
+  config: any
 ) {
   const chatId = notification.chatId || config.defaultChatId;
 
@@ -283,7 +283,7 @@ async function handleCustomNotification(
 // Helper function to send Telegram messages
 async function sendTelegramMessage(
   chatId: string | number,
-  text: string,
+  text: string
 ): Promise<{
   success: boolean;
   messageId?: number;
@@ -348,11 +348,11 @@ export async function GET() {
       .from('telegram_settings')
       .select('*')
       .limit(1);
-      
+
     if (error) {
       throw error;
     }
-    
+
     const config = settings?.[0];
 
     return NextResponse.json({
@@ -365,7 +365,7 @@ export async function GET() {
     console.error('Error fetching notification settings:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch settings' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

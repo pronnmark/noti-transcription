@@ -51,12 +51,12 @@ export function CommentForm({
   if (!isEditing && !initialComment) {
     return (
       <Button
-        variant="ghost"
-        size="sm"
+        variant='ghost'
+        size='sm'
         onClick={() => setIsEditing(true)}
         className={cn('text-muted-foreground hover:text-foreground', className)}
       >
-        <MessageCircle className="mr-2 h-4 w-4" />
+        <MessageCircle className='mr-2 h-4 w-4' />
         Add comment
       </Button>
     );
@@ -65,19 +65,19 @@ export function CommentForm({
   if (!isEditing) {
     return (
       <div className={cn('space-y-2', className)}>
-        <div className="flex items-center gap-2">
-          <MessageCircle className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm font-medium">Comment</span>
+        <div className='flex items-center gap-2'>
+          <MessageCircle className='h-4 w-4 text-muted-foreground' />
+          <span className='text-sm font-medium'>Comment</span>
           <Button
-            variant="ghost"
-            size="sm"
+            variant='ghost'
+            size='sm'
             onClick={() => setIsEditing(true)}
-            className="h-6 w-6 p-0"
+            className='h-6 w-6 p-0'
           >
-            <Edit3 className="h-3 w-3" />
+            <Edit3 className='h-3 w-3' />
           </Button>
         </div>
-        <div className="border-l-2 border-muted pl-6 text-sm text-muted-foreground">
+        <div className='border-l-2 border-muted pl-6 text-sm text-muted-foreground'>
           {initialComment}
         </div>
       </div>
@@ -86,33 +86,33 @@ export function CommentForm({
 
   return (
     <div className={cn('space-y-3', className)}>
-      <div className="flex items-center gap-2">
-        <MessageCircle className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">
+      <div className='flex items-center gap-2'>
+        <MessageCircle className='h-4 w-4 text-muted-foreground' />
+        <span className='text-sm font-medium'>
           {initialComment ? 'Edit comment' : 'Add comment'}
         </span>
       </div>
       <Textarea
         value={comment}
         onChange={e => setComment(e.target.value)}
-        placeholder="Add your notes, observations, or updates..."
-        className="min-h-[80px] resize-none"
+        placeholder='Add your notes, observations, or updates...'
+        className='min-h-[80px] resize-none'
         disabled={isSaving}
       />
-      <div className="flex gap-2">
+      <div className='flex gap-2'>
         <Button
           onClick={handleSave}
           disabled={isSaving || !comment.trim()}
-          size="sm"
+          size='sm'
         >
-          <Save className="mr-2 h-4 w-4" />
+          <Save className='mr-2 h-4 w-4' />
           {isSaving ? 'Saving...' : 'Save'}
         </Button>
         <Button
-          variant="outline"
+          variant='outline'
           onClick={handleCancel}
           disabled={isSaving}
-          size="sm"
+          size='sm'
         >
           Cancel
         </Button>

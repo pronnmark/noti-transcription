@@ -1,11 +1,14 @@
-// Removed logging dependency
-import { aiExtractsService, settingsService } from '@/lib/db';
 import { AIProvider } from './ai/AIProvider';
 import type {
   AIGenerationOptions,
   AIModelInfo,
   AIProviderConfig,
 } from './ai/AIProvider';
+import { AIConfigurationManager } from './ai/AIConfigurationManager';
+import { ModelValidator } from './ai/ModelValidator';
+import { ResponseParser } from './ai/ResponseParser';
+import { ErrorHandler } from '../utils/errorHandler';
+import { ValidationUtils } from '../utils/validation';
 
 interface OpenAIMessage {
   role: 'user' | 'assistant' | 'system';
@@ -39,33 +42,43 @@ interface OpenAIResponse {
 }
 
 export class CustomAIService extends AIProvider {
+  private configManager: AIConfigurationManager;
+
   constructor(config: AIProviderConfig = {}) {
-    super('CustomAIService', {
-      ...config,
-    });
+    super('CustomAIService', config);
+    this.configManager = new AIConfigurationManager();
   }
 
   async initialize(): Promise<void> {
-    try {
-      // Load settings first to populate apiKey, baseUrl, etc.
-      const settings = await this.getCustomSettings();
+    return await ErrorHandler.serviceMethod(async () => {
+      // Load configuration through configuration manager
+      const aiConfig = await this.configManager.getConfiguration();
+      
+      // Set provider configuration
+      this.configure({
+        apiKey: aiConfig.apiKey,
+        baseUrl: aiConfig.baseUrl,
+        model: aiConfig.model,
+        timeout: aiConfig.timeout,
+        maxTokens: aiConfig.maxTokens,
+        temperature: aiConfig.temperature,
+      });
 
-      // Now call parent initialization which will have access to this.apiKey
+      // Call parent initialization
       await super.initialize();
-    } catch (error) {
-      console.warn(
-        '[CustomAIService] Failed to initialize CustomAI service settings',
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      // Don't throw - allow service to initialize but mark as unavailable
-    }
+    }, {
+      service: 'CustomAIService',
+      operation: 'initialize'
+    });
   }
 
   async generateText(
     prompt: string,
-    options?: AIGenerationOptions,
+    options?: AIGenerationOptions
   ): Promise<string> {
-    try {
+    return await ErrorHandler.serviceMethod(async () => {
+      // Validate inputs
+      ValidationUtils.validateRequiredString(prompt, 'prompt');
       const validatedOptions = this.validateGenerationOptions(options);
 
       const messages: OpenAIMessage[] = [];
@@ -90,18 +103,20 @@ export class CustomAIService extends AIProvider {
         temperature: validatedOptions.temperature,
         jsonMode: !!validatedOptions.jsonSchema,
       });
-    } catch (error) {
-      console.error('[CustomAIService] Error in generateText:', error);
-      throw error;
-    }
+    }, {
+      service: 'CustomAIService',
+      operation: 'generateText',
+      metadata: { promptLength: prompt.length, hasOptions: !!options }
+    });
   }
 
   async generateStructuredOutput(
     prompt: string,
     schema: any,
-    options?: AIGenerationOptions,
+    options?: AIGenerationOptions
   ): Promise<any> {
-    try {
+    return await ErrorHandler.serviceMethod(async () => {
+      ValidationUtils.validateRequiredString(prompt, 'prompt');
       const validatedOptions = this.validateGenerationOptions(options);
 
       const response = await this.generateText(prompt, {
@@ -109,14 +124,12 @@ export class CustomAIService extends AIProvider {
         jsonSchema: schema,
       });
 
-      return this.parseJSONResponse(response);
-    } catch (error) {
-      console.error(
-        '[CustomAIService] Error in generateStructuredOutput:',
-        error,
-      );
-      throw error;
-    }
+      return ResponseParser.parseJSONResponse(response);
+    }, {
+      service: 'CustomAIService',
+      operation: 'generateStructuredOutput',
+      metadata: { hasSchema: !!schema }
+    });
   }
 
   getModelInfo(): AIModelInfo {
@@ -130,188 +143,37 @@ export class CustomAIService extends AIProvider {
   }
 
   async getDefaultModel(): Promise<string> {
-    try {
-      const settings = await this.getCustomSettings();
-      return settings.model;
-    } catch (error) {
-      console.warn(
-        '[CustomAIService] Failed to get configured model, using fallback',
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return this.defaultModel || 'gpt-3.5-turbo';
-    }
+    return await ErrorHandler.serviceMethod(async () => {
+      const config = await this.configManager.getConfiguration();
+      return config.model;
+    }, {
+      service: 'CustomAIService',
+      operation: 'getDefaultModel'
+    });
   }
 
-  private isDDwrappy(settings: any): boolean {
-    return (
-      settings.baseUrl?.includes('localhost:8000') ||
-      settings.provider === 'ddwrappy'
-    );
+  async isAvailable(): Promise<boolean> {
+    return await this.configManager.isConfigurationAvailable();
   }
 
   protected async makeRequest(
     url: string,
     options: RequestInit,
-    timeout: number = 120000,
+    timeout: number = 120000
   ): Promise<Response> {
-    try {
-      return await super.makeRequest(url, options, timeout);
-    } catch (error) {
-      // Enhance error messages for DDwrappy
-      if (error instanceof Error && error.message.includes('HTTP 422')) {
-        const settings = await this.getCustomSettings().catch(() => ({}));
-        if (this.isDDwrappy(settings)) {
-          const modelName = 'model' in settings ? settings.model : 'unknown';
-          throw new Error(`DDwrappy rejected the request (HTTP 422). This often indicates:
-            - Invalid model name (current: ${modelName})
-            - Malformed JSON schema in request
-            - DDwrappy service not running or misconfigured
-            
-            Try: curl http://localhost:8000/v1/models to verify DDwrappy is running.
-            
-            Original error: ${error.message}`);
-        }
-      }
-      throw error;
-    }
+    return await ErrorHandler.handleWithRetry(
+      () => super.makeRequest(url, options, timeout),
+      {
+        service: 'CustomAIService',
+        operation: 'makeRequest',
+        metadata: { url, timeout }
+      },
+      3,
+      1000
+    );
   }
 
-  private validateModelForProvider(model: string, settings: any): string {
-    // Check if this is DDwrappy based on base URL
-    const isDDwrappy = this.isDDwrappy(settings);
-
-    if (isDDwrappy) {
-      // DDwrappy expects specific Claude model names without provider prefix
-      const ddwrappyModels = [
-        'claude-sonnet-4-20250514',
-        'claude-opus-4-20250514',
-        'claude-3-7-sonnet-20250219',
-        'claude-3-5-sonnet-20241022',
-        'claude-3-5-haiku-20241022',
-      ];
-
-      // Remove anthropic/ prefix if present
-      let cleanModel = model.replace(/^anthropic\//, '');
-
-      // Map common model names to DDwrappy equivalents
-      if (cleanModel === 'claude-sonnet-4') {
-        cleanModel = 'claude-sonnet-4-20250514';
-      }
-
-      // Validate against known DDwrappy models
-      if (!ddwrappyModels.includes(cleanModel)) {
-        console.warn(
-          `[CustomAIService] Model ${model} not supported by DDwrappy, using default: ${settings.model}`,
-        );
-        return settings.model;
-      }
-
-      return cleanModel;
-    }
-
-    return model;
-  }
-
-  async isAvailable(): Promise<boolean> {
-    try {
-      const settings = await this.getCustomSettings();
-      if (!settings.apiKey || !settings.baseUrl) {
-        console.warn(
-          '[CustomAIService] Custom AI service is not available: Missing API key or base URL',
-        );
-        return false;
-      }
-      return true;
-    } catch (error) {
-      console.warn(
-        '[CustomAIService] Custom AI service is not available',
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      return false;
-    }
-  }
-
-  private async getCustomSettings(): Promise<{
-    apiKey: string;
-    baseUrl: string;
-    model: string;
-    provider: string;
-  }> {
-    try {
-      // First priority: Check environment variables
-      const envApiKey = process.env.CUSTOM_AI_API_KEY;
-      const envBaseUrl = process.env.CUSTOM_AI_BASE_URL;
-      const envModel = process.env.CUSTOM_AI_MODEL;
-      const envProvider = process.env.CUSTOM_AI_PROVIDER;
-
-      if (envApiKey && envBaseUrl && envModel) {
-        console.log(
-          '[CustomAIService] Using environment variable configuration',
-        );
-        // Cache settings
-        this.apiKey = envApiKey;
-        this.baseUrl = envBaseUrl;
-        this.defaultModel = envModel;
-
-        return {
-          apiKey: envApiKey,
-          baseUrl: envBaseUrl,
-          model: envModel,
-          provider: envProvider || 'custom',
-        };
-      }
-
-      // Second priority: Use inherited configuration if available
-      if (this.apiKey && this.baseUrl && this.defaultModel) {
-        return {
-          apiKey: this.apiKey,
-          baseUrl: this.baseUrl,
-          model: this.defaultModel,
-          provider: 'custom',
-        };
-      }
-
-      // Third priority: Try database settings
-      try {
-        const settings = await settingsService.get();
-        const dbApiKey = settings?.customAiApiKey;
-        const dbBaseUrl = settings?.customAiBaseUrl;
-        const dbModel = settings?.customAiModel;
-        const dbProvider = settings?.customAiProvider;
-
-        if (dbApiKey && dbBaseUrl && dbModel) {
-          console.log('[CustomAIService] Using database configuration');
-          // Cache settings
-          this.apiKey = dbApiKey;
-          this.baseUrl = dbBaseUrl;
-          this.defaultModel = dbModel;
-
-          return {
-            apiKey: dbApiKey,
-            baseUrl: dbBaseUrl,
-            model: dbModel,
-            provider: dbProvider || 'custom',
-          };
-        }
-      } catch (dbError) {
-        console.warn(
-          '[CustomAIService] Could not read database settings',
-          dbError instanceof Error ? dbError : new Error(String(dbError)),
-        );
-      }
-
-      // No configuration found - throw clear error
-      throw new Error(
-        'Custom AI endpoint configuration is required. Please set CUSTOM_AI_API_KEY, CUSTOM_AI_BASE_URL, and CUSTOM_AI_MODEL environment variables, or configure in Settings.',
-      );
-    } catch (error) {
-      console.error(
-        '[CustomAIService] Error getting custom AI settings',
-        error instanceof Error ? error : new Error(String(error)),
-      );
-      throw error;
-    }
-  }
+  // Removed old configuration methods - now handled by AIConfigurationManager
 
   async chat(
     messages: OpenAIMessage[],
@@ -321,21 +183,23 @@ export class CustomAIService extends AIProvider {
       temperature?: number;
       topP?: number;
       jsonMode?: boolean;
-    } = {},
+    } = {}
   ): Promise<string> {
-    try {
-      const settings = await this.getCustomSettings();
+    return await ErrorHandler.serviceMethod(async () => {
+      ValidationUtils.validateArray(messages, 'messages', 1);
+      
+      const config = await this.configManager.getConfiguration();
 
       const {
-        model = settings.model,
+        model = config.model,
         maxTokens = this.config.maxTokens || 4000,
         temperature = this.config.temperature || 0.7,
         topP = 0.9,
         jsonMode = false,
       } = options;
 
-      // Validate model for DDwrappy compatibility
-      const validatedModel = this.validateModelForProvider(model, settings);
+      // Validate model for provider compatibility
+      const validatedModel = ModelValidator.validateModelForProvider(model, config);
 
       const request: OpenAIRequest = {
         model: validatedModel,
@@ -345,43 +209,26 @@ export class CustomAIService extends AIProvider {
         top_p: topP,
       };
 
-      // Add JSON mode if requested - with DDwrappy compatibility
+      // Add JSON mode if requested
       if (jsonMode) {
-        if (this.isDDwrappy(settings)) {
-          // DDwrappy-specific JSON mode configuration
-          request.response_format = {
-            type: 'json_object',
-            // Potential DDwrappy-specific options (if supported)
-            ...('strictJson' in settings && settings.strictJson
-              ? { strict: true }
-              : {}),
-          };
+        if (ModelValidator.isDDwrappy(config)) {
+          request.response_format = { type: 'json_object' };
+          // Add DDwrappy-specific optimizations if needed
         } else {
           request.response_format = { type: 'json_object' };
         }
       }
 
-      console.log(`[CustomAIService] Making Custom AI request to ${model}`, {
-        messageCount: messages.length,
-        maxTokens,
-        temperature,
-        hasJsonMode: jsonMode,
-        baseUrl: settings.baseUrl,
-      });
-
-      const url = `${settings.baseUrl}/chat/completions`;
-
-      // Prepare headers with DDwrappy-specific optimizations
+      const url = `${config.baseUrl}/chat/completions`;
       const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${settings.apiKey}`,
+        Authorization: `Bearer ${config.apiKey}`,
       };
 
-      // Add DDwrappy-specific headers if applicable
-      if (this.isDDwrappy(settings) && jsonMode) {
-        // Potential DDwrappy-specific headers for JSON formatting
+      // Add provider-specific headers
+      if (ModelValidator.isDDwrappy(config) && jsonMode) {
         headers['X-Response-Format'] = 'json';
-        headers['X-Claude-Allowed-Tools'] = ''; // Disable tools to encourage pure JSON
+        headers['X-Claude-Allowed-Tools'] = '';
       }
 
       const response = await this.makeRequest(url, {
@@ -391,57 +238,27 @@ export class CustomAIService extends AIProvider {
       });
 
       const data: OpenAIResponse = await response.json();
-
-      // Validate response structure
-      if (!data.choices || data.choices.length === 0) {
-        console.error(
-          '[CustomAIService] No choices in AI response',
-          new Error(JSON.stringify(data)),
-        );
-        throw new Error('No response choices from AI API');
+      return ResponseParser.parseOpenAIResponse(data);
+    }, {
+      service: 'CustomAIService',
+      operation: 'chat',
+      metadata: { 
+        messageCount: messages.length, 
+        hasJsonMode: !!options.jsonMode,
+        model: options.model 
       }
-
-      const choice = data.choices[0];
-      if (!choice?.message?.content) {
-        console.error(
-          '[CustomAIService] Invalid AI response structure',
-          new Error(JSON.stringify(choice)),
-        );
-        throw new Error('Invalid response structure from AI API');
-      }
-
-      const responseText = choice.message.content;
-
-      // Log usage if available
-      if (data.usage) {
-        console.log('[CustomAIService] Token usage:', data.usage);
-      }
-
-      console.log(
-        '[CustomAIService] Custom AI request completed successfully',
-        {
-          responseLength: responseText.length,
-          finishReason: choice.finish_reason,
-        },
-      );
-
-      return responseText;
-    } catch (error) {
-      console.error('[CustomAIService] Error in chat:', error);
-      throw error;
-    }
+    });
   }
 
   // Legacy method for backward compatibility
   async extractFromTranscript(
     transcript: string,
     prompt: string = 'Summarize the key points from this transcript.',
-    model?: string,
+    model?: string
   ): Promise<string> {
-    try {
-      if (!transcript || transcript.trim().length === 0) {
-        throw new Error('Transcript is empty or invalid');
-      }
+    return await ErrorHandler.serviceMethod(async () => {
+      ValidationUtils.validateRequiredString(transcript, 'transcript');
+      ValidationUtils.validateRequiredString(prompt, 'prompt');
 
       const systemPrompt = `You are an AI assistant specialized in analyzing audio transcripts.
 You provide clear, structured summaries and extract key information as requested.
@@ -450,50 +267,20 @@ Focus on accuracy and relevance.`;
 
       const fullPrompt = `${prompt}\n\nTranscript:\n${transcript}`;
 
-      console.log('[CustomAIService] Processing transcript', {
-        transcriptLength: transcript.length,
-      });
-
       return await this.generateText(fullPrompt, {
         model: model || this.config.model,
         maxTokens: this.config.maxTokens || 4000,
         temperature: 0.3, // Lower temperature for more consistent extraction
         systemPrompt,
       });
-    } catch (error) {
-      console.error('[CustomAIService] Error in extractFromTranscript:', error);
-      throw error;
-    }
-  }
-
-  // Helper method to parse JSON responses
-  protected parseJSONResponse(response: string): any {
-    try {
-      return JSON.parse(response.trim());
-    } catch (error) {
-      console.error(
-        '[CustomAIService] Failed to parse JSON response:',
-        response,
-      );
-      throw new Error('Invalid JSON response from AI service');
-    }
-  }
-
-  // Override error handling for custom endpoint-specific errors
-  protected isRetryableError(error: any): boolean {
-    if (super.isRetryableError(error)) {
-      return true;
-    }
-
-    // Don't retry authentication errors
-    if (
-      error.message?.includes('unauthorized') ||
-      error.message?.includes('invalid api key')
-    ) {
-      return false;
-    }
-
-    return false;
+    }, {
+      service: 'CustomAIService',
+      operation: 'extractFromTranscript',
+      metadata: { 
+        transcriptLength: transcript.length,
+        customModel: !!model 
+      }
+    });
   }
 }
 
@@ -554,33 +341,17 @@ export const customAIService = new Proxy({} as CustomAIService, {
   },
 });
 
-// Legacy AI Extraction function for backward compatibility
+// Legacy AI Extraction function - removed (extractions feature deprecated)
 export async function createAIExtract(
   fileId: number,
   transcript: string,
   prompt?: string,
   model?: string,
-  templateId?: string,
+  templateId?: string
 ): Promise<string> {
   try {
-    const extractedContent = await customAIService.extractFromTranscript(
-      transcript,
-      prompt,
-      model,
-    );
-
-    // Save to database
-    await aiExtractsService.create({
-      fileId,
-      templateId: templateId || 'default',
-      content: extractedContent,
-      metadata: JSON.stringify({
-        model: model || 'custom-model',
-        prompt: prompt || 'Summarize the key points from this transcript.',
-      }),
-    });
-
-    return extractedContent;
+    // Extractions feature has been removed
+    throw new Error('Extractions feature is no longer available');
   } catch (error) {
     console.error('AI extraction error:', error);
     throw error;

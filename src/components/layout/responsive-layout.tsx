@@ -22,7 +22,7 @@ export function ResponsiveLayout({ children }: ResponsiveLayoutProps) {
 
   return (
     <ClientOnly
-      fallback={<div className="flex h-full bg-background">{children}</div>}
+      fallback={<div className='flex h-full bg-background'>{children}</div>}
     >
       <ResponsiveLayoutInner
         pathname={pathname}
@@ -92,17 +92,7 @@ function ResponsiveLayoutInner({
         return 'Record';
       case '/ai/summarization':
         return 'Summarization';
-      case '/ai/extractions':
-        return 'Extractions';
-      case '/ai/data-points':
-        return 'Data Points';
       // Keep old routes for backward compatibility
-      case '/ai/extracts':
-        return 'AI Extracts';
-      case '/ai/notes':
-        return 'AI Notes';
-      case '/ai/tasks':
-        return 'AI Tasks';
       case '/analytics':
         return 'Analytics';
       case '/docs':
@@ -121,13 +111,13 @@ function ResponsiveLayoutInner({
   const showNavigation = isAuthenticated && pathname !== '/';
 
   return (
-    <div className="flex min-h-full">
+    <div className='flex min-h-full'>
       {/* Desktop Sidebar - only show when authenticated and not on login page */}
       {showNavigation && (
         <div
           className={cn(
             'hidden md:flex md:flex-shrink-0',
-            'transition-all duration-300',
+            'transition-all duration-300'
           )}
         >
           <Sidebar />
@@ -135,12 +125,12 @@ function ResponsiveLayoutInner({
       )}
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-y-auto">
+      <div className='flex flex-1 flex-col overflow-y-auto'>
         {/* Page Content */}
         <main
           className={cn(
             'flex-1 overflow-auto',
-            isMobile && showNavigation && 'safe-area-inset-bottom pb-16', // Add bottom padding for mobile navigation
+            isMobile && showNavigation && 'safe-area-inset-bottom pb-16' // Add bottom padding for mobile navigation
           )}
         >
           {children}

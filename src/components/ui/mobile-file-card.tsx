@@ -120,13 +120,13 @@ export function MobileFileCard({
   const getStatusIcon = (status?: string) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
+        return <CheckCircle className='h-4 w-4 text-green-500' />;
       case 'processing':
-        return <Loader2 className="h-4 w-4 animate-spin text-blue-500" />;
+        return <Loader2 className='h-4 w-4 animate-spin text-blue-500' />;
       case 'error':
-        return <AlertCircle className="h-4 w-4 text-red-500" />;
+        return <AlertCircle className='h-4 w-4 text-red-500' />;
       default:
-        return <Clock className="h-4 w-4 text-gray-400" />;
+        return <Clock className='h-4 w-4 text-gray-400' />;
     }
   };
 
@@ -144,39 +144,39 @@ export function MobileFileCard({
   };
 
   return (
-    <UnibodyCard interactive className="space-y-3">
+    <UnibodyCard interactive className='space-y-3'>
       {/* File identity - Purposeful hierarchy */}
-      <div className="space-y-1.5">
+      <div className='space-y-1.5'>
         {file.hasTranscript ? (
           <button
             onClick={() => (window.location.href = `/transcript/${file.id}`)}
-            className="group w-full text-left"
+            className='group w-full text-left'
           >
-            <h3 className="text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-blue-600">
+            <h3 className='text-base font-semibold leading-snug text-gray-900 transition-colors duration-200 group-hover:text-blue-600'>
               {file.originalName}
             </h3>
           </button>
         ) : (
-          <h3 className="text-base font-semibold leading-snug text-gray-900">
+          <h3 className='text-base font-semibold leading-snug text-gray-900'>
             {file.originalName}
           </h3>
         )}
 
         {/* Essential metadata - Clean hierarchy */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-blue-600">
+        <div className='flex items-center justify-between'>
+          <div className='flex items-center gap-2'>
+            <span className='text-sm font-medium text-blue-600'>
               {formatDuration(file.duration)}
             </span>
-            <span className="text-xs text-gray-400">
+            <span className='text-xs text-gray-400'>
               {formatFileSize(file.size)}
             </span>
           </div>
 
           {/* Status - Minimal visual weight */}
-          <div className="flex items-center gap-1.5">
+          <div className='flex items-center gap-1.5'>
             {getStatusIcon(file.transcriptionStatus)}
-            <span className="text-xs text-gray-500">
+            <span className='text-xs text-gray-500'>
               {file.transcriptionStatus || 'pending'}
             </span>
           </div>
@@ -185,7 +185,7 @@ export function MobileFileCard({
 
       {/* Recording time - Contextual information */}
       {file.recordedAt && (
-        <div className="text-xs text-gray-400">
+        <div className='text-xs text-gray-400'>
           {formatRecordingDate(file.recordedAt)} at{' '}
           {formatRecordingTime(file.recordedAt)}
         </div>
@@ -193,7 +193,7 @@ export function MobileFileCard({
 
       {/* Speaker information - Show when available */}
       {file.speakerCount && file.diarizationStatus === 'success' && (
-        <div className="text-xs font-medium text-blue-600">
+        <div className='text-xs font-medium text-blue-600'>
           {file.speakerCount} speaker{file.speakerCount > 1 ? 's' : ''} detected
         </div>
       )}
@@ -202,46 +202,46 @@ export function MobileFileCard({
       {file.transcriptionStatus === 'completed' &&
         file.extractCount &&
         file.extractCount > 0 && (
-        <div className="text-xs text-gray-400">
-          {file.extractCount} summary{file.extractCount > 1 ? 'ies' : 'y'}{' '}
+          <div className='text-xs text-gray-400'>
+            {file.extractCount} summary{file.extractCount > 1 ? 'ies' : 'y'}{' '}
             available
-        </div>
-      )}
+          </div>
+        )}
 
       {/* Labels - Contextual organization */}
       {onLabelsUpdate && (
         <LabelEditor
           labels={file.labels || []}
           onChange={labels => onLabelsUpdate(file.id, labels)}
-          placeholder="Add labels..."
-          className="w-full"
+          placeholder='Add labels...'
+          className='w-full'
         />
       )}
 
       {/* Actions - Purposeful and minimal */}
-      <div className="flex items-center justify-between pt-1">
-        <div className="flex-1">
+      <div className='flex items-center justify-between pt-1'>
+        <div className='flex-1'>
           {file.transcriptionStatus === 'completed' && !file.hasAiExtract ? (
             <Button
               onClick={() => onExtract?.(file.id, file.originalName)}
               disabled={isExtracting}
-              className="touch-target-44 w-full rounded-lg bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700"
+              className='touch-target-44 w-full rounded-lg bg-blue-600 py-2.5 font-medium text-white hover:bg-blue-700'
             >
               {isExtracting ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : null}
               {isExtracting ? 'Processing...' : 'Summarize'}
             </Button>
           ) : file.hasAiExtract ? (
             <Button
               onClick={() => (window.location.href = `/ai/summarization`)}
-              variant="outline"
-              className="touch-target-44 w-full rounded-lg border-gray-200 py-2.5 font-medium text-gray-600"
+              variant='outline'
+              className='touch-target-44 w-full rounded-lg border-gray-200 py-2.5 font-medium text-gray-600'
             >
               View Summaries
             </Button>
           ) : (
-            <div className="py-2.5 text-center text-sm text-gray-400">
+            <div className='py-2.5 text-center text-sm text-gray-400'>
               {file.transcriptionStatus === 'processing'
                 ? 'Processing...'
                 : 'Transcribing...'}
@@ -253,14 +253,14 @@ export function MobileFileCard({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              variant="ghost"
-              size="sm"
-              className="touch-target-44 ml-2 h-9 w-9 rounded-lg p-0 text-gray-400 hover:text-gray-600"
+              variant='ghost'
+              size='sm'
+              className='touch-target-44 ml-2 h-9 w-9 rounded-lg p-0 text-gray-400 hover:text-gray-600'
             >
-              <MoreHorizontal className="h-4 w-4" />
+              <MoreHorizontal className='h-4 w-4' />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuContent align='end' className='w-40'>
             {file.hasTranscript && (
               <DropdownMenuItem
                 onClick={() =>
@@ -278,7 +278,7 @@ export function MobileFileCard({
             <DropdownMenuItem
               onClick={() => onDelete?.(file.id, file.originalName)}
               disabled={isDeleting}
-              className="text-red-600 focus:text-red-600"
+              className='text-red-600 focus:text-red-600'
             >
               {isDeleting ? 'Deleting...' : 'Delete'}
             </DropdownMenuItem>

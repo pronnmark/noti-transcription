@@ -60,7 +60,7 @@ export default function SummaryPage() {
   // Debugging functions
   const measureContainer = (
     ref: React.RefObject<HTMLDivElement | null>,
-    name: string,
+    name: string
   ) => {
     if (ref.current) {
       const elem = ref.current;
@@ -88,7 +88,7 @@ export default function SummaryPage() {
   const testProgrammaticScroll = (
     ref: React.RefObject<HTMLDivElement>,
     name: string,
-    amount: number,
+    amount: number
   ) => {
     if (ref.current) {
       const oldScrollTop = ref.current.scrollTop;
@@ -96,7 +96,7 @@ export default function SummaryPage() {
       const newScrollTop = ref.current.scrollTop;
       logScrollEvent(
         `Programmatic scroll ${oldScrollTop}→${newScrollTop}`,
-        name,
+        name
       );
       updateDebugInfo();
     }
@@ -211,7 +211,7 @@ export default function SummaryPage() {
           body: JSON.stringify({
             summarizationPromptId: summary.template?.id || null,
           }),
-        },
+        }
       );
 
       if (response.ok) {
@@ -233,7 +233,7 @@ export default function SummaryPage() {
     if (!summary) return;
 
     const confirmed = window.confirm(
-      'Are you sure you want to delete this summary? This action cannot be undone.',
+      'Are you sure you want to delete this summary? This action cannot be undone.'
     );
 
     if (!confirmed) return;
@@ -273,26 +273,26 @@ export default function SummaryPage() {
 
   if (isLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className='flex min-h-screen items-center justify-center'>
+        <Loader2 className='h-8 w-8 animate-spin text-blue-500' />
       </div>
     );
   }
 
   if (!summary) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Card className="w-full max-w-md">
-          <CardContent className="py-8 text-center">
-            <FileText className="mx-auto mb-4 h-12 w-12 text-gray-400" />
-            <h3 className="mb-2 text-lg font-medium text-gray-900">
+      <div className='flex min-h-screen items-center justify-center'>
+        <Card className='w-full max-w-md'>
+          <CardContent className='py-8 text-center'>
+            <FileText className='mx-auto mb-4 h-12 w-12 text-gray-400' />
+            <h3 className='mb-2 text-lg font-medium text-gray-900'>
               Summary Not Found
             </h3>
-            <p className="mb-4 text-gray-600">
+            <p className='mb-4 text-gray-600'>
               The summary you're looking for doesn't exist or has been deleted.
             </p>
             <Button onClick={() => router.push('/ai/summarization')}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className='mr-2 h-4 w-4' />
               Back to Summaries
             </Button>
           </CardContent>
@@ -302,38 +302,38 @@ export default function SummaryPage() {
   }
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
+    <div className='flex h-screen flex-col bg-gray-50'>
       {/* Header */}
-      <div className="flex-shrink-0 border-b bg-white">
-        <div className="mx-auto max-w-4xl px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+      <div className='flex-shrink-0 border-b bg-white'>
+        <div className='mx-auto max-w-4xl px-4 py-4'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-3'>
               <Button
-                variant="ghost"
-                size="sm"
+                variant='ghost'
+                size='sm'
                 onClick={() => router.push('/ai/summarization')}
-                className="h-8 w-8 p-0"
+                className='h-8 w-8 p-0'
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeft className='h-4 w-4' />
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">
+                <h1 className='text-xl font-semibold text-gray-900'>
                   AI Summary
                 </h1>
-                <p className="text-sm text-gray-600">
+                <p className='text-sm text-gray-600'>
                   {summary.file.originalFileName}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className='flex items-center gap-2'>
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={handleCopy}
-                className="h-8 px-3"
+                className='h-8 px-3'
               >
-                <Copy className="mr-1 h-3 w-3" />
+                <Copy className='mr-1 h-3 w-3' />
                 Copy
               </Button>
               <TelegramShareButton
@@ -341,35 +341,35 @@ export default function SummaryPage() {
                 fileName={summary.file.originalFileName}
                 content={summary.content}
                 summarizationId={summary.id}
-                size="sm"
-                variant="outline"
-                className="h-8 px-3"
+                size='sm'
+                variant='outline'
+                className='h-8 px-3'
               />
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={handleRegenerate}
                 disabled={isRegenerating || isDeleting}
-                className="h-8 px-3"
+                className='h-8 px-3'
               >
                 {isRegenerating ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  <Loader2 className='mr-1 h-3 w-3 animate-spin' />
                 ) : (
-                  <RefreshCw className="mr-1 h-3 w-3" />
+                  <RefreshCw className='mr-1 h-3 w-3' />
                 )}
                 Regenerate
               </Button>
               <Button
-                variant="outline"
-                size="sm"
+                variant='outline'
+                size='sm'
                 onClick={handleDelete}
                 disabled={isDeleting || isRegenerating}
-                className="h-8 px-3 hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                className='h-8 px-3 hover:border-red-200 hover:bg-red-50 hover:text-red-600'
               >
                 {isDeleting ? (
-                  <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                  <Loader2 className='mr-1 h-3 w-3 animate-spin' />
                 ) : (
-                  <Trash2 className="mr-1 h-3 w-3" />
+                  <Trash2 className='mr-1 h-3 w-3' />
                 )}
                 Delete
               </Button>
@@ -379,36 +379,36 @@ export default function SummaryPage() {
       </div>
 
       {/* Content */}
-      <div className="min-h-0 flex-1">
-        <div className="mx-auto flex min-h-0 max-w-4xl flex-1 flex-col px-4 py-6">
-          <Card className="flex min-h-0 flex-1 flex-col">
-            <CardHeader className="flex-shrink-0">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant="default" className="text-xs">
+      <div className='min-h-0 flex-1'>
+        <div className='mx-auto flex min-h-0 max-w-4xl flex-1 flex-col px-4 py-6'>
+          <Card className='flex min-h-0 flex-1 flex-col'>
+            <CardHeader className='flex-shrink-0'>
+              <div className='flex flex-wrap items-center justify-between gap-2'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <Badge variant='default' className='text-xs'>
                     Latest
                   </Badge>
                   {summary.template && (
                     <Badge
-                      variant="outline"
-                      className="bg-green-50 text-xs text-green-700"
+                      variant='outline'
+                      className='bg-green-50 text-xs text-green-700'
                     >
                       {summary.template.name}
                       {summary.template.isDefault && ' (Default)'}
                     </Badge>
                   )}
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant='outline' className='text-xs'>
                     {summary.model}
                   </Badge>
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" />
-                    <span className="hidden sm:inline">
+                <div className='flex items-center gap-4 text-xs text-gray-500'>
+                  <div className='flex items-center gap-1'>
+                    <Calendar className='h-3 w-3' />
+                    <span className='hidden sm:inline'>
                       {formatDate(summary.createdAt)}
                     </span>
-                    <span className="sm:hidden">
+                    <span className='sm:hidden'>
                       {new Date(summary.createdAt).toLocaleDateString()}
                     </span>
                   </div>
@@ -416,30 +416,30 @@ export default function SummaryPage() {
               </div>
 
               {summary.template?.description && (
-                <div className="text-sm text-gray-600">
+                <div className='text-sm text-gray-600'>
                   <strong>Template:</strong> {summary.template.description}
                 </div>
               )}
             </CardHeader>
 
-            <CardContent className="p-6">
+            <CardContent className='p-6'>
               {/* SUCCESS: Using the proven working approach from Test 1 */}
               <div
-                className="overflow-y-auto rounded-lg border bg-white p-4"
+                className='overflow-y-auto rounded-lg border bg-white p-4'
                 style={{ height: '60vh' }}
               >
-                <div className="whitespace-pre-wrap break-words leading-relaxed text-gray-800">
+                <div className='whitespace-pre-wrap break-words leading-relaxed text-gray-800'>
                   {summary.content}
                 </div>
               </div>
 
               {/* Actions */}
-              <div className="mt-6 flex justify-center">
+              <div className='mt-6 flex justify-center'>
                 <Button
-                  variant="outline"
+                  variant='outline'
                   onClick={() => router.push('/ai/summarization')}
                 >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className='mr-2 h-4 w-4' />
                   Back to All Summaries
                 </Button>
               </div>

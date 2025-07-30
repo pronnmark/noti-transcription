@@ -1,7 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { AudioRepository } from '@/lib/database/repositories/AudioRepository';
-import { db } from '@/lib/database';
-import { audioFiles, NewAudioFile } from '@/lib/database/schema';
+import { AudioFile } from '@/lib/database/client';
+
+interface NewAudioFile {
+  file_name: string;
+  original_file_name: string;
+  original_file_type: string;
+  file_size: number;
+  file_hash?: string;
+  duration?: number;
+  title?: string;
+  peaks?: string;
+  latitude?: number;
+  longitude?: number;
+  location_accuracy?: number;
+  location_timestamp?: string;
+  location_provider?: string;
+  recorded_at?: string;
+}
 
 describe('AudioRepository', () => {
   let repository: AudioRepository;
@@ -12,25 +28,30 @@ describe('AudioRepository', () => {
   });
 
   afterEach(async () => {
-    await db.delete(audioFiles);
+    // Clean up test data using repository method
+    try {
+      await repository.deleteAll();
+    } catch (error) {
+      console.warn('Test cleanup failed:', error);
+    }
   });
 
   describe('findByHash', () => {
     it('should find audio file by hash', async () => {
       const newAudio: NewAudioFile = {
-        fileName: 'test.mp3',
-        originalFileName: 'test-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'unique-hash-123',
+        file_name: 'test.mp3',
+        original_file_name: 'test-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'unique-hash-123',
       };
 
       await repository.create(newAudio);
       const found = await repository.findByHash('unique-hash-123');
 
       expect(found).toBeDefined();
-      expect(found?.fileHash).toBe('unique-hash-123');
-      expect(found?.fileName).toBe('test.mp3');
+      expect(found?.file_hash).toBe('unique-hash-123');
+      expect(found?.file_name).toBe('test.mp3');
     });
 
     it('should return null for non-existent hash', async () => {
@@ -42,18 +63,18 @@ describe('AudioRepository', () => {
   describe('findByFileName', () => {
     it('should find audio file by filename', async () => {
       const newAudio: NewAudioFile = {
-        fileName: 'unique-file.mp3',
-        originalFileName: 'test-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'test-hash-123',
+        file_name: 'unique-file.mp3',
+        original_file_name: 'test-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'test-hash-123',
       };
 
       await repository.create(newAudio);
       const found = await repository.findByFileName('unique-file.mp3');
 
       expect(found).toBeDefined();
-      expect(found?.fileName).toBe('unique-file.mp3');
+      expect(found?.file_name).toBe('unique-file.mp3');
     });
 
     it('should return null for non-existent filename', async () => {
@@ -66,19 +87,19 @@ describe('AudioRepository', () => {
     it('should return recent files in descending order', async () => {
       // Create files with different timestamps
       const audio1: NewAudioFile = {
-        fileName: 'old.mp3',
-        originalFileName: 'old-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'hash-1',
+        file_name: 'old.mp3',
+        original_file_name: 'old-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'hash-1',
       };
 
       const audio2: NewAudioFile = {
-        fileName: 'new.mp3',
-        originalFileName: 'new-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 2048,
-        fileHash: 'hash-2',
+        file_name: 'new.mp3',
+        original_file_name: 'new-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 2048,
+        file_hash: 'hash-2',
       };
 
       await repository.create(audio1);
@@ -89,19 +110,19 @@ describe('AudioRepository', () => {
       const recent = await repository.findRecent(2);
 
       expect(recent).toHaveLength(2);
-      expect(recent[0].fileName).toBe('new.mp3'); // Most recent first
-      expect(recent[1].fileName).toBe('old.mp3');
+      expect(recent[0].file_name).toBe('new.mp3'); // Most recent first
+      expect(recent[1].file_name).toBe('old.mp3');
     });
 
     it('should respect limit parameter', async () => {
       // Create 3 files
       for (let i = 1; i <= 3; i++) {
         await repository.create({
-          fileName: `test${i}.mp3`,
-          originalFileName: `test${i}-original.mp3`,
-          originalFileType: 'audio/mpeg',
-          fileSize: 1024 * i,
-          fileHash: `hash-${i}`,
+          file_name: `test${i}.mp3`,
+          original_file_name: `test${i}-original.mp3`,
+          original_file_type: 'audio/mpeg',
+          file_size: 1024 * i,
+          file_hash: `hash-${i}`,
         });
       }
 
@@ -117,66 +138,66 @@ describe('AudioRepository', () => {
       const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
       await repository.create({
-        fileName: 'today.mp3',
-        originalFileName: 'today-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'hash-today',
+        file_name: 'today.mp3',
+        original_file_name: 'today-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'hash-today',
       });
 
       const filesInRange = await repository.findByDateRange(
         yesterday,
-        tomorrow,
+        tomorrow
       );
       expect(filesInRange).toHaveLength(1);
-      expect(filesInRange[0].fileName).toBe('today.mp3');
+      expect(filesInRange[0].file_name).toBe('today.mp3');
     });
   });
 
   describe('findByFileType', () => {
     it('should find files by file type', async () => {
       await repository.create({
-        fileName: 'test.mp3',
-        originalFileName: 'test-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'hash-mp3',
+        file_name: 'test.mp3',
+        original_file_name: 'test-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'hash-mp3',
       });
 
       await repository.create({
-        fileName: 'test.wav',
-        originalFileName: 'test-original.wav',
-        originalFileType: 'audio/wav',
-        fileSize: 2048,
-        fileHash: 'hash-wav',
+        file_name: 'test.wav',
+        original_file_name: 'test-original.wav',
+        original_file_type: 'audio/wav',
+        file_size: 2048,
+        file_hash: 'hash-wav',
       });
 
       const mp3Files = await repository.findByFileType('audio/mpeg');
       expect(mp3Files).toHaveLength(1);
-      expect(mp3Files[0].originalFileType).toBe('audio/mpeg');
+      expect(mp3Files[0].original_file_type).toBe('audio/mpeg');
 
       const wavFiles = await repository.findByFileType('audio/wav');
       expect(wavFiles).toHaveLength(1);
-      expect(wavFiles[0].originalFileType).toBe('audio/wav');
+      expect(wavFiles[0].original_file_type).toBe('audio/wav');
     });
   });
 
   describe('getTotalSize', () => {
     it('should calculate total size of all files', async () => {
       await repository.create({
-        fileName: 'test1.mp3',
-        originalFileName: 'test1-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1024,
-        fileHash: 'hash-1',
+        file_name: 'test1.mp3',
+        original_file_name: 'test1-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1024,
+        file_hash: 'hash-1',
       });
 
       await repository.create({
-        fileName: 'test2.mp3',
-        originalFileName: 'test2-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 2048,
-        fileHash: 'hash-2',
+        file_name: 'test2.mp3',
+        original_file_name: 'test2-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 2048,
+        file_hash: 'hash-2',
       });
 
       const totalSize = await repository.getTotalSize();
@@ -192,20 +213,20 @@ describe('AudioRepository', () => {
   describe('getStatistics', () => {
     it('should return correct statistics', async () => {
       await repository.create({
-        fileName: 'test1.mp3',
-        originalFileName: 'test1-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 1000,
-        fileHash: 'hash-1',
+        file_name: 'test1.mp3',
+        original_file_name: 'test1-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 1000,
+        file_hash: 'hash-1',
         duration: 60,
       });
 
       await repository.create({
-        fileName: 'test2.mp3',
-        originalFileName: 'test2-original.mp3',
-        originalFileType: 'audio/mpeg',
-        fileSize: 2000,
-        fileHash: 'hash-2',
+        file_name: 'test2.mp3',
+        original_file_name: 'test2-original.mp3',
+        original_file_type: 'audio/mpeg',
+        file_size: 2000,
+        file_hash: 'hash-2',
         duration: 120,
       });
 

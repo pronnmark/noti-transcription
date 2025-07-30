@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     if (!toolName) {
       return NextResponse.json(
         { error: 'Tool name is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     if (!sessionToken) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     if (!toolName.startsWith('mcp__telegram-mcp__')) {
       return NextResponse.json(
         { error: 'Invalid tool name. Only Telegram MCP tools are supported.' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!botToken) {
       return NextResponse.json(
         { error: 'Telegram bot token not configured' },
-        { status: 500 },
+        { status: 500 }
       );
     }
 
@@ -55,14 +55,14 @@ export async function POST(request: NextRequest) {
         // Call Telegram Bot API to get bot info
         try {
           const response = await fetch(
-            `https://api.telegram.org/bot${botToken}/getMe`,
+            `https://api.telegram.org/bot${botToken}/getMe`
           );
           const data = await response.json();
 
           if (!data.ok) {
             return NextResponse.json(
               { error: `Telegram API error: ${data.description}` },
-              { status: 400 },
+              { status: 400 }
             );
           }
 
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
             {
               error: `Failed to call Telegram API: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
         break;
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
         if (!args.username || !args.message) {
           return NextResponse.json(
             { error: 'Username and message are required' },
-            { status: 400 },
+            { status: 400 }
           );
         }
 
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
             chatId = knownUsers[normalizedUsername];
             debugLog(
               'api',
-              `Resolved ${args.username} to known chat ID: ${chatId}`,
+              `Resolved ${args.username} to known chat ID: ${chatId}`
             );
           }
 
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
                     body: JSON.stringify({
                       chat_id: username,
                     }),
-                  },
+                  }
                 );
 
                 const chatData = await chatResponse.json();
@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
                       text: args.message,
                       parse_mode: 'Markdown',
                     }),
-                  },
+                  }
                 );
 
                 const data = await response.json();
@@ -203,7 +203,7 @@ export async function POST(request: NextRequest) {
                   text: args.message,
                   parse_mode: 'Markdown',
                 }),
-              },
+              }
             );
 
             const data = await response.json();
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
             if (!data.ok) {
               return NextResponse.json(
                 { error: `Failed to send message: ${data.description}` },
-                { status: 400 },
+                { status: 400 }
               );
             }
 
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
             {
               error: `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
         break;
@@ -232,7 +232,7 @@ export async function POST(request: NextRequest) {
         if (!args.group_name || !args.message) {
           return NextResponse.json(
             { error: 'Group name and message are required' },
-            { status: 400 },
+            { status: 400 }
           );
         }
 
@@ -254,7 +254,7 @@ export async function POST(request: NextRequest) {
             chatId = knownGroups[normalizedGroupName];
             debugLog(
               'api',
-              `Resolved group ${args.group_name} to chat ID: ${chatId}`,
+              `Resolved group ${args.group_name} to chat ID: ${chatId}`
             );
           }
 
@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
                   text: args.message,
                   parse_mode: 'Markdown',
                 }),
-              },
+              }
             );
 
             const data = await response.json();
@@ -282,7 +282,7 @@ export async function POST(request: NextRequest) {
                 {
                   error: `Failed to send message to group: ${data.description}`,
                 },
-                { status: 400 },
+                { status: 400 }
               );
             }
 
@@ -312,7 +312,7 @@ export async function POST(request: NextRequest) {
                       text: args.message,
                       parse_mode: 'Markdown',
                     }),
-                  },
+                  }
                 );
 
                 const data = await response.json();
@@ -331,7 +331,7 @@ export async function POST(request: NextRequest) {
             if (!result) {
               return NextResponse.json(
                 { error: `Failed to send message to group: ${lastError}` },
-                { status: 400 },
+                { status: 400 }
               );
             }
           }
@@ -340,7 +340,7 @@ export async function POST(request: NextRequest) {
             {
               error: `Failed to send message to group: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
         break;
@@ -350,7 +350,7 @@ export async function POST(request: NextRequest) {
         if (!args.chat_id || !args.message) {
           return NextResponse.json(
             { error: 'Chat ID and message are required' },
-            { status: 400 },
+            { status: 400 }
           );
         }
 
@@ -367,7 +367,7 @@ export async function POST(request: NextRequest) {
                 text: args.message,
                 parse_mode: 'Markdown',
               }),
-            },
+            }
           );
 
           const data = await response.json();
@@ -375,7 +375,7 @@ export async function POST(request: NextRequest) {
           if (!data.ok) {
             return NextResponse.json(
               { error: `Failed to send message: ${data.description}` },
-              { status: 400 },
+              { status: 400 }
             );
           }
 
@@ -385,7 +385,7 @@ export async function POST(request: NextRequest) {
             {
               error: `Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`,
             },
-            { status: 500 },
+            { status: 500 }
           );
         }
         break;
@@ -393,7 +393,7 @@ export async function POST(request: NextRequest) {
       default:
         return NextResponse.json(
           { error: `Tool ${toolName} not implemented yet` },
-          { status: 501 },
+          { status: 501 }
         );
     }
 
@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
       {
         error: error instanceof Error ? error.message : 'Internal server error',
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

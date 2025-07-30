@@ -10,9 +10,11 @@ test.describe('Supabase Storage Integration', () => {
   test.beforeAll(async () => {
     // Initialize storage service with test environment
     (process.env as any).NODE_ENV = 'test';
-    process.env.SUPABASE_URL = process.env.TEST_SUPABASE_URL || 'http://127.0.0.1:54321';
-    process.env.SUPABASE_ANON_KEY = process.env.TEST_SUPABASE_ANON_KEY || 'test-anon-key';
-    
+    process.env.SUPABASE_URL =
+      process.env.TEST_SUPABASE_URL || 'http://127.0.0.1:54321';
+    process.env.SUPABASE_ANON_KEY =
+      process.env.TEST_SUPABASE_ANON_KEY || 'test-anon-key';
+
     storageService = new SupabaseStorageService();
     await storageService.initialize();
   });
@@ -32,7 +34,7 @@ test.describe('Supabase Storage Integration', () => {
     // Get test file
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
     const uniquePath = `e2e-test/${TestHelpers.generateUniqueFileName(testFile.name)}`;
-    
+
     // Upload file to Supabase
     const uploadResult = await storageService.uploadFile({
       bucket: 'test-audio-files',
@@ -49,22 +51,32 @@ test.describe('Supabase Storage Integration', () => {
     expect(uploadResult.fullPath).toContain(uniquePath);
 
     // Verify file exists
-    const fileExists = await storageService.fileExists('test-audio-files', uniquePath);
+    const fileExists = await storageService.fileExists(
+      'test-audio-files',
+      uniquePath
+    );
     expect(fileExists).toBeTruthy();
 
     // Download file and verify content integrity
-    const downloadedBuffer = await storageService.downloadFile('test-audio-files', uniquePath);
+    const downloadedBuffer = await storageService.downloadFile(
+      'test-audio-files',
+      uniquePath
+    );
     expect(downloadedBuffer.equals(testFile.buffer)).toBeTruthy();
     expect(downloadedBuffer.length).toBe(testFile.size);
   });
 
   test('should handle different audio file formats', async () => {
-    const testFormats = ['test-audio-small.mp3', 'test-audio-medium.wav', 'test-voice-message.ogg'];
-    
+    const testFormats = [
+      'test-audio-small.mp3',
+      'test-audio-medium.wav',
+      'test-voice-message.ogg',
+    ];
+
     for (const format of testFormats) {
       const testFile = TestHelpers.getTestFile(format);
       const uniquePath = `e2e-test/${TestHelpers.generateUniqueFileName(testFile.name)}`;
-      
+
       // Upload
       const uploadResult = await storageService.uploadFile({
         bucket: 'test-audio-files',
@@ -76,7 +88,10 @@ test.describe('Supabase Storage Integration', () => {
       uploadedPaths.push(uploadResult.path);
 
       // Verify
-      const downloadedBuffer = await storageService.downloadFile('test-audio-files', uniquePath);
+      const downloadedBuffer = await storageService.downloadFile(
+        'test-audio-files',
+        uniquePath
+      );
       expect(downloadedBuffer.equals(testFile.buffer)).toBeTruthy();
     }
   });
@@ -84,7 +99,7 @@ test.describe('Supabase Storage Integration', () => {
   test('should generate signed URLs for private files', async () => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
     const uniquePath = `e2e-test/${TestHelpers.generateUniqueFileName(testFile.name)}`;
-    
+
     // Upload file
     await storageService.uploadFile({
       bucket: 'test-audio-files',
@@ -96,8 +111,12 @@ test.describe('Supabase Storage Integration', () => {
     uploadedPaths.push(uniquePath);
 
     // Generate signed URL
-    const signedUrl = await storageService.getFileUrl('test-audio-files', uniquePath, 3600);
-    
+    const signedUrl = await storageService.getFileUrl(
+      'test-audio-files',
+      uniquePath,
+      3600
+    );
+
     expect(signedUrl).toBeTruthy();
     expect(signedUrl).toContain('http');
     expect(signedUrl).toContain('sign');
@@ -106,7 +125,7 @@ test.describe('Supabase Storage Integration', () => {
   test('should handle file deletion correctly', async () => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
     const uniquePath = `e2e-test/${TestHelpers.generateUniqueFileName(testFile.name)}`;
-    
+
     // Upload file
     await storageService.uploadFile({
       bucket: 'test-audio-files',
@@ -116,7 +135,10 @@ test.describe('Supabase Storage Integration', () => {
     });
 
     // Verify file exists
-    let fileExists = await storageService.fileExists('test-audio-files', uniquePath);
+    let fileExists = await storageService.fileExists(
+      'test-audio-files',
+      uniquePath
+    );
     expect(fileExists).toBeTruthy();
 
     // Delete file
@@ -126,14 +148,17 @@ test.describe('Supabase Storage Integration', () => {
     });
 
     // Verify file no longer exists
-    fileExists = await storageService.fileExists('test-audio-files', uniquePath);
+    fileExists = await storageService.fileExists(
+      'test-audio-files',
+      uniquePath
+    );
     expect(fileExists).toBeFalsy();
   });
 
   test('should handle upload errors gracefully', async () => {
     // Test with invalid bucket name
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
-    
+
     await expect(
       storageService.uploadFile({
         bucket: 'non-existent-bucket',
@@ -154,7 +179,7 @@ test.describe('Supabase Storage Integration', () => {
   test('should handle file info retrieval', async () => {
     const testFile = TestHelpers.getTestFile('test-audio-small.mp3');
     const uniquePath = `e2e-test/${TestHelpers.generateUniqueFileName(testFile.name)}`;
-    
+
     // Upload file
     await storageService.uploadFile({
       bucket: 'test-audio-files',
@@ -166,8 +191,11 @@ test.describe('Supabase Storage Integration', () => {
     uploadedPaths.push(uniquePath);
 
     // Get file info
-    const fileInfo = await storageService.getFileInfo('test-audio-files', uniquePath);
-    
+    const fileInfo = await storageService.getFileInfo(
+      'test-audio-files',
+      uniquePath
+    );
+
     expect(fileInfo).toBeTruthy();
     expect(fileInfo.name).toBe(uniquePath.split('/').pop());
     expect(fileInfo.metadata).toBeDefined();
@@ -182,14 +210,14 @@ test.describe('Supabase Storage Integration', () => {
     for (let i = 0; i < 5; i++) {
       const uniquePath = `e2e-test/concurrent_${i}_${TestHelpers.generateUniqueFileName(testFile.name)}`;
       paths.push(uniquePath);
-      
+
       const uploadPromise = storageService.uploadFile({
         bucket: 'test-audio-files',
         path: uniquePath,
         file: testFile.buffer,
         contentType: testFile.contentType,
       });
-      
+
       uploadPromises.push(uploadPromise);
     }
 

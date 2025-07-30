@@ -6,7 +6,7 @@ import { debugLog } from '@/lib/utils';
 // Get password from environment variable or use default
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || 'ddash';
 const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'noti-secret-key-change-in-production',
+  process.env.JWT_SECRET || 'noti-secret-key-change-in-production'
 );
 
 export async function POST(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
     if (!password) {
       return NextResponse.json(
         { error: 'Password is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 

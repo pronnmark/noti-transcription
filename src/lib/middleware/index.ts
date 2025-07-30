@@ -36,7 +36,7 @@ export function withMiddleware(
     request: import('next/server').NextRequest,
     context: import('./types').RequestContext
   ) => Promise<import('next/server').NextResponse>,
-  config?: import('./types').MiddlewareConfig,
+  config?: import('./types').MiddlewareConfig
 ) {
   const orchestrator = config
     ? new MiddlewareOrchestrator(config)
@@ -51,7 +51,7 @@ export function withMiddleware(
 export function withErrorHandling(
   handler: (
     request: import('next/server').NextRequest
-  ) => Promise<import('next/server').NextResponse>,
+  ) => Promise<import('next/server').NextResponse>
 ) {
   return withMiddleware(async (request, context) => {
     try {
@@ -72,7 +72,7 @@ export function withLogging(
     logBody?: boolean;
     logHeaders?: boolean;
     skipPaths?: string[];
-  },
+  }
 ) {
   const config = {
     logging: {
@@ -93,14 +93,13 @@ export function withAuthMiddleware(
     request: import('next/server').NextRequest,
     context: import('./types').RequestContext
   ) => Promise<import('next/server').NextResponse>,
-  config?: import('./types').MiddlewareConfig,
+  config?: import('./types').MiddlewareConfig
 ) {
   // Create a wrapped handler that includes auth check
   const authHandler = async (
     request: import('next/server').NextRequest,
-    context: import('./types').RequestContext,
+    context: import('./types').RequestContext
   ) => {
-
     // Import dynamically to avoid circular dependencies
     const { cookies } = await import('next/headers');
     const { validateSession } = await import('../auth');
@@ -115,7 +114,7 @@ export function withAuthMiddleware(
         createErrorResponse('Authentication required', 'UNAUTHORIZED', 401, {
           requestId: context.requestId,
         }),
-        { status: 401 },
+        { status: 401 }
       );
     }
 
@@ -132,7 +131,7 @@ export function createApiResponse<T>(
     statusCode?: number;
     message?: string;
     meta?: Record<string, any>;
-  },
+  }
 ): import('./types').ApiResponse<T> {
   return {
     success: true,
@@ -150,7 +149,7 @@ export function createErrorResponse(
   message: string,
   code: string,
   statusCode: number = 500,
-  details?: any,
+  details?: any
 ): import('./types').ApiResponse {
   return {
     success: false,
@@ -169,7 +168,7 @@ export function createErrorResponse(
 export function createPaginatedResponse<T>(
   data: T[],
   pagination: import('./types').PaginationMeta,
-  meta?: Record<string, any>,
+  meta?: Record<string, any>
 ): import('./types').PaginatedApiResponse<T> {
   return {
     success: true,

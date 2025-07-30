@@ -99,7 +99,7 @@ export function MultiFileUpload({
     if (validFiles.length > 0) {
       setSelectedFiles(prev => [...prev, ...validFiles]);
       toast.success(
-        `Selected ${validFiles.length} valid audio file${validFiles.length > 1 ? 's' : ''}`,
+        `Selected ${validFiles.length} valid audio file${validFiles.length > 1 ? 's' : ''}`
       );
     }
 
@@ -152,7 +152,7 @@ export function MultiFileUpload({
 
       if (result.success) {
         toast.success(
-          `Successfully uploaded ${result.successCount} of ${result.totalFiles} files`,
+          `Successfully uploaded ${result.successCount} of ${result.totalFiles} files`
         );
         if (result.failureCount > 0) {
           toast.warning(`${result.failureCount} files failed to upload`);
@@ -168,7 +168,7 @@ export function MultiFileUpload({
     } catch (error) {
       console.error('Upload error:', error);
       toast.error(
-        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     } finally {
       setUploading(false);
@@ -187,30 +187,30 @@ export function MultiFileUpload({
 
   return (
     <Card className={cn('w-full', className)}>
-      <CardContent className="p-6">
-        <div className="space-y-4">
+      <CardContent className='p-6'>
+        <div className='space-y-4'>
           {/* Header */}
-          <div className="flex items-center gap-2">
-            <Upload className="h-5 w-5 text-blue-600" />
-            <h3 className="text-lg font-semibold">Upload Multiple Files</h3>
+          <div className='flex items-center gap-2'>
+            <Upload className='h-5 w-5 text-blue-600' />
+            <h3 className='text-lg font-semibold'>Upload Multiple Files</h3>
           </div>
 
           {/* File Selection */}
-          <div className="space-y-3">
-            <div className="flex items-center gap-4">
+          <div className='space-y-3'>
+            <div className='flex items-center gap-4'>
               <Button
-                type="button"
-                variant="outline"
+                type='button'
+                variant='outline'
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="flex items-center gap-2"
+                className='flex items-center gap-2'
               >
-                <FileAudio className="h-4 w-4" />
+                <FileAudio className='h-4 w-4' />
                 Select Audio Files
               </Button>
 
-              <div className="flex items-center gap-2">
-                <label htmlFor="speakerCount" className="text-sm font-medium">
+              <div className='flex items-center gap-2'>
+                <label htmlFor='speakerCount' className='text-sm font-medium'>
                   Speakers:
                 </label>
                 <Select
@@ -218,7 +218,7 @@ export function MultiFileUpload({
                   onValueChange={value => setSpeakerCount(parseInt(value))}
                   disabled={uploading}
                 >
-                  <SelectTrigger className="w-20">
+                  <SelectTrigger className='w-20'>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -234,62 +234,62 @@ export function MultiFileUpload({
 
             <input
               ref={fileInputRef}
-              type="file"
+              type='file'
               multiple
-              accept=".flac,.m4a,.mp3,.mp4,.mpeg,.mpga,.oga,.ogg,.wav,.webm"
+              accept='.flac,.m4a,.mp3,.mp4,.mpeg,.mpga,.oga,.ogg,.wav,.webm'
               onChange={handleFileSelect}
-              className="hidden"
+              className='hidden'
             />
 
-            <div className="text-sm text-muted-foreground">
+            <div className='text-sm text-muted-foreground'>
               Supported formats: {SUPPORTED_FORMATS.join(', ')}
             </div>
           </div>
 
           {/* Selected Files */}
           {selectedFiles.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">
+            <div className='space-y-3'>
+              <div className='flex items-center justify-between'>
+                <span className='text-sm font-medium'>
                   Selected Files ({selectedFiles.length})
                 </span>
                 <Button
-                  variant="ghost"
-                  size="sm"
+                  variant='ghost'
+                  size='sm'
                   onClick={clearAllFiles}
                   disabled={uploading}
-                  className="text-red-600 hover:text-red-700"
+                  className='text-red-600 hover:text-red-700'
                 >
                   Clear All
                 </Button>
               </div>
 
-              <div className="max-h-48 space-y-2 overflow-y-auto">
+              <div className='max-h-48 space-y-2 overflow-y-auto'>
                 {selectedFiles.map((file, index) => (
                   <div
                     key={`${file.name}-${index}`}
-                    className="flex items-center justify-between rounded-lg bg-muted/30 p-3"
+                    className='flex items-center justify-between rounded-lg bg-muted/30 p-3'
                   >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <FileAudio className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">
+                    <div className='flex min-w-0 flex-1 items-center gap-3'>
+                      <FileAudio className='h-4 w-4 flex-shrink-0 text-muted-foreground' />
+                      <div className='min-w-0 flex-1'>
+                        <div className='truncate text-sm font-medium'>
                           {file.name}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className='text-xs text-muted-foreground'>
                           {formatFileSize(file.size)} •{' '}
                           {getFileExtension(file.name).toUpperCase()}
                         </div>
                       </div>
                     </div>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant='ghost'
+                      size='sm'
                       onClick={() => removeFile(index)}
                       disabled={uploading}
-                      className="h-8 w-8 flex-shrink-0 p-0"
+                      className='h-8 w-8 flex-shrink-0 p-0'
                     >
-                      <X className="h-4 w-4" />
+                      <X className='h-4 w-4' />
                     </Button>
                   </div>
                 ))}
@@ -299,37 +299,37 @@ export function MultiFileUpload({
 
           {/* Upload Progress */}
           {uploading && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Uploading files...</span>
+            <div className='space-y-2'>
+              <div className='flex items-center gap-2'>
+                <Loader2 className='h-4 w-4 animate-spin' />
+                <span className='text-sm'>Uploading files...</span>
               </div>
-              <Progress value={uploadProgress} className="h-2" />
+              <Progress value={uploadProgress} className='h-2' />
             </div>
           )}
 
           {/* Upload Results */}
           {uploadResults.length > 0 && (
-            <div className="space-y-2">
-              <h4 className="text-sm font-medium">Upload Results</h4>
-              <div className="space-y-1">
+            <div className='space-y-2'>
+              <h4 className='text-sm font-medium'>Upload Results</h4>
+              <div className='space-y-1'>
                 {uploadResults.map((result, index) => (
-                  <div key={index} className="flex items-center gap-2 text-sm">
+                  <div key={index} className='flex items-center gap-2 text-sm'>
                     {result.success ? (
-                      <CheckCircle className="h-4 w-4 text-green-600" />
+                      <CheckCircle className='h-4 w-4 text-green-600' />
                     ) : (
-                      <AlertCircle className="h-4 w-4 text-red-600" />
+                      <AlertCircle className='h-4 w-4 text-red-600' />
                     )}
-                    <span className="flex-1 truncate">{result.fileName}</span>
+                    <span className='flex-1 truncate'>{result.fileName}</span>
                     {result.success ? (
                       <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-800"
+                        variant='secondary'
+                        className='bg-green-100 text-green-800'
                       >
                         Success
                       </Badge>
                     ) : (
-                      <Badge variant="destructive">Failed</Badge>
+                      <Badge variant='destructive'>Failed</Badge>
                     )}
                   </div>
                 ))}
@@ -341,16 +341,16 @@ export function MultiFileUpload({
           <Button
             onClick={handleUpload}
             disabled={selectedFiles.length === 0 || uploading}
-            className="w-full"
+            className='w-full'
           >
             {uploading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Uploading...
               </>
             ) : (
               <>
-                <Upload className="mr-2 h-4 w-4" />
+                <Upload className='mr-2 h-4 w-4' />
                 Upload {selectedFiles.length} File
                 {selectedFiles.length !== 1 ? 's' : ''}
               </>

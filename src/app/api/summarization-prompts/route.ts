@@ -75,7 +75,7 @@ export async function GET(_request: NextRequest) {
     console.error('Error fetching summarization prompts:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         {
           error: 'Missing required fields: name, prompt',
         },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating summarization prompt:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -221,7 +221,7 @@ export async function PUT(request: NextRequest) {
     console.error('Error updating summarization prompt:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -265,7 +265,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Error deleting summarization prompt:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

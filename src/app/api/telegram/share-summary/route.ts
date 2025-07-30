@@ -16,7 +16,6 @@ export async function POST(request: NextRequest) {
 
     const {
       fileId,
-      extractId,
       chatId,
       username,
       groupName,
@@ -26,204 +25,127 @@ export async function POST(request: NextRequest) {
     if (!fileId) {
       return NextResponse.json(
         { success: false, error: 'Missing required field: fileId' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
-    // Get file information
-    const supabase = getSupabase();
-    const { data: fileData, error: fileError } = await supabase
-      .from('audio_files')
-      .select('*')
-      .eq('id', fileId)
-      .limit(1);
-    
-    if (fileError || !fileData || fileData.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'File not found' },
-        { status: 404 },
-      );
-    }
-
-    // Get AI extract - either specific one or latest
-    let extractQuery = supabase
-      .from('ai_extracts')
-      .select(`
-        id,
-        content,
-        model,
-        prompt,
-        created_at,
-        extraction_templates (
-          name,
-          description
-        )
-      `)
-      .eq('file_id', fileId);
-    
-    if (extractId) {
-      extractQuery = extractQuery.eq('id', extractId);
-    } else {
-      extractQuery = extractQuery.order('created_at', { ascending: false });
-    }
-    
-    const { data: extractData, error: extractError } = await extractQuery.limit(1);
-
-    if (extractError || !extractData || extractData.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'No AI summary found for this file' },
-        { status: 404 },
-      );
-    }
-
-    const extract = extractData[0];
-    const file = fileData[0];
-
-    // Function to escape markdown characters for Telegram
-    const escapeMarkdown = (text: string): string => {
-      return text
-        .replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&')
-        .replace(/\n/g, '\n');
-    };
-
-    // Format the summary content
-    let summaryContent = extract.content || '';
-
-    // Try to parse JSON content for better formatting
-    try {
-      const parsedContent = JSON.parse(summaryContent);
-      if (typeof parsedContent === 'object') {
-        // Format structured content
-        summaryContent = '';
-        for (const [key, value] of Object.entries(parsedContent)) {
-          if (typeof value === 'string' && value.trim()) {
-            const formattedKey =
-              key.charAt(0).toUpperCase() +
-              key.slice(1).replace(/([A-Z])/g, ' $1');
-            summaryContent += `*${escapeMarkdown(formattedKey)}:*\n${escapeMarkdown(value.trim())}\n\n`;
-          }
-        }
-      }
-    } catch {
-      // Content is not JSON, use as-is but escape it
-      summaryContent = escapeMarkdown(summaryContent);
-    }
-
-    // Truncate if too long (Telegram limit is 4096 characters)
-    const maxLength = 3500; // Leave room for header/footer
-    if (summaryContent.length > maxLength) {
-      summaryContent =
-        summaryContent.substring(0, maxLength) + '\n\n... _(truncated)_';
-    }
-
-    // Format the complete message
-    const fileName = file.original_file_name || file.file_name;
-    const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
-    const templateInfo = extract.extraction_templates?.name
-      ? ` (${extract.extraction_templates.name})`
-      : '';
-    const createdDate = new Date(extract.created_at).toLocaleDateString();
-
-    const message = telegramMCP.formatMessage(summaryContent, {
-      title: `AI Summary${templateInfo}`,
-      fileName: `${fileName} (${duration})`,
-      footer: `_Generated ${createdDate} • Noti AI Transcription_`,
-      emoji: '🤖',
-    });
-
-    // Send message based on provided target
-    let result;
-    let targetIdentifier = '';
-
-    if (chatId) {
-      result = await telegramMCP.sendMessage(chatId, message, sessionToken);
-      targetIdentifier = chatId.toString();
-    } else if (username) {
-      result = await telegramMCP.sendMessageToUser(
-        username,
-        message,
-        sessionToken,
-      );
-      targetIdentifier = username;
-    } else if (groupName) {
-      result = await telegramMCP.sendMessageToGroup(
-        groupName,
-        message,
-        sessionToken,
-      );
-      targetIdentifier = groupName;
-    } else {
-      // Default to group chat if no target specified
-      const defaultChatId =
-        process.env.TELEGRAM_DEFAULT_CHAT_ID || '-4924104491';
-      result = await telegramMCP.sendMessage(
-        defaultChatId,
-        message,
-        sessionToken,
-      );
-      targetIdentifier = defaultChatId;
-    }
-
-    if (!result.success) {
-      // If the error is about chat not found, provide helpful instructions
-      let errorMessage = result.error || 'Failed to send message';
-
-      if (errorMessage.includes('chat not found')) {
-        const botUsername = 'devdashbotBot';
-        errorMessage += `\n\nTo fix this:\n1. Send /start to @${botUsername} in Telegram\n2. Or add the bot to your group\n3. Or use the Telegram setup page to configure chats`;
-      }
-
+    if (!chatId && !username && !groupName) {
       return NextResponse.json(
         {
           success: false,
-          error: errorMessage,
-          setup_help: {
-            bot_username: 'devdashbotBot',
-            instructions: 'Visit /api/telegram/setup for configuration help',
-          },
+          error: 'Must provide either chatId, username, or groupName',
         },
-        { status: 500 },
+        { status: 400 }
       );
     }
 
-    // Record the share in database
-    const telegramMessage = result.result;
-    await supabase.from('telegram_shares').insert({
-      file_id: fileId,
-      chat_id: telegramMessage?.chat?.id?.toString() || targetIdentifier,
-      chat_name:
-        telegramMessage?.chat?.title ||
-        telegramMessage?.chat?.username ||
-        targetIdentifier,
-      message_text: message,
-      status: 'sent',
-      telegram_message_id: telegramMessage?.message_id?.toString() || 'sent',
-    });
+    const supabase = getSupabase();
+
+    // Get file details
+    const { data: file, error: fileError } = await supabase
+      .from('audio_files')
+      .select('*')
+      .eq('id', fileId)
+      .single();
+
+    if (fileError || !file) {
+      return NextResponse.json(
+        { success: false, error: 'File not found' },
+        { status: 404 }
+      );
+    }
+
+    // Get summarization
+    const { data: summary, error: summaryError } = await supabase
+      .from('summarizations')
+      .select(
+        `
+        *,
+        summarization_prompts (
+          name,
+          description
+        )
+      `
+      )
+      .eq('file_id', fileId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (summaryError || !summary) {
+      return NextResponse.json(
+        { success: false, error: 'No summary found for this file' },
+        { status: 404 }
+      );
+    }
+
+    // Format the summary message
+    const fileName = file.original_file_name || file.file_name;
+    const duration = file.duration ? formatDuration(file.duration) : 'Unknown';
+    const templateInfo = summary.summarization_prompts?.name
+      ? ` (${summary.summarization_prompts.name})`
+      : '';
+    const createdDate = new Date(summary.created_at).toLocaleDateString();
+
+    const message = `📝 **Summary${templateInfo}**
+File: ${fileName}
+Duration: ${duration}
+Date: ${createdDate}
+
+${summary.content}
+
+---
+_Generated by Noti AI_`;
+
+    // Determine the target for sending
+    let targetChatId = chatId;
+
+    if (!targetChatId) {
+      if (username) {
+        // Resolve username to chat ID
+        targetChatId = await telegramMCP.resolveUsername(username);
+      } else if (groupName) {
+        // For groups, we'd need to resolve the group name
+        // This might require additional implementation in telegram-mcp
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Group name resolution not yet implemented',
+          },
+          { status: 501 }
+        );
+      }
+    }
+
+    if (!targetChatId) {
+      return NextResponse.json(
+        { success: false, error: 'Could not resolve target chat' },
+        { status: 400 }
+      );
+    }
+
+    // Send the message
+    await telegramMCP.sendMessage(targetChatId, message);
 
     return NextResponse.json({
       success: true,
-      message: 'AI summary shared to Telegram successfully',
-      telegramMessageId: telegramMessage?.message_id,
-      summaryInfo: {
-        id: extract.id,
-        templateName: extract.extraction_templates?.name,
-        model: extract.model,
-        createdAt: extract.created_at,
-      },
-      chat: {
-        id: telegramMessage?.chat?.id,
-        title: telegramMessage?.chat?.title,
-        username: telegramMessage?.chat?.username,
+      message: 'Summary shared successfully',
+      details: {
+        fileId,
+        fileName,
+        targetChatId,
+        summaryType: 'summarization',
       },
     });
   } catch (error) {
-    console.error('Telegram summary share error:', error);
+    console.error('Error sharing summary:', error);
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : 'Internal server error',
+        error: 'Failed to share summary',
+        details: error instanceof Error ? error.message : String(error),
       },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -231,9 +153,13 @@ export async function POST(request: NextRequest) {
 function formatDuration(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
 
   if (hours > 0) {
-    return `${hours}h ${minutes}m`;
+    return `${hours}h ${minutes}m ${secs}s`;
+  } else if (minutes > 0) {
+    return `${minutes}m ${secs}s`;
+  } else {
+    return `${secs}s`;
   }
-  return `${minutes}m`;
 }

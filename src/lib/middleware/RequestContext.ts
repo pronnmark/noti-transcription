@@ -109,7 +109,7 @@ export class RequestContextBuilder {
 
   private extractUserId(
     request: NextRequest,
-    headers: Record<string, string>,
+    headers: Record<string, string>
   ): string | undefined {
     // Try to extract user ID from various sources
 
@@ -138,7 +138,7 @@ export class RequestContextBuilder {
 
   private extractSessionId(
     request: NextRequest,
-    headers: Record<string, string>,
+    headers: Record<string, string>
   ): string | undefined {
     // From custom headers
     const sessionHeader = headers['x-session-id'] || headers['x-sessionid'];
@@ -155,7 +155,7 @@ export class RequestContextBuilder {
 
   private extractClientIp(
     request: NextRequest,
-    headers: Record<string, string>,
+    headers: Record<string, string>
   ): string | undefined {
     // Try various headers for client IP
     const ipHeaders = [

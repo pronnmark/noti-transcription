@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
     console.error('Error fetching real-time sessions:', error);
     return NextResponse.json(
       { error: 'Failed to fetch sessions' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     if (!fileId || !chunkIntervalMs || !aiInstruction) {
       return NextResponse.json(
         { error: 'fileId, chunkIntervalMs, and aiInstruction are required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -69,10 +69,14 @@ export async function POST(request: NextRequest) {
       throw checkError;
     }
 
-    if (existingSession && existingSession.length > 0 && existingSession[0].status === 'active') {
+    if (
+      existingSession &&
+      existingSession.length > 0 &&
+      existingSession[0].status === 'active'
+    ) {
       return NextResponse.json(
         { error: 'An active real-time session already exists for this file' },
-        { status: 409 },
+        { status: 409 }
       );
     }
 
@@ -99,7 +103,7 @@ export async function POST(request: NextRequest) {
     console.error('Error creating real-time session:', error);
     return NextResponse.json(
       { error: 'Failed to create session' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }
@@ -111,7 +115,7 @@ export async function PATCH(request: NextRequest) {
     if (!sessionId) {
       return NextResponse.json(
         { error: 'sessionId is required' },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
@@ -131,7 +135,10 @@ export async function PATCH(request: NextRequest) {
     if (updateError) {
       if (updateError.code === 'PGRST116') {
         // No rows updated - session not found
-        return NextResponse.json({ error: 'Session not found' }, { status: 404 });
+        return NextResponse.json(
+          { error: 'Session not found' },
+          { status: 404 }
+        );
       }
       throw updateError;
     }
@@ -141,7 +148,7 @@ export async function PATCH(request: NextRequest) {
     console.error('Error updating real-time session:', error);
     return NextResponse.json(
       { error: 'Failed to update session' },
-      { status: 500 },
+      { status: 500 }
     );
   }
 }

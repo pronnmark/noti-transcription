@@ -28,7 +28,7 @@ export class PromptEngine {
     // Load default templates
     this.loadDefaultTemplates();
     console.log(
-      '[PromptEngine] Prompt engine initialized with default templates',
+      '[PromptEngine] Prompt engine initialized with default templates'
     );
   }
 
@@ -230,10 +230,10 @@ Transcript:
   }
 
   getTemplatesByCategory(
-    category: PromptTemplate['category'],
+    category: PromptTemplate['category']
   ): PromptTemplate[] {
     return Array.from(this.templates.values()).filter(
-      t => t.category === category,
+      t => t.category === category
     );
   }
 
@@ -278,7 +278,7 @@ Transcript:
 
   private interpolateTemplate(
     template: string,
-    variables: PromptVariables,
+    variables: PromptVariables
   ): string {
     let result = template;
 
@@ -294,7 +294,7 @@ Transcript:
       (match, varName, content) => {
         const value = variables[varName];
         return value ? content : '';
-      },
+      }
     );
 
     // Remove any remaining unresolved variables

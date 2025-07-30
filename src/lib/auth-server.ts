@@ -5,7 +5,7 @@ import { NextRequest } from 'next/server';
  * Extracts session token from request headers or cookies
  */
 export function getSessionTokenFromRequest(
-  request: NextRequest,
+  request: NextRequest
 ): string | null {
   // Check multiple sources for the session token, matching middleware logic
   const sessionToken =
@@ -27,7 +27,7 @@ export function isAuthenticatedRequest(request: NextRequest): boolean {
  * Returns an unauthorized response for API routes
  */
 export function unauthorizedResponse(
-  message: string = 'Authentication required',
+  message: string = 'Authentication required'
 ) {
   return new Response(JSON.stringify({ error: message }), {
     status: 401,

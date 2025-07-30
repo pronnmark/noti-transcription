@@ -16,7 +16,7 @@ import { apiDebug } from '@/lib/utils';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   // Create the authenticated handler
   const authenticatedHandler = withAuthMiddleware(
@@ -27,7 +27,7 @@ export async function GET(
       if (isNaN(fileId)) {
         return NextResponse.json(
           createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-          { status: 400 },
+          { status: 400 }
         );
       }
 
@@ -52,8 +52,8 @@ export async function GET(
                 meta: {
                   requestId: context.requestId,
                 },
-              },
-            ),
+              }
+            )
           );
         }
 
@@ -65,21 +65,21 @@ export async function GET(
                 id: job.id,
                 status: job.status,
                 progress: job.progress,
-                modelSize: job.modelSize,
+                modelSize: job.model_size,
                 diarization: job.diarization,
                 transcript: job.transcript,
-                lastError: job.lastError,
-                startedAt: job.startedAt,
-                completedAt: job.completedAt,
-                speakerCount: job.speakerCount,
+                lastError: job.last_error,
+                startedAt: job.started_at,
+                completedAt: job.completed_at,
+                speakerCount: job.speaker_count,
               },
             },
             {
               meta: {
                 requestId: context.requestId,
               },
-            },
-          ),
+            }
+          )
         );
       } catch (error) {
         apiDebug('Error fetching transcription status', error);
@@ -96,7 +96,7 @@ export async function GET(
         enabled: true,
         sanitizeErrors: true,
       },
-    },
+    }
   );
 
   // Execute the authenticated handler
