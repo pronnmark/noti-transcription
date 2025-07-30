@@ -960,8 +960,14 @@ export default function RecordPage() {
         const errorData = await response
           .json()
           .catch(() => ({ error: 'Unknown error' }));
+        
+        // Handle error properly - errorData.error might be an object
+        const errorMessage = typeof errorData.error === 'string' 
+          ? errorData.error 
+          : errorData.error?.message || JSON.stringify(errorData.error) || 'Unknown error';
+        
         throw new Error(
-          `Upload failed: ${response.status} - ${errorData.error || 'Unknown error'}`
+          `Upload failed: ${response.status} - ${errorMessage}`
         );
       }
 
