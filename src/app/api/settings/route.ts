@@ -3,13 +3,6 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { settingsService } from '@/lib/db';
 
-// Debug logging (can be disabled by setting DEBUG_API=false)
-const DEBUG_API = process.env.DEBUG_API !== 'false';
-const debugLog = (...args: unknown[]) => {
-  if (DEBUG_API) {
-    console.log(...args);
-  }
-};
 
 const DATA_DIR = process.env.DATA_DIR || join(process.cwd(), 'data');
 const SETTINGS_FILE = join(DATA_DIR, 'settings.json');
@@ -51,10 +44,10 @@ async function loadSettings(): Promise<Settings> {
       const data = readFileSync(SETTINGS_FILE, 'utf-8');
       const fileSettings = JSON.parse(data);
 
-      // Merge file settings, but keep AI settings from database
+      // Merge transcription settings from file with AI settings from database
       return {
         ...fileSettings,
-        ai: defaults.ai, // AI settings come from database
+        ai: defaults.ai,
       };
     } catch (error) {
       console.error('Error loading file settings:', error);
@@ -66,10 +59,6 @@ async function loadSettings(): Promise<Settings> {
 
 async function saveSettings(settings: Settings): Promise<void> {
   // Save AI settings to database
-  debugLog(
-    'api',
-    'Attempting to save AI settings to database...'
-  );
   try {
     const dbSettingsData = {
       customAiBaseUrl: settings.ai.customAiBaseUrl,
@@ -80,10 +69,8 @@ async function saveSettings(settings: Settings): Promise<void> {
       aiExtractEnabled: settings.ai.aiExtractEnabled,
       aiExtractModel: settings.ai.aiExtractModel,
     };
-    debugLog('Settings data to save:', JSON.stringify(dbSettingsData, null, 2));
 
     await settingsService.update(dbSettingsData);
-    debugLog('api', 'Successfully saved settings to database');
   } catch (error) {
     console.error('Error saving settings to database:', error);
     console.error(
@@ -93,16 +80,14 @@ async function saveSettings(settings: Settings): Promise<void> {
     throw error;
   }
 
-  // Save other settings to JSON file (for backward compatibility)
-  debugLog('api', 'Saving other settings to JSON file...');
+  // Save transcription settings to JSON file
+  // AI settings are stored in database for security (contains API keys)
   try {
     const fileSettings = {
       transcription: settings.transcription,
-      // Don't save AI settings to file anymore
     };
 
     writeFileSync(SETTINGS_FILE, JSON.stringify(fileSettings, null, 2));
-    debugLog('api', 'Successfully saved other settings to JSON file');
   } catch (error) {
     console.error('Error saving settings to JSON file:', error);
     throw error;
@@ -171,11 +156,6 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const settings: Settings = await request.json();
-    debugLog(
-      'api',
-      'Received settings to save:',
-      JSON.stringify(settings.ai, null, 2)
-    );
 
     // Save settings (AI to database, others to file)
     await saveSettings(settings);

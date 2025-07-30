@@ -857,6 +857,7 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
+        <TabsContent value='advanced' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader className='flex flex-row items-center justify-between'>
               <div>
@@ -931,7 +932,6 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
           <Card>
             <CardHeader>
@@ -1206,10 +1206,7 @@ export default function SettingsPage() {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-
-        <TabsContent value='advanced' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Advanced Transcription</CardTitle>
