@@ -72,6 +72,67 @@ function SummaryStatus({ hasAiExtract, extractCount }: SummaryStatusProps) {
   );
 }
 
+function LocationDisplay({ file }: { file: AudioFile }) {
+  const [locationText, setLocationText] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadLocation = async () => {
+      if (!file.latitude || !file.longitude) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Try to get city name using reverse geocoding
+        const response = await fetch(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${file.latitude}&longitude=${file.longitude}&localityLanguage=en`
+        );
+        
+        if (response.ok) {
+          const data = await response.json();
+          const city = data.city || data.locality || data.principalSubdivision;
+          const country = data.countryName;
+          
+          if (city && country) {
+            const accuracy = file.locationAccuracy 
+              ? ` (±${Math.round(file.locationAccuracy)}m)` 
+              : '';
+            setLocationText(`${city}, ${country}${accuracy}`);
+            setIsLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Geocoding failed, falling back to coordinates');
+      }
+      
+      // Fallback to coordinates if geocoding fails
+      const lat = file.latitude.toFixed(4);
+      const lng = file.longitude.toFixed(4);
+      const accuracy = file.locationAccuracy 
+        ? ` (±${Math.round(file.locationAccuracy)}m)` 
+        : '';
+      
+      setLocationText(`${lat}, ${lng}${accuracy}`);
+      setIsLoading(false);
+    };
+
+    loadLocation();
+  }, [file.latitude, file.longitude, file.locationAccuracy]);
+
+  if (!file.latitude || !file.longitude) return null;
+
+  return (
+    <div className='flex items-center gap-1 text-xs text-gray-500'>
+      <MapPin className='h-3 w-3' />
+      <span title={`Location: ${locationText || 'Loading...'}\nProvider: ${file.locationProvider || 'unknown'}`}>
+        {isLoading ? 'Loading...' : locationText}
+      </span>
+    </div>
+  );
+}
+
 export default function FilesPage() {
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -211,20 +272,6 @@ export default function FilesPage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const formatLocation = (file: AudioFile) => {
-    if (!file.latitude || !file.longitude) return null;
-    
-    // Format coordinates to reasonable precision
-    const lat = file.latitude.toFixed(4);
-    const lng = file.longitude.toFixed(4);
-    
-    // Add accuracy info if available
-    const accuracy = file.locationAccuracy 
-      ? ` (±${Math.round(file.locationAccuracy)}m)` 
-      : '';
-    
-    return `${lat}, ${lng}${accuracy}`;
-  };
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -403,14 +450,7 @@ export default function FilesPage() {
                                     {formatDuration(file.duration)}
                                   </span>
                                 )}
-                                {formatLocation(file) && (
-                                  <div className='flex items-center gap-1 text-xs text-gray-500'>
-                                    <MapPin className='h-3 w-3' />
-                                    <span title={`Location: ${formatLocation(file)}\nProvider: ${file.locationProvider || 'unknown'}`}>
-                                      {formatLocation(file)}
-                                    </span>
-                                  </div>
-                                )}
+                                <LocationDisplay file={file} />
                                 {file.transcriptionStatus === 'processing' && (
                                   <span className='text-xs text-blue-600'>
                                     Processing...
