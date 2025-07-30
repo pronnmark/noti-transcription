@@ -108,12 +108,20 @@ class SupabaseQueryBuilder<T = any> implements QueryBuilder<T> {
 export class SupabaseAdapter implements DatabaseClient {
   private client: SupabaseClient;
 
-  constructor(url: string, key: string) {
-    this.client = createClient(url, key, {
-      auth: {
-        persistSession: false, // For server-side usage
-      },
-    });
+  constructor(client?: SupabaseClient, url?: string, key?: string) {
+    if (client) {
+      // Use provided client (singleton)
+      this.client = client;
+    } else if (url && key) {
+      // Fallback: create new client
+      this.client = createClient(url, key, {
+        auth: {
+          persistSession: false, // For server-side usage
+        },
+      });
+    } else {
+      throw new Error('SupabaseAdapter requires either a client or url/key parameters');
+    }
   }
 
   from<T = any>(table: string): QueryBuilder<T> {

@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
       recordedAt: file.uploaded_at
         ? new Date(file.uploaded_at).toISOString()
         : null,
-      transcriptionStatus: 'completed' as const, // Default status
-      hasTranscript: true, // Assume transcribed
+      transcriptionStatus: (file.transcription_status || 'pending') as const,
+      hasTranscript: !!file.transcript_text,
       hasAiExtract: false,
       extractCount: 0,
       labels: [],
@@ -82,7 +82,9 @@ export async function GET(request: NextRequest) {
       locationProvider: file.location_provider,
     }));
 
-    debugLog('api', `✅ Retrieved ${formattedFiles.length} files`);
+    if (process.env.NODE_ENV === 'development') {
+      debugLog('api', `✅ Retrieved ${formattedFiles.length} files`);
+    }
 
     return errorHandlingService.handleSuccess({
       files: formattedFiles,

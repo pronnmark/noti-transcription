@@ -19,7 +19,10 @@ let databaseClient: DatabaseClient | null = null;
 
 function createSupabaseClient(): SupabaseClient {
   try {
-    console.log(`📂 Connecting to Supabase: ${SUPABASE_URL}`);
+    // Only log in development mode
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📂 Connecting to Supabase: ${SUPABASE_URL}`);
+    }
 
     const client = createClient(SUPABASE_URL!, SUPABASE_ANON_KEY!, {
       auth: {
@@ -27,7 +30,9 @@ function createSupabaseClient(): SupabaseClient {
       },
     });
 
-    console.log('✅ Supabase client created successfully');
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ Supabase client created successfully');
+    }
     return client;
   } catch (error) {
     console.error('❌ Failed to create Supabase client:', error);
@@ -57,7 +62,8 @@ function createSupabaseClient(): SupabaseClient {
  */
 export function getDatabaseClient(): DatabaseClient {
   if (!databaseClient) {
-    databaseClient = new SupabaseAdapter(SUPABASE_URL!, SUPABASE_ANON_KEY!);
+    const supabaseClient = getSupabase(); // Use singleton client
+    databaseClient = new SupabaseAdapter(supabaseClient);
   }
   return databaseClient;
 }

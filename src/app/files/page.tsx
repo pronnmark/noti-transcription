@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { FileAudio, Plus, Loader2, Trash2, Download, MapPin, Smartphone, Tablet, Monitor } from 'lucide-react';
 import { toast } from 'sonner';
@@ -164,17 +165,41 @@ function DeviceTypeIcon({ deviceType }: { deviceType?: string }) {
 }
 
 export default function FilesPage() {
+  const router = useRouter();
   const [files, setFiles] = useState<AudioFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const _isMobile = useMediaQuery('(max-width: 767px)');
 
+  // Debounced file loading to prevent rapid successive calls
+  const [loadFilesTimeout, setLoadFilesTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  const debouncedLoadFiles = () => {
+    if (loadFilesTimeout) {
+      clearTimeout(loadFilesTimeout);
+    }
+    const timeout = setTimeout(() => {
+      loadFiles();
+    }, 300); // 300ms debounce
+    setLoadFilesTimeout(timeout);
+  };
+
   useEffect(() => {
     loadFiles();
-    const interval = setInterval(loadFiles, 30000);
-    return () => clearInterval(interval);
+    // Reduce polling to 2 minutes instead of 30 seconds
+    const interval = setInterval(loadFiles, 120000);
+    return () => {
+      clearInterval(interval);
+    };
   }, []);
+
+  // Cleanup debounce timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (loadFilesTimeout) clearTimeout(loadFilesTimeout);
+    };
+  }, [loadFilesTimeout]);
 
   async function loadFiles() {
     try {
@@ -244,7 +269,7 @@ export default function FilesPage() {
       }
 
       toast.success(`${file.name} uploaded successfully`);
-      await loadFiles();
+      debouncedLoadFiles();
     } catch (error) {
       toast.error(
         `Upload failed: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -265,7 +290,7 @@ export default function FilesPage() {
       if (!response.ok) throw new Error('Delete failed');
 
       toast.success('File deleted');
-      await loadFiles();
+      debouncedLoadFiles();
     } catch (error) {
       toast.error('Failed to delete file');
     } finally {
@@ -417,7 +442,7 @@ export default function FilesPage() {
                 // Reload files after successful uploads
                 const successCount = results.filter(r => r.success).length;
                 if (successCount > 0) {
-                  loadFiles();
+                  debouncedLoadFiles();
                 }
               }}
             />
@@ -468,7 +493,7 @@ export default function FilesPage() {
                           )}
                           onClick={() => {
                             if (file.transcriptionStatus === 'completed') {
-                              window.location.href = `/transcript/${file.id}`;
+                              router.push(`/transcript/${file.id}`);
                             }
                           }}
                         >
