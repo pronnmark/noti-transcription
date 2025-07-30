@@ -39,6 +39,42 @@ export class ValidationService {
   }
 
   /**
+   * Validate a number with optional constraints
+   */
+  validateNumber(
+    value: any, 
+    fieldName: string = 'Value',
+    options?: {
+      min?: number;
+      max?: number;
+      integer?: boolean;
+    }
+  ): ValidationResult {
+    const errors: string[] = [];
+    
+    if (value === null || value === undefined) {
+      errors.push(`${fieldName} is required`);
+    } else if (typeof value !== 'number' || isNaN(value)) {
+      errors.push(`${fieldName} must be a valid number`);
+    } else {
+      if (options?.integer && !Number.isInteger(value)) {
+        errors.push(`${fieldName} must be an integer`);
+      }
+      if (options?.min !== undefined && value < options.min) {
+        errors.push(`${fieldName} must be at least ${options.min}`);
+      }
+      if (options?.max !== undefined && value > options.max) {
+        errors.push(`${fieldName} must be at most ${options.max}`);
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
    * Validate required fields
    */
   validateRequired<T>(value: T, fieldName: string = 'Field'): ValidationResult {

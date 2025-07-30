@@ -1,6 +1,9 @@
-import { RepositoryFactory } from '../../database/repositories';
 import type { AudioRepository } from '../../database/repositories/AudioRepository';
+import type { AudioStatsRepository } from '../../database/repositories/AudioStatsRepository';
+import type { TranscriptionRepository } from '../../database/repositories/TranscriptRepository';
 import type { AudioFile } from '../../database/client';
+import { ValidationService } from '../ValidationService';
+import { debugLog } from '../../utils/debug';
 
 interface NewAudioFile {
   file_name: string;
@@ -33,107 +36,128 @@ const ALLOWED_AUDIO_TYPES = [
 ];
 
 export class AudioService {
-  private audioRepository: AudioRepository;
-
-  constructor() {
-    this.audioRepository = RepositoryFactory.audioRepository;
-  }
+  constructor(
+    private audioRepository: AudioRepository,
+    private audioStatsRepository: AudioStatsRepository,
+    private transcriptionRepository: TranscriptionRepository,
+    private validationService: ValidationService
+  ) {}
 
   /**
    * Validate audio file data before creation
    */
   private validateAudioFileData(data: NewAudioFile): void {
+    const errors: string[] = [];
+
     // File name validation
-    if (!data.file_name?.trim()) {
-      throw new Error('File name is required');
-    }
-    if (data.file_name.length > MAX_FILENAME_LENGTH) {
-      throw new Error(
+    const fileNameValidation = this.validationService.validateRequired(
+      data.file_name,
+      'File name'
+    );
+    if (!fileNameValidation.isValid) {
+      errors.push(...fileNameValidation.errors);
+    } else if (data.file_name.length > MAX_FILENAME_LENGTH) {
+      errors.push(
         `File name too long (max ${MAX_FILENAME_LENGTH} characters)`
       );
     }
 
     // Original file name validation
-    if (!data.original_file_name?.trim()) {
-      throw new Error('Original file name is required');
-    }
-    if (data.original_file_name.length > MAX_FILENAME_LENGTH) {
-      throw new Error(
+    const origFileNameValidation = this.validationService.validateRequired(
+      data.original_file_name,
+      'Original file name'
+    );
+    if (!origFileNameValidation.isValid) {
+      errors.push(...origFileNameValidation.errors);
+    } else if (data.original_file_name.length > MAX_FILENAME_LENGTH) {
+      errors.push(
         `Original file name too long (max ${MAX_FILENAME_LENGTH} characters)`
       );
     }
 
     // File type validation
-    if (!data.original_file_type?.trim()) {
-      throw new Error('File type is required');
-    }
-    if (!ALLOWED_AUDIO_TYPES.includes(data.original_file_type.toLowerCase())) {
-      throw new Error(
+    const fileTypeValidation = this.validationService.validateRequired(
+      data.original_file_type,
+      'File type'
+    );
+    if (!fileTypeValidation.isValid) {
+      errors.push(...fileTypeValidation.errors);
+    } else if (!ALLOWED_AUDIO_TYPES.includes(data.original_file_type.toLowerCase())) {
+      errors.push(
         `Unsupported file type. Allowed types: ${ALLOWED_AUDIO_TYPES.join(', ')}`
       );
     }
 
     // File size validation
-    if (typeof data.file_size !== 'number' || data.file_size <= 0) {
-      throw new Error('File size must be a positive number');
-    }
-    if (data.file_size > MAX_FILE_SIZE) {
-      throw new Error(
-        `File too large (max ${MAX_FILE_SIZE / (1024 * 1024)}MB)`
-      );
+    const fileSizeValidation = this.validationService.validateFileSize(data.file_size);
+    if (!fileSizeValidation.isValid) {
+      errors.push(...fileSizeValidation.errors);
     }
 
     // Optional field validation
     if (data.title && data.title.length > MAX_TITLE_LENGTH) {
-      throw new Error(`Title too long (max ${MAX_TITLE_LENGTH} characters)`);
+      errors.push(`Title too long (max ${MAX_TITLE_LENGTH} characters)`);
     }
 
-    if (
-      data.duration !== undefined &&
-      (typeof data.duration !== 'number' || data.duration < 0)
-    ) {
-      throw new Error('Duration must be a non-negative number');
+    if (data.duration !== undefined) {
+      const durationValidation = this.validationService.validateNumber(
+        data.duration,
+        'Duration',
+        { min: 0 }
+      );
+      if (!durationValidation.isValid) {
+        errors.push(...durationValidation.errors);
+      }
     }
 
     // Location validation
-    if (
-      data.latitude !== undefined &&
-      (typeof data.latitude !== 'number' ||
-        data.latitude < -90 ||
-        data.latitude > 90)
-    ) {
-      throw new Error('Latitude must be between -90 and 90 degrees');
+    if (data.latitude !== undefined) {
+      const latitudeValidation = this.validationService.validateNumber(
+        data.latitude,
+        'Latitude',
+        { min: -90, max: 90 }
+      );
+      if (!latitudeValidation.isValid) {
+        errors.push(...latitudeValidation.errors);
+      }
     }
 
-    if (
-      data.longitude !== undefined &&
-      (typeof data.longitude !== 'number' ||
-        data.longitude < -180 ||
-        data.longitude > 180)
-    ) {
-      throw new Error('Longitude must be between -180 and 180 degrees');
+    if (data.longitude !== undefined) {
+      const longitudeValidation = this.validationService.validateNumber(
+        data.longitude,
+        'Longitude',
+        { min: -180, max: 180 }
+      );
+      if (!longitudeValidation.isValid) {
+        errors.push(...longitudeValidation.errors);
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(`Validation failed: ${errors.join(', ')}`);
     }
   }
 
   async getAllFiles(): Promise<AudioFile[]> {
     try {
       const files = await this.audioRepository.findAll();
-      console.log(`[AudioService] Found ${files.length} audio files`);
+      debugLog('service', `Found ${files.length} audio files`);
       return files;
     } catch (error) {
-      console.error('[AudioService] Error getting all files:', error);
+      debugLog('service', 'Error getting all files:', error);
       throw error;
     }
   }
 
   async getFileById(id: number): Promise<AudioFile | null> {
     try {
-      if (!id || id <= 0) {
-        throw new Error('Valid file ID is required');
+      const idValidation = this.validationService.validateId(id, 'File ID');
+      if (!idValidation.isValid) {
+        throw new Error(idValidation.errors.join(', '));
       }
       return await this.audioRepository.findById(id);
     } catch (error) {
-      console.error(`[AudioService] Error getting file ${id}:`, error);
+      debugLog('service', `Error getting file ${id}:`, error);
       throw error;
     }
   }
@@ -144,10 +168,10 @@ export class AudioService {
       this.validateAudioFileData(data);
 
       const newFile = await this.audioRepository.create(data);
-      console.log(`[AudioService] Created audio file with ID: ${newFile.id}`);
+      debugLog('service', `Created audio file with ID: ${newFile.id}`);
       return newFile;
     } catch (error) {
-      console.error('[AudioService] Error creating file:', error);
+      debugLog('service', 'Error creating file:', error);
       throw error;
     }
   }
@@ -157,92 +181,91 @@ export class AudioService {
     data: Partial<NewAudioFile>
   ): Promise<AudioFile> {
     try {
-      if (!id || id <= 0) {
-        throw new Error('Valid file ID is required');
+      const idValidation = this.validationService.validateId(id, 'File ID');
+      if (!idValidation.isValid) {
+        throw new Error(idValidation.errors.join(', '));
       }
 
       // Validate update data (only validate provided fields)
       if (Object.keys(data).length > 0) {
-        // Create a temporary complete object for validation
-        // We'll validate only the fields that are being updated
-        const tempData = {
-          file_name: data.file_name || 'temp.mp3',
-          original_file_name: data.original_file_name || 'temp.mp3',
-          original_file_type: data.original_file_type || 'audio/mpeg',
-          file_size: data.file_size || 1024,
-          ...data,
-        } as NewAudioFile;
+        const errors: string[] = [];
 
         // Only validate the specific fields being updated
         if (data.file_name !== undefined) {
-          if (
-            !data.file_name?.trim() ||
-            data.file_name.length > MAX_FILENAME_LENGTH
-          ) {
-            throw new Error('Invalid file name for update');
+          const validation = this.validationService.validateRequired(
+            data.file_name,
+            'File name'
+          );
+          if (!validation.isValid) {
+            errors.push(...validation.errors);
+          } else if (data.file_name.length > MAX_FILENAME_LENGTH) {
+            errors.push('File name too long for update');
           }
         }
+
         if (data.original_file_name !== undefined) {
-          if (
-            !data.original_file_name?.trim() ||
-            data.original_file_name.length > MAX_FILENAME_LENGTH
-          ) {
-            throw new Error('Invalid original file name for update');
+          const validation = this.validationService.validateRequired(
+            data.original_file_name,
+            'Original file name'
+          );
+          if (!validation.isValid) {
+            errors.push(...validation.errors);
+          } else if (data.original_file_name.length > MAX_FILENAME_LENGTH) {
+            errors.push('Original file name too long for update');
           }
         }
+
         if (data.original_file_type !== undefined) {
-          if (
-            !ALLOWED_AUDIO_TYPES.includes(data.original_file_type.toLowerCase())
-          ) {
-            throw new Error(
+          if (!ALLOWED_AUDIO_TYPES.includes(data.original_file_type.toLowerCase())) {
+            errors.push(
               `Unsupported file type for update. Allowed types: ${ALLOWED_AUDIO_TYPES.join(', ')}`
             );
           }
         }
+
         if (data.file_size !== undefined) {
-          if (
-            typeof data.file_size !== 'number' ||
-            data.file_size <= 0 ||
-            data.file_size > MAX_FILE_SIZE
-          ) {
-            throw new Error('Invalid file size for update');
+          const validation = this.validationService.validateFileSize(data.file_size);
+          if (!validation.isValid) {
+            errors.push(...validation.errors);
           }
         }
-        if (
-          data.title !== undefined &&
-          data.title &&
-          data.title.length > MAX_TITLE_LENGTH
-        ) {
-          throw new Error(
+
+        if (data.title !== undefined && data.title && data.title.length > MAX_TITLE_LENGTH) {
+          errors.push(
             `Title too long for update (max ${MAX_TITLE_LENGTH} characters)`
           );
+        }
+
+        if (errors.length > 0) {
+          throw new Error(`Validation failed: ${errors.join(', ')}`);
         }
       }
 
       const updatedFile = await this.audioRepository.update(id, data);
-      console.log(`[AudioService] Updated audio file ${id}`);
+      debugLog('service', `Updated audio file ${id}`);
       return updatedFile;
     } catch (error) {
-      console.error(`[AudioService] Error updating file ${id}:`, error);
+      debugLog('service', `Error updating file ${id}:`, error);
       throw error;
     }
   }
 
   async deleteFile(id: number): Promise<boolean> {
     try {
-      if (!id || id <= 0) {
-        throw new Error('Valid file ID is required');
+      const idValidation = this.validationService.validateId(id, 'File ID');
+      if (!idValidation.isValid) {
+        throw new Error(idValidation.errors.join(', '));
       }
 
       const deleted = await this.audioRepository.delete(id);
       if (deleted) {
-        console.log(`[AudioService] Deleted audio file ${id}`);
+        debugLog('service', `Deleted audio file ${id}`);
       } else {
-        console.warn(`[AudioService] Audio file ${id} not found for deletion`);
+        debugLog('service', `Audio file ${id} not found for deletion`);
       }
       return deleted;
     } catch (error) {
-      console.error(`[AudioService] Error deleting file ${id}:`, error);
+      debugLog('service', `Error deleting file ${id}:`, error);
       throw error;
     }
   }
@@ -258,11 +281,35 @@ export class AudioService {
     existingFile?: AudioFile;
   }> {
     try {
-      if (!data.fileHash || !data.originalFileName || !data.fileSize) {
-        throw new Error('Required duplicate check data is missing');
+      const errors: string[] = [];
+
+      const hashValidation = this.validationService.validateRequired(
+        data.fileHash,
+        'File hash'
+      );
+      if (!hashValidation.isValid) {
+        errors.push(...hashValidation.errors);
       }
-      if (data.fileSize <= 0) {
-        throw new Error('File size must be positive');
+
+      const fileNameValidation = this.validationService.validateRequired(
+        data.originalFileName,
+        'Original file name'
+      );
+      if (!fileNameValidation.isValid) {
+        errors.push(...fileNameValidation.errors);
+      }
+
+      const fileSizeValidation = this.validationService.validateNumber(
+        data.fileSize,
+        'File size',
+        { min: 1 }
+      );
+      if (!fileSizeValidation.isValid) {
+        errors.push(...fileSizeValidation.errors);
+      }
+
+      if (errors.length > 0) {
+        throw new Error(`Validation failed: ${errors.join(', ')}`);
       }
 
       const existingFile = await this.audioRepository.findByHash(data.fileHash);
@@ -288,7 +335,7 @@ export class AudioService {
       }
       return { isDuplicate: false };
     } catch (error) {
-      console.error('[AudioService] Error checking duplicates:', error);
+      debugLog('service', 'Error checking duplicates:', error);
       throw error;
     }
   }
@@ -300,7 +347,7 @@ export class AudioService {
     averageDuration: number;
   }> {
     try {
-      const stats = await RepositoryFactory.audioStatsRepository.getStorageStats();
+      const stats = await this.audioStatsRepository.getStorageStats();
       return {
         totalFiles: stats.totalFiles,
         totalSize: stats.totalSize,
@@ -308,58 +355,88 @@ export class AudioService {
         averageDuration: stats.totalDuration,
       };
     } catch (error) {
-      console.error('[AudioService] Error getting statistics:', error);
+      debugLog('service', 'Error getting statistics:', error);
       throw error;
     }
   }
 
   async findByHash(hash: string): Promise<AudioFile | null> {
     try {
-      if (!hash) {
-        throw new Error('Hash is required');
+      const validation = this.validationService.validateRequired(hash, 'Hash');
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
       }
       return await this.audioRepository.findByHash(hash);
     } catch (error) {
-      console.error(`[AudioService] Error finding file by hash:`, error);
+      debugLog('service', `Error finding file by hash:`, error);
       throw error;
     }
   }
 
   async findByFileName(fileName: string): Promise<AudioFile | null> {
     try {
-      if (!fileName) {
-        throw new Error('File name is required');
+      const validation = this.validationService.validateRequired(
+        fileName,
+        'File name'
+      );
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
       }
       return await this.audioRepository.findByFileName(fileName);
     } catch (error) {
-      console.error(`[AudioService] Error finding file by name:`, error);
+      debugLog('service', `Error finding file by name:`, error);
       throw error;
     }
   }
 
   async findRecent(limit: number = 10): Promise<AudioFile[]> {
     try {
-      if (limit <= 0) {
-        throw new Error('Limit must be positive');
+      const validation = this.validationService.validateNumber(
+        limit,
+        'Limit',
+        { min: 1 }
+      );
+      if (!validation.isValid) {
+        throw new Error(validation.errors.join(', '));
       }
       return await this.audioRepository.findRecent(limit);
     } catch (error) {
-      console.error('[AudioService] Error finding recent files:', error);
+      debugLog('service', 'Error finding recent files:', error);
       throw error;
     }
   }
 
   async findByDateRange(startDate: Date, endDate: Date): Promise<AudioFile[]> {
     try {
-      if (!startDate || !endDate) {
-        throw new Error('Start and end dates are required');
+      const errors: string[] = [];
+
+      const startDateValidation = this.validationService.validateRequired(
+        startDate,
+        'Start date'
+      );
+      if (!startDateValidation.isValid) {
+        errors.push(...startDateValidation.errors);
       }
+
+      const endDateValidation = this.validationService.validateRequired(
+        endDate,
+        'End date'
+      );
+      if (!endDateValidation.isValid) {
+        errors.push(...endDateValidation.errors);
+      }
+
       if (startDate > endDate) {
-        throw new Error('Start date must be before end date');
+        errors.push('Start date must be before end date');
       }
+
+      if (errors.length > 0) {
+        throw new Error(`Validation failed: ${errors.join(', ')}`);
+      }
+
       return await this.audioRepository.findByDateRange(startDate, endDate);
     } catch (error) {
-      console.error('[AudioService] Error finding files by date range:', error);
+      debugLog('service', 'Error finding files by date range:', error);
       throw error;
     }
   }
@@ -389,15 +466,12 @@ export class AudioService {
       // Get all files
       const files = await this.audioRepository.findAll();
 
-      // Get related repositories directly
-      const transcriptionRepository = RepositoryFactory.transcriptionRepository;
-
       // Transform files with related data
       const transformedFiles = await Promise.all(
         files.map(async file => {
           // Get transcription status
           const transcriptionJob =
-            await transcriptionRepository.findLatestByFileId(file.id);
+            await this.transcriptionRepository.findLatestByFileId(file.id);
           const transcriptionStatus = transcriptionJob?.status || 'pending';
           const hasTranscript =
             transcriptionStatus === 'completed' &&
@@ -428,12 +502,13 @@ export class AudioService {
         })
       );
 
-      console.log(
-        `[AudioService] Retrieved ${transformedFiles.length} files with details`
+      debugLog(
+        'service',
+        `Retrieved ${transformedFiles.length} files with details`
       );
       return transformedFiles;
     } catch (error) {
-      console.error('[AudioService] Error getting files with details:', error);
+      debugLog('service', 'Error getting files with details:', error);
       throw error;
     }
   }

@@ -6,7 +6,7 @@ import { FileValidator } from './FileValidator';
 import { AudioConverter } from './AudioConverter';
 import { TranscriptionOrchestrator } from './TranscriptionOrchestrator';
 import { SupabaseStorageService } from './SupabaseStorageService';
-import { RepositoryFactory } from '../../database/repositories';
+import { getAudioRepository } from '../../di/containerSetup';
 import { v4 as uuidv4 } from 'uuid';
 
 export interface UploadOptions {
@@ -151,8 +151,8 @@ export class FileUploadService {
   }
 
   private async checkForDuplicates(file: File, fileHash: string): Promise<void> {
-    const { AudioService } = await import('./AudioService');
-    const audioService = new AudioService();
+    const { getAudioService } = await import('../../di/containerSetup');
+    const audioService = getAudioService();
 
     const duplicateCheck = await audioService.checkForDuplicates({
       fileHash,
@@ -214,7 +214,7 @@ export class FileUploadService {
     duration: number,
     location?: UploadOptions['location']
   ) {
-    const audioRepository = RepositoryFactory.audioRepository;
+    const audioRepository = getAudioRepository();
 
     return await audioRepository.create({
       file_name: storagePath, // Store the storage path as file_name

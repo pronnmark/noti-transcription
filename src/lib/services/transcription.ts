@@ -1,6 +1,6 @@
 import { join } from 'path';
 import { readFile, writeFile } from 'fs/promises';
-import { AudioService } from './core/AudioService';
+import { getAudioService } from '../di/containerSetup';
 import { SupabaseStorageService } from './core/SupabaseStorageService';
 import { detectAndApplySpeakerNames } from './speakerDetectionService';
 import { getSupabase } from '../database/client';
@@ -17,7 +17,8 @@ export interface TranscriptSegment {
   speakerName?: string;
 }
 
-const _audioService = new AudioService();
+// Audio service will be retrieved when needed
+const getAudioServiceInstance = () => getAudioService();
 
 // Debug logging (can be disabled by setting DEBUG_TRANSCRIPTION=false)
 const DEBUG_TRANSCRIPTION = process.env.DEBUG_TRANSCRIPTION !== 'false';

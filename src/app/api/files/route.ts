@@ -1,18 +1,46 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { RepositoryFactory } from '@/lib/database/repositories';
+import { NextRequest } from 'next/server';
+import { 
+  getAudioRepository, 
+  getValidationService, 
+  getErrorHandlingService 
+} from '@/lib/di/containerSetup';
+import { debugLog } from '@/lib/utils';
 
 /**
  * GET /api/files - List all audio files
  */
 export async function GET(request: NextRequest) {
+  const errorHandlingService = getErrorHandlingService();
+  
   try {
     // Get query parameters
     const { searchParams } = new URL(request.url);
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const limitStr = searchParams.get('limit') || '50';
+    const offsetStr = searchParams.get('offset') || '0';
+    
+    // Validate pagination parameters
+    const validationService = getValidationService();
+    const limitValidation = validationService.validateNumber(
+      parseInt(limitStr), 
+      'limit', 
+      { min: 1, max: 100 }
+    );
+    const offsetValidation = validationService.validateNumber(
+      parseInt(offsetStr), 
+      'offset', 
+      { min: 0 }
+    );
+    
+    if (!limitValidation.isValid || !offsetValidation.isValid) {
+      const errors = [...limitValidation.errors, ...offsetValidation.errors];
+      return errorHandlingService.handleValidationError(errors, 'get-files');
+    }
+    
+    const limit = parseInt(limitStr);
+    const offset = parseInt(offsetStr);
 
-    // Get repositories
-    const audioRepository = RepositoryFactory.audioRepository;
+    // Get repository using DI container
+    const audioRepository = getAudioRepository();
 
     // Get files from database
     const files = await audioRepository.findAll({ limit, offset });
@@ -42,23 +70,17 @@ export async function GET(request: NextRequest) {
       locationProvider: file.location_provider,
     }));
 
-    return NextResponse.json({
-      success: true,
+    debugLog('api', `✅ Retrieved ${formattedFiles.length} files`);
+
+    return errorHandlingService.handleSuccess({
       files: formattedFiles,
       meta: {
         total: totalCount,
         limit,
         offset,
       },
-    });
+    }, 'get-files');
   } catch (error) {
-    console.error('Error fetching files:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: { message: 'Internal error', code: 'INTERNAL_ERROR' },
-      },
-      { status: 500 }
-    );
+    return errorHandlingService.handleApiError(error, 'get-files');
   }
 }

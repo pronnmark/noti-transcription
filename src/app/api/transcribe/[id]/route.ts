@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  withAuthMiddleware,
-  createApiResponse,
-  createErrorResponse,
-} from '@/lib/middleware';
-import { RepositoryFactory } from '@/lib/database/repositories';
+import { withAuthMiddleware } from '@/lib/middleware';
+import { 
+  getAudioRepository,
+  getTranscriptionRepository,
+  getValidationService,
+  getErrorHandlingService
+} from '@/lib/di/containerSetup';
 import { debugLog } from '@/lib/utils/debug';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -19,17 +20,18 @@ export async function POST(
 ) {
   return withAuthMiddleware(
     async (req: NextRequest, context) => {
+      const errorHandlingService = getErrorHandlingService();
+      const validationService = getValidationService();
       const startTime = Date.now();
 
       try {
         const resolvedParams = await params;
         const fileId = parseInt(resolvedParams.id);
 
-        if (isNaN(fileId)) {
-          return NextResponse.json(
-            createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-            { status: 400 }
-          );
+        // Validate file ID
+        const idValidation = validationService.validateId(fileId, 'File ID');
+        if (!idValidation.isValid) {
+          return errorHandlingService.handleValidationError(idValidation.errors, 'transcribe');
         }
 
         debugLog('api', 'Starting transcription for file', {
@@ -37,36 +39,27 @@ export async function POST(
           requestId: context.requestId,
         });
 
-        // Get repositories
-        const audioRepo = RepositoryFactory.audioRepository;
-        const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+        // Get repositories using DI container
+        const audioRepo = getAudioRepository();
+        const transcriptionRepo = getTranscriptionRepository();
 
         // Get file from database using repository
         const file = await audioRepo.findById(fileId);
         if (!file) {
-          return NextResponse.json(
-            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-            { status: 404 }
-          );
+          return errorHandlingService.handleNotFoundError('File', fileId, 'transcribe');
         }
 
         // Check if transcription job already exists
         const existingJob = await transcriptionRepo.findLatestByFileId(fileId);
         if (existingJob && existingJob.status !== 'failed') {
-          return NextResponse.json(
-            createApiResponse(
-              {
-                message: 'Transcription already exists',
-                job: existingJob,
-              },
-              {
-                meta: {
-                  requestId: context.requestId,
-                  duration: Date.now() - startTime,
-                },
-              }
-            )
-          );
+          return errorHandlingService.handleSuccess({
+            message: 'Transcription already exists',
+            job: existingJob,
+            meta: {
+              requestId: context.requestId,
+              duration: Date.now() - startTime,
+            },
+          }, 'transcribe-existing');
         }
 
         // Create transcription job using repository
@@ -86,24 +79,16 @@ export async function POST(
           debugLog('api', 'Background transcription failed:', error);
         });
 
-        return NextResponse.json(
-          createApiResponse(
-            {
-              success: true,
-              message: 'Transcription started',
-              jobId: job.id,
-            },
-            {
-              meta: {
-                requestId: context.requestId,
-                duration: Date.now() - startTime,
-              },
-            }
-          )
-        );
+        return errorHandlingService.handleSuccess({
+          message: 'Transcription started',
+          jobId: job.id,
+          meta: {
+            requestId: context.requestId,
+            duration: Date.now() - startTime,
+          },
+        }, 'transcribe-started');
       } catch (error: any) {
-        debugLog('api', 'Transcribe error:', error);
-        throw error; // Let middleware handle the error
+        return errorHandlingService.handleApiError(error, 'transcribe');
       }
     },
     {
@@ -121,7 +106,7 @@ export async function POST(
 }
 
 async function transcribeInBackground(file: any, jobId: number) {
-  const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+  const transcriptionRepo = getTranscriptionRepository();
 
   try {
     // Update job status to processing

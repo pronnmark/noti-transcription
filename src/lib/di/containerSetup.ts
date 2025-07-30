@@ -15,6 +15,7 @@ import { SummarizationTemplateRepository } from '../database/repositories/Templa
 import { ValidationService } from '../services/ValidationService';
 import { ErrorHandlingService } from '../services/ErrorHandlingService';
 import { TranscriptionService } from '../services/core/TranscriptionService';
+import { AudioService } from '../services/core/AudioService';
 
 /**
  * Initialize the dependency injection container
@@ -84,8 +85,18 @@ export function setupDIContainer(): void {
     { singleton: true }
   );
 
-  // Note: AudioService will be registered after refactoring
-  // to remove its direct dependencies on RepositoryFactory
+  // Register AudioService with proper DI
+  container.registerClass(
+    TOKENS.AUDIO_SERVICE,
+    AudioService,
+    [
+      TOKENS.AUDIO_REPOSITORY,
+      TOKENS.AUDIO_STATS_REPOSITORY,
+      TOKENS.TRANSCRIPTION_REPOSITORY,
+      TOKENS.VALIDATION_SERVICE
+    ],
+    { singleton: true }
+  );
 }
 
 /**
@@ -121,6 +132,9 @@ export const getErrorHandlingService = () =>
 
 export const getTranscriptionService = () => 
   getService<TranscriptionService>(TOKENS.TRANSCRIPTION_SERVICE);
+
+export const getAudioService = () => 
+  getService<AudioService>(TOKENS.AUDIO_SERVICE);
 
 // Initialize container on module load
 setupDIContainer();
