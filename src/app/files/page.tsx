@@ -86,7 +86,7 @@ export default function FilesPage() {
       const response = await fetch('/api/files');
       if (response.ok) {
         const data = await response.json();
-        setFiles(data.files || []);
+        setFiles(data.data?.files || []);
       } else {
         toast.error('Failed to load files');
         setFiles([]);
