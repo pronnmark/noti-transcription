@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { withAuthMiddleware } from '@/lib/middleware';
 import {
-  withAuthMiddleware,
-  createApiResponse,
-  createErrorResponse,
-} from '@/lib/middleware';
-import {
-  RepositoryFactory,
-  SummarizationRepository,
-} from '@/lib/database/repositories';
+  getAudioRepository,
+  getTranscriptionRepository,
+  getSummarizationRepository,
+  getSummarizationTemplateRepository,
+  getValidationService,
+  getErrorHandlingService
+} from '@/lib/di/containerSetup';
 import { debugLog } from '@/lib/utils/debug';
 import { adaptiveAIService } from '@/lib/services/adaptiveAI';
 
@@ -23,11 +23,12 @@ export async function POST(
         const resolvedParams = await params;
         const fileIdInt = parseInt(resolvedParams.fileId);
 
-        if (isNaN(fileIdInt)) {
-          return NextResponse.json(
-            createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-            { status: 400 }
-          );
+        const validationService = getValidationService();
+        const errorHandlingService = getErrorHandlingService();
+        
+        const idValidation = validationService.validateId(fileIdInt, 'File ID');
+        if (!idValidation.isValid) {
+          return errorHandlingService.handleValidationError(idValidation.errors, 'ai-process');
         }
         const body = await req.json();
 
@@ -46,11 +47,10 @@ export async function POST(
           requestId: context.requestId,
         });
 
-        // Get repositories
-        const audioRepo = RepositoryFactory.audioRepository;
-        const transcriptionRepo = RepositoryFactory.transcriptionRepository;
-        const summarizationTemplateRepo =
-          RepositoryFactory.summarizationTemplateRepository;
+        // Get repositories using DI container
+        const audioRepo = getAudioRepository();
+        const transcriptionRepo = getTranscriptionRepository();
+        const summarizationTemplateRepo = getSummarizationTemplateRepository();
 
         // Validate template IDs exist in database before processing
         if (templateIds.length > 0) {
@@ -66,17 +66,13 @@ export async function POST(
               invalidTemplateIds,
               validTemplateIds: Array.from(validTemplateIds),
             });
-            return NextResponse.json(
-              createErrorResponse(
-                'Invalid template IDs provided',
-                'INVALID_TEMPLATE_IDS',
-                400,
-                {
-                  invalidTemplateIds,
-                  validTemplateIds: Array.from(validTemplateIds),
-                }
-              ),
-              { status: 400 }
+            return errorHandlingService.handleApiError(
+              'INVALID_INPUT',
+              'Invalid template IDs provided',
+              {
+                invalidTemplateIds,
+                validTemplateIds: Array.from(validTemplateIds),
+              }
             );
           }
         }
@@ -84,34 +80,25 @@ export async function POST(
         // Get file using repository
         const file = await audioRepo.findById(fileIdInt);
         if (!file) {
-          return NextResponse.json(
-            createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-            { status: 404 }
-          );
+          return errorHandlingService.handleNotFoundError('File', fileIdInt, 'ai-process');
         }
 
         // Get transcript from transcription jobs using repository
         const transcriptionJob =
           await transcriptionRepo.findLatestByFileId(fileIdInt);
         if (!transcriptionJob) {
-          return NextResponse.json(
-            createErrorResponse(
-              'Transcription job not found',
-              'TRANSCRIPTION_NOT_FOUND',
-              404
-            ),
-            { status: 404 }
+          return errorHandlingService.handleApiError(
+            'NOT_FOUND',
+            'Transcription job not found',
+            { fileId: fileIdInt }
           );
         }
 
         if (!transcriptionJob.transcript) {
-          return NextResponse.json(
-            createErrorResponse(
-              'File not transcribed yet',
-              'NOT_TRANSCRIBED',
-              400
-            ),
-            { status: 400 }
+          return errorHandlingService.handleApiError(
+            'INVALID_STATE',
+            'File not transcribed yet',
+            { fileId: fileIdInt, transcriptionStatus: transcriptionJob.status }
           );
         }
 
@@ -137,9 +124,8 @@ export async function POST(
                 }
               );
 
-              // Store the summarization
-              const summarizationRepo =
-                RepositoryFactory.summarizationRepository;
+              // Store the summarization using DI container
+              const summarizationRepo = getSummarizationRepository();
               const savedSummary = await summarizationRepo.create({
                 file_id: fileIdInt,
                 content: summaryResult.content,
@@ -155,23 +141,15 @@ export async function POST(
               break;
 
             case 'extractions':
-              return NextResponse.json(
-                createErrorResponse(
-                  'Extractions feature has been removed',
-                  'FEATURE_REMOVED',
-                  501
-                ),
-                { status: 501 }
+              return errorHandlingService.handleApiError(
+                'BUSINESS_RULE_VIOLATION',
+                'Extractions feature has been removed'
               );
 
             case 'datapoints':
-              return NextResponse.json(
-                createErrorResponse(
-                  'Data points feature has been removed',
-                  'FEATURE_REMOVED',
-                  501
-                ),
-                { status: 501 }
+              return errorHandlingService.handleApiError(
+                'BUSINESS_RULE_VIOLATION',
+                'Data points feature has been removed'
               );
 
             case 'all':
@@ -187,9 +165,8 @@ export async function POST(
                   }
                 );
 
-              // Store the summarization
-              const summarizationRepoAll =
-                RepositoryFactory.summarizationRepository;
+              // Store the summarization using DI container
+              const summarizationRepoAll = getSummarizationRepository();
               const savedSummaryAll = await summarizationRepoAll.create({
                 file_id: fileIdInt,
                 content: allSummaryResult.content,
@@ -208,13 +185,10 @@ export async function POST(
               break;
 
             default:
-              return NextResponse.json(
-                createErrorResponse(
-                  'Invalid process type',
-                  'INVALID_PROCESS_TYPE',
-                  400
-                ),
-                { status: 400 }
+              return errorHandlingService.handleApiError(
+                'INVALID_INPUT',
+                'Invalid process type',
+                { processType, validTypes: ['summarization', 'all'] }
               );
           }
 
@@ -222,32 +196,26 @@ export async function POST(
             processType,
           });
 
-          return NextResponse.json(
-            createApiResponse(
-              {
-                processType,
-                results,
-                fileId: fileIdInt,
-              },
-              {
-                meta: {
-                  requestId: context.requestId,
-                  duration: Date.now() - startTime,
-                },
-              }
-            )
-          );
+          return errorHandlingService.handleSuccess({
+            processType,
+            results,
+            fileId: fileIdInt,
+            meta: {
+              requestId: context.requestId,
+              duration: Date.now() - startTime,
+            },
+          }, 'ai-process-complete');
         } catch (aiError) {
           debugLog('api', 'AI processing error:', aiError);
 
           // Update file timestamp
           await audioRepo.updateTimestamp(fileIdInt);
 
-          throw aiError; // Let middleware handle the error
+          return errorHandlingService.handleApiError(aiError, 'ai-process');
         }
       } catch (error: any) {
-        debugLog('api', 'AI process route error:', error);
-        throw error; // Let middleware handle the error
+        const errorHandlingService = getErrorHandlingService();
+        return errorHandlingService.handleApiError(error, 'ai-process');
       }
     },
     {

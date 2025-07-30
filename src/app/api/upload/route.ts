@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  withMiddleware,
-  createApiResponse,
-  createErrorResponse,
-} from '@/lib/middleware';
+import { withAuthMiddleware } from '@/lib/middleware';
+import { 
+  getValidationService, 
+  getErrorHandlingService 
+} from '@/lib/di/containerSetup';
 import { FileUploadService } from '@/lib/services/core/FileUploadService';
-import { apiDebug, debugPerformance } from '@/lib/utils';
+import { debugLog } from '@/lib/utils/debug';
 import { ValidationError } from '@/lib/errors';
 import { processTranscriptionJobs } from '@/lib/services/transcriptionWorker';
 
@@ -20,14 +20,18 @@ export const maxDuration = 60; // 60 seconds
  * POST handler with middleware for error handling and logging
  * Authentication is optional for upload endpoint
  */
-export const POST = withMiddleware(
-  async (request: NextRequest, context) => {
-    const startTime = Date.now();
-    apiDebug('Upload request received', { requestId: context.requestId });
+export async function POST(request: NextRequest) {
+  return withAuthMiddleware(
+    async (req: NextRequest, context) => {
+      const startTime = Date.now();
+      const validationService = getValidationService();
+      const errorHandlingService = getErrorHandlingService();
 
-    try {
-      // Parse form data
-      const formData = await request.formData();
+      debugLog('api', 'Upload request received', { requestId: context.requestId });
+
+      try {
+        // Parse form data
+        const formData = await req.formData();
 
       // Get all files from formData (support both single and multiple files)
       const files: File[] = [];
@@ -50,32 +54,29 @@ export const POST = withMiddleware(
         }
       }
 
-      if (files.length === 0) {
-        return NextResponse.json(
-          createErrorResponse('No files provided', 'NO_FILES', 400, {
-            receivedFields: Array.from(formData.keys()),
-            hint: 'Expected field name: files[] for multiple files or file/audio for single file',
-          }),
-          { status: 400 }
-        );
-      }
+        if (files.length === 0) {
+          return errorHandlingService.handleApiError(
+            'INVALID_INPUT',
+            'No files provided',
+            {
+              receivedFields: Array.from(formData.keys()),
+              hint: 'Expected field name: files[] for multiple files or file/audio for single file',
+            }
+          );
+        }
 
       // Extract upload options from form data
       let speakerCount: number | undefined;
       const speakerCountField = formData.get('speakerCount');
-      if (speakerCountField) {
-        speakerCount = parseInt(speakerCountField.toString());
-        if (isNaN(speakerCount)) {
-          return NextResponse.json(
-            createErrorResponse(
-              'Invalid speaker count',
-              'INVALID_SPEAKER_COUNT',
-              400
-            ),
-            { status: 400 }
-          );
+        if (speakerCountField) {
+          speakerCount = parseInt(speakerCountField.toString());
+          if (isNaN(speakerCount)) {
+            return errorHandlingService.handleApiError(
+              'INVALID_INPUT',
+              'Invalid speaker count'
+            );
+          }
         }
-      }
 
       // Extract location data
       const locationData: any = {};
@@ -143,97 +144,77 @@ export const POST = withMiddleware(
         })
       );
 
-      // Auto-trigger transcription worker for successful uploads (non-blocking)
-      const successfulUploads = results.filter(r => r.success).length;
-      if (successfulUploads > 0) {
-        setImmediate(async () => {
-          try {
-            apiDebug(
-              `Starting transcription worker for ${successfulUploads} newly uploaded files...`
-            );
-            const result = await processTranscriptionJobs();
-            apiDebug('Transcription worker completed:', result);
-          } catch (error) {
-            console.error('Error in transcription worker:', error);
-          }
-        });
-      }
+        // Auto-trigger transcription worker for successful uploads (non-blocking)
+        const successfulUploads = results.filter(r => r.success).length;
+        if (successfulUploads > 0) {
+          setImmediate(async () => {
+            try {
+              debugLog(
+                'api',
+                `Starting transcription worker for ${successfulUploads} newly uploaded files...`
+              );
+              const result = await processTranscriptionJobs();
+              debugLog('api', 'Transcription worker completed:', result);
+            } catch (error) {
+              debugLog('api', 'Error in transcription worker:', error);
+            }
+          });
+        }
 
-      // Prepare response
-      const successCount = results.filter(r => r.success).length;
-      const failureCount = results.filter(r => !r.success).length;
+        // Prepare response
+        const successCount = results.filter(r => r.success).length;
+        const failureCount = results.filter(r => !r.success).length;
 
-      debugPerformance('Upload endpoint', startTime, 'api');
-
-      // If all files failed, return 400 status
-      if (successCount === 0 && failureCount > 0) {
-        const firstError = results.find(r => !r.success)?.error;
-        return NextResponse.json(
-          createErrorResponse(
-            firstError || 'All files failed validation',
+        // If all files failed, return error
+        if (successCount === 0 && failureCount > 0) {
+          const firstError = results.find(r => !r.success)?.error;
+          return errorHandlingService.handleApiError(
             'VALIDATION_ERROR',
-            400,
+            firstError || 'All files failed validation',
             {
               totalFiles: files.length,
               failureCount,
               results,
             }
-          ),
-          { status: 400 }
-        );
-      }
+          );
+        }
 
-      return NextResponse.json(
-        createApiResponse(
-          {
-            totalFiles: files.length,
-            successCount,
-            failureCount,
-            results,
-            speakerCount: speakerCount || null,
-            speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
-            locationCaptured: !!(
-              locationData.latitude && locationData.longitude
-            ),
+        return errorHandlingService.handleSuccess({
+          totalFiles: files.length,
+          successCount,
+          failureCount,
+          results,
+          speakerCount: speakerCount || null,
+          speakerDetection: speakerCount ? 'user_specified' : 'auto_detect',
+          locationCaptured: !!(
+            locationData.latitude && locationData.longitude
+          ),
+          meta: {
+            requestId: context.requestId,
+            duration: Date.now() - startTime,
           },
-          {
-            meta: {
-              requestId: context.requestId,
-              duration: Date.now() - startTime,
-            },
-          }
-        )
-      );
-    } catch (error) {
-      apiDebug('Upload error:', error);
-      return NextResponse.json(
-        createErrorResponse(
-          error instanceof Error ? error.message : 'Unknown error',
-          'UPLOAD_ERROR',
-          500,
-          { stack: error instanceof Error ? error.stack : undefined }
-        ),
-        { status: 500 }
-      );
+        }, 'upload-success');
+      } catch (error) {
+        return errorHandlingService.handleApiError(error, 'upload');
+      }
+    },
+    {
+      // Middleware configuration
+      logging: {
+        enabled: true,
+        logRequests: true,
+        logResponses: true,
+        logBody: false, // Don't log file content
+      },
+      rateLimit: {
+        enabled: true,
+        maxRequests: 50,
+        windowMs: 60000, // 1 minute  
+      },
+      errorHandling: {
+        enabled: true,
+        sanitizeErrors: true,
+      },
     }
-  },
-  {
-    // Middleware configuration
-    logging: {
-      enabled: true,
-      logRequests: true,
-      logResponses: true,
-      logBody: false, // Don't log file content
-    },
-    rateLimit: {
-      enabled: true,
-      maxRequests: 50,
-      windowMs: 60000, // 1 minute
-    },
-    errorHandling: {
-      enabled: true,
-      includeStackTrace: process.env.NODE_ENV === 'development',
-      sanitizeErrors: true,
-    },
-  }
-);
+  )(request);
+}

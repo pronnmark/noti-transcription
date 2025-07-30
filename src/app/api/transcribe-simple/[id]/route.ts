@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  withAuthMiddleware,
-  createApiResponse,
-  createErrorResponse,
-} from '@/lib/middleware';
-import { RepositoryFactory } from '@/lib/database/repositories';
-import { apiDebug } from '@/lib/utils';
+import { withAuthMiddleware } from '@/lib/middleware';
+import { 
+  getAudioRepository,
+  getTranscriptionRepository,
+  getValidationService,
+  getErrorHandlingService
+} from '@/lib/di/containerSetup';
+import { debugLog } from '@/lib/utils';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { join } from 'path';
@@ -23,48 +24,40 @@ export const POST = async (
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) => {
+  const errorHandlingService = getErrorHandlingService();
+  const validationService = getValidationService();
+  
   const resolvedParams = await params;
   const fileId = parseInt(resolvedParams.id);
-
-  if (isNaN(fileId)) {
-    return NextResponse.json(
-      createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-      { status: 400 }
-    );
+  
+  const idValidation = validationService.validateId(fileId, 'File ID');
+  if (!idValidation.isValid) {
+    return errorHandlingService.handleValidationError(idValidation.errors, 'transcribe-simple');
   }
 
-  apiDebug('Starting simple transcription', { fileId });
+  debugLog('api', 'Starting simple transcription', { fileId });
 
   try {
-    // Get file using repository
-    const audioRepo = RepositoryFactory.audioRepository;
+    // Get file using DI container
+    const audioRepo = getAudioRepository();
     const file = await audioRepo.findById(fileId);
 
     if (!file) {
-      return NextResponse.json(
-        createErrorResponse('File not found', 'FILE_NOT_FOUND', 404),
-        { status: 404 }
-      );
+      return errorHandlingService.handleNotFoundError('File', fileId, 'transcribe-simple');
     }
 
-    // Check existing transcription jobs
-    const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+    // Check existing transcription jobs using DI container
+    const transcriptionRepo = getTranscriptionRepository();
     const existingJob = await transcriptionRepo.findLatestByFileId(fileId);
 
     if (existingJob && existingJob.status === 'completed') {
-      return NextResponse.json(
-        createApiResponse(
-          {
-            message: 'Transcription already completed',
-            transcript: existingJob.transcript,
-          },
-          {
-            meta: {
-              requestId: 'transcribe-simple',
-            },
-          }
-        )
-      );
+      return errorHandlingService.handleSuccess({
+        message: 'Transcription already completed',
+        transcript: existingJob.transcript,
+        meta: {
+          requestId: 'transcribe-simple',
+        },
+      }, 'transcribe-simple-existing');
     }
 
     // Create or update transcription job
@@ -110,12 +103,12 @@ export const POST = async (
         fs.promises.writeFile(tempAudioPath!, fileBuffer)
       );
 
-      apiDebug('Downloaded audio file from Supabase for processing', {
+      debugLog('api', 'Downloaded audio file from Supabase for processing', {
         storagePath: file.file_name,
         tempPath: tempAudioPath,
       });
     } catch (downloadError) {
-      apiDebug(
+      debugLog('api',
         'Failed to download audio file from Supabase Storage',
         downloadError
       );
@@ -128,7 +121,7 @@ export const POST = async (
       await execAsync('which whisper');
 
       // Run whisper on downloaded file
-      apiDebug('Running whisper transcription...');
+      debugLog('api', 'Running whisper transcription...');
       const { stdout, stderr } = await execAsync(
         `whisper "${tempAudioPath}" --model base --language en --output_format json --output_dir /tmp`,
         { maxBuffer: 10 * 1024 * 1024 }
@@ -165,22 +158,15 @@ export const POST = async (
         completed_at: new Date().toISOString(),
       });
 
-      return NextResponse.json(
-        createApiResponse(
-          {
-            success: true,
-            transcript: segments,
-            text: result.text,
-          },
-          {
-            meta: {
-              requestId: 'transcribe-simple',
-            },
-          }
-        )
-      );
+      return errorHandlingService.handleSuccess({
+        transcript: segments,
+        text: result.text,
+        meta: {
+          requestId: 'transcribe-simple',
+        },
+      }, 'transcribe-simple-whisper-success');
     } catch (whisperError) {
-      apiDebug('Whisper not available, using fallback...', whisperError);
+      debugLog('api', 'Whisper not available, using fallback...', whisperError);
 
       // Clean up temp file on error
       if (tempAudioPath) {
@@ -205,27 +191,16 @@ export const POST = async (
         completed_at: new Date().toISOString(),
       });
 
-      return NextResponse.json(
-        createApiResponse(
-          {
-            success: true,
-            transcript: dummyTranscript,
-            text: dummyTranscript[0].text,
-            note: 'Using placeholder transcription. Install whisper for real transcription.',
-          },
-          {
-            meta: {
-              requestId: 'transcribe-simple',
-            },
-          }
-        )
-      );
+      return errorHandlingService.handleSuccess({
+        transcript: dummyTranscript,
+        text: dummyTranscript[0].text,
+        note: 'Using placeholder transcription. Install whisper for real transcription.',
+        meta: {
+          requestId: 'transcribe-simple',
+        },
+      }, 'transcribe-simple-fallback');
     }
   } catch (error) {
-    apiDebug('Error in simple transcription', error);
-    return NextResponse.json(
-      createErrorResponse('Internal server error', 'INTERNAL_ERROR', 500),
-      { status: 500 }
-    );
+    return errorHandlingService.handleApiError(error, 'transcribe-simple');
   }
 };

@@ -67,12 +67,16 @@ export interface ITranscriptionRepository extends IBaseRepository {
 // Summarization repository interface
 export interface ISummarizationRepository extends IBaseRepository {
   create(data: SummarizationCreateData): Promise<Summarization>;
+  findByFileId(fileId: number): Promise<Summarization[]>;
   findActiveByIds(ids: string[]): Promise<any[]>;
 }
 
 // Template repository interface
 export interface ITemplateRepository extends IBaseRepository {
+  findById(id: string): Promise<any | null>;
   findActiveByIds(ids: string[]): Promise<any[]>;
+  findAll(): Promise<any[]>;
+  findDefault(): Promise<any | null>;
 }
 
 // Supporting types

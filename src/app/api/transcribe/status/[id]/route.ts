@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import {
-  withAuthMiddleware,
-  createApiResponse,
-  createErrorResponse,
-} from '@/lib/middleware';
-import { RepositoryFactory } from '@/lib/database/repositories';
-import { apiDebug } from '@/lib/utils';
+import { withAuthMiddleware } from '@/lib/middleware';
+import { 
+  getTranscriptionRepository,
+  getValidationService,
+  getErrorHandlingService
+} from '@/lib/di/containerSetup';
+import { debugLog } from '@/lib/utils';
 
 /**
  * Refactored GET handler using repository pattern and authentication middleware
@@ -22,68 +22,56 @@ export async function GET(
   const authenticatedHandler = withAuthMiddleware(
     async (request: NextRequest, context) => {
       const resolvedParams = await params;
+      const validationService = getValidationService();
+      const errorHandlingService = getErrorHandlingService();
+      
       const fileId = parseInt(resolvedParams.id);
-
-      if (isNaN(fileId)) {
-        return NextResponse.json(
-          createErrorResponse('Invalid file ID', 'INVALID_FILE_ID', 400),
-          { status: 400 }
-        );
+      const idValidation = validationService.validateId(fileId, 'File ID');
+      
+      if (!idValidation.isValid) {
+        return errorHandlingService.handleValidationError(idValidation.errors, 'transcription-status');
       }
 
-      apiDebug('Fetching transcription status', {
+      debugLog('api', 'Fetching transcription status', {
         fileId,
         requestId: context.requestId,
       });
 
       try {
-        // Use repository instead of direct DB query
-        const transcriptionRepo = RepositoryFactory.transcriptionRepository;
+        // Use repository from DI container
+        const transcriptionRepo = getTranscriptionRepository();
         const job = await transcriptionRepo.findLatestByFileId(fileId);
 
         if (!job) {
-          return NextResponse.json(
-            createApiResponse(
-              {
-                exists: false,
-                message: 'No transcription job found for this file',
-              },
-              {
-                meta: {
-                  requestId: context.requestId,
-                },
-              }
-            )
-          );
+          return errorHandlingService.handleSuccess({
+            exists: false,
+            message: 'No transcription job found for this file',
+            meta: {
+              requestId: context.requestId,
+            },
+          }, 'transcription-status-not-found');
         }
 
-        return NextResponse.json(
-          createApiResponse(
-            {
-              exists: true,
-              job: {
-                id: job.id,
-                status: job.status,
-                progress: job.progress,
-                modelSize: job.model_size,
-                diarization: job.diarization,
-                transcript: job.transcript,
-                lastError: job.last_error,
-                startedAt: job.started_at,
-                completedAt: job.completed_at,
-                speakerCount: job.speaker_count,
-              },
-            },
-            {
-              meta: {
-                requestId: context.requestId,
-              },
-            }
-          )
-        );
+        return errorHandlingService.handleSuccess({
+          exists: true,
+          job: {
+            id: job.id,
+            status: job.status,
+            progress: job.progress,
+            modelSize: job.model_size,
+            diarization: job.diarization,
+            transcript: job.transcript,
+            lastError: job.last_error,
+            startedAt: job.started_at,
+            completedAt: job.completed_at,
+            speakerCount: job.speaker_count,
+          },
+          meta: {
+            requestId: context.requestId,
+          },
+        }, 'transcription-status-found');
       } catch (error) {
-        apiDebug('Error fetching transcription status', error);
-        throw error; // Let middleware handle the error
+        return errorHandlingService.handleApiError(error, 'transcription-status');
       }
     },
     {

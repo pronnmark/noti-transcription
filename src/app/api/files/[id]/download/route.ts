@@ -1,51 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RepositoryFactory } from '@/lib/database/repositories';
+import { 
+  getAudioRepository, 
+  getValidationService, 
+  getErrorHandlingService 
+} from '@/lib/di/containerSetup';
 import { SupabaseStorageService } from '@/lib/services/core/SupabaseStorageService';
+import { debugLog } from '@/lib/utils';
 
 /**
  * Shared logic for validating download request
  */
 async function validateDownloadRequest(params: Promise<{ id: string }>) {
   const { id } = await params;
+  const validationService = getValidationService();
+  const errorHandlingService = getErrorHandlingService();
+  
   const fileId = parseInt(id);
-
-  if (isNaN(fileId)) {
+  const idValidation = validationService.validateId(fileId, 'File ID');
+  
+  if (!idValidation.isValid) {
     return {
-      error: NextResponse.json(
-        {
-          success: false,
-          error: { message: 'Invalid file ID', code: 'INVALID_ID' },
-        },
-        { status: 400 }
-      )
+      error: errorHandlingService.handleValidationError(idValidation.errors, 'file-download')
     };
   }
 
-  // Get the file from the database
-  const audioRepository = RepositoryFactory.audioRepository;
+  // Get the file from the database using DI container
+  const audioRepository = getAudioRepository();
   const audioFile = await audioRepository.findById(fileId);
 
   if (!audioFile) {
     return {
-      error: NextResponse.json(
-        {
-          success: false,
-          error: { message: 'File not found', code: 'NOT_FOUND' },
-        },
-        { status: 404 }
-      )
+      error: errorHandlingService.handleNotFoundError('File', fileId, 'file-download')
     };
   }
 
   // Check if file has storage path
   if (!audioFile.file_name) {
     return {
-      error: NextResponse.json(
-        {
-          success: false,
-          error: { message: 'File storage path not found', code: 'NO_STORAGE_PATH' },
-        },
-        { status: 404 }
+      error: errorHandlingService.handleApiError(
+        'NOT_FOUND', 
+        'File storage path not found',
+        { fileId, operation: 'file-download' }
       )
     };
   }
@@ -60,6 +55,8 @@ export async function HEAD(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const errorHandlingService = getErrorHandlingService();
+  
   try {
     const validation = await validateDownloadRequest(params);
     
@@ -69,9 +66,10 @@ export async function HEAD(
     }
 
     // File exists and has storage path - download should work
+    debugLog('api', `HEAD request successful for file ${validation.fileId}`);
     return new NextResponse(null, { status: 200 });
   } catch (error) {
-    console.error('Error in HEAD /api/files/[id]/download:', error);
+    debugLog('api', 'Error in HEAD /api/files/[id]/download:', error);
     return new NextResponse(null, { status: 500 });
   }
 }
@@ -83,6 +81,8 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const errorHandlingService = getErrorHandlingService();
+  
   try {
     const validation = await validateDownloadRequest(params);
     
@@ -101,37 +101,24 @@ export async function GET(
         3600 // 1 hour expiration
       );
 
-      console.log(`Generated download URL for file ${fileId}: ${audioFile.original_file_name}`);
+      debugLog('api', `Generated download URL for file ${fileId}: ${audioFile.original_file_name}`);
 
       // Redirect to the signed URL for immediate download
       return NextResponse.redirect(downloadUrl);
     } catch (storageError) {
-      console.error(`Failed to generate download URL for file ${fileId}:`, storageError);
+      debugLog('api', `Failed to generate download URL for file ${fileId}:`, storageError);
       
-      return NextResponse.json(
-        {
-          success: false,
-          error: { 
-            message: 'Failed to generate download URL', 
-            code: 'STORAGE_ERROR',
-            details: storageError instanceof Error ? storageError.message : 'Unknown storage error'
-          },
-        },
-        { status: 500 }
+      return errorHandlingService.handleApiError(
+        'EXTERNAL_SERVICE_ERROR',
+        'Failed to generate download URL',
+        { 
+          fileId, 
+          fileName: audioFile.original_file_name,
+          storageError: storageError instanceof Error ? storageError.message : 'Unknown storage error'
+        }
       );
     }
   } catch (error) {
-    console.error('Error in GET /api/files/[id]/download:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: { 
-          message: 'Internal error', 
-          code: 'INTERNAL_ERROR',
-          details: error instanceof Error ? error.message : 'Unknown error'
-        },
-      },
-      { status: 500 }
-    );
+    return errorHandlingService.handleApiError(error, 'file-download');
   }
 }
