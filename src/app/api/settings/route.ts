@@ -99,7 +99,6 @@ interface Settings {
     modelSize: string;
     language: string;
     enableSpeakerDiarization: boolean;
-    huggingfaceToken: string;
     preferredDevice: string;
     computeType: string;
     batchSize: number;
@@ -122,7 +121,6 @@ function getDefaultSettings(): Settings {
       modelSize: 'large-v3',
       language: 'sv',
       enableSpeakerDiarization: true,
-      huggingfaceToken: process.env.HUGGINGFACE_TOKEN || '',
       preferredDevice: 'auto',
       computeType: 'float32',
       batchSize: 16,
@@ -159,11 +157,6 @@ export async function POST(request: NextRequest) {
 
     // Save settings (AI to database, others to file)
     await saveSettings(settings);
-
-    // Update environment variable for HuggingFace token
-    if (settings.transcription.huggingfaceToken) {
-      process.env.HUGGINGFACE_TOKEN = settings.transcription.huggingfaceToken;
-    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -46,7 +46,6 @@ interface TranscriptionSettings {
   modelSize: string;
   language: string;
   enableSpeakerDiarization: boolean;
-  huggingfaceToken: string;
   preferredDevice: string;
   computeType: string;
   batchSize: number;
@@ -128,7 +127,6 @@ export default function SettingsPage() {
       modelSize: 'large-v3',
       language: 'sv',
       enableSpeakerDiarization: true,
-      huggingfaceToken: '',
       preferredDevice: 'auto',
       computeType: 'float32',
       batchSize: 16,
@@ -147,7 +145,6 @@ export default function SettingsPage() {
   });
 
   const [showTokens, setShowTokens] = useState<Record<string, boolean>>({
-    huggingfaceToken: false,
     customAiApiKey: false,
     openaiApiKey: false,
   });
@@ -655,40 +652,6 @@ export default function SettingsPage() {
                 />
               </div>
 
-              {transcriptionSettings.enableSpeakerDiarization && (
-                <div className='space-y-2'>
-                  <Label htmlFor='huggingfaceToken'>HuggingFace Token</Label>
-                  <div className='flex min-w-0 gap-2'>
-                    <Input
-                      className='min-w-0 flex-1'
-                      id='huggingfaceToken'
-                      type={showTokens.huggingfaceToken ? 'text' : 'password'}
-                      value={transcriptionSettings.huggingfaceToken}
-                      onChange={e =>
-                        setTranscriptionSettings(prev => ({
-                          ...prev,
-                          huggingfaceToken: e.target.value,
-                        }))
-                      }
-                      placeholder='hf_...'
-                    />
-                    <Button
-                      variant='outline'
-                      size='icon'
-                      onClick={() => toggleTokenVisibility('huggingfaceToken')}
-                    >
-                      {showTokens.huggingfaceToken ? (
-                        <EyeOff className='h-4 w-4' />
-                      ) : (
-                        <Eye className='h-4 w-4' />
-                      )}
-                    </Button>
-                  </div>
-                  <p className='text-sm text-muted-foreground'>
-                    Required for speaker detection. Get one from huggingface.co
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
