@@ -97,11 +97,6 @@ interface ChatConfiguration {
   type: 'user' | 'group' | 'channel';
 }
 
-interface RealTimeSettings {
-  realTimeEnabled: boolean;
-  realTimeChunkInterval: number; // in seconds
-  realTimeAiInstruction: string;
-}
 
 const MODEL_SIZES = [
   { value: 'tiny', label: 'Tiny (39M)' },
@@ -191,12 +186,6 @@ export default function SettingsPage() {
     testChatId: '',
   });
 
-  const [realTimeSettings, setRealTimeSettings] = useState<RealTimeSettings>({
-    realTimeEnabled: false,
-    realTimeChunkInterval: 120, // 2 minutes default
-    realTimeAiInstruction:
-      'Analyze this conversation segment and provide key insights, important decisions, and actionable items in a concise format.',
-  });
 
   const [isTesting, setIsTesting] = useState(false);
 
@@ -228,9 +217,6 @@ export default function SettingsPage() {
         if (data.ai) {
           setAISettings(prev => ({ ...prev, ...data.ai }));
         }
-        if (data.realTime) {
-          setRealTimeSettings(prev => ({ ...prev, ...data.realTime }));
-        }
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -260,7 +246,6 @@ export default function SettingsPage() {
         body: JSON.stringify({
           transcription: transcriptionSettings,
           ai: aiSettings,
-          realTime: realTimeSettings,
         }),
       });
 
@@ -576,16 +561,13 @@ export default function SettingsPage() {
           Configure your transcription preferences
         </p>
       </div>
-      <Tabs defaultValue='essential' className='space-y-4 sm:space-y-6'>
+      <Tabs defaultValue='basic' className='space-y-4 sm:space-y-6'>
         <TabsList>
-          <TabsTrigger value='essential'>Essential</TabsTrigger>
+          <TabsTrigger value='basic'>Basic</TabsTrigger>
           <TabsTrigger value='advanced'>Advanced</TabsTrigger>
-          <TabsTrigger value='templates'>Templates</TabsTrigger>
-          <TabsTrigger value='realtime'>Real-time</TabsTrigger>
-          <TabsTrigger value='telegram'>Telegram</TabsTrigger>
         </TabsList>
 
-        <TabsContent value='essential' className='space-y-4 sm:space-y-6'>
+        <TabsContent value='basic' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Basic Transcription</CardTitle>
@@ -875,7 +857,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value='templates' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader className='flex flex-row items-center justify-between'>
               <div>
@@ -952,7 +933,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value='telegram' className='space-y-4 sm:space-y-6'>
           <Card>
             <CardHeader>
               <CardTitle>Telegram Integration</CardTitle>
@@ -1228,124 +1208,6 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value='realtime' className='space-y-4 sm:space-y-6'>
-          <Card>
-            <CardHeader>
-              <CardTitle>Real-time Thoughts</CardTitle>
-              <CardDescription>
-                Configure AI analysis during recording with chunked processing
-              </CardDescription>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='flex items-center justify-between'>
-                <div className='space-y-0.5'>
-                  <Label htmlFor='realTimeEnabled'>
-                    Enable Real-time Thoughts
-                  </Label>
-                  <p className='text-sm text-muted-foreground'>
-                    Process audio chunks during recording and generate AI
-                    insights
-                  </p>
-                </div>
-                <Switch
-                  id='realTimeEnabled'
-                  checked={realTimeSettings.realTimeEnabled}
-                  onCheckedChange={checked =>
-                    setRealTimeSettings(prev => ({
-                      ...prev,
-                      realTimeEnabled: checked,
-                    }))
-                  }
-                />
-              </div>
-
-              {realTimeSettings.realTimeEnabled && (
-                <>
-                  <div className='space-y-2'>
-                    <Label htmlFor='chunkInterval'>
-                      Chunk Processing Interval
-                    </Label>
-                    <Select
-                      value={realTimeSettings.realTimeChunkInterval.toString()}
-                      onValueChange={value =>
-                        setRealTimeSettings(prev => ({
-                          ...prev,
-                          realTimeChunkInterval: parseInt(value),
-                        }))
-                      }
-                    >
-                      <SelectTrigger id='chunkInterval'>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value='60'>1 minute</SelectItem>
-                        <SelectItem value='120'>2 minutes</SelectItem>
-                        <SelectItem value='180'>3 minutes</SelectItem>
-                        <SelectItem value='240'>4 minutes</SelectItem>
-                        <SelectItem value='300'>5 minutes</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <p className='text-sm text-muted-foreground'>
-                      How often to process audio chunks and generate thoughts
-                      during recording
-                    </p>
-                  </div>
-
-                  <div className='space-y-2'>
-                    <Label htmlFor='aiInstruction'>
-                      AI Analysis Instruction
-                    </Label>
-                    <Textarea
-                      id='aiInstruction'
-                      value={realTimeSettings.realTimeAiInstruction}
-                      onChange={e =>
-                        setRealTimeSettings(prev => ({
-                          ...prev,
-                          realTimeAiInstruction: e.target.value,
-                        }))
-                      }
-                      placeholder='Enter instructions for how the AI should analyze each audio chunk...'
-                      rows={4}
-                      className='min-h-24'
-                    />
-                    <p className='text-sm text-muted-foreground'>
-                      This instruction will be sent to the AI with each
-                      transcribed chunk. Be specific about what insights,
-                      decisions, or actionable items you want extracted.
-                    </p>
-                  </div>
-
-                  <div className='standard-card bg-muted/20 p-4'>
-                    <h4 className='mb-2 font-medium'>
-                      How Real-time Thoughts Work
-                    </h4>
-                    <ul className='space-y-1 text-sm text-muted-foreground'>
-                      <li>
-                        • Recording continues uninterrupted while chunks are
-                        processed in the background
-                      </li>
-                      <li>
-                        • Each chunk is transcribed and sent to AI with your
-                        custom instruction
-                      </li>
-                      <li>
-                        • Thoughts appear in real-time on the recording page
-                        "Thoughts" tab
-                      </li>
-                      <li>
-                        • All thoughts are saved to database and linked to the
-                        recording session
-                      </li>
-                      <li>
-                        • Uses the same AI configuration from Essential settings
-                      </li>
-                    </ul>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value='advanced' className='space-y-4 sm:space-y-6'>
           <Card>
