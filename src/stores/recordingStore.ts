@@ -217,7 +217,9 @@ export const useRecordingStore = create<RecordingState>()(
           clearInterval(pollingInterval);
         }
 
-        console.log(`🔄 Starting transcription polling for file ${fileId}`);
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`🔄 Starting transcription polling for file ${fileId}`);
+        }
 
         const pollTranscription = async () => {
           try {
@@ -234,7 +236,9 @@ export const useRecordingStore = create<RecordingState>()(
               get().stopTranscriptionPolling();
             }
           } catch (error) {
-            console.error('Transcription polling error:', error);
+            if (process.env.NODE_ENV === 'development') {
+              console.error('Transcription polling error:', error);
+            }
             set({
               error:
                 error instanceof Error ? error.message : 'Status check failed',
@@ -253,7 +257,9 @@ export const useRecordingStore = create<RecordingState>()(
         if (pollingInterval) {
           clearInterval(pollingInterval);
           pollingInterval = null;
-          console.log('⏹️ Stopped transcription polling');
+          if (process.env.NODE_ENV === 'development') {
+            console.log('⏹️ Stopped transcription polling');
+          }
         }
       },
 
@@ -298,7 +304,7 @@ export const useRecordingStore = create<RecordingState>()(
               error: status.error || 'Transcription failed',
             });
             toast.error(
-              'Transcription failed: ' + (status.error || 'Unknown error')
+              'Transcription failed: ' + (status.error || 'Unknown error'),
             );
             break;
         }
@@ -306,6 +312,6 @@ export const useRecordingStore = create<RecordingState>()(
     }),
     {
       name: 'recording-store',
-    }
-  )
+    },
+  ),
 );

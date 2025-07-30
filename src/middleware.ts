@@ -39,7 +39,7 @@ export async function middleware(request: NextRequest) {
   ];
 
   const isPublicApi = publicApiEndpoints.some(endpoint =>
-    pathname.startsWith(endpoint)
+    pathname.startsWith(endpoint),
   );
 
   if (isPublicApi) {
@@ -55,7 +55,7 @@ export async function middleware(request: NextRequest) {
     if (pathname.startsWith('/api/')) {
       return NextResponse.json(
         { error: 'Authentication required' },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
