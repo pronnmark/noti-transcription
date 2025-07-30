@@ -118,7 +118,6 @@ async function tryTranscription(
     formData.append('file', createReadStream(audioPath));
     formData.append('response_format', 'json');
     formData.append('temperature', '0.0');
-    formData.append('language', 'sv'); // Swedish language
 
     // Get file size for logging
     const { stat } = await import('fs/promises');
@@ -157,8 +156,8 @@ async function tryTranscription(
       detected_speakers: new Set(segments.map(s => s.speaker).filter(Boolean))
         .size,
       format_conversion_attempted: false,
-      whisper_model: 'ggml-large-v3-turbo.bin',
-      language: 'sv',
+      whisper_model: 'ggml-base.en.bin',
+      language: 'auto',
     };
     await writeFile(metadataPath, JSON.stringify(metadata, null, 2));
 

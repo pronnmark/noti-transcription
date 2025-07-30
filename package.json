@@ -30,6 +30,7 @@
     "db:reset": "tsx src/lib/database/init.ts reset --confirm"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@paralleldrive/cuid2": "^2.2.2",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

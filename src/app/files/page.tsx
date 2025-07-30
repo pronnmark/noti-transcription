@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { FileAudio, Plus, Loader2, Trash2, Download, MapPin, Smartphone, Tablet, Monitor } from 'lucide-react';
+import { FileAudio, Plus, Loader2, Trash2, Download, MapPin, Smartphone, Tablet, Monitor, Clock, Edit3, Sparkles, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -170,6 +170,7 @@ export default function FilesPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
   const _isMobile = useMediaQuery('(max-width: 767px)');
 
   // Debounced file loading to prevent rapid successive calls
@@ -334,6 +335,185 @@ export default function FilesPage() {
     }
   }
 
+  async function handleAutoRenameAll() {
+    const transcribedFiles = files.filter(f => f.transcriptionStatus === 'completed' && !f.originalName.includes('_AI_'));
+    
+    if (transcribedFiles.length === 0) {
+      toast.error('No files available for auto-rename');
+      return;
+    }
+
+    const confirmed = window.confirm(`Auto-rename ${transcribedFiles.length} transcribed files? This will process them one by one.`);
+    if (!confirmed) return;
+
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const file of transcribedFiles) {
+      try {
+        setRenamingId(file.id);
+        
+        const response = await fetch(`/api/files/${file.id}/rename`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            useAI: true,
+            options: { maxLength: 50, includeDate: false }
+          })
+        });
+
+        if (response.ok) {
+          successCount++;
+          await new Promise(resolve => setTimeout(resolve, 1000)); // Rate limiting delay
+        } else {
+          errorCount++;
+        }
+      } catch (error) {
+        errorCount++;
+      }
+    }
+
+    setRenamingId(null);
+    
+    if (successCount > 0) {
+      toast.success(`✨ Auto-renamed ${successCount} files successfully!`);
+      debouncedLoadFiles();
+    }
+    if (errorCount > 0) {
+      toast.error(`Failed to rename ${errorCount} files`);
+    }
+  }
+
+  async function handleRenameFile(fileId: string, fileName: string) {
+    if (renamingId === fileId) return; // Already processing
+
+    setRenamingId(fileId);
+    
+    try {
+      toast.info(`🤖 AI analyzing transcript...`, { duration: 2000 });
+      
+      // Call the rename API with enhanced options
+      const response = await fetch(`/api/files/${fileId}/rename`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          options: {
+            maxLength: 60,
+            includeFileExtension: true,
+            includeDatePrefix: false,
+            generateAlternatives: false, // Just get the best suggestion
+          },
+          userId: 'current_user', // In production, get from auth
+          metadata: {
+            source: 'files_page',
+            originalAction: 'quick_rename'
+          }
+        }),
+      });
+
+      const result = await response.json();
+
+      // Enhanced error handling with specific error codes
+      if (!response.ok || !result.success) {
+        const errorCode = result.errorCode || 'UNKNOWN_ERROR';
+        const errorMessage = result.error || 'Rename failed';
+        
+        // Handle specific error cases with user-friendly messages
+        switch (errorCode) {
+          case 'NO_TRANSCRIPT':
+            toast.error('Cannot rename: file needs to be transcribed first');
+            break;
+          case 'RATE_LIMIT_EXCEEDED':
+            toast.error('Too many rename requests. Please wait a minute.');
+            break;
+          case 'TRANSCRIPT_TOO_SHORT':
+            toast.error('Transcript too short to generate meaningful name');
+            break;
+          case 'AI_SERVICE_UNAVAILABLE':
+            toast.error('AI service temporarily unavailable. Try again later.');
+            break;
+          case 'AUTH_ERROR':
+            toast.error('AI service not configured. Please check settings.');
+            break;
+          case 'CONTENT_FILTERED':
+            toast.error('Content was filtered by AI safety policies');
+            break;
+          case 'DATABASE_ERROR':
+            toast.error('Failed to save new filename. Please try again.');
+            break;
+          default:
+            toast.error(`Rename failed: ${errorMessage}`);
+        }
+        
+        console.error(`[Rename] Error ${errorCode}:`, errorMessage, result);
+        return;
+      }
+      
+      // Success handling with enhanced feedback
+      const { newName, confidence, reasoning, wasRenamed, processingTime, metadata } = result;
+      
+      // Show success message with details
+      let successMessage = `✨ Renamed to: ${newName}`;
+      
+      // Add confidence indicator
+      if (confidence !== undefined) {
+        const confidencePercent = Math.round(confidence * 100);
+        if (confidencePercent >= 80) {
+          successMessage = `✨ High confidence rename: ${newName}`;
+        } else if (confidencePercent >= 60) {
+          successMessage = `✨ Renamed to: ${newName} (${confidencePercent}% confidence)`;
+        } else {
+          successMessage = `⚠️ Low confidence rename: ${newName}`;
+        }
+      }
+      
+      // Show conflict resolution info
+      if (wasRenamed) {
+        successMessage += ` (renamed to avoid conflicts)`;
+      }
+      
+      // Show cache hit info in dev mode
+      if (process.env.NODE_ENV === 'development' && metadata?.cacheHit) {
+        successMessage += ` (cached result)`;
+      }
+      
+      toast.success(successMessage, { 
+        duration: confidence && confidence < 0.6 ? 6000 : 4000 // Longer duration for low confidence
+      });
+      
+      // Show reasoning if available (in a subtle way)
+      if (reasoning && process.env.NODE_ENV === 'development') {
+        console.log(`[Rename] AI reasoning: ${reasoning}`);
+      }
+      
+      // Log performance info in dev mode
+      if (process.env.NODE_ENV === 'development' && processingTime) {
+        console.log(`[Rename] Processing time: ${processingTime}ms, Cache hit: ${metadata?.cacheHit || false}`);
+      }
+      
+      // Reload files to show the new name
+      debouncedLoadFiles();
+      
+    } catch (error) {
+      console.error('Rename request failed:', error);
+      
+      // Network or parsing errors
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        toast.error('Network error. Please check your connection.');
+      } else if (error instanceof SyntaxError) {
+        toast.error('Server response error. Please try again.');
+      } else if (error instanceof Error) {
+        toast.error(`Unexpected error: ${error.message}`);
+      } else {
+        toast.error('Failed to rename file. Please try again.');
+      }
+    } finally {
+      setRenamingId(null);
+    }
+  }
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '';
     const mins = Math.floor(seconds / 60);
@@ -429,7 +609,28 @@ export default function FilesPage() {
         {/* Header */}
         <div className='standard-section-bg'>
           <div className='px-4 pb-4 pt-6'>
-            <h1 className='text-2xl font-semibold text-gray-900'>Files</h1>
+            <div className='flex items-center justify-between'>
+              <h1 className='text-2xl font-semibold text-gray-900'>Files</h1>
+              
+              {/* Auto-rename button - only show if there are transcribed files */}
+              {files.some(f => f.transcriptionStatus === 'completed' && !f.originalName.includes('_AI_')) && (
+                <Button
+                  size='sm'
+                  variant='outline'
+                  className='gap-2 text-purple-600 border-purple-200 hover:bg-purple-50'
+                  onClick={handleAutoRenameAll}
+                  disabled={!!renamingId}
+                  title='Auto-rename all transcribed files using AI'
+                >
+                  {renamingId ? (
+                    <Loader2 className='h-4 w-4 animate-spin' />
+                  ) : (
+                    <Zap className='h-4 w-4' />
+                  )}
+                  Auto Rename
+                </Button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -463,19 +664,22 @@ export default function FilesPage() {
             </div>
           ) : (
             /* Files List - Grouped by Date */
-            <div className='space-y-6'>
+            <div className='space-y-8'>
               {sortedDateGroups.map(dateGroup => (
                 <div key={dateGroup}>
                   {/* Date Header */}
-                  <div className='mb-3 flex items-center'>
-                    <h2 className='text-sm font-medium text-gray-600'>
+                  <div className='mb-4 flex items-center'>
+                    <h2 className='text-lg font-semibold text-gray-900'>
                       {dateGroup}
                     </h2>
-                    <div className='ml-3 flex-1 border-t border-gray-200' />
+                    <div className='ml-4 flex-1 border-t border-gray-200' />
+                    <span className='ml-4 text-sm text-gray-500'>
+                      {groupedFiles[dateGroup].length} file{groupedFiles[dateGroup].length !== 1 ? 's' : ''}
+                    </span>
                   </div>
 
-                  {/* Files for this date */}
-                  <div className='space-y-2'>
+                  {/* Files Grid for this date */}
+                  <div className='grid gap-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5'>
                     {groupedFiles[dateGroup]
                       .sort(
                         (a, b) =>
@@ -486,10 +690,10 @@ export default function FilesPage() {
                         <div
                           key={file.id}
                           className={cn(
-                            'standard-card p-3',
+                            'group relative rounded-md border border-gray-200 bg-white p-2 shadow-sm transition-all hover:shadow-md',
                             file.transcriptionStatus === 'completed'
-                              ? 'standard-card-hover cursor-pointer'
-                              : ''
+                              ? 'cursor-pointer hover:border-blue-300'
+                              : 'hover:border-gray-300'
                           )}
                           onClick={() => {
                             if (file.transcriptionStatus === 'completed') {
@@ -497,67 +701,99 @@ export default function FilesPage() {
                             }
                           }}
                         >
-                          <div className='flex items-center justify-between'>
-                            <div className='min-w-0 flex-1'>
-                              <div className='flex items-center gap-2'>
-                                <p className='truncate text-sm font-medium text-gray-900'>
-                                  {file.originalName}
-                                </p>
-                                <SummaryStatus
-                                  hasAiExtract={file.hasAiExtract || false}
-                                  extractCount={file.extractCount || 0}
-                                />
-                              </div>
-                              <div className='mt-1 flex items-center gap-3'>
-                                <span className='text-xs text-gray-500'>
-                                  {formatDate(
-                                    file.recordedAt || file.createdAt
-                                  )}
-                                </span>
-                                {file.duration && (
-                                  <span className='text-xs text-gray-500'>
-                                    {formatDuration(file.duration)}
-                                  </span>
-                                )}
-                                <LocationDisplay file={file} />
-                                <DeviceTypeIcon deviceType={file.deviceType} />
-                                {file.transcriptionStatus === 'processing' && (
-                                  <span className='text-xs text-blue-600'>
-                                    Processing...
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                            <div className='flex items-center gap-1'>
+                          {/* Status indicator */}
+                          <div className='absolute right-1 top-1 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
+                            {file.transcriptionStatus === 'completed' && (
                               <Button
                                 size='sm'
                                 variant='ghost'
-                                className='h-8 w-8 p-0 text-gray-400 hover:text-blue-600'
+                                className='h-6 w-6 p-0 text-gray-400 hover:text-purple-600'
                                 onClick={e => {
                                   e.stopPropagation();
-                                  handleDownloadFile(file.id, file.originalName);
+                                  handleRenameFile(file.id, file.originalName);
                                 }}
-                                title={`Download ${file.originalName}`}
+                                disabled={renamingId === file.id}
+                                title={`AI Rename ${file.originalName}`}
                               >
-                                <Download className='h-3 w-3' />
-                              </Button>
-                              <Button
-                                size='sm'
-                                variant='ghost'
-                                className='h-8 w-8 p-0 text-gray-400 hover:text-red-600'
-                                onClick={e => {
-                                  e.stopPropagation();
-                                  handleDeleteFile(file.id, file.originalName);
-                                }}
-                                disabled={deletingId === file.id}
-                                title={`Delete ${file.originalName}`}
-                              >
-                                {deletingId === file.id ? (
-                                  <Loader2 className='h-3 w-3 animate-spin' />
+                                {renamingId === file.id ? (
+                                  <Loader2 className='h-2.5 w-2.5 animate-spin' />
                                 ) : (
-                                  <Trash2 className='h-3 w-3' />
+                                  <Sparkles className='h-2.5 w-2.5' />
                                 )}
                               </Button>
+                            )}
+                            <Button
+                              size='sm'
+                              variant='ghost'
+                              className='h-6 w-6 p-0 text-gray-400 hover:text-blue-600'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDownloadFile(file.id, file.originalName);
+                              }}
+                              title={`Download ${file.originalName}`}
+                            >
+                              <Download className='h-2.5 w-2.5' />
+                            </Button>
+                            <Button
+                              size='sm'
+                              variant='ghost'
+                              className='h-6 w-6 p-0 text-gray-400 hover:text-red-600'
+                              onClick={e => {
+                                e.stopPropagation();
+                                handleDeleteFile(file.id, file.originalName);
+                              }}
+                              disabled={deletingId === file.id}
+                              title={`Delete ${file.originalName}`}
+                            >
+                              {deletingId === file.id ? (
+                                <Loader2 className='h-2.5 w-2.5 animate-spin' />
+                              ) : (
+                                <Trash2 className='h-2.5 w-2.5' />
+                              )}
+                            </Button>
+                          </div>
+
+                          {/* File Icon */}
+                          <div className='mb-2 flex items-center justify-center'>
+                            <div className='flex h-8 w-8 items-center justify-center rounded-md bg-blue-50'>
+                              <FileAudio className='h-4 w-4 text-blue-600' />
+                            </div>
+                          </div>
+
+                          {/* File Name */}
+                          <h3 className='mb-1 text-xs font-medium text-gray-900 pr-6 overflow-hidden text-center' style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>
+                            {file.originalName}
+                          </h3>
+
+                          {/* File Details */}
+                          <div className='space-y-0.5 text-xs text-gray-500'>
+                            <div className='flex items-center justify-center gap-1'>
+                              <span className='text-xs'>{formatDate(file.recordedAt || file.createdAt)}</span>
+                              {file.duration && (
+                                <span className='font-medium text-xs'>
+                                  • {formatDuration(file.duration)}
+                                </span>
+                              )}
+                            </div>
+                            
+                            <div className='flex items-center justify-center gap-1'>
+                              <SummaryStatus
+                                hasAiExtract={file.hasAiExtract || false}
+                                extractCount={file.extractCount || 0}
+                              />
+                              {file.transcriptionStatus === 'processing' && (
+                                <div className='flex items-center gap-1'>
+                                  <div className='h-1.5 w-1.5 animate-pulse rounded-full bg-blue-500' />
+                                  <span className='text-xs text-blue-600'>
+                                    Processing
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className='flex items-center justify-center gap-2 text-xs'>
+                              <LocationDisplay file={file} />
+                              <DeviceTypeIcon deviceType={file.deviceType} />
                             </div>
                           </div>
                         </div>
