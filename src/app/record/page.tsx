@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import {
   Card,
   CardContent,
@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Mic, Square, Pause, Play, Loader2, AlertCircle, CheckCircle, Download } from 'lucide-react';
+import { Mic, Square, Pause, Play, Loader2, AlertCircle, CheckCircle, Download, FileText, Package } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ClientOnly } from '@/components/client-only';
@@ -100,6 +100,13 @@ export default function RecordPage() {
 
   // Local state for upload status
   const [isUploading, setIsUploading] = useState(false);
+
+  // Performance optimization: Memoize expensive calculations
+  const recordingTimeFormatted = useMemo(() => {
+    const mins = Math.floor(recordingTime / 60);
+    const secs = recordingTime % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }, [recordingTime]);
 
   // Location error state (local since it's just for logging)
   const [_locationError, setLocationError] = useState<string | null>(null);
@@ -1090,7 +1097,7 @@ export default function RecordPage() {
     }
   }
 
-  async function handleDownloadRecording() {
+  async function handleDownloadRecording(format: 'audio' | 'transcript' | 'both' = 'audio') {
     if (!fileId) {
       toast.error('No recording available to download');
       return;
@@ -1099,31 +1106,71 @@ export default function RecordPage() {
     try {
       toast.info('Preparing download...');
       
-      // Verify download endpoint is accessible before opening
-      const downloadUrl = `/api/files/${fileId}/download`;
-      const response = await fetch(downloadUrl, { 
-        method: 'HEAD',
-        credentials: 'same-origin'
-      });
+      if (format === 'both') {
+        // Download both audio and transcript
+        const audioUrl = `/api/files/${fileId}/download`;
+        const transcriptUrl = `/api/files/${fileId}/transcript/download`;
+        
+        // Verify both endpoints
+        const [audioResponse, transcriptResponse] = await Promise.all([
+          fetch(audioUrl, { method: 'HEAD', credentials: 'same-origin' }),
+          fetch(transcriptUrl, { method: 'HEAD', credentials: 'same-origin' }),
+        ]);
 
-      if (!response.ok) {
-        if (response.status === 404) {
-          toast.error('Recording not found or no longer available');
-        } else if (response.status === 500) {
-          toast.error('Server error - unable to generate download link');
-        } else {
-          toast.error('Download failed - please try again');
+        if (!audioResponse.ok) {
+          toast.error('Audio file not available');
+          return;
         }
-        return;
+
+        // Open both downloads with slight delay to prevent popup blocking
+        window.open(audioUrl, '_blank');
+        if (transcriptResponse.ok) {
+          setTimeout(() => window.open(transcriptUrl, '_blank'), 500);
+          toast.success('Downloads started (audio + transcript)');
+        } else {
+          toast.success('Audio download started (transcript not available)');
+        }
+      } else if (format === 'transcript') {
+        const transcriptUrl = `/api/files/${fileId}/transcript/download`;
+        const response = await fetch(transcriptUrl, { 
+          method: 'HEAD',
+          credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+          toast.error('Transcript not available for download');
+          return;
+        }
+
+        window.open(transcriptUrl, '_blank');
+        toast.success('Transcript download started');
+      } else {
+        // Default audio download
+        const downloadUrl = `/api/files/${fileId}/download`;
+        const response = await fetch(downloadUrl, { 
+          method: 'HEAD',
+          credentials: 'same-origin',
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            toast.error('Recording not found or no longer available');
+          } else if (response.status === 500) {
+            toast.error('Server error - unable to generate download link');
+          } else {
+            toast.error('Download failed - please try again');
+          }
+          return;
+        }
+        
+        window.open(downloadUrl, '_blank');
+        toast.success('Audio download started');
       }
-      
-      // Open download endpoint in new window/tab
-      window.open(downloadUrl, '_blank');
-      
-      toast.success('Download started');
     } catch (error) {
       toast.error('Failed to initiate download');
-      console.error('Download error:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Download error:', error);
+      }
     }
   }
 
@@ -1214,7 +1261,7 @@ export default function RecordPage() {
                   {/* Recording Status */}
                   <div className="text-center"
                     <div className="mb-2 font-mono text-4xl font-bold sm:text-6xl"
-                      {formatRecordingTime(recordingTime)}
+                      {recordingTimeFormatted}
                     </div>
                     {isRecording && (
                       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground"
@@ -1374,21 +1421,45 @@ export default function RecordPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-col gap-3 sm:flex-row"
+                <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                   <Button
-                    onClick={handleDownloadRecording}
-                    variant='outline'
-                    className="flex items-center gap-2'"
+                    onClick={() => handleDownloadRecording('audio')}
+                    variant="outline"
+                    className="flex items-center gap-2"
+                    aria-label="Download audio recording"
                   >
-                    <Download className="h-4 w-4'" />
-                    Download Recording
+                    <Download className="h-4 w-4" />
+                    Download Audio
                   </Button>
+                  {transcript && (
+                    <Button
+                      onClick={() => handleDownloadRecording('transcript')}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      aria-label="Download transcript"
+                    >
+                      <FileText className="h-4 w-4" />
+                      Download Transcript
+                    </Button>
+                  )}
+                  {transcript && (
+                    <Button
+                      onClick={() => handleDownloadRecording('both')}
+                      variant="outline"
+                      className="flex items-center gap-2"
+                      aria-label="Download both audio and transcript"
+                    >
+                      <Package className="h-4 w-4" />
+                      Download Both
+                    </Button>
+                  )}
                   <Button
                     onClick={() => {
                       resetWorkflow();
                       toast.info('Ready for new recording!');
                     }}
-                    variant='default'
+                    variant="default"
+                    className="sm:ml-auto"
                   >
                     Record Another
                   </Button>
