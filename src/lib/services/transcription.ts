@@ -206,12 +206,12 @@ export async function startTranscription(
 
     // Use speaker count from database (user-specified) or fallback to parameter
     const finalSpeakerCount = job.speakerCount || speakerCount;
-    if (finalSpeakerCount) {
+    if (finalSpeakerCount && finalSpeakerCount > 0) {
       debugLog(
         `Using speaker count: ${finalSpeakerCount} ${job.speakerCount ? '(user-specified)' : '(parameter)'}`
       );
     } else {
-      debugLog('No speaker count specified - will auto-detect');
+      debugLog('No speaker count specified - will auto-detect speakers');
     }
 
     // Update job to processing status
@@ -564,7 +564,6 @@ export async function startTranscription(
       );
 
       debugLog(`✅ Transcription completed successfully for file ${fileId}`);
-      // Note: Auto-extraction system has been removed for simplicity
     } else {
       await supabase
         .from('transcription_jobs')

@@ -33,7 +33,7 @@ export async function POST(
         const body = await req.json();
 
         const {
-          processType, // 'summarization', 'extractions', 'datapoints', 'all'
+          processType, // 'summarization', 'all'
           templateIds = [],
           customPrompt,
           model = 'anthropic/claude-sonnet-4',
@@ -140,23 +140,12 @@ export async function POST(
               await audioRepo.updateTimestamp(fileIdInt);
               break;
 
-            case 'extractions':
-              return errorHandlingService.handleApiError(
-                'BUSINESS_RULE_VIOLATION',
-                'Extractions feature has been removed'
-              );
-
-            case 'datapoints':
-              return errorHandlingService.handleApiError(
-                'BUSINESS_RULE_VIOLATION',
-                'Data points feature has been removed'
-              );
 
             case 'all':
               // Update file timestamp
               await audioRepo.updateTimestamp(fileIdInt);
 
-              // Only process summarization since extractions and data points have been removed
+              // Process summarization
               const allSummaryResult =
                 await adaptiveAIService.summarizeTranscript(
                   transcriptionJob.transcript,
@@ -177,7 +166,6 @@ export async function POST(
 
               results = {
                 summarization: savedSummaryAll,
-                // extractions and datapoints features have been removed
               };
 
               // Update file timestamp

@@ -270,7 +270,7 @@ Focus on accuracy and relevance.`;
       return await this.generateText(fullPrompt, {
         model: model || this.config.model,
         maxTokens: this.config.maxTokens || 4000,
-        temperature: 0.3, // Lower temperature for more consistent extraction
+        temperature: 0.3, // Lower temperature for more consistent results
         systemPrompt,
       });
     }, {
@@ -341,22 +341,6 @@ export const customAIService = new Proxy({} as CustomAIService, {
   },
 });
 
-// Legacy AI Extraction function - removed (extractions feature deprecated)
-export async function createAIExtract(
-  fileId: number,
-  transcript: string,
-  prompt?: string,
-  model?: string,
-  templateId?: string
-): Promise<string> {
-  try {
-    // Extractions feature has been removed
-    throw new Error('Extractions feature is no longer available');
-  } catch (error) {
-    console.error('AI extraction error:', error);
-    throw error;
-  }
-}
 
 // Helper to get available models - returns empty array since models are user-configured
 export function getAvailableModels() {

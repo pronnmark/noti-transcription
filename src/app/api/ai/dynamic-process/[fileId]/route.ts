@@ -127,7 +127,7 @@ export const POST = withAuthMiddleware(
             id: sessionId,
             file_id: fileIdInt,
             summarization_prompt_id: summarizationPromptId || null,
-            extraction_definition_ids: null, // Extraction functionality removed
+            extraction_definition_ids: null,
             system_prompt: systemPrompt,
             ai_response: '', // Will be updated after AI response
             status: 'processing',
@@ -302,7 +302,7 @@ function formatTranscriptForAI(
 }
 
 /**
- * Get extraction results for a file
+ * Get AI processing results for a file
  */
 export const GET = withAuthMiddleware(async (request: NextRequest, context) => {
   try {

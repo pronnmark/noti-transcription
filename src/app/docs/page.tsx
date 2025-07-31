@@ -112,12 +112,11 @@ export default function DocsPage() {
                       </div>
                       <div>
                         <h4 className='font-medium'>
-                          3. Smart Note Extraction
+                          3. AI Summarization
                         </h4>
                         <p className='text-sm text-muted-foreground'>
-                          Advanced AI analyzes transcripts to extract actionable
-                          tasks, unanswered questions, decisions, and
-                          follow-ups.
+                          Advanced AI analyzes transcripts to generate
+                          comprehensive summaries and insights.
                         </p>
                       </div>
                     </div>
@@ -127,11 +126,10 @@ export default function DocsPage() {
                         <ListTodo className='h-4 w-4 text-orange-600' />
                       </div>
                       <div>
-                        <h4 className='font-medium'>4. Task Management</h4>
+                        <h4 className='font-medium'>4. Analytics & Insights</h4>
                         <p className='text-sm text-muted-foreground'>
-                          Organize extracted items into actionable lists with
-                          checkboxes, comments, and direct links to audio
-                          timestamps.
+                          View detailed analytics including speaker patterns,
+                          emotional analysis, and conversation insights.
                         </p>
                       </div>
                     </div>
@@ -328,104 +326,6 @@ export default function DocsPage() {
             </TabsContent>
 
             <TabsContent value='prompts' className='mt-0 space-y-6'>
-              <Card>
-                <CardHeader>
-                  <CardTitle>AI Extraction Prompts</CardTitle>
-                  <CardDescription>
-                    The exact prompts used to extract different types of notes
-                    from your transcripts
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className='space-y-6'>
-                    <div className='rounded-lg border bg-blue-50 p-4'>
-                      <h3 className='mb-3 flex items-center gap-2 font-medium'>
-                        <ListTodo className='h-4 w-4' />
-                        Tasks Extraction Prompt
-                      </h3>
-                      <div className='rounded bg-white p-3 font-mono text-sm text-muted-foreground'>
-                        <pre className='whitespace-pre-wrap'>{`Extract ONLY concrete, actionable tasks and commitments from this transcript.
-
-STRICT CRITERIA - Only include if it meets ALL of these:
-- Specific action to be taken by someone
-- Clear responsibility (who will do it)
-- Not vague statements or general discussion
-- Represents actual work or commitment
-
-INCLUDE examples:
-- "I'll send the report by Friday"
-- "We need to call the client tomorrow"
-- "Can you schedule the meeting?"
-
-Format as JSON array with: content, speaker, context, priority, metadata`}</pre>
-                      </div>
-                    </div>
-
-                    <div className='rounded-lg border bg-orange-50 p-4'>
-                      <h3 className='mb-3 flex items-center gap-2 font-medium'>
-                        <HelpCircle className='h-4 w-4' />
-                        Questions Extraction Prompt
-                      </h3>
-                      <div className='rounded bg-white p-3 font-mono text-sm text-muted-foreground'>
-                        <pre className='whitespace-pre-wrap'>{`Extract ONLY genuine unanswered questions that require follow-up.
-
-STRICT CRITERIA - Only include if it meets ALL of these:
-- Direct question with clear intent
-- No complete answer was provided
-- Important enough to need follow-up
-- Not rhetorical or casual questions
-
-EXCLUDE examples:
-- Questions that were answered clearly
-- Rhetorical questions ("How about that?")
-- Questions answered later in the conversation`}</pre>
-                      </div>
-                    </div>
-
-                    <div className='rounded-lg border bg-green-50 p-4'>
-                      <h3 className='mb-3 flex items-center gap-2 font-medium'>
-                        <Gavel className='h-4 w-4' />
-                        Decisions Extraction Prompt
-                      </h3>
-                      <div className='rounded bg-white p-3 font-mono text-sm text-muted-foreground'>
-                        <pre className='whitespace-pre-wrap'>{`Extract ONLY concrete decisions that were actually made and agreed upon.
-
-STRICT CRITERIA - Only include if it meets ALL of these:
-- Clear decision or choice was made
-- Specific outcome or direction chosen
-- Not just suggestions or considerations
-- Represents actual agreement or commitment
-
-INCLUDE examples:
-- "We've decided to go with vendor A"
-- "Let's proceed with the new pricing model"
-- "We agreed to postpone the launch until next month"`}</pre>
-                      </div>
-                    </div>
-
-                    <div className='rounded-lg border bg-purple-50 p-4'>
-                      <h3 className='mb-3 flex items-center gap-2 font-medium'>
-                        <CalendarDays className='h-4 w-4' />
-                        Follow-ups Extraction Prompt
-                      </h3>
-                      <div className='rounded bg-white p-3 font-mono text-sm text-muted-foreground'>
-                        <pre className='whitespace-pre-wrap'>{`Extract ONLY items that explicitly need future action or discussion.
-
-STRICT CRITERIA - Only include if it meets ALL of these:
-- Specific item requiring future attention
-- Clear indication it needs follow-up
-- Not just general discussion topics
-- Represents actual work or communication needed
-
-INCLUDE examples:
-- "Let's revisit this in next week's meeting"
-- "I need to get back to you on that"
-- "This needs more research before we decide"`}</pre>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
 
               <Card>
                 <CardHeader>
@@ -603,16 +503,6 @@ INCLUDE examples:
                 </CardHeader>
                 <CardContent>
                   <div className='space-y-6'>
-                    <div className='rounded-lg border p-4'>
-                      <h3 className='mb-3 font-medium'>Note Extraction</h3>
-                      <div className='rounded bg-gray-50 p-3 font-mono text-sm'>
-                        <div className='text-blue-600'>POST</div>
-                        <div className='text-gray-600'>/api/notes/extract</div>
-                      </div>
-                      <p className='mt-2 text-sm text-muted-foreground'>
-                        Triggers AI extraction of notes from a transcript
-                      </p>
-                    </div>
 
                     <div className='rounded-lg border p-4'>
                       <h3 className='mb-3 font-medium'>Get Notes</h3>

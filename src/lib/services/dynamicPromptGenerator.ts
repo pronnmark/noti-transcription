@@ -1,5 +1,4 @@
 // Simplified prompt generator focused on summarization only
-// Extraction functionality removed as it's not a requirement
 
 import { getSupabase } from '../database/client';
 import { debugLog } from '../utils';

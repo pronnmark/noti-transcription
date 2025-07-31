@@ -4,7 +4,7 @@ export interface PromptTemplate {
   description: string;
   template: string;
   variables: string[];
-  category: 'extraction' | 'summarization' | 'analysis' | 'general';
+  category: 'summarization' | 'analysis' | 'general';
   version: string;
   createdAt: string;
   updatedAt: string;
@@ -59,76 +59,6 @@ Transcript:
 {{transcript}}`,
         variables: ['transcript', 'language'],
         category: 'summarization',
-        version: '1.0.0',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'extract-tasks',
-        name: 'Extract Tasks',
-        description: 'Extract actionable tasks from a transcript',
-        template: `Analyze the following transcript and extract all actionable tasks, action items, and to-dos mentioned.
-
-For each task, provide:
-- Clear description of what needs to be done
-- Who is responsible (if mentioned)
-- Any deadlines or timeframes mentioned
-- Priority level (if indicated)
-
-Format as a structured list.
-
-{{#if context}}
-Context: {{context}}
-{{/if}}
-
-Transcript:
-{{transcript}}`,
-        variables: ['transcript', 'context'],
-        category: 'extraction',
-        version: '1.0.0',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'extract-decisions',
-        name: 'Extract Decisions',
-        description: 'Extract decisions made during a conversation',
-        template: `Analyze the following transcript and extract all decisions that were made.
-
-For each decision, provide:
-- What was decided
-- Who made the decision
-- The reasoning behind it (if mentioned)
-- Any alternatives that were considered
-
-Format as a structured list.
-
-Transcript:
-{{transcript}}`,
-        variables: ['transcript'],
-        category: 'extraction',
-        version: '1.0.0',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      },
-      {
-        id: 'extract-questions',
-        name: 'Extract Questions',
-        description: 'Extract questions and concerns raised in a transcript',
-        template: `Analyze the following transcript and extract all questions, concerns, and issues that were raised.
-
-For each item, provide:
-- The question or concern
-- Who raised it
-- Whether it was answered/resolved
-- Any follow-up needed
-
-Format as a structured list.
-
-Transcript:
-{{transcript}}`,
-        variables: ['transcript'],
-        category: 'extraction',
         version: '1.0.0',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
